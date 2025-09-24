@@ -13,7 +13,7 @@ export function JobFilters() {
     <Card variant="outlined">
       <CardContent>
         <Typography variant="h3" gutterBottom>
-          Filters
+          필터
         </Typography>
         <Stack spacing={3}>
           {filterGroups.map((group) => (
