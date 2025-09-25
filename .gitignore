@@ -33,7 +33,7 @@ Thumbs.db
 *.temp
 
 ### 민감 정보 (Secrets & Environment Variables) ###
-# 환경 변수 파일 (단, 예제 파일은 제외)
+# 환경 변수 파일
 .env.local
 
 # 로컬 DB 설정 등 민감 정보를 담은 yml 파일
