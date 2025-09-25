@@ -13,18 +13,19 @@ COPY . .
 RUN npm run build
 
 # --- 2. 서빙(Serve) 스테이지 ---
-FROM nginx:1.23-alpine
+FROM node:18-alpine
 
-# 우리가 만든 Nginx 설정을 복사
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# 작업 디렉토리 설정
+WORKDIR /app
 
-# 빌드 스테이지에서 생성된 빌드 결과물을 Nginx의 웹 루트로 복사
-COPY --from=builder /app/out /usr/share/nginx/html
-# Next.js의 기본 빌드 출력 폴더는 .next 이지만, 정적 export는 out 폴더를 사용.
-# package.json의 build 스크립트를 "build": "next build && next export"로 수정해야 할 수 있음.
+# 빌드 스테이지에서 생성된 결과물 복사
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/public ./public
 
-# 컨테이너 80 포트 개방
-EXPOSE 80
+# 3000번 포트 개방
+EXPOSE 3000
 
-# Nginx 실행
-CMD ["nginx", "-g", "daemon off;"]
+# Next.js 서버 실행
+CMD ["npm", "start"]
