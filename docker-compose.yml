@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    container_name: eum-career-backend
+    image: ${{ env.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  frontend:
+    container_name: eum-career-frontend
+    image: ${{ env.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  db:
+    container_name: eum-career-db
+    image: mysql:8.0.26
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${{ secrets.DB_ROOT_PASSWORD }}
+      MYSQL_DATABASE: ${{ secrets.DB_DATABASE }}
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+volumes:
+  db_data:
