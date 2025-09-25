@@ -61,7 +61,7 @@ jobs:
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
             # docker-compose.yml 파일의 이미지 태그를 방금 빌드한 최신 버전으로 교체
-            sed -i 's|${{ env.DOCKOER_USERNAME }}/${{ env.BACKEND_IMAGE }}:.*|${{ env.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}|' docker-compose.yml
+            sed -i 's|${{ env.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:.*|${{ env.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}|' docker-compose.yml
             sed -i 's|${{ env.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:.*|${{ env.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}|' docker-compose.yml
 
             # Docker Hub에서 최신 이미지들을 받아오기
