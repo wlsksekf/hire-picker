@@ -30,8 +30,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Build with Gradle
-        # ⭐️ 가장 안정적인 옵션으로 수정.
-        run: ./gradlew clean build --args='--spring.profiles.active=test'
+        run: ./gradlew clean build -Dspring.profiles.active=test
         working-directory: ./backend
 
       - name: Login to Docker Hub
@@ -64,7 +63,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # ⭐️ [최종 수정] docker-compose.yml 파일 전송
+      # docker-compose.yml 파일 전송
       - name: Transfer docker-compose file
         uses: appleboy/scp-action@master
         with:
@@ -81,7 +80,7 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           script: |
-            # ⭐️ [최종 수정] 깃허브 환경 변수를 서버 환경 변수로 export
+            # 깃허브 환경 변수를 서버 환경 변수로 export
             export DOCKER_USERNAME=${{ env.DOCKER_USERNAME }}
             export BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}
             export FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}
@@ -89,7 +88,7 @@ jobs:
             
             cd /home/ubuntu/eum-career
 
-            # ⭐️ [최종 수정] .env 파일 생성
+            # .env 파일 생성
             echo "DB_URL=${{ secrets.DB_URL }}" > .env
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
