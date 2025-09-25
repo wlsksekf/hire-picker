@@ -60,6 +60,18 @@ jobs:
     needs: build # build 잡이 성공해야만 실행됨
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Transfer docker-compose file
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
+          source: "docker-compose.yml"
+          target: "/home/ubuntu/eum-career"
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
@@ -67,24 +79,12 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           script: |
-            # docker-compose.yml 파일이 있는 곳으로 이동
             cd /home/ubuntu/eum-career
-
-            # DB 접속 정보를 담은 .env 파일 생성
             echo "DB_URL=${{ secrets.DB_URL }}" > .env
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-
-            # docker-compose.yml 파일의 이미지 태그를 방금 빌드한 최신 버전으로 교체
-            # ⭐️ [수정 3] sed 명령어 오타 수정
             sed -i 's|${{ env.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:.*|${{ env.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}|' docker-compose.yml
             sed -i 's|${{ env.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:.*|${{ env.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}|' docker-compose.yml
-
-            # Docker Hub에서 최신 이미지들을 받아오기
             docker-compose pull
-
-            # Docker Compose로 서비스들을 최신 버전으로 실행 (-d는 백그라운드 실행)
             docker-compose up -d
-
-            # 사용하지 않는 오래된 Docker 이미지들 정리해서 용량 확보
             docker image prune -f
