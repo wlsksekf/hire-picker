@@ -1,5 +1,6 @@
 # 예시용 yml파일(실제론 application-local을 씀)
 # Git에 커밋 O (공유용 설정 파일)
+# 이 파일을 복사해서 application-local.yml 파일을 만든 후, 아래 값들을 채워주세요.
 
 # 서버 포트 설정
 server:
