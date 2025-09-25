@@ -1,6 +1,6 @@
 name: EUM-CAREER CI/CD
 
-# main 브랜치에 push 이벤트가 발생하면 이 워크플로우를 실행
+# dev 브랜치에 push 이벤트가 발생하면 이 워크플로우를 실행
 on:
   push:
     branches: [ "dev" ]
@@ -17,6 +17,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      # ⭐️ [핵심 수정 1] 스프링 부트 애플리케이션 빌드 단계 추가
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build with Gradle
+        run: ./gradlew clean build
+        working-directory: ./backend
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -61,6 +72,7 @@ jobs:
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
             # docker-compose.yml 파일의 이미지 태그를 방금 빌드한 최신 버전으로 교체
+            # ⭐️ [핵심 수정 2] sed 명령어 오타 수정 (DOCKOER -> DOCKER)
             sed -i 's|${{ env.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:.*|${{ env.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}|' docker-compose.yml
             sed -i 's|${{ env.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:.*|${{ env.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}|' docker-compose.yml
 
