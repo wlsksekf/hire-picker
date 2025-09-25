@@ -1,6 +1,5 @@
-# 예시용 yml파일(실제론 application-local을 씀)
-# Git에 커밋 O (공유용 설정 파일)
-# 이 파일을 복사해서 application-local.yml 파일을 만든 후, 아래 값들을 채워주세요.
+# Git에 커밋하는 공용 설정 파일입니다.
+# 실제 값 대신 변수를 사용합니다.
 
 # 서버 포트 설정
 server:
@@ -11,7 +10,7 @@ spring:
   profiles:
     active: local
 
-# 데이터베이스 접속 정보 (실제 값은 application-local.yml 에서 주입)
+# 데이터베이스 접속 정보 (깃허브 액션 환경 변수 또는 로컬 환경 변수에서 주입)
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${DB_URL}
@@ -28,7 +27,12 @@ spring:
         show_sql: true
     defer-datasource-initialization: true
 
-# JWT (JSON Web Token) 시크릿 키 (실제 값은 외부에서 주입)
+# CI/CD 환경에서 테스트를 위한 설정
+  test:
+    database:
+      replace: none
+
+# JWT (JSON Web Token) 시크릿 키
 jwt:
   secret:
     key: ${JWT_SECRET_KEY}
