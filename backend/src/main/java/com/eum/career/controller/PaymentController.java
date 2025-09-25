@@ -1,4 +1,4 @@
-package com.example.demo.controller;
+package com.eum.career.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.json.simple.JSONObject;
