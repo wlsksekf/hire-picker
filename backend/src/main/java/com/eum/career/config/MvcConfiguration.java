@@ -1,4 +1,4 @@
-package com.example.demo.config;
+package com.eum.career.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;

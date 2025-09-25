@@ -1,0 +1,34 @@
+# 예시용 yml파일(실제론 application-local을 씀)
+# Git에 커밋 O (공유용 설정 파일)
+# 이 파일을 복사해서 application-local.yml 파일을 만든 후, 아래 값들을 채워주세요.
+
+# 서버 포트 설정
+server:
+  port: 8080
+
+# Spring Boot 프로필 설정 (기본으로 local 프로필을 활성화)
+spring:
+  profiles:
+    active: local
+
+# 데이터베이스 접속 정보 (실제 값은 application-local.yml 에서 주입)
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+# JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+    defer-datasource-initialization: true
+
+# JWT (JSON Web Token) 시크릿 키 (실제 값은 외부에서 주입)
+jwt:
+  secret:
+    key: ${JWT_SECRET_KEY}
