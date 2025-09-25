@@ -3,7 +3,7 @@ version: '3.8'
 services:
   backend:
     container_name: eum-career-backend
-    image: ${{ env.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+    image: $DOCKER_USERNAME/$BACKEND_IMAGE:$GITHUB_SHA
     ports:
       - "8080:8080"
     env_file:
@@ -13,7 +13,7 @@ services:
 
   frontend:
     container_name: eum-career-frontend
-    image: ${{ env.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+    image: $DOCKER_USERNAME/$FRONTEND_IMAGE:$GITHUB_SHA
     ports:
       - "80:80"
     depends_on:
