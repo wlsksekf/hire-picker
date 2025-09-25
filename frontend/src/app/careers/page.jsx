@@ -1,7 +1,7 @@
-import { Header } from "@/components/careers/Header";
-import { SearchSection } from "@/components/careers/SearchSection";
-import { JobFilters } from "@/components/careers/JobFilters";
-import { JobListings } from "@/components/careers/JobListings";
+import { Header } from "../../components/jobs/Header";
+import { SearchSection } from "../../components/jobs/SearchSection";
+import { JobFilters } from "../../components/jobs/JobFilters";
+import { JobListings } from "../../components/jobs/JobListings";
 import { Box, Container, Grid } from "@mui/material";
 
 export default function CareersPage() {
