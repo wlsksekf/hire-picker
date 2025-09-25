@@ -5,7 +5,7 @@ on:
     branches: [ "dev" ] # dev 브랜치에 푸시될 때 실행
 
 env:
-  DOCKER_USERNAME: jinanyagi # Docker Hub ID
+  DOCKER_USERNAME: jinaniyagi # Docker Hub ID
   BACKEND_IMAGE: eum-career-backend
   FRONTEND_IMAGE: eum-career-frontend
 
