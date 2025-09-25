@@ -30,7 +30,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Build with Gradle
-        run: ./gradlew clean build --spring.profiles.active=test
+        run: ./gradlew clean build --args='--spring.profiles.active=test'
         working-directory: ./backend
 
       - name: Login to Docker Hub
