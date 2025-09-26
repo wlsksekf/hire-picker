@@ -5,7 +5,7 @@ on:
     branches: [ "dev" ] # dev 브랜치에 푸시될 때 실행
 
 env:
-  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_USERNAME: jinaniyagi
   BACKEND_IMAGE: eum-career-backend
   FRONTEND_IMAGE: eum-career-frontend
 
@@ -64,8 +64,8 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          source: "docker-compose.yml"
-          target: "/home/ubuntu/eum-career"
+          source: "docker-compose.prod.yml"
+          target: "/home/ubuntu/eum-career/docker-compose.yml"
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
@@ -87,9 +87,10 @@ jobs:
             echo "FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}" >> .env
             echo "GITHUB_SHA=${{ github.sha }}" >> .env
             
-            # .env 파일을 참조하여 Docker Compose 실행
-            docker-compose --env-file ./.env pull
-            docker-compose --env-file ./.env up -d --remove-orphans
+            # .env 파일을 참조하여 Docker Compose 실행 (최신 버전 docker compose 사용)
+            docker compose --env-file ./.env down
+            docker compose --env-file ./.env pull
+            docker compose --env-file ./.env up -d
 
             # 불필요한 이미지 정리
             docker image prune -f

@@ -1,0 +1,40 @@
+services:
+  # 1. Nginx 리버스 프록시 (교통정리 담당)
+  nginx:
+    container_name: eum-career-nginx
+    image: nginx:1.23-alpine
+    restart: always
+    ports:
+      - "80:80" # 외부 사용자와는 이 컨테이너만 80번 포트로 만남
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf # 로컬의 nginx.conf를 컨테이너에 연결
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - eum-network
+
+  # 2. 프론트엔드 (Next.js 동적 서버)
+  frontend:
+    container_name: eum-career-frontend
+    image: ${DOCKER_USERNAME}/${FRONTEND_IMAGE}:${GITHUB_SHA}
+    restart: always
+    # 포트를 외부에 노출할 필요 없이, Nginx와 내부 네트워크로만 통신함
+    networks:
+      - eum-network
+
+  # 3. 백엔드 (Spring Boot API 서버)
+  backend:
+    container_name: eum-career-backend
+    image: ${DOCKER_USERNAME}/${BACKEND_IMAGE}:${GITHUB_SHA}
+    restart: always
+    environment:
+      - SPRING_DATASOURCE_URL=${DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+    networks:
+      - eum-network
+
+networks:
+  eum-network:
+    driver: bridge
