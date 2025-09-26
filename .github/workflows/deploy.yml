@@ -21,7 +21,7 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      
+
       - name: Grant execute permission for gradlew
         run: chmod +x ./backend/gradlew
 
@@ -58,14 +58,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Transfer docker-compose file
+      - name: Create directory on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
+          script: mkdir -p /home/ubuntu/eum-career
+
+      - name: Transfer files
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          source: "docker-compose.prod.yml"
-          target: "/home/ubuntu/eum-career/docker-compose.yml"
+          source: "docker-compose.prod.yml,nginx.conf"
+          target: "/home/ubuntu/eum-career"
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
@@ -76,21 +84,20 @@ jobs:
           script: |
             cd /home/ubuntu/eum-career
 
-            # .env 파일 생성 (모든 비밀 정보와 변수)
+            # .env 파일 생성
             echo "DB_URL=${{ secrets.DB_URL }}" > .env
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-            
-            # docker-compose.yml에서 사용할 환경 변수들 추가
             echo "DOCKER_USERNAME=${{ env.DOCKER_USERNAME }}" >> .env
             echo "BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}" >> .env
             echo "FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}" >> .env
             echo "GITHUB_SHA=${{ github.sha }}" >> .env
-            
-            # .env 파일을 참조하여 Docker Compose 실행 (최신 버전 docker compose 사용)
+
+            # docker-compose.prod.yml 파일의 이름을 docker-compose.yml로 변경
+            mv docker-compose.prod.yml docker-compose.yml
+
+            # Docker Compose 실행
             docker compose --env-file ./.env down
             docker compose --env-file ./.env pull
             docker compose --env-file ./.env up -d
-
-            # 불필요한 이미지 정리
             docker image prune -f
