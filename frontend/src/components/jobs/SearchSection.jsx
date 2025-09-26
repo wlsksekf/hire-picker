@@ -11,10 +11,10 @@ export function SearchSection() {
     }}>
       <Container>
         <Typography variant="h1" component="h1" gutterBottom>
-          사람과 사람을 잇다. 이음
+          사람을 잇다. 이음
         </Typography>
         <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-          당신과 이어질 사람과 기업을 검색하세요
+          당신과 이어질 기업을 검색하세요
         </Typography>
         <Box
           component="form"
