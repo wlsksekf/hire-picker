@@ -40,6 +40,7 @@ Thumbs.db
 application-local.yml
 secret*.yml
 secret*.yaml
+/backend/src/test/resources/application.yml
 
 
 # =======================================
