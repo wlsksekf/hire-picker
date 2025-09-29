@@ -76,7 +76,7 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          source: "docker-compose.prod.yml,nginx.conf"
+          source: "docker-compose.prod.yml,frontend/nginx.conf"
           target: "/home/ubuntu/hirepicker-career"
 
       - name: Deploy to EC2

@@ -1,4 +1,4 @@
-# ✨ hirepicker-career (hirepicker: 하이어피커)
+# ✨ hirepicker (하이어피커)
 
 > Your next career starts here. / 당신의 다음 커리어를 'hirepicker'에서.
 
@@ -56,8 +56,8 @@
 
 1.  **Clone the repository**
     ```bash
-    git clone [https://github.com/너의-팀-계정/hirepicker-career.git](https://github.com/너의-팀-계정/hirepicker-career.git)
-    cd hirepicker-career
+    git clone https://github.com/너의-팀-계정/hirepicker.git
+    cd hirepicker
     ```
 
 2.  **Run Frontend**
