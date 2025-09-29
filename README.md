@@ -1,15 +1,15 @@
-# ✨ joba-career (joba: 잡아)
+# ✨ hirepicker-career (hirepicker: 하이어피커)
 
-> Your next career starts here. / 당신의 다음 커리어를 'joba'에서.
+> Your next career starts here. / 당신의 다음 커리어를 'hirepicker'에서.
 
 ## 📖 About / 프로젝트 소개
 
-'joba' is a comprehensive career platform that goes beyond simply listing jobs. It supports users from resume management to seamless communication with companies, facilitating a successful career journey.
+'hirepicker' is a comprehensive career platform that goes beyond simply listing jobs. It supports users from resume management to seamless communication with companies, facilitating a successful career journey.
 
 <details>
 <summary>🇰🇷 한국어 설명 (Korean Description)</summary>
 
-'joba'은 단순히 일자리를 나열하는 것을 넘어, 사용자의 이력서 관리부터 기업과의 원활한 소통까지 지원하여 성공적인 커리어 여정을 돕는 서비스입니다. 저희 팀은 [**이 프로젝트를 통해 해결하고 싶었던 문제점이나 개발 동기**]를 바탕으로 이 프로젝트를 시작했습니다.
+'hirepicker'은 단순히 일자리를 나열하는 것을 넘어, 사용자의 이력서 관리부터 기업과의 원활한 소통까지 지원하여 성공적인 커리어 여정을 돕는 서비스입니다. 저희 팀은 [**이 프로젝트를 통해 해결하고 싶었던 문제점이나 개발 동기**]를 바탕으로 이 프로젝트를 시작했습니다.
 
 </details>
 
@@ -56,8 +56,8 @@
 
 1.  **Clone the repository**
     ```bash
-    git clone [https://github.com/너의-팀-계정/joba-career.git](https://github.com/너의-팀-계정/joba-career.git)
-    cd joba-career
+    git clone [https://github.com/너의-팀-계정/hirepicker-career.git](https://github.com/너의-팀-계정/hirepicker-career.git)
+    cd hirepicker-career
     ```
 
 2.  **Run Frontend**

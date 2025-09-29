@@ -1,10 +1,10 @@
-package com.joba.career;
+package com.hirepicker.career;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class JobaCareerApplicationTests {
+class HirepickerCareerApplicationTests {
 
 	@Test
 	void contextLoads() {

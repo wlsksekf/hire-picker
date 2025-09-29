@@ -6,9 +6,9 @@ server:
   port: 8080
 
 # Spring Boot 프로필 설정 (기본으로 local 프로필을 활성화)
-# spring:
-#   profiles:
-#     active: local
+spring:
+  profiles:
+    active: local
 
 # 데이터베이스 접속 정보 (깃허브 액션 환경 변수 또는 로컬 환경 변수에서 주입)
   datasource:
