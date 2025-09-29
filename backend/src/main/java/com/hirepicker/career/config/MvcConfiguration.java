@@ -1,4 +1,4 @@
-package com.joba.career.config;
+package com.hirepicker.career.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;

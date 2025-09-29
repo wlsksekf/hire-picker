@@ -1,4 +1,4 @@
-package com.joba.career.controller;
+package com.hirepicker.career.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

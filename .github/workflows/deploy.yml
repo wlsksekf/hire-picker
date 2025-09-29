@@ -1,4 +1,4 @@
-name: JOBA-CAREER CI/CD
+name: HIREPICKER-CAREER CI/CD
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
 
 env:
   DOCKER_USERNAME: jinaniyagi
-  BACKEND_IMAGE: joba-career-backend
-  FRONTEND_IMAGE: joba-career-frontend
+  BACKEND_IMAGE: hirepicker-career-backend
+  FRONTEND_IMAGE: hirepicker-career-frontend
 
 jobs:
   build:
@@ -64,7 +64,7 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          script: mkdir -p /home/ubuntu/joba-career
+          script: mkdir -p /home/ubuntu/hirepicker-career
 
       - name: Transfer files
         uses: appleboy/scp-action@master
@@ -73,7 +73,7 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           source: "docker-compose.prod.yml,nginx.conf"
-          target: "/home/ubuntu/joba-career"
+          target: "/home/ubuntu/hirepicker-career"
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
@@ -82,7 +82,7 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           script: |
-            cd /home/ubuntu/joba-career
+            cd /home/ubuntu/hirepicker-career
 
             # .env 파일 생성
             echo "DB_URL=${{ secrets.DB_URL }}" > .env

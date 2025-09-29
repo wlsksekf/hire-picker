@@ -1,4 +1,4 @@
-package com.joba.career.controller;
+package com.hirepicker.career.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.json.simple.JSONObject;
