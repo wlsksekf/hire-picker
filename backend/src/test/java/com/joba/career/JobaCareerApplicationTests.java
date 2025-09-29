@@ -1,10 +1,10 @@
-package com.eum.career;
+package com.joba.career;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class EumCareerApplicationTests {
+class JobaCareerApplicationTests {
 
 	@Test
 	void contextLoads() {

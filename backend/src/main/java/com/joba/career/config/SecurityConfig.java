@@ -1,4 +1,4 @@
-package com.eum.career.config;
+package com.joba.career.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
