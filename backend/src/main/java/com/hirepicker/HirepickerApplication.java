@@ -1,13 +1,13 @@
-package com.hirepicker.career;
+package com.hirepicker;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class HirepickerCareerApplication {
+public class HirepickerApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(HirepickerCareerApplication.class, args);
+		SpringApplication.run(HirepickerApplication.class, args);
 	}
 
 }
