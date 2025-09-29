@@ -9,4 +9,4 @@ spring:
     password: HEWT9WcR31v4opqFSFOP
   jpa:
     hibernate:
-      ddl-auto: update # 테스트 시에는 'create' 또는 'create-drop'을 권장합니다.
+      ddl-auto: update # 테스트 시에는 'create' 또는 'create-drop'을 권장합니다
