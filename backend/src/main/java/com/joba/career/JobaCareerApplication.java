@@ -1,13 +1,13 @@
-package com.eum.career;
+package com.joba.career;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class EumCareerApplication {
+public class JobaCareerApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(EumCareerApplication.class, args);
+		SpringApplication.run(JobaCareerApplication.class, args);
 	}
 
 }
