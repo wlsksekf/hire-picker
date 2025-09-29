@@ -30,6 +30,7 @@ public class PaymentController {
     private static final String API_SECRET_KEY = "test_sk_zXLkKEypNArWmo50nX3lmeaxYG5R";
     private final Map<String, String> billingKeyMap = new HashMap<>();
 
+    @SuppressWarnings("unchecked")
     @RequestMapping(value = {"/confirm/widget", "/confirm/payment"})
     public ResponseEntity<JSONObject> confirmPayment(HttpServletRequest request, @RequestBody String jsonBody) throws Exception {
         String secretKey = request.getRequestURI().contains("/confirm/payment") ? API_SECRET_KEY : WIDGET_SECRET_KEY;
@@ -38,6 +39,7 @@ public class PaymentController {
         return ResponseEntity.status(statusCode).body(response);
     }
 
+    @SuppressWarnings("unchecked")
     @RequestMapping(value = "/confirm-billing")
     public ResponseEntity<JSONObject> confirmBilling(@RequestBody String jsonBody) throws Exception {
         JSONObject requestData = parseRequestData(jsonBody);
@@ -46,6 +48,7 @@ public class PaymentController {
         return ResponseEntity.status(response.containsKey("error") ? 400 : 200).body(response);
     }
 
+    @SuppressWarnings("unchecked")
     @RequestMapping(value = "/issue-billing-key")
     public ResponseEntity<JSONObject> issueBillingKey(@RequestBody String jsonBody) throws Exception {
         JSONObject requestData = parseRequestData(jsonBody);
@@ -58,6 +61,7 @@ public class PaymentController {
         return ResponseEntity.status(response.containsKey("error") ? 400 : 200).body(response);
     }
 
+    @SuppressWarnings("unchecked")
     @RequestMapping(value = "/callback-auth", method = RequestMethod.GET)
     public ResponseEntity<JSONObject> callbackAuth(@RequestParam String customerKey, @RequestParam String code) throws Exception {
         JSONObject requestData = new JSONObject();
@@ -73,6 +77,7 @@ public class PaymentController {
         return ResponseEntity.status(response.containsKey("error") ? 400 : 200).body(response);
     }
 
+    @SuppressWarnings("unchecked")
     @RequestMapping(value = "/confirm/brandpay", method = RequestMethod.POST, consumes = "application/json")
     public ResponseEntity<JSONObject> confirmBrandpay(@RequestBody String jsonBody) throws Exception {
         JSONObject requestData = parseRequestData(jsonBody);
@@ -81,6 +86,7 @@ public class PaymentController {
         return ResponseEntity.status(response.containsKey("error") ? 400 : 200).body(response);
     }
 
+    @SuppressWarnings("unchecked")
     private JSONObject parseRequestData(String jsonBody) {
         try {
             return (JSONObject) new JSONParser().parse(jsonBody);
@@ -90,6 +96,7 @@ public class PaymentController {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private JSONObject sendRequest(JSONObject requestData, String secretKey, String urlString) throws IOException {
         HttpURLConnection connection = createConnection(secretKey, urlString);
         try (OutputStream os = connection.getOutputStream()) {
