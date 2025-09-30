@@ -70,24 +70,30 @@ jobs:
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           script: mkdir -p /home/ubuntu/hirepicker
 
-      - name: Remove old nginx.conf directory and list files
+      - name: Remove old nginx.conf
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          script: |
-            sudo rm -rf /home/ubuntu/hirepicker/nginx.conf
-            echo "--- After rm, before scp ---"
-            ls -la /home/ubuntu/hirepicker
+          script: rm -rf /home/ubuntu/hirepicker/nginx.conf
 
-      - name: Transfer files
+      - name: Transfer docker-compose.prod.yml
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          source: "docker-compose.prod.yml,frontend/nginx.conf"
+          source: "docker-compose.prod.yml"
+          target: "/home/ubuntu/hirepicker"
+
+      - name: Transfer nginx.conf
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
+          source: "frontend/nginx.conf"
           target: "/home/ubuntu/hirepicker"
 
       - name: Deploy to EC2
@@ -99,11 +105,23 @@ jobs:
           script: |
             cd /home/ubuntu/hirepicker
 
-            echo "--- After scp, before compose up ---"
-            ls -la
-
             # .env 파일 생성
             echo "DB_URL=${{ secrets.DB_URL }}" > .env
+            echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            echo "DOCKER_USERNAME=${{ env.DOCKER_USERNAME }}" >> .env
+            echo "BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}" >> .env
+            echo "FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}" >> .env
+            echo "GITHUB_SHA=${{ github.sha }}" >> .env
+
+            # docker-compose.prod.yml 파일의 이름을 docker-compose.yml로 변경
+            mv docker-compose.prod.yml docker-compose.yml
+
+            # Docker Compose 실행
+            docker compose --env-file ./.env down
+            docker compose --env-file ./.env pull
+            docker compose --env-file ./.env up -d
+            docker image prune -f
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
             echo "DOCKER_USERNAME=${{ env.DOCKER_USERNAME }}" >> .env
