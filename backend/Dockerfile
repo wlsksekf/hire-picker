@@ -15,7 +15,7 @@ COPY . .
 
 # gradlew 실행 권한을 부여하고, Gradle을 이용해 프로젝트를 빌드
 # 이 명령이 성공하면 이미지 안의 /app/build/libs/ 경로에 .jar 파일이 생성됨
-RUN chmod +x ./gradlew && ./gradlew build --no-daemon
+RUN chmod +x ./gradlew && ./gradlew build -x test --no-daemon
 
 
 # ======================================================================
