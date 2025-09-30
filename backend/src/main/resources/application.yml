@@ -17,6 +17,12 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
+  management:
+  metrics:
+    enable:
+      process:
+        files: false
+
 # JPA 설정
   jpa:
     hibernate:
