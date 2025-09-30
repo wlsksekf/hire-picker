@@ -15,7 +15,7 @@ services:
   backend:
     container_name: local-backend
     build: ./backend
-    restart: always
+    restart: no
     ports:
       - "8080:8080"
     depends_on:
@@ -29,7 +29,7 @@ services:
   frontend:
     container_name: local-frontend
     build: ./frontend
-    restart: always
+    restart: no
     networks:
       - local-network
 
