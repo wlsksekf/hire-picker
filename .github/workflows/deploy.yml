@@ -97,10 +97,10 @@ jobs:
             # Docker Compose 실행
             
             # 1. 최신 이미지를 Docker Hub에서 받아옴
-            docker-compose -f docker-compose.prod.yml --env-file ./.env pull
+            docker compose -f docker-compose.prod.yml --env-file ./.env pull
             
             # 2. 기존 컨테이너를 내리고, 새로 받은 이미지로 컨테이너를 다시 올림
-            docker-compose -f docker-compose.prod.yml --env-file ./.env up -d --remove-orphans
+            docker compose -f docker-compose.prod.yml --env-file ./.env up -d --remove-orphans
             
             # 3. 현재 사용하지 않는 모든 Docker 리소스(컨테이너, 이미지, 네트워크 등)를 삭제하여 디스크 용량 확보
             docker system prune -af
