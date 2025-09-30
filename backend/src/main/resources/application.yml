@@ -10,20 +10,21 @@ spring:
   profiles:
     active: local
 
-# 데이터베이스 접속 정보 (깃허브 액션 환경 변수 또는 로컬 환경 변수에서 주입)
+  # 데이터베이스 접속 정보 (깃허브 액션 환경 변수 또는 로컬 환경 변수에서 주입)
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
+  # Actuator 메트릭 관련 설정 (들여쓰기 수정됨)
   management:
-  metrics:
-    enable:
-      process:
-        files: false
+    metrics:
+      enable:
+        process:
+          files: false
 
-# JPA 설정
+  # JPA 설정
   jpa:
     hibernate:
       ddl-auto: update
