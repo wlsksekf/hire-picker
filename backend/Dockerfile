@@ -23,7 +23,7 @@ RUN chmod +x ./gradlew && ./gradlew build --no-daemon
 # ======================================================================
 
 # 실제 앱을 실행할 때는 가벼운 JRE(Java 실행 환경) 이미지를 사용
-FROM openjdk:17-jre-slim
+FROM openjdk:17-jre-slim-bullseye
 
 # 작업 디렉토리를 /app으로 설정
 WORKDIR /app
