@@ -18,7 +18,7 @@ services:
   frontend:
     container_name: hirepicker-frontend
     image: ${DOCKER_USERNAME}/${FRONTEND_IMAGE}:${GITHUB_SHA}
-    restart: always
+    restart: no
     # 포트를 외부에 노출할 필요 없이, Nginx와 내부 네트워크로만 통신함
     networks:
       - hirepicker-network
@@ -27,7 +27,7 @@ services:
   backend:
     container_name: hirepicker-backend
     image: ${DOCKER_USERNAME}/${BACKEND_IMAGE}:${GITHUB_SHA}
-    restart: always
+    restart: no
     environment:
       - SPRING_DATASOURCE_URL=${DB_URL}
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
