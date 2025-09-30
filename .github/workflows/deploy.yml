@@ -9,7 +9,7 @@ on:
 
 # 워크플로우 전체에서 사용할 변수 설정
 env:
-  DOCKER_USERNAME: jinaniyagi             # Docker Hub 사용자 이름
+  DOCKER_USERNAME: jinaniyagi             # 본인 Docker Hub 사용자 이름
   BACKEND_IMAGE: hirepicker-backend       # Docker Hub에 저장될 백엔드 이미지 이름
   FRONTEND_IMAGE: hirepicker-frontend     # Docker Hub에 저장될 프론트엔드 이미지 이름
 
@@ -29,11 +29,10 @@ jobs:
         uses: docker/login-action@v2
         with:
           username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }} # DOCKER_TOKEN은 깃허브 Secret에 꼭 등록해야 함
+          password: ${{ secrets.DOCKER_TOKEN }}
 
       # 3. 백엔드 Docker 이미지 빌드 및 Docker Hub에 푸시
-      # Dockerfile 내에서 Gradle 빌드가 일어나도록 구성하는 것이 더 효율적 (Multi-stage build)
-      # 기존 워크플로우의 별도 Gradle 빌드 단계는 Docker 빌드와 중복되므로 제거함
+      # (backend/Dockerfile이 Multi-stage build로 구성되어 있어야 함)
       - name: Build and push Backend image
         uses: docker/build-push-action@v4
         with:
@@ -43,6 +42,7 @@ jobs:
           tags: ${{ env.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }} # 이미지 태그 (예: jinaniyagi/hirepicker-backend:commit-hash)
 
       # 4. 프론트엔드 Docker 이미지 빌드 및 Docker Hub에 푸시
+      # (frontend/Dockerfile이 Multi-stage build로 구성되어 있어야 함)
       - name: Build and push Frontend image
         uses: docker/build-push-action@v4
         with:
@@ -58,15 +58,14 @@ jobs:
     needs: build # build 작업이 성공적으로 끝나야만 이 deploy 작업을 실행
     runs-on: ubuntu-latest
     steps:
-      # 1. 배포에 필요한 설정 파일들을 EC2 서버로 전송 (단 한번만 접속)
-      # nginx.conf는 프로젝트 최상단에 위치시키는 것을 권장
+      # 1. 배포에 필요한 설정 파일들을 EC2 서버로 전송
       - name: Transfer config files to EC2
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          source: "docker-compose.prod.yml,nginx.conf" # 쉼표로 여러 파일 지정 가능
+          source: "docker-compose.prod.yml,nginx.conf" # 프로젝트 최상단 폴더에 파일들이 위치해야 함
           target: "/home/ubuntu/hirepicker"
 
       # 2. EC2 서버에 SSH로 접속해서 배포 스크립트 실행
@@ -77,7 +76,8 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           script: |
-            # 작업 디렉토리로 이동
+            # 작업 디렉토리 생성 및 이동 (없으면 생성)
+            mkdir -p /home/ubuntu/hirepicker
             cd /home/ubuntu/hirepicker
 
             # .env 파일을 생성. 기존 내용을 덮어쓰므로 항상 최신 상태를 유지.
@@ -89,14 +89,13 @@ jobs:
             echo "FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}" >> .env
             echo "GITHUB_SHA=${{ github.sha }}" >> .env
 
-            # Docker Compose 실행 (가장 중요!)
-            # -f 옵션으로 prod용 파일을 명시. mv 명령어로 이름을 바꾸는 불안정한 방식 대신 사용.
-            # --env-file 옵션으로 .env 파일을 명시적으로 사용.
+            # Docker Compose 실행
+            # -f 옵션으로 prod용 파일을 명시하여 안정성을 높임
             
             # 1. 최신 이미지를 Docker Hub에서 받아옴
             docker-compose -f docker-compose.prod.yml --env-file ./.env pull
             
-            # 2. 기존 컨테이너를 내리고, 새로 받은 이미지로 컨테이너를 다시 올림 (무중단 배포를 원하면 blue-green 전략 등을 고려)
+            # 2. 기존 컨테이너를 내리고, 새로 받은 이미지로 컨테이너를 다시 올림
             docker-compose -f docker-compose.prod.yml --env-file ./.env up -d --remove-orphans
             
             # 3. 현재 사용하지 않는 오래된 Docker 이미지들을 삭제하여 디스크 용량 확보
