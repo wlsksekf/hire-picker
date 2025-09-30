@@ -1,13 +1,15 @@
+# /home/ubuntu/hirepicker/docker-compose.prod.yml
+
 services:
   # 1. Nginx 리버스 프록시 (교통정리 담당)
   nginx:
     container_name: hirepicker-nginx
     image: nginx:1.23-alpine
-    restart: always
+    restart: on-failure # Nginx도 on-failure로 변경하는 것이 더 안정적
     ports:
-      - "80:80" # 외부 사용자와는 이 컨테이너만 80번 포트로 만남
+      - "80:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf # 로컬의 nginx.conf를 컨테이너에 연결
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - frontend
       - backend
@@ -18,8 +20,7 @@ services:
   frontend:
     container_name: hirepicker-frontend
     image: ${DOCKER_USERNAME}/${FRONTEND_IMAGE}:${GITHUB_SHA}
-    restart: no
-    # 포트를 외부에 노출할 필요 없이, Nginx와 내부 네트워크로만 통신함
+    restart: on-failure # 문법에 맞게 수정
     networks:
       - hirepicker-network
 
@@ -27,11 +28,18 @@ services:
   backend:
     container_name: hirepicker-backend
     image: ${DOCKER_USERNAME}/${BACKEND_IMAGE}:${GITHUB_SHA}
-    restart: no
+    restart: on-failure # 문법에 맞게 수정
     environment:
       - SPRING_DATASOURCE_URL=${DB_URL}
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+    # Health Check를 추가하여 서비스 안정성 확보
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - hirepicker-network
 
