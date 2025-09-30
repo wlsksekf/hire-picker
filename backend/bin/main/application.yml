@@ -22,9 +22,9 @@ spring:
       ddl-auto: update
     defer-datasource-initialization: true
 
-jwt:
-  secret:
-    key: ${JWT_SECRET_KEY}
+# jwt:
+#   secret:
+#     key: ${JWT_SECRET_KEY}
 
 ---
 
@@ -50,16 +50,16 @@ spring:
   config:
     activate:
       on-profile: "prod"
-
-  # 문제를 해결하는 핵심 코드
-  management:
-    metrics:
-      enable:
-        process:
-          files: false
   # 운영 환경에서는 SQL 로그를 보지 않도록 설정
   jpa:
     properties:
       hibernate:
         format_sql: false
         show_sql: false
+
+# 문제를 해결하는 핵심 코드
+management:
+  metrics:
+    binders:
+      system:
+        enabled: false
