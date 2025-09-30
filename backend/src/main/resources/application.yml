@@ -19,7 +19,7 @@ spring:
   # 공용 JPA 설정
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none # 오토 업데이트 막아놓음
     defer-datasource-initialization: true
 
 # jwt:
