@@ -70,13 +70,16 @@ jobs:
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           script: mkdir -p /home/ubuntu/hirepicker
 
-      - name: Remove old nginx.conf directory
+      - name: Remove old nginx.conf directory and list files
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          script: sudo rm -rf /home/ubuntu/hirepicker/nginx.conf
+          script: |
+            sudo rm -rf /home/ubuntu/hirepicker/nginx.conf
+            echo "--- After rm, before scp ---"
+            ls -la /home/ubuntu/hirepicker
 
       - name: Transfer files
         uses: appleboy/scp-action@master
@@ -95,6 +98,9 @@ jobs:
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           script: |
             cd /home/ubuntu/hirepicker
+
+            echo "--- After scp, before compose up ---"
+            ls -la
 
             # .env 파일 생성
             echo "DB_URL=${{ secrets.DB_URL }}" > .env
