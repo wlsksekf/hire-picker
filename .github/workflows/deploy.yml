@@ -102,5 +102,5 @@ jobs:
             # 2. 기존 컨테이너를 내리고, 새로 받은 이미지로 컨테이너를 다시 올림
             docker-compose -f docker-compose.prod.yml --env-file ./.env up -d --remove-orphans
             
-            # 3. 현재 사용하지 않는 오래된 Docker 이미지들을 삭제하여 디스크 용량 확보
-            docker image prune -f
+            # 3. 현재 사용하지 않는 모든 Docker 리소스(컨테이너, 이미지, 네트워크 등)를 삭제하여 디스크 용량 확보
+            docker system prune -af
