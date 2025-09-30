@@ -81,11 +81,10 @@ jobs:
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           script: |
-            # 작업 디렉토리 생성 및 이동 (없으면 생성)
-            mkdir -p /home/ubuntu/hirepicker
+            # 작업 디렉토리로 이동
             cd /home/ubuntu/hirepicker
 
-            # .env 파일을 생성. 기존 내용을 덮어쓰므로 항상 최신 상태를 유지.
+            # .env 파일 생성
             echo "DB_URL=${{ secrets.DB_URL }}" > .env
             echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
@@ -95,12 +94,17 @@ jobs:
             echo "GITHUB_SHA=${{ github.sha }}" >> .env
 
             # Docker Compose 실행
-            
-            # 1. 최신 이미지를 Docker Hub에서 받아옴
             docker-compose -f docker-compose.prod.yml --env-file ./.env pull
-            
-            # 2. 기존 컨테이너를 내리고, 새로 받은 이미지로 컨테이너를 다시 올림
             docker-compose -f docker-compose.prod.yml --env-file ./.env up -d --remove-orphans
             
-            # 3. 현재 사용하지 않는 모든 Docker 리소스(컨테이너, 이미지, 네트워크 등)를 삭제하여 디스크 용량 확보
-            docker system prune -af
+            # 컨테이너가 시작되거나 충돌할 시간을 잠시 줍니다 (15초).
+            echo "Waiting for 15 seconds to check container status..."
+            sleep 15
+
+            # 모든 컨테이너의 현재 상태를 확인합니다.
+            echo "--- Checking container status (docker-compose ps) ---"
+            docker-compose -f docker-compose.prod.yml ps
+
+            # 모든 컨테이너의 로그를 출력하여 오류를 확인합니다.
+            echo "--- Displaying container logs (docker-compose logs) ---"
+            docker-compose -f docker-compose.prod.yml logs
