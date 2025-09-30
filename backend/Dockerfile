@@ -22,8 +22,8 @@ RUN chmod +x ./gradlew && ./gradlew build --no-daemon
 #  2. Release Stage: 빌드된 .jar 파일을 실행하는 최종 이미지를 만드는 단계
 # ======================================================================
 
-# 실제 앱을 실행할 때는 가벼운 JRE(Java 실행 환경) 이미지를 사용
-FROM openjdk:17-jre-slim-bullseye
+# 실제 앱을 실행할 때는 가벼운 이미지를 사용
+FROM openjdk:17-jdk-slim
 
 # 작업 디렉토리를 /app으로 설정
 WORKDIR /app
