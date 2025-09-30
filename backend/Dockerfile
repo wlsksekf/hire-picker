@@ -36,4 +36,4 @@ COPY --from=builder /app/build/libs/*.jar app.jar
 EXPOSE 8080
 
 # 컨테이너가 시작될 때 "java -jar app.jar" 명령을 실행하여 애플리케이션을 구동
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Djdk.management.container=false", "-jar", "app.jar"]
