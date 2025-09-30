@@ -29,6 +29,8 @@ services:
     container_name: hirepicker-backend
     image: ${DOCKER_USERNAME}/${BACKEND_IMAGE}:${GITHUB_SHA}
     restart: on-failure # 문법에 맞게 수정
+    security_opt:
+      - seccomp:unconfined
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - SPRING_DATASOURCE_URL=${DB_URL}
