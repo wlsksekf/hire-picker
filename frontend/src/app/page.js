@@ -17,6 +17,7 @@ import {
 import StyledSearchBar from '@/components/StyledSearchBar';
 import AnimatedButton from '@/components/AnimatedButton';
 import StyledFilterChip from '@/components/StyledFilterChip';
+import SearchAnimation from '@/components/SearchAnimation';
 
 // --- 필터 데이터 및 색상 정의 ---
 const EXP_COLOR = '#004080';    // 경력 (oklch 변환 네이비)
@@ -68,10 +69,10 @@ const MainPage = () => {
           Just Pick.
         </Typography>
         <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-          사람과 기업을 검색하세요.
+          사람과 기업을 검색하세요。
         </Typography>
 
-        <StyledSearchBar onFilterClick={handleFilterToggle} isFilterOpen={filterOpen} />
+        <SearchAnimation onFilterClick={handleFilterToggle} isFilterOpen={filterOpen} />
 
         <Collapse in={filterOpen} sx={{ mt: 2 }}>
           <Paper sx={{ maxWidth: '700px', margin: 'auto', p: 3, borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>

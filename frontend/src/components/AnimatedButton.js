@@ -4,7 +4,7 @@ import Button from '@mui/material/Button';
 
 const StyledButton = styled(Button)(({ theme, ownerState }) => {
   // ownerState가 undefined일 경우를 대비하여 기본값 {} 할당
-  const { color = 'primary' } = ownerState || {}; 
+  const { color = 'primary' } = ownerState || {};
   const mainColor = theme.palette[color]?.main || theme.palette.primary.main;
   const contrastColor = theme.palette.common.white; // 호버 시 글자색은 흰색으로 고정
 

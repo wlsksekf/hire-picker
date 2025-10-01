@@ -7,11 +7,11 @@ import AnimatedButton from './AnimatedButton';
 
 const Header = () => {
   return (
-    <AppBar 
-      position="sticky" 
-      color="default" 
-      sx={{ 
-        boxShadow: 'none', 
+    <AppBar
+      position="sticky"
+      color="default"
+      sx={{
+        boxShadow: 'none',
         borderBottom: '1px solid #e0e0e0',
         backgroundColor: 'white'
       }}
@@ -19,7 +19,7 @@ const Header = () => {
       <Toolbar>
         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
           <Link href="/" passHref style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
-            <img src="/logo.png" alt="HirePicker Logo" width="40" height="40" style={{ marginRight: '8px' }} />
+            <img src="/claw.png" alt="HirePicker Logo" width="40" height="40" style={{ marginRight: '8px' }} />
             <Typography variant="h6" component="span" fontWeight="bold">
               HirePicker
             </Typography>
