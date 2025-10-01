@@ -1,37 +1,28 @@
 services:
-  db:
-    container_name: local-db
-    image: mysql:8.0
-    command: --default-authentication-plugin=mysql_native_password
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: resume
-    ports:
-      - "3306:3306"
-    networks:
-      - local-network
-
   backend:
     container_name: local-backend
     build: ./backend
     restart: on-failure
     ports:
       - "8080:8080"
-    depends_on:
-      - db
-    networks:
-      - local-network
-    # 로컬용 application.yml을 사용하도록 환경 변수 설정
     environment:
       - SPRING_PROFILES_ACTIVE=local
+      - DB_URL=${DB_URL}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
 
   frontend:
     container_name: local-frontend
     build: ./frontend
     restart: on-failure
-    networks:
-      - local-network
+    ports:
+      - "3000:3000"
+    environment:
+      - WATCHPACK_POLLING=true
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
 
   nginx:
     container_name: local-nginx
@@ -44,9 +35,3 @@ services:
     depends_on:
       - frontend
       - backend
-    networks:
-      - local-network
-
-networks:
-  local-network:
-    driver: bridge
