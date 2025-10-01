@@ -66,7 +66,7 @@ const MainPage = () => {
       {/* 1. 검색 영역 */}
       <Box sx={{ textAlign: 'center', py: 8 }}>
         <Typography variant="h2" component="h1" fontWeight="bold" gutterBottom>
-          Just Pick.
+          Just Pick123.
         </Typography>
         <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
           사람과 기업을 검색하세요。
