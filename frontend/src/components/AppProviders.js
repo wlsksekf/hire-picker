@@ -34,13 +34,13 @@ const getTheme = (mode) => {
       dark: 'oklch(0.60 0.30 165)',
       contrastText: '#000000',
     },
-      background: {
-        default: '#2d2d2d',
-        paper: '#2d2d2d',
-      },
+    background: {
+      default: mode === 'light' ? '#ffffff' : '#2d2d2d',
+      paper: mode === 'light' ? '#ffffff' : '#2d2d2d',
+    },
     text: {
-      primary: mode === 'light' ? '#333D4B' : '#E5E8EB',
-      secondary: mode === 'light' ? '#8B95A1' : '#C9CDD2',
+      primary: mode === 'light' ? '#333D4B' : '#ffffff',
+      secondary: mode === 'light' ? '#8B95A1' : '#ffffff',
     },
     filters: {},
   };
