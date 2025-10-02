@@ -26,7 +26,7 @@ const FilterSection = ({ title, options, selectedOptions, onFilterChange, color 
               sx={{
                 fontWeight: 'bold',
                 borderColor: isSelected ? selectedBorderColor : unselectedBorderColor,
-                color: isSelected ? 'white' : color,
+                color: 'black',
                 ...(isSelected
                   ? {
                       backgroundColor: color, // 선택 시 필터 색상

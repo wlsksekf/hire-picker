@@ -102,11 +102,11 @@ const MainPage = () => {
                   <Typography variant="body1" color="text.secondary">{job.company}</Typography>
                   <Typography variant="h5" fontWeight="bold">{job.title}</Typography>
                   <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                    <Chip label={`경력: ${job.experience}`} sx={{ backgroundColor: theme.palette.filters.experienceLevel, color: 'white', fontWeight: 'bold' }} />
-                    <Chip label={`학력: ${job.education}`} sx={{ backgroundColor: theme.palette.filters.educationLevel, color: 'white', fontWeight: 'bold' }} />
-                    <Chip label={`지역: ${job.location}`} sx={{ backgroundColor: theme.palette.filters.location, color: 'white', fontWeight: 'bold' }} />
+                    <Chip label={`경력: ${job.experience}`} sx={{ backgroundColor: theme.palette.filters.experienceLevel, color: 'black', fontWeight: 'bold' }} />
+                    <Chip label={`학력: ${job.education}`} sx={{ backgroundColor: theme.palette.filters.educationLevel, color: 'black', fontWeight: 'bold' }} />
+                    <Chip label={`지역: ${job.location}`} sx={{ backgroundColor: theme.palette.filters.location, color: 'black', fontWeight: 'bold' }} />
                     {job.skills.length > 0 && (
-                      <Chip label={job.skills[0]} sx={{ backgroundColor: theme.palette.filters.jobField, color: 'white', fontWeight: 'bold' }} />
+                      <Chip label={job.skills[0]} sx={{ backgroundColor: theme.palette.filters.jobField, color: 'black', fontWeight: 'bold' }} />
                     )}
                   </Box>
                 </CardContent>
