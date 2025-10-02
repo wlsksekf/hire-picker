@@ -4,16 +4,17 @@ import React from 'react';
 import { AppBar, Toolbar, Typography, Box } from '@mui/material';
 import Link from 'next/link';
 import AnimatedButton from './AnimatedButton';
+import DarkModeSwitch from './DarkModeSwitch';
 
-const Header = () => {
+const Header = ({ mode, setMode }) => {
   return (
     <AppBar
       position="sticky"
       color="default"
       sx={{
         boxShadow: 'none',
-        borderBottom: '1px solid #e0e0e0',
-        backgroundColor: 'white'
+        borderBottom: '1px solid',
+        borderColor: 'divider',
       }}
     >
       <Toolbar>
@@ -26,8 +27,9 @@ const Header = () => {
           </Link>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <DarkModeSwitch mode={mode} setMode={setMode} />
           <Link href="/login" passHref style={{ textDecoration: 'none' }}>
-            <AnimatedButton color="primary" sx={{ fontSize: '12px', padding: '6px 12px', mr: 1 }}>로그인</AnimatedButton>
+            <AnimatedButton color="primary" sx={{ fontSize: '12px', padding: '6px 12px', ml: 2 }}>로그인</AnimatedButton>
           </Link>
           <Link href="/signup" passHref style={{ textDecoration: 'none' }}>
             <AnimatedButton color="primary" sx={{ fontSize: '12px', padding: '6px 12px', mr: 1 }}>회원가입</AnimatedButton>

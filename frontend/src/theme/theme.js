@@ -15,6 +15,37 @@ const theme = extendTheme({
         filters: filterColors,
       },
     },
+    dark: {
+      palette: {
+        primary: {
+          main: 'oklch(0.70 0.30 165)',
+          light: 'oklch(0.80 0.30 165)',
+          dark: 'oklch(0.60 0.30 165)',
+          contrastText: '#ffffff',
+        },
+        background: {
+          default: '#121212',
+          paper: '#1E1E1E',
+        },
+        text: {
+          primary: 'rgba(255, 255, 255, 0.87)',
+          secondary: 'rgba(255, 255, 255, 0.6)',
+        },
+        filters: {
+          employmentType: 'oklch(0.80 0.25 30)',
+          jobField: 'oklch(0.80 0.25 90)',
+          experienceLevel: 'oklch(0.75 0.25 200)',
+          educationLevel: 'oklch(0.75 0.25 250)',
+          location: 'oklch(0.70 0.25 280)',
+          salary: 'oklch(0.80 0.25 320)',
+          companyType: 'oklch(0.80 0.25 0)',
+          workingHours: 'oklch(0.75 0.20 45)',
+          benefits: 'oklch(0.75 0.20 180)',
+          otherFeatures: 'oklch(0.75 0.20 270)',
+          workIntensity: 'oklch(0.75 0.25 310)',
+        },
+      },
+    },
   },
   typography: {
     fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif',
