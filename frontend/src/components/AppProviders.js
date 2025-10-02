@@ -70,11 +70,6 @@ const getTheme = (mode) => {
   for (const key in rgbPalette.filters) {
     rgbPalette.filters[key] = convertOklchToRgb(oklchPalette.filters[key]);
   }
-  if (mode === 'dark') {
-    for (const key in rgbPalette.filters) {
-      rgbPalette.dark.filters[key] = convertOklchToRgb(oklchPalette.dark.filters[key]);
-    }
-  }
 
   // 3. 최종적으로 변환된 rgb 팔레트를 사용하여 테마 생성
   return createTheme({ 
