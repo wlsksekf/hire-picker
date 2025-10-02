@@ -18,7 +18,11 @@ const EditCompanyInfo = () => {
       </Typography>
       <Box component="form" noValidate sx={{ mt: 3 }}>
         <Grid container spacing={3}>
-          <Grid item xs={12} sm={6}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6
+            }}>
             <TextField
               fullWidth
               id="companyName"
@@ -27,7 +31,11 @@ const EditCompanyInfo = () => {
               defaultValue="(주)하이어피커"
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6
+            }}>
             <TextField
               fullWidth
               id="ceoName"
@@ -36,7 +44,7 @@ const EditCompanyInfo = () => {
               defaultValue="홍길동"
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TextField
               fullWidth
               id="address"
@@ -45,7 +53,7 @@ const EditCompanyInfo = () => {
               defaultValue="서울특별시 강남구"
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TextField
               fullWidth
               multiline
@@ -56,7 +64,7 @@ const EditCompanyInfo = () => {
               defaultValue="최고의 인재를 찾는 가장 빠른 방법, 하이어피커입니다."
             />
           </Grid>
-          <Grid item xs={12} sx={{ textAlign: 'right' }}>
+          <Grid sx={{ textAlign: 'right' }} size={12}>
             <Button
               type="submit"
               variant="contained"
