@@ -1,13 +1,18 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import styled from '@emotion/styled';
+import { ThemeModeContext } from '../theme/ThemeModeContext';
 
-function DarkModeSwitch({ mode, setMode }) {
+function DarkModeSwitch({ isMobile }) {
+  const { mode, setMode } = useContext(ThemeModeContext);
+
   const handleThemeChange = (event) => {
-    setMode(event.target.checked ? 'dark' : 'light');
+    if (setMode) {
+      setMode(event.target.checked ? 'dark' : 'light');
+    }
   };
 
   return (
-    <StyledWrapper>
+    <StyledWrapper style={{ transform: isMobile ? 'scale(0.7)' : 'scale(0.9)' }}>
       <label className="switch">
         <input id="input" type="checkbox" onChange={handleThemeChange} checked={mode === 'dark'} />
         <div className="slider round">

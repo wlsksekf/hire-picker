@@ -11,7 +11,7 @@ import { oklch2rgb } from 'colorizr';
 
 // oklch(l c h) 문자열을 rgb(r, g, b) 문자열로 변환하는 헬퍼 함수
 const convertOklchToRgb = (oklchStr) => {
-  if (!oklchStr || !oklchStr.includes('oklch')) return oklchStr; // oklch가 아니면 그대로 반환
+  if (!oklchStr || !oklchStr.includes('oklch')) return oklchStr;
   try {
     const values = oklchStr.replace('oklch(', '').replace(')', '').split(' ').map(Number);
     const [l, c, h] = values;
@@ -19,7 +19,7 @@ const convertOklchToRgb = (oklchStr) => {
     return `rgb(${r}, ${g}, ${b})`;
   } catch (e) {
     console.error('Color conversion failed:', e);
-    return 'rgb(0,0,0)'; // 변환 실패 시 검은색 반환
+    return 'rgb(0,0,0)';
   }
 };
 
@@ -34,51 +34,71 @@ const getTheme = (mode) => {
       dark: 'oklch(0.60 0.30 165)',
       contrastText: '#000000',
     },
-    filters: { ...filterColors },
-    ...(mode === 'dark' && {
       background: {
-        default: '#121212',
-        paper: '#1E1E1E',
+        default: '#2d2d2d',
+        paper: '#2d2d2d',
       },
-      text: {
-        primary: 'rgba(255, 255, 255, 0.87)',
-        secondary: 'rgba(255, 255, 255, 0.6)',
-      },
-      filters: {
-        employmentType: 'oklch(0.80 0.25 30)',
-        jobField: 'oklch(0.80 0.25 90)',
-        experienceLevel: 'oklch(0.75 0.25 200)',
-        educationLevel: 'oklch(0.75 0.25 250)',
-        location: 'oklch(0.70 0.25 280)',
-        salary: 'oklch(0.80 0.25 320)',
-        companyType: 'oklch(0.80 0.25 0)',
-        workingHours: 'oklch(0.75 0.20 45)',
-        benefits: 'oklch(0.75 0.20 180)',
-        otherFeatures: 'oklch(0.75 0.20 270)',
-        workIntensity: 'oklch(0.75 0.25 310)',
-      },
-    }),
+    text: {
+      primary: mode === 'light' ? '#333D4B' : '#E5E8EB',
+      secondary: mode === 'light' ? '#8B95A1' : '#C9CDD2',
+    },
+    filters: {},
   };
 
-  // 2. oklch 값을 rgb 값으로 변환한 새로운 팔레트 생성
-  const rgbPalette = JSON.parse(JSON.stringify(oklchPalette)); // Deep copy
+  // 필터 색상 동적 할당 및 변환
+  for (const key in filterColors) {
+    oklchPalette.filters[key] = mode === 'dark' ? filterColors[key].dark : filterColors[key].light;
+  }
 
-  rgbPalette.primary.main = convertOklchToRgb(oklchPalette.primary.main);
-  rgbPalette.primary.light = convertOklchToRgb(oklchPalette.primary.light);
-  rgbPalette.primary.dark = convertOklchToRgb(oklchPalette.primary.dark);
+  // 2. oklch 값을 rgb 값으로 변환한 새로운 팔레트 생성
+  const rgbPalette = JSON.parse(JSON.stringify(oklchPalette));
+
+  rgbPalette.primary.main = convertOklchToRgb(rgbPalette.primary.main);
+  rgbPalette.primary.light = convertOklchToRgb(rgbPalette.primary.light);
+  rgbPalette.primary.dark = convertOklchToRgb(rgbPalette.primary.dark);
 
   for (const key in rgbPalette.filters) {
-    rgbPalette.filters[key] = convertOklchToRgb(oklchPalette.filters[key]);
+    rgbPalette.filters[key] = convertOklchToRgb(rgbPalette.filters[key]);
   }
 
   // 3. 최종적으로 변환된 rgb 팔레트를 사용하여 테마 생성
-  return createTheme({ 
+  return createTheme({
     palette: rgbPalette,
+    shape: {
+      borderRadius: 12,
+    },
+    components: {
+      MuiCard: {
+        styleOverrides: {
+          root: {
+            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            '&:hover': {
+              boxShadow: '0 4px 12px 0 rgba(0, 0, 0, 0.08)'
+            }
+          }
+        }
+      },
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            boxShadow: 'none',
+            textTransform: 'none',
+            '&:hover': {
+              boxShadow: 'none',
+            }
+          }
+        }
+      }
+    },
     typography: {
       fontFamily: 'Pretendard, sans-serif',
     },
   });
 };
+
+import { ThemeModeContext } from '../theme/ThemeModeContext';
+
+// ... (getTheme function remains the same) ...
 
 export default function AppProviders({ children }) {
   const [mode, setMode] = useState('light');
@@ -86,15 +106,17 @@ export default function AppProviders({ children }) {
   const theme = useMemo(() => getTheme(mode), [mode]);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <Header mode={mode} setMode={setMode} />
-        <Container component="main" sx={{ flexGrow: 1, py: 4 }}>
-          {children}
-        </Container>
-        <Footer />
-      </Box>
-    </ThemeProvider>
+    <ThemeModeContext.Provider value={{ mode, setMode }}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          <Header />
+          <Container component="main" sx={{ flexGrow: 1, py: 4 }}>
+            {children}
+          </Container>
+          <Footer />
+        </Box>
+      </ThemeProvider>
+    </ThemeModeContext.Provider>
   );
 }

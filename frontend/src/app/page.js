@@ -55,14 +55,14 @@ const MainPage = () => {
   };
 
   return (
-    <Container maxWidth={false}>
+    <Container maxWidth="lg">
       {/* 1. 검색 영역 */}
       <Box sx={{ textAlign: 'center', py: 8 }}>
-        <Typography variant="h2" component="h1" fontWeight="bold" gutterBottom>
-          Just Pick98765.
+        <Typography variant="h2" component="h1" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '2.5rem', sm: '3.75rem' } }}>
+          Just Pick.
         </Typography>
         <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-          사람과 기업을 검색하세요。
+          사람과 기업을 검색하세요
         </Typography>
 
         <SearchAnimation onFilterClick={handleFilterToggle} isFilterOpen={filterOpen} />
@@ -95,7 +95,7 @@ const MainPage = () => {
               key={job.id}
               size={{
                 xs: 12,
-                sm: 12
+                md: 6
               }}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
                 <CardContent sx={{ flexGrow: 1 }}>
@@ -110,8 +110,8 @@ const MainPage = () => {
                     )}
                   </Box>
                 </CardContent>
-                <CardActions sx={{ p: 2 }}>
-                  <AnimatedButton fullWidth size="large" variant="contained">
+                <CardActions sx={{ p: 2, justifyContent: 'flex-end' }}>
+                  <AnimatedButton variant="contained" sx={{ fontSize: '11px', padding: '10px 17px' }}>
                     지원하기
                   </AnimatedButton>
                 </CardActions>
