@@ -1,11 +1,19 @@
 'use client';
-import { createTheme } from '@mui/material/styles';
+import { extendTheme } from '@mui/material/styles';
+import { filterColors } from './filterPalette';
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#20C997',
-      contrastText: '#ffffff', // 버튼 텍스트 색상을 흰색으로 명시
+const theme = extendTheme({
+  colorSchemes: {
+    light: {
+      palette: {
+        primary: {
+          main: 'oklch(0.70 0.30 165)',
+          light: 'oklch(0.80 0.30 165)', // 밝은 버전
+          dark: 'oklch(0.60 0.30 165)',  // 어두운 버전
+          contrastText: '#ffffff',
+        },
+        filters: filterColors,
+      },
     },
   },
   typography: {
