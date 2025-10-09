@@ -60,7 +60,7 @@ const animationConfig = {
       position: 'absolute',
       bottom: '110px',
       left: 'calc(50% + 390px)', // 위치 조정
-      transform: 'translateX(-50%) rotate(0deg) translateY(170px)',
+      transform: 'translateX(-50%) rotate(0deg) translateY(180px)', // 10px 아래로 이동
       width: '40px', // 크기 축소
       height: '40px', // 크기 축소
       objectFit: 'contain',
@@ -92,7 +92,7 @@ const animationConfig = {
     floorCompany: {
       position: 'absolute',
       bottom: '110px',
-      left: 'calc(50% - 425px)', // 5px 왼쪽으로 더 이동
+      left: 'calc(50% - 428px)', // 8px 왼쪽으로 더 이동
       transform: 'translateX(-50%) rotate(0deg) translateY(135px)', // 15px 아래로
       width: '40px', // 크기 축소
       height: '40px', // 크기 축소

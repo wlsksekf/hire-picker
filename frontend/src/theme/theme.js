@@ -2,6 +2,11 @@
 import { extendTheme } from '@mui/material/styles';
 import { filterColors } from './filterPalette';
 
+// Light 모드 필터 팔레트를 플랫한 객체로 변환
+const lightFilterPalette = Object.fromEntries(
+  Object.entries(filterColors).map(([key, value]) => [key, value.light])
+);
+
 const theme = extendTheme({
   colorSchemes: {
     light: {
@@ -12,7 +17,7 @@ const theme = extendTheme({
           dark: 'oklch(0.60 0.30 165)',  // 어두운 버전
           contrastText: '#ffffff',
         },
-        filters: filterColors,
+        filters: lightFilterPalette, // 수정된 부분
       },
     },
     dark: {
@@ -31,7 +36,7 @@ const theme = extendTheme({
           primary: 'rgba(255, 255, 255, 0.87)',
           secondary: 'rgba(255, 255, 255, 0.6)',
         },
-        filters: {
+        filters: { // 이 구조는 이미 올바르게 플랫합니다.
           employmentType: 'oklch(0.80 0.25 30)',
           jobField: 'oklch(0.80 0.25 90)',
           experienceLevel: 'oklch(0.75 0.25 200)',
