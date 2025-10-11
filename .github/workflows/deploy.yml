@@ -2,7 +2,7 @@ name: HIREPICKER CI/CD
 
 on:
   push:
-    branches: ["dev"] # dev 브랜치에 푸시될 때마다 실행
+    branches: ["dev"]
 
 env:
   DOCKER_USERNAME: jinaniyagi
@@ -42,6 +42,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Transfer config files to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -70,7 +73,6 @@ jobs:
             set -e
             cd /home/ubuntu/hirepicker
             
-            # .env 파일 생성
             cat << EOF > .env
             DB_URL=${DB_URL}
             DB_USERNAME=${DB_USERNAME}
@@ -81,12 +83,9 @@ jobs:
             GITHUB_SHA=${GITHUB_SHA}
             EOF
             
-            # Docker 로그인 추가로 안정성 확보
             echo "${DOCKER_TOKEN}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
             
-            # 배포 명령어 실행
             docker compose -f docker-compose.prod.yml --env-file ./.env pull
             docker compose -f docker-compose.prod.yml --env-file ./.env up -d --remove-orphans
             
-            # 사용하지 않는 이미지 정리
             docker image prune -f
