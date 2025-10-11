@@ -44,6 +44,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      BACKEND_IMAGE: hirepicker-backend
+      FRONTEND_IMAGE: hirepicker-frontend
+      DB_URL: ${{ secrets.DB_URL }}
+      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+      GITHUB_SHA: ${{ github.sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -89,7 +96,16 @@ jobs:
           script: |
             set -e
             cd /home/ubuntu/hirepicker
-            
+
+            echo "----- Environment Variables -----"
+            echo "DB_URL=$DB_URL"
+            echo "DB_USERNAME=$DB_USERNAME"
+            echo "DOCKER_USERNAME=$DOCKER_USERNAME"
+            echo "BACKEND_IMAGE=$BACKEND_IMAGE"
+            echo "FRONTEND_IMAGE=$FRONTEND_IMAGE"
+            echo "GITHUB_SHA=$GITHUB_SHA"
+            echo "---------------------------------"
+
             cat << EOF > .env
             DB_URL=${DB_URL}
             DB_USERNAME=${DB_USERNAME}
@@ -99,10 +115,10 @@ jobs:
             FRONTEND_IMAGE=${FRONTEND_IMAGE}
             GITHUB_SHA=${GITHUB_SHA}
             EOF
-            
+
             echo "${DOCKER_TOKEN}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-            
+
             docker compose -f docker-compose.prod.yml --env-file ./.env pull
             docker compose -f docker-compose.prod.yml --env-file ./.env up -d --remove-orphans
-            
+
             docker image prune -f
