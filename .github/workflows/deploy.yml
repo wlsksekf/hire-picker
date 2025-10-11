@@ -44,8 +44,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      BACKEND_IMAGE: hirepicker-backend
-      FRONTEND_IMAGE: hirepicker-frontend
+      BACKEND_IMAGE: ${{ env.BACKEND_IMAGE }}
+      FRONTEND_IMAGE: ${{ env.FRONTEND_IMAGE }}
       DB_URL: ${{ secrets.DB_URL }}
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -96,6 +96,15 @@ jobs:
           script: |
             set -e
             cd /home/ubuntu/hirepicker
+
+            # 환경변수 export 로 remote shell에 변수 전달
+            export DB_URL="${DB_URL}"
+            export DB_USERNAME="${DB_USERNAME}"
+            export DB_PASSWORD="${DB_PASSWORD}"
+            export DOCKER_USERNAME="${DOCKER_USERNAME}"
+            export BACKEND_IMAGE="${BACKEND_IMAGE}"
+            export FRONTEND_IMAGE="${FRONTEND_IMAGE}"
+            export GITHUB_SHA="${GITHUB_SHA}"
 
             echo "----- Environment Variables -----"
             echo "DB_URL=$DB_URL"
