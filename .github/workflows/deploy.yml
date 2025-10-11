@@ -42,11 +42,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Transfer config files to EC2
-        uses: appleboy/scp-action@v0.1.4
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
@@ -60,6 +57,7 @@ jobs:
           DB_URL: ${{ secrets.DB_URL }}
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
           DOCKER_USERNAME: ${{ env.DOCKER_USERNAME }}
           BACKEND_IMAGE: ${{ env.BACKEND_IMAGE }}
           FRONTEND_IMAGE: ${{ env.FRONTEND_IMAGE }}
@@ -70,9 +68,9 @@ jobs:
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           script: |
             set -e
-            mkdir -p /home/ubuntu/hirepicker
             cd /home/ubuntu/hirepicker
             
+            # .env 파일 생성
             cat << EOF > .env
             DB_URL=${DB_URL}
             DB_USERNAME=${DB_USERNAME}
@@ -83,7 +81,12 @@ jobs:
             GITHUB_SHA=${GITHUB_SHA}
             EOF
             
+            # Docker 로그인 추가로 안정성 확보
+            echo "${DOCKER_TOKEN}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+            
+            # 배포 명령어 실행
             docker compose -f docker-compose.prod.yml --env-file ./.env pull
             docker compose -f docker-compose.prod.yml --env-file ./.env up -d --remove-orphans
-
+            
+            # 사용하지 않는 이미지 정리
             docker image prune -f
