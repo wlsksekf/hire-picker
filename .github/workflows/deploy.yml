@@ -4,59 +4,52 @@ on:
   push:
     branches: ["dev"]
 
+env:
+  BACKEND_IMAGE: hirepicker-backend
+  FRONTEND_IMAGE: hirepicker-frontend
+
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      BACKEND_IMAGE: hirepicker-backend
-      FRONTEND_IMAGE: hirepicker-frontend
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Login to Docker Hub
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
         uses: docker/login-action@v3
         with:
-          username: ${{ env.DOCKER_USERNAME }}
-          password: ${{ env.DOCKER_TOKEN }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: Build and push Backend image
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          BACKEND_IMAGE: hirepicker-backend
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_USERNAME }}/hirepicker-backend:${{ github.sha }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/hirepicker-backend:${{ github.sha }}
 
       - name: Build and push Frontend image
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          FRONTEND_IMAGE: hirepicker-frontend
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: ${{ env.DOCKER_USERNAME }}/hirepicker-frontend:${{ github.sha }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/hirepicker-frontend:${{ github.sha }}
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     env:
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      BACKEND_IMAGE: hirepicker-backend
-      FRONTEND_IMAGE: hirepicker-frontend
       DB_URL: ${{ secrets.DB_URL }}
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      BACKEND_IMAGE: hirepicker-backend
+      FRONTEND_IMAGE: hirepicker-frontend
       GITHUB_SHA: ${{ github.sha }}
     steps:
       - name: Checkout code
@@ -100,17 +93,10 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
+          envs: DB_URL,DB_USERNAME,DB_PASSWORD,DOCKER_TOKEN,DOCKER_USERNAME,BACKEND_IMAGE,FRONTEND_IMAGE,GITHUB_SHA
           script: |
             set -e
             cd /home/ubuntu/hirepicker
-
-            export DB_URL="${DB_URL}"
-            export DB_USERNAME="${DB_USERNAME}"
-            export DB_PASSWORD="${DB_PASSWORD}"
-            export DOCKER_USERNAME="${DOCKER_USERNAME}"
-            export BACKEND_IMAGE="${BACKEND_IMAGE}"
-            export FRONTEND_IMAGE="${FRONTEND_IMAGE}"
-            export GITHUB_SHA="${GITHUB_SHA}"
 
             echo "----- Environment Variables -----"
             echo "DB_URL=$DB_URL"
