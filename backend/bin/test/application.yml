@@ -1,0 +1,12 @@
+# 실제 데이터베이스 연결을 위한 테스트 설정 파일입니다.
+# 아래의 플레이스홀더를 실제 데이터베이스 정보로 수정해주세요.
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://resume-db.c5gaium4chqq.ap-northeast-2.rds.amazonaws.com:3306/resume # 예: jdbc:mysql://localhost:3306/your_db
+    username: admin
+    password: HEWT9WcR31v4opqFSFOP
+  jpa:
+    hibernate:
+      ddl-auto: update # 테스트 시에는 'create' 또는 'create-drop'을 권장합니다
