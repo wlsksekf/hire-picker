@@ -96,7 +96,13 @@ jobs:
 
             echo "${DOCKER_TOKEN}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
-            docker compose -f docker-compose.prod.yml --env-file ./.env pull
-            docker compose -f docker-compose.prod.yml --env-file ./.env up -d --remove-orphans
+            # Stop and remove old containers defined in the compose file
+            docker compose -f docker-compose.prod.yml down --remove-orphans
 
-            docker image prune -f
+            # Clean up any other stopped containers and all unused images
+            docker container prune -f
+            docker image prune -a -f
+
+            # Pull new images and start new containers
+            docker compose -f docker-compose.prod.yml --env-file ./.env pull
+            docker compose -f docker-compose.prod.yml --env-file ./.env up -d
