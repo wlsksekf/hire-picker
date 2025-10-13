@@ -55,20 +55,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Verify Secrets
-        env:
-          AWS_HOST: ${{ secrets.AWS_HOST }}
-          AWS_USER: ${{ secrets.AWS_USER }}
-          AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
-        run: |
-          echo "--- Verifying Secrets ---"
-          if [ -n "$AWS_HOST" ]; then echo "✅ AWS_HOST is set."; else echo "❌ AWS_HOST is NOT set."; fi
-          if [ -n "$AWS_USER" ]; then echo "✅ AWS_USER is set."; else echo "❌ AWS_USER is NOT set."; fi
-          if [ -n "$AWS_SSH_PRIVATE_KEY" ]; then echo "✅ AWS_SSH_PRIVATE_KEY is set."; else echo "❌ AWS_SSH_PRIVATE_KEY is NOT set."; fi
-          echo "🔑 DOCKER_TOKEN length: ${#DOCKER_TOKEN}"
-          echo "-------------------------"
-
       - name: Transfer config files to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -97,15 +83,6 @@ jobs:
           script: |
             set -e
             cd /home/ubuntu/hirepicker
-
-            echo "----- Environment Variables -----"
-            echo "DB_URL=$DB_URL"
-            echo "DB_USERNAME=$DB_USERNAME"
-            echo "DOCKER_USERNAME=$DOCKER_USERNAME"
-            echo "BACKEND_IMAGE=$BACKEND_IMAGE"
-            echo "FRONTEND_IMAGE=$FRONTEND_IMAGE"
-            echo "GITHUB_SHA=$GITHUB_SHA"
-            echo "---------------------------------"
 
             cat << EOF > .env
             DB_URL=${DB_URL}
