@@ -1,0 +1,83 @@
+# ===================================================================
+#  공용 설정 (모든 환경에서 사용)
+# ===================================================================
+server:
+  port: 8081
+
+spring:
+  # 기본 프로필을 'local'으로 설정. 다른 프로필이 지정되면 무시됨.
+  profiles:
+    default: local
+
+  # 공용 데이터소스 설정
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  # 공용 JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: none # 오토 업데이트 막아놓음
+    defer-datasource-initialization: true
+
+# jwt:
+#   secret:
+#     key: ${JWT_SECRET_KEY}
+
+---
+
+# ===================================================================
+#  'local' 프로필 전용 설정 (개발용)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: "local"
+  # local 환경에서는 엔티티 변경 시 DB 테이블 수동 관리
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+
+---
+
+# ===================================================================
+#  'prod' 프로필 전용 설정 (배포용)
+# ===================================================================
+spring:
+  config:
+    activate:
+      on-profile: "prod"
+  # 운영 환경에서는 SQL 로그를 보지 않도록 설정
+  jpa:
+    properties:
+      hibernate:
+        format_sql: false
+        show_sql: false
+
+# 시스템 메트릭 바인더 비활성화
+management:
+  metrics:
+    binders:
+      system:
+        enabled: false
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    display-request-duration: true
+  paths-to-match:
+    - /api/**
+  version: v1.0.0
+
+info:
+  title: Hire-Picker API
+  description: 구인구직 사이트 Hire-Picker 프로젝트 API 명세서
+  version: v1.0.0
