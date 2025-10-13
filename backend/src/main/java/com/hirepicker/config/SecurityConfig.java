@@ -18,12 +18,15 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
 
             .authorizeHttpRequests(authorize -> authorize
-                // 🚨 임시 설정: CI/CD 테스트를 위해 루트 경로만 인증 없이 접근 허용!
+                // 🚨 임시 설정: CI/CD 테스트를 위해 루트 경로만 인증 없이 접근 허용
                 .requestMatchers("/").permitAll()
                 .requestMatchers("/health").permitAll()
                 .requestMatchers("/actuator/**").permitAll() // 헬스체크를 위해 /actuator/** 경로 허용
 
-                // 나머지 경로는 일단 보호 상태로 둡니다.
+                // Swagger UI 접근 허용
+                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs/**").permitAll()
+
+                // 나머지 경로는 일단 보호 상태로 둠.
                 .anyRequest().authenticated()
             );
 

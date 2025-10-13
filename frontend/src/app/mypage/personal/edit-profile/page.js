@@ -18,7 +18,7 @@ const EditProfile = () => {
       </Typography>
       <Box component="form" noValidate sx={{ mt: 3 }}>
         <Grid container spacing={3}>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TextField
               fullWidth
               id="name"
@@ -27,7 +27,7 @@ const EditProfile = () => {
               defaultValue="홍길동"
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TextField
               fullWidth
               id="email"
@@ -37,7 +37,7 @@ const EditProfile = () => {
               disabled
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TextField
               fullWidth
               name="password"
@@ -46,7 +46,7 @@ const EditProfile = () => {
               id="password"
             />
           </Grid>
-          <Grid item xs={12}>
+          <Grid size={12}>
             <TextField
               fullWidth
               name="confirmPassword"
@@ -55,7 +55,7 @@ const EditProfile = () => {
               id="confirmPassword"
             />
           </Grid>
-          <Grid item xs={12} sx={{ textAlign: 'right' }}>
+          <Grid sx={{ textAlign: 'right' }} size={12}>
             <Button
               type="submit"
               variant="contained"

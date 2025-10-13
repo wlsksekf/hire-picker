@@ -2,57 +2,49 @@ import React from 'react';
 import { styled } from '@mui/material/styles';
 import Button from '@mui/material/Button';
 
-const StyledButton = styled(Button)(({ theme, ownerState }) => {
-  // ownerState가 undefined일 경우를 대비하여 기본값 {} 할당
-  const { color = 'primary' } = ownerState || {};
-  const mainColor = theme.palette[color]?.main || theme.palette.primary.main;
-  const contrastColor = theme.palette.common.white; // 호버 시 글자색은 흰색으로 고정
+const StyledButton = styled(Button)(({ theme }) => ({
+  padding: '15px 25px',
+  border: 'unset',
+  borderRadius: '15px',
+  zIndex: 1,
+  position: 'relative',
+  fontWeight: 1000,
+  fontSize: '17px',
+  boxShadow: '4px 8px 19px -3px rgba(0,0,0,0.27)',
+  transition: 'all 250ms',
+  overflow: 'hidden',
 
-  return {
-    background: 'transparent',
-    position: 'relative',
-    padding: '5px 15px',
-    display: 'flex',
-    alignItems: 'center',
-    fontSize: '17px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    border: `1px solid ${mainColor}`,
-    borderRadius: '25px',
-    outline: 'none',
-    overflow: 'hidden',
-    color: mainColor,
-    transition: 'color 0.3s 0.1s ease-out',
-    zIndex: 1,
+  // 테마 모드에 따른 색상 설정
+  color: theme.palette.mode === 'dark' ? '#e8e8e8' : '#212121',
+  background: theme.palette.mode === 'dark' ? theme.palette.grey[800] : '#e8e8e8',
 
-    '&::before': {
-      content: '""',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      backgroundColor: mainColor,
-      borderRadius: 'inherit', // 부모의 border-radius 상속
-      transformOrigin: 'center',
-      transform: 'scaleX(0)',
-      transition: 'transform 0.4s ease-in-out',
-      zIndex: -1,
-    },
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: '100%',
+    width: 0,
+    borderRadius: '15px',
+    // 호버 시 배경색도 테마에 따라 변경
+    backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[200] : '#212121',
+    zIndex: -1,
+    boxShadow: '4px 8px 19px -3px rgba(0,0,0,0.27)',
+    transition: 'all 250ms',
+  },
 
-    '&:hover': {
-      color: contrastColor,
-    },
+  '&:hover': {
+    // 호버 시 글자색도 테마에 따라 변경
+    color: theme.palette.mode === 'dark' ? '#212121' : '#e8e8e8',
+  },
 
-    '&:hover::before': {
-      transform: 'scaleX(1)',
-    },
-  };
-});
+  '&:hover::before': {
+    width: '100%',
+  },
+}));
 
 const AnimatedButton = (props) => {
-  // StyledButton에 ownerState prop을 명시적으로 전달
-  return <StyledButton ownerState={props} {...props} />;
+  return <StyledButton {...props} />;
 };
 
 export default AnimatedButton;
