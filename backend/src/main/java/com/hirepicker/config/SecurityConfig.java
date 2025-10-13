@@ -23,6 +23,9 @@ public class SecurityConfig {
                 .requestMatchers("/health").permitAll()
                 .requestMatchers("/actuator/**").permitAll() // 헬스체크를 위해 /actuator/** 경로 허용
 
+                // Swagger UI 접근 허용
+                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/api-docs/**").permitAll()
+
                 // 나머지 경로는 일단 보호 상태로 둠.
                 .anyRequest().authenticated()
             );
