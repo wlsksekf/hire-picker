@@ -5,7 +5,7 @@ services:
   nginx:
     container_name: hirepicker-nginx
     image: nginx:1.23-alpine
-    restart: on-failure # Nginx도 on-failure로 변경하는 것이 더 안정적
+    restart: on-failure
     ports:
       - "80:80"
     volumes:
@@ -20,7 +20,7 @@ services:
   frontend:
     container_name: hirepicker-frontend
     image: ${DOCKER_USERNAME}/${FRONTEND_IMAGE}:${GITHUB_SHA}
-    restart: on-failure # 문법에 맞게 수정
+    restart: on-failure
     networks:
       - hirepicker-network
 
@@ -28,7 +28,7 @@ services:
   backend:
     container_name: hirepicker-backend
     image: ${DOCKER_USERNAME}/${BACKEND_IMAGE}:${GITHUB_SHA}
-    restart: on-failure # 문법에 맞게 수정
+    restart: on-failure
     security_opt:
       - seccomp:unconfined
     environment:
