@@ -1,10 +1,22 @@
 spring:
+  # H2 데이터소스 설정
   datasource:
-    url: jdbc:h2:mem:testdb
+    # 1. [수정됨] MySQL 호환성 모드 추가: ;MODE=MySQL
+    url: jdbc:h2:mem:testdb;MODE=MySQL 
     driver-class-name: org.h2.Driver
     username: sa
-    password:
+    password: 
+  
+  # JPA 설정
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    # 2. [수정됨] Dialect 설정을 jpa.hibernate 아래로 이동 (또는 properties 아래로)
     hibernate:
-      ddl-auto: update
+      # ddl-auto를 'create-drop'으로 변경하는 것을 권장합니다.
+      # 'update'는 테스트 간 데이터 잔존 가능성이 있어 오류의 원인이 될 수 있습니다.
+      ddl-auto: create-drop 
+      
+      # 3. [추가됨] Dialect를 명확히 명시 (오류 해결의 핵심)
+      dialect: org.hibernate.dialect.H2Dialect
+    
+    # 레거시 설정 제거 (있다면)
+    # database-platform: org.hibernate.dialect.H2Dialect # 이 줄은 삭제
