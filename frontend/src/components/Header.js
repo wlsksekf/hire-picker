@@ -4,7 +4,6 @@ import React from 'react';
 import { AppBar, Toolbar, Typography, Box, useTheme, useMediaQuery } from '@mui/material';
 import Link from 'next/link';
 import AnimatedButton from './AnimatedButton';
-import DarkModeSwitch from './DarkModeSwitch';
 
 const Header = () => {
   const theme = useTheme();
@@ -44,7 +43,6 @@ const Header = () => {
           </Link>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 0.5 : 1 }}>
-          <DarkModeSwitch isMobile={isMobile} />
           <Link href="/login" passHref style={{ textDecoration: 'none' }}>
             <AnimatedButton color="primary" sx={{ ...buttonStyles, ml: isMobile ? 1 : 2 }}>로그인</AnimatedButton>
           </Link>
