@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Container,
   Typography,
@@ -12,6 +12,12 @@ import {
   ListItemText,
   ListSubheader,
   Divider,
+  TextField,
+  Button,
+  Stack,
+  Box,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -20,23 +26,51 @@ import {
   faPalette,
   faGear,
   faCreditCard,
-  faCookieBite
+  faCookieBite,
+  faSync
 } from '@fortawesome/free-solid-svg-icons';
 import DarkModeSwitch from '../../components/DarkModeSwitch'; // 커스텀 스위치 import
 
 const SettingsPage = () => {
 
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState({ type: '', message: '' });
+
+  const handleSync = async (type) => {
+    setLoading(true);
+    setStatus({ type: 'info', message: `${type} 동기화를 시작합니다...` });
+
+    try {
+      // API 키 없이 백엔드 동기화 API 호출
+      const response = await fetch(`/api/worknet/sync/${type}`);
+      
+      if (!response.ok) {
+        // 백엔드에서 받은 에러 메시지를 텍스트로 읽음
+        const errorText = await response.text();
+        throw new Error(errorText || `${type} 동기화에 실패했습니다.`);
+      }
+
+      const resultText = await response.text();
+      setStatus({ type: 'success', message: resultText });
+
+    } catch (error) {
+      setStatus({ type: 'error', message: error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const iconStyle = {
     minWidth: '40px',
     display: 'flex',
     justifyContent: 'center',
-    color: 'text.secondary' // 3. 아이콘 색상 적용
+    color: 'text.secondary'
   };
 
   const subheaderStyle = {
     fontWeight: 'bold',
     color: (theme) => theme.palette.text.secondary,
-    backgroundColor: 'transparent' // Ensure it doesn't have its own background
+    backgroundColor: 'transparent'
   };
 
   return (
@@ -46,7 +80,7 @@ const SettingsPage = () => {
       </Typography>
       <Paper sx={{ 
         mt: 2,
-        backgroundColor: (theme) => theme.palette.background.paper // 1. Paper 배경색 적용
+        backgroundColor: (theme) => theme.palette.background.paper
       }}>
         <List>
           {/* 계정 그룹 */}
@@ -98,6 +132,45 @@ const SettingsPage = () => {
             </ListItemIcon>
             <ListItemText primary="쿠키 및 개인정보" secondary="서비스의 쿠키 및 개인정보 처리 방침을 확인합니다." />
           </ListItemButton>
+        </List>
+      </Paper>
+
+      {/* 데이터 동기화 섹션 */}
+      <Typography variant="h5" component="h2" gutterBottom sx={{ mt: 4 }}>
+        데이터 동기화 (테스트용)
+      </Typography>
+      <Paper sx={{ 
+        mt: 2,
+        p: 2,
+        backgroundColor: (theme) => theme.palette.background.paper
+      }}>
+        <List>
+          <ListSubheader sx={subheaderStyle}>워크넷 API</ListSubheader>
+
+          <ListItem>
+            <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 1 }}>
+              {loading && <CircularProgress size={24} sx={{ mr: 2 }} />}
+              <Stack direction="row" spacing={1}>
+                <Button variant="contained" onClick={() => handleSync('jobs')} disabled={loading}>
+                  <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
+                  공채속보 동기화
+                </Button>
+                <Button variant="contained" onClick={() => handleSync('events')} disabled={loading}>
+                  <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
+                  채용행사 동기화
+                </Button>
+                <Button variant="contained" onClick={() => handleSync('companies')} disabled={loading}>
+                  <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
+                  기업정보 동기화
+                </Button>
+              </Stack>
+            </Box>
+          </ListItem>
+          {status.message && (
+            <ListItem sx={{ mt: 2 }}>
+              <Alert severity={status.type || 'info'} sx={{ width: '100%' }}>{status.message}</Alert>
+            </ListItem>
+          )}
         </List>
       </Paper>
     </Container>
