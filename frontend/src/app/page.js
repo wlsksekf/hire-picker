@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -12,19 +12,12 @@ import {
   Paper,
   useTheme,
   Chip,
+  CircularProgress,
 } from '@mui/material';
 import AnimatedButton from '@/components/AnimatedButton';
 import SearchAnimation from '@/components/SearchAnimation';
 import { filterCategories } from './filters'; // 필터 데이터 가져오기
 import FilterSection from '@/components/FilterSection'; // FilterSection 컴포넌트 가져오기
-
-// 샘플 데이터
-const sampleJobs = [
-    { id: 1, company: 'HirePicker Inc.', title: '시니어 프론트엔드 개발자', salary: '연봉 8,000만 원~', location: '서울 강남구', skills: ['React', 'Next.js', 'TypeScript'], experience: '10년 이상', education: '대졸' },
-    { id: 2, company: 'TechNova', title: 'Java 백엔드 엔지니어', salary: '신입/경력 (협의)', location: '경기 성남시', skills: ['Java', 'Spring Boot', 'JPA'], experience: '신입', education: '초대졸' },
-    { id: 3, company: 'AI 솔루션즈', title: '머신러닝 엔지니어', salary: '연봉 9,000만 원 이상', location: '원격/재택', skills: ['Python', 'TensorFlow', 'PyTorch'], experience: '4~6년', education: '석사' },
-    { id: 4, company: '디자인시스템즈', title: 'UI/UX 디자이너', salary: '연봉 5,000만 원~', location: '서울 마포구', skills: ['Figma', 'Sketch', 'Adobe XD'], experience: '4~6년', education: '대졸' },
-];
 
 // 필터 초기 상태 동적 생성
 const initialFilterState = filterCategories.reduce((acc, category) => {
@@ -36,6 +29,58 @@ const MainPage = () => {
   const theme = useTheme();
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState(initialFilterState);
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // =================================================================
+  // =================== 여기에 API 키를 입력하세요 =====================
+  // =================================================================
+  const apiKey = '3e10252a-2cfe-4b5a-add7-49ac2f8d6cfa';
+  // =================================================================
+  // =================================================================
+  // =================================================================
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      if (apiKey === 'YOUR_API_KEY' || !apiKey) {
+        console.error("API 키를 입력해주세요.");
+        setLoading(false);
+        return;
+      }
+
+      const url = `/api/work24-jobs?authKey=${apiKey}`;
+
+      try {
+        const response = await fetch(url);
+        const xmlText = await response.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+        const wantedNodes = xmlDoc.getElementsByTagName('dhsOpenEmpInfo');
+
+        const jobData = Array.from(wantedNodes).map(node => {
+          const get = (tagName) => node.getElementsByTagName(tagName)[0]?.textContent || '';
+          return {
+            id: get('empSeqno'),
+            company: get('empBusiNm'),
+            title: get('empWantedTitle'),
+            salary: '', // 공채속보 API에는 급여 정보가 없습니다.
+            location: get('coClcdNm'), // 근무지 대신 기업구분명을 사용합니다.
+            skills: [], 
+            experience: get('empWantedTypeNm'), // 경력 대신 고용형태(정규직 등)를 사용합니다.
+            education: '', // 공채속보 API에는 학력 정보가 없습니다.
+          };
+        });
+
+        setJobs(jobData);
+      } catch (error) {
+        console.error("채용 정보를 가져오는 데 실패했습니다.", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, [apiKey]);
 
   const handleFilterToggle = () => {
     setFilterOpen(!filterOpen);
@@ -92,46 +137,52 @@ const MainPage = () => {
         <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
           전체 채용공고
         </Typography>
-        <Stack spacing={3}>
-          {sampleJobs.map((job) => (
-            <Card key={job.id} sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              justifyContent: 'space-between', 
-              width: '100%', 
-              minHeight: { xs: 150, sm: 180 },
-              borderRadius: '16px', 
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-              p: { xs: 1.5, sm: 2, md: 3 }
-            }}>
-              {/* Top Section: Company and Title */}
-              <Box>
-                <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' } }}>{job.company}</Typography>
-                <Typography variant="h5" fontWeight="bold" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' } }}>{job.title}</Typography>
-              </Box>
-
-              {/* Bottom Section: Chips and Button */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: { xs: 1.5, sm: 2 } }}>
-                {/* Chips on the left */}
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 0.5, sm: 1 } }}>
-                  <Chip label={`경력: ${job.experience}`} sx={{ backgroundColor: theme.palette.filters.experienceLevel, color: 'black', fontWeight: 'bold' }} />
-                  <Chip label={`학력: ${job.education}`} sx={{ backgroundColor: theme.palette.filters.educationLevel, color: 'black', fontWeight: 'bold' }} />
-                  <Chip label={`지역: ${job.location}`} sx={{ backgroundColor: theme.palette.filters.location, color: 'black', fontWeight: 'bold' }} />
-                  {job.skills.length > 0 && (
-                    <Chip label={job.skills[0]} sx={{ backgroundColor: theme.palette.filters.jobField, color: 'black', fontWeight: 'bold' }} />
-                  )}
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <Stack spacing={3}>
+            {jobs.map((job) => (
+              <Card key={job.id} sx={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                justifyContent: 'space-between', 
+                width: '100%', 
+                minHeight: { xs: 150, sm: 180 },
+                borderRadius: '16px', 
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                p: { xs: 1.5, sm: 2, md: 3 }
+              }}>
+                {/* Top Section: Company and Title */}
+                <Box>
+                  <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' } }}>{job.company}</Typography>
+                  <Typography variant="h5" fontWeight="bold" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' } }}>{job.title}</Typography>
                 </Box>
-                
-                {/* Button on the right */}
-                <CardActions sx={{ p: 0 }}>
-                  <AnimatedButton variant="contained" sx={{ fontSize: '0.75rem', padding: '6px 12px' }}>
-                    지원하기
-                  </AnimatedButton>
-                </CardActions>
-              </Box>
-            </Card>
-          ))}
-        </Stack>
+
+                {/* Bottom Section: Chips and Button */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: { xs: 1.5, sm: 2 } }}>
+                  {/* Chips on the left */}
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 0.5, sm: 1 } }}>
+                    <Chip label={`경력: ${job.experience || '무관'}`} sx={{ backgroundColor: theme.palette.filters.experienceLevel, color: 'black', fontWeight: 'bold' }} />
+                    <Chip label={`학력: ${job.education || '무관'}`} sx={{ backgroundColor: theme.palette.filters.educationLevel, color: 'black', fontWeight: 'bold' }} />
+                    <Chip label={`지역: ${job.location || '전국'}`} sx={{ backgroundColor: theme.palette.filters.location, color: 'black', fontWeight: 'bold' }} />
+                    {job.salary && (
+                      <Chip label={job.salary} sx={{ backgroundColor: theme.palette.filters.jobField, color: 'black', fontWeight: 'bold' }} />
+                    )}
+                  </Box>
+                  
+                  {/* Button on the right */}
+                  <CardActions sx={{ p: 0 }}>
+                    <AnimatedButton variant="contained" sx={{ fontSize: '0.75rem', padding: '6px 12px' }}>
+                      지원하기
+                    </AnimatedButton>
+                  </CardActions>
+                </Box>
+              </Card>
+            ))}
+          </Stack>
+        )}
       </Box>
     </Container>
   );
