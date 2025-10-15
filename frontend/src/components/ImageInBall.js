@@ -1,23 +1,43 @@
 'use client';
 
 import React from 'react';
-import { Box } from '@mui/material';
+import { Box, useTheme, alpha } from '@mui/material';
 
 const ImageInBall = ({ imgSrc, alt, sx }) => {
+  const theme = useTheme();
+
   return (
     <Box sx={{
-      ...sx, // Apply animation styles passed from parent
-      position: 'relative', // Needed for pseudo-elements
+      ...sx,
+      position: 'relative',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: '50%',
-      // Create a glassy/3D effect with multiple gradients and shadows
-      background: 'radial-gradient(circle at 50% 120%, rgba(255,255,255,0.3), rgba(255,255,255,0.1) 70%)', // Bottom highlight
-      backdropFilter: 'blur(4px)',
+      overflow: 'hidden',
       border: '1.5px solid rgba(255, 255, 255, 0.2)',
-      boxShadow: 'inset 0 -4px 15px rgba(255,255,255,0.4), 0 5px 15px rgba(0,0,0,0.2)', // Inner bottom highlight and outer drop shadow
-      '&::before': { // Top-left glossy highlight
+      boxShadow: `0 5px 15px ${alpha(theme.palette.common.black, 0.2)}`,
+      // 3D 유리 효과를 위한 그라데이션
+      background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), rgba(255,255,255,0.1) 60%)',
+      backdropFilter: 'blur(4px)',
+
+      // 하단 초록색 반구
+      '&::after': {
+        content: '""',
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        width: '100%',
+        height: '50%',
+        zIndex: 2,
+        // 3D 효과를 위한 그라데이션
+        background: `radial-gradient(circle at 30% 20%, ${theme.palette.primary.light}, ${theme.palette.primary.main} 80%, ${theme.palette.primary.dark})`,
+        // 곡선 구분선
+        boxShadow: `inset 0 3px 4px ${alpha(theme.palette.common.black, 0.25)}`,
+      },
+      
+      // 상단 광택 효과
+      '&::before': {
         content: '""',
         position: 'absolute',
         top: '5%',
@@ -25,8 +45,8 @@ const ImageInBall = ({ imgSrc, alt, sx }) => {
         width: '80%',
         height: '80%',
         borderRadius: '50%',
-        background: 'radial-gradient(circle at 15% 15%, rgba(255,255,255,0.7), transparent 40%)',
-        filter: 'blur(2px)',
+        background: 'radial-gradient(circle at 15% 15%, rgba(255,255,255,0.6), transparent 50%)',
+        zIndex: 3,
       },
     }}>
       <Box
@@ -37,8 +57,8 @@ const ImageInBall = ({ imgSrc, alt, sx }) => {
           width: '60%',
           height: '60%',
           objectFit: 'contain',
-          // Add a slight shadow to the image itself to give it depth
-          filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))'
+          filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))',
+          zIndex: 1,
         }}
       />
     </Box>
