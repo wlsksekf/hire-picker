@@ -1,188 +1,142 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Container,
   Typography,
   Card,
   CardActions,
   Box,
-  Collapse,
   Stack,
-  Paper,
   useTheme,
   Chip,
   CircularProgress,
+  Avatar,
+  Button
 } from '@mui/material';
-import AnimatedButton from '@/components/AnimatedButton';
-import SearchAnimation from '@/components/SearchAnimation';
-import { filterCategories } from './filters'; // 필터 데이터 가져오기
-import FilterSection from '@/components/FilterSection'; // FilterSection 컴포넌트 가져오기
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 
-// 필터 초기 상태 동적 생성
-const initialFilterState = filterCategories.reduce((acc, category) => {
-  acc[category.id] = [];
-  return acc;
-}, {});
+const PAGE_SIZE = 20;
+const MAX_ITEMS = 100;
 
 const MainPage = () => {
   const theme = useTheme();
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [selectedFilters, setSelectedFilters] = useState(initialFilterState);
   const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const observer = useRef();
 
-  // =================================================================
-  // =================== 여기에 API 키를 입력하세요 =====================
-  // =================================================================
-  const apiKey = '3e10252a-2cfe-4b5a-add7-49ac2f8d6cfa';
-  // =================================================================
-  // =================================================================
-  // =================================================================
+  const fetchJobs = useCallback(async () => {
+    if (loading || !hasMore || jobs.length >= MAX_ITEMS) return;
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/worknet/jobs?page=${page}&size=${PAGE_SIZE}`);
+      if (!response.ok) throw new Error('Failed to fetch jobs');
+      const data = await response.json();
+      
+      setJobs(prevJobs => {
+        const existingIds = new Set(prevJobs.map(j => j.id));
+        const newJobs = data.content.filter(j => !existingIds.has(j.id));
+        return [...prevJobs, ...newJobs];
+      });
+
+      setPage(prevPage => prevPage + 1);
+      setHasMore(!data.last && (jobs.length + data.content.length < MAX_ITEMS));
+    } catch (error) {
+      console.error("채용 정보를 가져오는 데 실패했습니다.", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, loading, hasMore, jobs.length]);
 
   useEffect(() => {
-    const fetchJobs = async () => {
-      if (apiKey === 'YOUR_API_KEY' || !apiKey) {
-        console.error("API 키를 입력해주세요.");
-        setLoading(false);
-        return;
+    fetchJobs(); // Initial fetch
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const lastJobElementRef = useCallback(node => {
+    if (loading) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        fetchJobs();
       }
-
-      const url = `/api/work24-jobs?authKey=${apiKey}`;
-
-      try {
-        const response = await fetch(url);
-        const xmlText = await response.text();
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlText, "application/xml");
-        const wantedNodes = xmlDoc.getElementsByTagName('dhsOpenEmpInfo');
-
-        const jobData = Array.from(wantedNodes).map(node => {
-          const get = (tagName) => node.getElementsByTagName(tagName)[0]?.textContent || '';
-          return {
-            id: get('empSeqno'),
-            company: get('empBusiNm'),
-            title: get('empWantedTitle'),
-            salary: '', // 공채속보 API에는 급여 정보가 없습니다.
-            location: get('coClcdNm'), // 근무지 대신 기업구분명을 사용합니다.
-            skills: [], 
-            experience: get('empWantedTypeNm'), // 경력 대신 고용형태(정규직 등)를 사용합니다.
-            education: '', // 공채속보 API에는 학력 정보가 없습니다.
-          };
-        });
-
-        setJobs(jobData);
-      } catch (error) {
-        console.error("채용 정보를 가져오는 데 실패했습니다.", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchJobs();
-  }, [apiKey]);
-
-  const handleFilterToggle = () => {
-    setFilterOpen(!filterOpen);
-  };
-
-  const handleFilterChange = (categoryId, value) => {
-    setSelectedFilters(prev => {
-      const currentCategoryFilters = prev[categoryId];
-      const newCategoryFilters = currentCategoryFilters.includes(value)
-        ? currentCategoryFilters.filter(item => item !== value)
-        : [...currentCategoryFilters, value];
-      return { ...prev, [categoryId]: newCategoryFilters };
     });
-  };
+    if (node) observer.current.observe(node);
+  }, [loading, hasMore, fetchJobs]);
+
+  const getLogoUrl = (url) => {
+      if (!url) return null;
+      return `https://www.work.go.kr/images/recruit/${url}`;
+  }
 
   return (
     <Container maxWidth="lg">
-      {/* 1. 검색 영역 */}
-      <Box sx={{ 
-        py: 12,
-        textAlign: 'center'
-      }}>
-        <Box sx={{ zIndex: 1, textAlign: 'center' }}>
-          <Typography variant="h2" component="h1" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '2.5rem', sm: '3.75rem' } }}>
-            Just Pick.
-          </Typography>
-          <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
-            사람과 기업을 검색하세요
-          </Typography>
-
-          <SearchAnimation onFilterClick={handleFilterToggle} isFilterOpen={filterOpen} />
-
-          <Collapse in={filterOpen}>
-            <Paper sx={{ maxWidth: '700px', margin: 'auto', p: 3 }}>
-              <Stack spacing={3}>
-                {filterCategories.map(category => (
-                  <FilterSection
-                    key={category.id}
-                    title={category.label}
-                    options={category.options}
-                    selectedOptions={selectedFilters[category.id]}
-                    onFilterChange={(value) => handleFilterChange(category.id, value)}
-                    color={theme.palette.filters[category.id]}
-                  />
-                ))}
-              </Stack>
-            </Paper>
-          </Collapse>
-        </Box>
+      <Box sx={{ py: 8, textAlign: 'center' }}>
+        <Typography variant="h2" component="h1" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '2.5rem', sm: '3.75rem' } }}>
+          Just Pick.
+        </Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ mb: 4 }}>
+          사람과 기업을 검색하세요
+        </Typography>
       </Box>
 
-      {/* 2. 채용공고 그리드 */}
       <Box sx={{ pb: 8 }}>
         <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
           전체 채용공고
         </Typography>
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Stack spacing={3}>
-            {jobs.map((job) => (
-              <Card key={job.id} sx={{ 
+        <Stack spacing={3}>
+          {jobs.map((job, index) => {
+            const cardContent = (
+              <Card key={job.id || index} sx={{ 
                 display: 'flex', 
                 flexDirection: 'column', 
                 justifyContent: 'space-between', 
                 width: '100%', 
-                minHeight: { xs: 150, sm: 180 },
                 borderRadius: '16px', 
                 boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                p: { xs: 1.5, sm: 2, md: 3 }
+                p: { xs: 2, sm: 3 }
               }}>
-                {/* Top Section: Company and Title */}
                 <Box>
-                  <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' } }}>{job.company}</Typography>
-                  <Typography variant="h5" fontWeight="bold" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' } }}>{job.title}</Typography>
-                </Box>
-
-                {/* Bottom Section: Chips and Button */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: { xs: 1.5, sm: 2 } }}>
-                  {/* Chips on the left */}
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 0.5, sm: 1 } }}>
-                    <Chip label={`경력: ${job.experience || '무관'}`} sx={{ backgroundColor: theme.palette.filters.experienceLevel, color: 'black', fontWeight: 'bold' }} />
-                    <Chip label={`학력: ${job.education || '무관'}`} sx={{ backgroundColor: theme.palette.filters.educationLevel, color: 'black', fontWeight: 'bold' }} />
-                    <Chip label={`지역: ${job.location || '전국'}`} sx={{ backgroundColor: theme.palette.filters.location, color: 'black', fontWeight: 'bold' }} />
-                    {job.salary && (
-                      <Chip label={job.salary} sx={{ backgroundColor: theme.palette.filters.jobField, color: 'black', fontWeight: 'bold' }} />
-                    )}
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                    <Avatar 
+                        src={getLogoUrl(job.logoUrl)}
+                        alt={`${job.companyName} logo`}
+                        sx={{ width: 40, height: 40, mr: 2, border: `1px solid ${theme.palette.divider}` }}
+                    >
+                        {job.companyName ? job.companyName.charAt(0) : 'C'}
+                    </Avatar>
+                    <Typography variant="body1" color="text.secondary">{job.companyName}</Typography>
                   </Box>
-                  
-                  {/* Button on the right */}
-                  <CardActions sx={{ p: 0 }}>
-                    <AnimatedButton variant="contained" sx={{ fontSize: '0.75rem', padding: '6px 12px' }}>
-                      지원하기
-                    </AnimatedButton>
-                  </CardActions>
+                  <Typography variant="h5" fontWeight="bold">{job.title}</Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
+                    {job.employmentType && <Chip label={job.employmentType} sx={{ backgroundColor: theme.palette.filters.employmentType, color: 'black', fontWeight: 'bold' }} />}
+                    {job.location && <Chip label={job.location} sx={{ backgroundColor: theme.palette.filters.companyType, color: 'black', fontWeight: 'bold' }} />}
+                    {job.startDate && job.endDate && <Chip icon={<FontAwesomeIcon icon={faCalendar} />} label={`${job.startDate} ~ ${job.endDate}`} />}
+                  </Box>
                 </Box>
+                <CardActions sx={{ p: 0, mt: 2, alignSelf: 'flex-end' }}>
+                  <Button 
+                      variant="contained"
+                      href={job.homepageUrl && (job.homepageUrl.startsWith('http') ? job.homepageUrl : `http://${job.homepageUrl}`)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      disabled={!job.homepageUrl}
+                    >
+                      지원하기
+                    </Button>
+                </CardActions>
               </Card>
-            ))}
-          </Stack>
-        )}
+            );
+            if (jobs.length === index + 1) {
+                return <div key={job.id || index} ref={lastJobElementRef}>{cardContent}</div>;
+            }
+            return cardContent;
+          })}
+        </Stack>
+        {loading && <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}><CircularProgress /></Box>}
+        {!hasMore && jobs.length > 0 && <Typography textAlign="center" sx={{ mt: 4, color: 'text.secondary' }}>모든 정보를 불러왔습니다.</Typography>}
       </Box>
     </Container>
   );
