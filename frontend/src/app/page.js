@@ -17,7 +17,6 @@ import AnimatedButton from '@/components/AnimatedButton';
 import SearchAnimation from '@/components/SearchAnimation';
 import { filterCategories } from './filters'; // 필터 데이터 가져오기
 import FilterSection from '@/components/FilterSection'; // FilterSection 컴포넌트 가져오기
-import Ballpit from '@/components/Ballpit'; // Ballpit 컴포넌트 import
 
 // 샘플 데이터
 const sampleJobs = [
@@ -52,51 +51,14 @@ const MainPage = () => {
     });
   };
 
-  // Helper to convert rgb string to hex number
-  const rgbToHex = (rgb) => {
-    if (!rgb || !rgb.startsWith('rgb')) return 0xffffff; // Default to white if format is wrong
-    const [r, g, b] = rgb.match(/\d+/g).map(Number);
-    return (r << 16) + (g << 8) + b;
-  };
-
-  const primaryHex = rgbToHex(theme.palette.primary.main);
-
   return (
     <Container maxWidth="lg">
       {/* 1. 검색 영역 */}
       <Box sx={{ 
-        position: 'relative', 
-        overflow: 'hidden', 
-        py: 12, // 2. 배경 영역 확장
-        borderRadius: '30px',
-        boxShadow: (theme) => theme.shadows[4]
+        py: 12,
+        textAlign: 'center'
       }}>
-        <Box sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 0,
-        }}>
-          <Ballpit
-            colors={[primaryHex, 0xeeeeee]} // 커서 공만 테마 색상, 나머지는 그라데이션
-            materialParams={{
-              transmission: 0.9,
-              roughness: 0.1,
-              metalness: 0.1,
-              clearcoat: 0.5,
-              transparent: true,
-              opacity: 0.5
-            }}
-            lightIntensity={0} // 1. 빛나는 효과 제거
-            ambientIntensity={5} // 2. 밝기 보정
-            minSize={0.6}
-            maxSize={0.6}
-            size0={0.6}
-          />
-        </Box>
-        <Box sx={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+        <Box sx={{ zIndex: 1, textAlign: 'center' }}>
           <Typography variant="h2" component="h1" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '2.5rem', sm: '3.75rem' } }}>
             Just Pick.
           </Typography>
@@ -107,7 +69,7 @@ const MainPage = () => {
           <SearchAnimation onFilterClick={handleFilterToggle} isFilterOpen={filterOpen} />
 
           <Collapse in={filterOpen}>
-            <Paper sx={{ maxWidth: '700px', margin: 'auto', p: 3, borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+            <Paper sx={{ maxWidth: '700px', margin: 'auto', p: 3 }}>
               <Stack spacing={3}>
                 {filterCategories.map(category => (
                   <FilterSection
