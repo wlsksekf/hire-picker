@@ -8,7 +8,7 @@ import com.hirepicker.model.EmpEvent;
 import com.hirepicker.repository.CompanyRepository;
 import com.hirepicker.repository.EmpEventRepository;
 import com.hirepicker.repository.JobPostingRepository;
-import com.hirepicker.service.WorkNetApiService;
+import com.hirepicker.service.Work24ApiService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -22,19 +22,19 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/worknet")
-public class WorkNetController {
+@RequestMapping("/api/work24")
+public class Work24Controller {
 
     private final JobPostingRepository jobPostingRepository;
     private final EmpEventRepository empEventRepository;
     private final CompanyRepository companyRepository;
-    private final WorkNetApiService workNetApiService;
+    private final Work24ApiService work24ApiService;
 
-    public WorkNetController(JobPostingRepository jobPostingRepository, EmpEventRepository empEventRepository, CompanyRepository companyRepository, WorkNetApiService workNetApiService) {
+    public Work24Controller(JobPostingRepository jobPostingRepository, EmpEventRepository empEventRepository, CompanyRepository companyRepository, Work24ApiService work24ApiService) {
         this.jobPostingRepository = jobPostingRepository;
         this.empEventRepository = empEventRepository;
         this.companyRepository = companyRepository;
-        this.workNetApiService = workNetApiService;
+        this.work24ApiService = work24ApiService;
     }
 
     // --- 데이터 조회 API (페이지네이션 적용) --- //
@@ -79,19 +79,19 @@ public class WorkNetController {
 
     @GetMapping("/sync/jobs")
     public ResponseEntity<String> syncJobs() {
-        workNetApiService.synchronizePublicJobs();
+        work24ApiService.synchronizePublicJobs();
         return ResponseEntity.ok("Job synchronization triggered!");
     }
 
     @GetMapping("/sync/events")
     public ResponseEntity<String> syncEvents() {
-        workNetApiService.synchronizeEvents();
+        work24ApiService.synchronizeEvents();
         return ResponseEntity.ok("Event synchronization triggered!");
     }
 
     @GetMapping("/sync/companies")
     public ResponseEntity<String> syncCompanies() {
-        workNetApiService.synchronizeCompanies();
+        work24ApiService.synchronizeCompanies();
         return ResponseEntity.ok("Company synchronization triggered!");
     }
 }
