@@ -10,6 +10,7 @@ import com.hirepicker.repository.CompanyRepository;
 import com.hirepicker.repository.EmpEventRepository;
 import com.hirepicker.repository.JobPostingRepository;
 import com.hirepicker.service.Work24ApiService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -22,19 +23,13 @@ import java.util.function.Function;
 
 @RestController
 @RequestMapping("/api/work24")
+@RequiredArgsConstructor
 public class Work24Controller {
 
     private final JobPostingRepository jobPostingRepository;
     private final EmpEventRepository empEventRepository;
     private final CompanyRepository companyRepository;
     private final Work24ApiService work24ApiService;
-
-    public Work24Controller(JobPostingRepository jobPostingRepository, EmpEventRepository empEventRepository, CompanyRepository companyRepository, Work24ApiService work24ApiService) {
-        this.jobPostingRepository = jobPostingRepository;
-        this.empEventRepository = empEventRepository;
-        this.companyRepository = companyRepository;
-        this.work24ApiService = work24ApiService;
-    }
 
     // --- 데이터 조회 API (페이지네이션 적용) --- //
 
