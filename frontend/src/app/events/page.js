@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -15,38 +15,51 @@ import {
 } from '@mui/material';
 import { faCalendar, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useInfiniteQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
 const PAGE_SIZE = 20;
 
-// React Query를 위한 데이터 호출 함수 (axios 사용)
-async function fetchEvents({ pageParam = 0 }) {
-  const response = await axios.get(`/api/work24/events?page=${pageParam}&size=${PAGE_SIZE}`);
-  return response.data;
-}
-
 function EventsPage() {
   const theme = useTheme();
+  const [events, setEvents] = useState([]);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [hasNextPage, setHasNextPage] = useState(true);
 
-  const {
-    data,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    status,
-  } = useInfiniteQuery({
-    queryKey: ['events'],
-    queryFn: fetchEvents,
-    initialPageParam: 0,
-    getNextPageParam: function(lastPage, allPages) {
-      return lastPage && !lastPage.last ? allPages.length : undefined;
-    },
-  });
+  useEffect(function() {
+    setLoading(true);
+    axios.get(`/api/work24/events?page=0&size=${PAGE_SIZE}`)
+      .then(function(response) {
+        const data = response.data;
+        setEvents(data.content);
+        setHasNextPage(!data.last);
+        setLoading(false);
+      })
+      .catch(function(err) {
+        setError(err);
+        setLoading(false);
+      });
+  }, []);
+
+  async function handleLoadMore() {
+    const nextPage = page + 1;
+    setLoading(true);
+    try {
+      const response = await axios.get(`/api/work24/events?page=${nextPage}&size=${PAGE_SIZE}`);
+      const data = response.data;
+      setEvents(function(prevEvents) { return [...prevEvents, ...data.content] });
+      setHasNextPage(!data.last);
+      setPage(nextPage);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // 초기 로딩 상태
-  if (status === 'pending') {
+  if (loading && events.length === 0) {
     return (
       <Container maxWidth="lg" sx={{ py: 8, textAlign: 'center' }}>
         <CircularProgress />
@@ -56,15 +69,13 @@ function EventsPage() {
   }
 
   // 에러 상태
-  if (status === 'error') {
+  if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 8 }}>
         <Alert severity="error">채용 행사 정보를 가져오는 데 실패했습니다: {error.message}</Alert>
       </Container>
     );
   }
-
-  const events = data.pages.flatMap(function(page) { return page.content });
 
   return (
     <Container maxWidth="lg" sx={{ py: 8 }}>
@@ -107,10 +118,10 @@ function EventsPage() {
       <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
         {hasNextPage && (
           <Button
-            onClick={function() { return fetchNextPage() }}
-            disabled={isFetchingNextPage}
+            onClick={handleLoadMore}
+            disabled={loading}
           >
-            {isFetchingNextPage ? <CircularProgress size={24} /> : '더보기'}
+            {loading ? <CircularProgress size={24} /> : '더보기'}
           </Button>
         )}
       </Box>

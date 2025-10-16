@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -17,37 +17,48 @@ import {
 } from '@mui/material';
 import { faLink, faIdBadge } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useInfiniteQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
 const PAGE_SIZE = 20;
 
-// React Query를 위한 데이터 호출 함수 (axios 사용)
-async function fetchCompanies({ pageParam = 0 }) {
-  const response = await axios.get(`/api/work24/companies?page=${pageParam}&size=${PAGE_SIZE}`);
-  return response.data;
-}
-
 function CompaniesPage() {
   const theme = useTheme();
+  const [companies, setCompanies] = useState([]);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [hasNextPage, setHasNextPage] = useState(true);
 
-  const {
-    data,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetching,
-    isFetchingNextPage,
-    status,
-  } = useInfiniteQuery({
-    queryKey: ['companies'],
-    queryFn: fetchCompanies,
-    initialPageParam: 0,
-    getNextPageParam: function(lastPage, allPages) {
-      // lastPage가 있고, 마지막 페이지가 아니라면 다음 페이지 번호를 반환
-      return lastPage && !lastPage.last ? allPages.length : undefined;
-    },
-  });
+  useEffect(function() {
+    setLoading(true);
+    axios.get(`/api/work24/companies?page=0&size=${PAGE_SIZE}`)
+      .then(function(response) {
+        const data = response.data;
+        setCompanies(data.content);
+        setHasNextPage(!data.last);
+        setLoading(false);
+      })
+      .catch(function(err) {
+        setError(err);
+        setLoading(false);
+      });
+  }, []);
+
+  async function handleLoadMore() {
+    const nextPage = page + 1;
+    setLoading(true);
+    try {
+      const response = await axios.get(`/api/work24/companies?page=${nextPage}&size=${PAGE_SIZE}`);
+      const data = response.data;
+      setCompanies(function(prevCompanies) { return [...prevCompanies, ...data.content] });
+      setHasNextPage(!data.last);
+      setPage(nextPage);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function getLogoUrl(url) {
     if (!url) return null;
@@ -59,7 +70,7 @@ function CompaniesPage() {
   }
 
   // 초기 로딩 상태
-  if (status === 'pending') {
+  if (loading && companies.length === 0) {
     return (
       <Container maxWidth="lg" sx={{ py: 8, textAlign: 'center' }}>
         <CircularProgress />
@@ -69,16 +80,13 @@ function CompaniesPage() {
   }
 
   // 에러 상태
-  if (status === 'error') {
+  if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 8 }}>
         <Alert severity="error">공채 기업 정보를 가져오는 데 실패했습니다: {error.message}</Alert>
       </Container>
     );
   }
-
-  // companies 배열을 data.pages로부터 생성
-  const companies = data.pages.flatMap(function(page) { return page.content });
 
   return (
     <Container maxWidth="lg" sx={{ py: 8 }}>
@@ -141,10 +149,10 @@ function CompaniesPage() {
       <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
         {hasNextPage && (
           <Button
-            onClick={function() { return fetchNextPage() }}
-            disabled={isFetchingNextPage}
+            onClick={handleLoadMore}
+            disabled={loading}
           >
-            {isFetchingNextPage ? <CircularProgress size={24} /> : '더보기'}
+            {loading ? <CircularProgress size={24} /> : '더보기'}
           </Button>
         )}
       </Box>
