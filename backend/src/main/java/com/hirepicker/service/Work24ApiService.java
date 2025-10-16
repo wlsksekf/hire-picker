@@ -11,6 +11,7 @@ import com.hirepicker.repository.EmpEventRepository;
 import com.hirepicker.repository.JobPostingRepository;
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class Work24ApiService {
@@ -141,7 +143,10 @@ public class Work24ApiService {
                 list.add(new JobDto(id, getTagValue(e, "empBusiNm"), getTagValue(e, "empWantedTitle"), getTagValue(e, "empWantedTypeNm"), getTagValue(e, "coClcdNm")));
             }
             return list;
-        } catch (Exception e) { e.printStackTrace(); return List.of(); }
+        } catch (Exception e) {
+            log.error("Failed to fetch or parse jobs from work24 API", e);
+            return List.of();
+        }
     }
 
     private List<EventDto> getEvents(String apiKey, int page) {
@@ -159,7 +164,10 @@ public class Work24ApiService {
                 list.add(new EventDto(id, getTagValue(e, "eventNm"), getTagValue(e, "eventTerm"), getTagValue(e, "area")));
             }
             return list;
-        } catch (Exception e) { e.printStackTrace(); return List.of(); }
+        } catch (Exception e) {
+            log.error("Failed to fetch or parse events from work24 API", e);
+            return List.of();
+        }
     }
 
     private List<CompanyDto> getCompanies(String apiKey, int page) {
@@ -177,7 +185,10 @@ public class Work24ApiService {
                 list.add(new CompanyDto(id, getTagValue(e, "coClcdNm"), getTagValue(e, "coIntroSummaryCont"), getTagValue(e, "homepg"), getTagValue(e, "busino"), getTagValue(e, "regLogImgNm")));
             }
             return list;
-        } catch (Exception e) { e.printStackTrace(); return List.of(); }
+        } catch (Exception e) {
+            log.error("Failed to fetch or parse companies from work24 API", e);
+            return List.of();
+        }
     }
 
     private String fetchXmlFromUrl(String urlString) throws Exception {

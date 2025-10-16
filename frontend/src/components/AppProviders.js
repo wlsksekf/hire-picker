@@ -8,6 +8,11 @@ import Header from './Header';
 import Footer from './Footer';
 import { Box, Container } from '@mui/material';
 import { oklch2rgb } from 'colorizr';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeModeContext } from '../theme/ThemeModeContext';
+
+// Create a client
+const queryClient = new QueryClient();
 
 // oklch(l c h) 문자열을 rgb(r, g, b) 문자열로 변환하는 헬퍼 함수
 const convertOklchToRgb = (oklchStr) => {
@@ -25,7 +30,7 @@ const convertOklchToRgb = (oklchStr) => {
 
 // 테마 생성 로직
 const getTheme = (mode) => {
-  // 1. 원본 oklch 팔레트 정의
+  // ... (rest of the getTheme function is unchanged)
   const oklchPalette = {
     mode,
     primary: {
@@ -45,12 +50,10 @@ const getTheme = (mode) => {
     filters: {},
   };
 
-  // 필터 색상 동적 할당 및 변환
   for (const key in filterColors) {
     oklchPalette.filters[key] = mode === 'dark' ? filterColors[key].dark : filterColors[key].light;
   }
 
-  // 2. oklch 값을 rgb 값으로 변환한 새로운 팔레트 생성
   const rgbPalette = JSON.parse(JSON.stringify(oklchPalette));
 
   rgbPalette.primary.main = convertOklchToRgb(rgbPalette.primary.main);
@@ -61,7 +64,6 @@ const getTheme = (mode) => {
     rgbPalette.filters[key] = convertOklchToRgb(rgbPalette.filters[key]);
   }
 
-  // 3. 최종적으로 변환된 rgb 팔레트를 사용하여 테마 생성
   return createTheme({
     palette: rgbPalette,
     shape: {
@@ -96,27 +98,25 @@ const getTheme = (mode) => {
   });
 };
 
-import { ThemeModeContext } from '../theme/ThemeModeContext';
-
-// ... (getTheme function remains the same) ...
-
 export default function AppProviders({ children }) {
   const [mode, setMode] = useState('light');
 
   const theme = useMemo(() => getTheme(mode), [mode]);
 
   return (
-    <ThemeModeContext.Provider value={{ mode, setMode }}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          <Header />
-          <Container component="main" sx={{ flexGrow: 1, py: 4 }}>
-            {children}
-          </Container>
-          <Footer />
-        </Box>
-      </ThemeProvider>
-    </ThemeModeContext.Provider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeModeContext.Provider value={{ mode, setMode }}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+            <Header />
+            <Container component="main" sx={{ flexGrow: 1, py: 4 }}>
+              {children}
+            </Container>
+            <Footer />
+          </Box>
+        </ThemeProvider>
+      </ThemeModeContext.Provider>
+    </QueryClientProvider>
   );
 }
