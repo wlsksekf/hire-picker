@@ -10,7 +10,7 @@ import {
   Grid,
 } from '@mui/material';
 
-const EditProfile = () => {
+function EditProfile() {
   return (
     <Paper sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -68,6 +68,6 @@ const EditProfile = () => {
       </Box>
     </Paper>
   );
-};
+}
 
 export default EditProfile;

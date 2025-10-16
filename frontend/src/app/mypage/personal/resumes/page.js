@@ -12,12 +12,14 @@ const columns = [
     field: 'actions',
     headerName: '관리',
     width: 150,
-    renderCell: (params) => (
-      <Box>
-        <Button size="small" sx={{ mr: 1 }}>수정</Button>
-        <Button size="small" color="error">삭제</Button>
-      </Box>
-    ),
+    renderCell: function(params) {
+      return (
+        <Box>
+          <Button size="small" sx={{ mr: 1 }}>수정</Button>
+          <Button size="small" color="error">삭제</Button>
+        </Box>
+      );
+    },
   },
 ];
 
@@ -27,7 +29,7 @@ const rows = [
   { id: 3, title: '[경력] 데브옵스 엔지니어', status: '작성 완료', lastModified: '2024-10-24' },
 ];
 
-const ManageResumes = () => {
+function ManageResumes() {
   return (
     <Paper sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -50,6 +52,6 @@ const ManageResumes = () => {
       </Box>
     </Paper>
   );
-};
+}
 
 export default ManageResumes;

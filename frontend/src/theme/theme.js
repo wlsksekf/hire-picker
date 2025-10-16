@@ -4,7 +4,7 @@ import { filterColors } from './filterPalette';
 
 // Light 모드 필터 팔레트를 플랫한 객체로 변환
 const lightFilterPalette = Object.fromEntries(
-  Object.entries(filterColors).map(([key, value]) => [key, value.light])
+  Object.entries(filterColors).map(function([key, value]) { return [key, value.light] })
 );
 
 const theme = extendTheme({

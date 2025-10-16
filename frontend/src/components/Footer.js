@@ -4,7 +4,7 @@
 import React from 'react';
 import { Box, Typography, Container } from '@mui/material';
 
-const Footer = () => {
+function Footer() {
   return (
     <Box
       component="footer"
@@ -27,6 +27,6 @@ const Footer = () => {
       </Container>
     </Box>
   );
-};
+}
 
 export default Footer;

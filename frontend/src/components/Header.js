@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import {
   AppBar,
@@ -12,7 +10,7 @@ import {
 } from '@mui/material';
 import Link from 'next/link';
 
-const Header = () => {
+function Header() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -71,54 +69,58 @@ const Header = () => {
 
         {/* 메인 메뉴 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {mainNavItems.map((item) => (
-            <Link key={item.text} href={item.path} passHref style={{ textDecoration: 'none' }}>
-              <Button
-                variant="text"
-                sx={{
-                  color: 'text.primary',
-                  fontWeight: 'bold',
-                  fontSize: '1rem',
-                  textTransform: 'none',
-                  '&:hover': {
-                    color: 'primary.main',
-                    backgroundColor: 'transparent',
-                  },
-                }}
-              >
-                {item.text}
-              </Button>
-            </Link>
-          ))}
+          {mainNavItems.map(function(item) {
+            return (
+              <Link key={item.text} href={item.path} passHref style={{ textDecoration: 'none' }}>
+                <Button
+                  variant="text"
+                  sx={{
+                    color: 'text.primary',
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    textTransform: 'none',
+                    '&:hover': {
+                      color: 'primary.main',
+                      backgroundColor: 'transparent',
+                    },
+                  }}
+                >
+                  {item.text}
+                </Button>
+              </Link>
+            )
+          })}
         </Box>
 
         <Box sx={{ flexGrow: 1 }} /> {/* 오른쪽으로 밀어주는 빈 공간 */}
 
         {/* 로그인/회원가입 메뉴 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {authNavItems.map((item) => (
-            <Link key={item.text} href={item.path} passHref style={{ textDecoration: 'none' }}>
-              <Button
-                variant="text"
-                sx={{
-                  color: 'text.primary',
-                  fontWeight: 'bold',
-                  textTransform: 'none',
-                  fontSize: '0.9rem',
-                  '&:hover': {
-                    color: 'primary.main',
-                    backgroundColor: 'action.hover',
-                  },
-                }}
-              >
-                {item.text}
-              </Button>
-            </Link>
-          ))}
+          {authNavItems.map(function(item) {
+            return (
+              <Link key={item.text} href={item.path} passHref style={{ textDecoration: 'none' }}>
+                <Button
+                  variant="text"
+                  sx={{
+                    color: 'text.primary',
+                    fontWeight: 'bold',
+                    textTransform: 'none',
+                    fontSize: '0.9rem',
+                    '&:hover': {
+                      color: 'primary.main',
+                      backgroundColor: 'action.hover',
+                    },
+                  }}
+                >
+                  {item.text}
+                </Button>
+              </Link>
+            )
+          })}
         </Box>
       </Toolbar>
     </AppBar>
   );
-};
+}
 
 export default Header;

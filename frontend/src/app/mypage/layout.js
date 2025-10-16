@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Box,
   Drawer,
@@ -46,7 +46,7 @@ const companyMenuItems = [
     { text: '지원자 목록', icon: <AssignmentInd />, path: '/mypage/company/applicants' },
 ];
 
-const MyPageLayout = ({ children }) => {
+function MyPageLayout({ children }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const pathname = usePathname();
@@ -61,16 +61,18 @@ const MyPageLayout = ({ children }) => {
         </Typography>
       </Toolbar>
       <List>
-        {menuItems.map((item, index) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton component={Link} href={item.path} selected={pathname === item.path}>
-              <ListItemIcon>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
+        {menuItems.map(function(item, index) {
+          return (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton component={Link} href={item.path} selected={pathname === item.path}>
+                <ListItemIcon>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            </ListItem>
+          )
+        })}
       </List>
     </div>
   );
@@ -95,6 +97,6 @@ const MyPageLayout = ({ children }) => {
       </Box>
     </Box>
   );
-};
+}
 
 export default MyPageLayout;
