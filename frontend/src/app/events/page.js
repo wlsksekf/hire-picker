@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React from 'react';
 import {
   Container,
   Typography,
@@ -9,59 +9,64 @@ import {
   Stack,
   useTheme,
   Chip,
-  CircularProgress
+  CircularProgress,
+  Button,
+  Alert
 } from '@mui/material';
 import { faCalendar, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 const PAGE_SIZE = 20;
-const MAX_ITEMS = 100;
+
+// React Query를 위한 데이터 호출 함수
+const fetchEvents = async ({ pageParam = 0 }) => {
+  const response = await fetch(`/api/work24/events?page=${pageParam}&size=${PAGE_SIZE}`);
+  if (!response.ok) {
+    throw new Error('네트워크 응답에 문제가 있습니다.');
+  }
+  return response.json();
+};
 
 const EventsPage = () => {
   const theme = useTheme();
-  const [events, setEvents] = useState([]);
-  const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const observer = useRef();
 
-  const fetchEvents = useCallback(async () => {
-    if (loading || !hasMore || events.length >= MAX_ITEMS) return;
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/worknet/events?page=${page}&size=${PAGE_SIZE}`);
-      if (!response.ok) throw new Error('Failed to fetch events');
-      const data = await response.json();
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    status,
+  } = useInfiniteQuery({
+    queryKey: ['events'],
+    queryFn: fetchEvents,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage && !lastPage.last ? allPages.length : undefined;
+    },
+  });
 
-      setEvents(prevEvents => {
-        const existingIds = new Set(prevEvents.map(e => e.id));
-        const newEvents = data.content.filter(e => !existingIds.has(e.id));
-        return [...prevEvents, ...newEvents];
-      });
+  // 초기 로딩 상태
+  if (status === 'pending') {
+    return (
+      <Container maxWidth="lg" sx={{ py: 8, textAlign: 'center' }}>
+        <CircularProgress />
+        <Typography>채용 행사 정보를 불러오는 중...</Typography>
+      </Container>
+    );
+  }
 
-      setPage(prevPage => prevPage + 1);
-      setHasMore(!data.last && (events.length + data.content.length < MAX_ITEMS));
-    } catch (error) {
-      console.error("채용 행사 정보를 가져오는 데 실패했습니다.", error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, loading, hasMore, events.length]);
+  // 에러 상태
+  if (status === 'error') {
+    return (
+      <Container maxWidth="lg" sx={{ py: 8 }}>
+        <Alert severity="error">채용 행사 정보를 가져오는 데 실패했습니다: {error.message}</Alert>
+      </Container>
+    );
+  }
 
-  useEffect(() => {
-    fetchEvents(); // Initial fetch
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const lastEventElementRef = useCallback(node => {
-    if (loading) return;
-    if (observer.current) observer.current.disconnect();
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        fetchEvents();
-      }
-    });
-    if (node) observer.current.observe(node);
-  }, [loading, hasMore, fetchEvents]);
+  const events = data.pages.flatMap(page => page.content);
 
   return (
     <Container maxWidth="lg" sx={{ py: 8 }}>
@@ -70,42 +75,47 @@ const EventsPage = () => {
       </Typography>
 
       <Stack spacing={3}>
-        {events.map((event, index) => {
-          const cardContent = (
-            <Card key={event.id || index} sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              width: '100%',
-              borderRadius: '16px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-              p: 3
-            }}>
-              <Box>
-                <Typography variant="h6" fontWeight="bold">{event.title}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-                <Chip 
-                  icon={<FontAwesomeIcon icon={faCalendar} />} 
-                  label={event.period} 
-                  sx={{ backgroundColor: theme.palette.filters.jobField, color: 'black', fontWeight: 'bold' }}
-                />
-                <Chip 
-                  icon={<FontAwesomeIcon icon={faMapMarkerAlt} />} 
-                  label={event.location} 
-                  sx={{ backgroundColor: theme.palette.filters.location, color: 'black', fontWeight: 'bold' }}
-                />
-              </Box>
-            </Card>
-          );
-          if (events.length === index + 1) {
-            return <div key={event.id || index} ref={lastEventElementRef}>{cardContent}</div>;
-          }
-          return cardContent;
-        })}
+        {events.map((event) => (
+          <Card key={event.id} sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            width: '100%',
+            borderRadius: '16px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            p: 3
+          }}>
+            <Box>
+              <Typography variant="h6" fontWeight="bold">{event.title}</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
+              <Chip 
+                icon={<FontAwesomeIcon icon={faCalendar} />} 
+                label={event.period} 
+                sx={{ backgroundColor: theme.palette.filters.jobField, color: 'black', fontWeight: 'bold' }}
+              />
+              <Chip 
+                icon={<FontAwesomeIcon icon={faMapMarkerAlt} />} 
+                label={event.location} 
+                sx={{ backgroundColor: theme.palette.filters.location, color: 'black', fontWeight: 'bold' }}
+              />
+            </Box>
+          </Card>
+        ))}
       </Stack>
-      {loading && <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}><CircularProgress /></Box>}
-      {!hasMore && events.length > 0 && <Typography textAlign="center" sx={{ mt: 4, color: 'text.secondary' }}>모든 정보를 불러왔습니다.</Typography>}
+
+      <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
+        {hasNextPage && (
+          <Button
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage ? <CircularProgress size={24} /> : '더보기'}
+          </Button>
+        )}
+      </Box>
+
+      {!hasNextPage && events.length > 0 && <Typography textAlign="center" sx={{ mt: 4, color: 'text.secondary' }}>모든 정보를 불러왔습니다.</Typography>}
     </Container>
   );
 };
