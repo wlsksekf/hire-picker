@@ -11,6 +11,7 @@ import com.hirepicker.repository.EmpEventRepository;
 import com.hirepicker.repository.JobPostingRepository;
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,9 +32,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-public class WorkNetApiService {
+public class Work24ApiService {
 
     private final CompanyRepository companyRepository;
     private final JobPostingRepository jobPostingRepository;
@@ -130,7 +132,7 @@ public class WorkNetApiService {
         String url = "https://www.work24.go.kr/cm/openApi/call/wk/callOpenApiSvcInfo210L21.do?authKey=" + apiKey + "&callTp=L&returnType=XML&startPage=" + page + "&display=100";
         try {
             String xml = fetchXmlFromUrl(url);
-            if (xml.contains("<error>")) { System.err.println("WorkNet API Error (Jobs): " + getTagValueFromRawXml(xml, "error")); return List.of(); }
+            if (xml.contains("<error>")) { System.err.println("work24 API Error (Jobs): " + getTagValueFromRawXml(xml, "error")); return List.of(); }
             Document doc = parseXml(xml);
             NodeList nodeList = doc.getElementsByTagName("dhsOpenEmpInfo");
             List<JobDto> list = new ArrayList<>();
@@ -141,14 +143,17 @@ public class WorkNetApiService {
                 list.add(new JobDto(id, getTagValue(e, "empBusiNm"), getTagValue(e, "empWantedTitle"), getTagValue(e, "empWantedTypeNm"), getTagValue(e, "coClcdNm")));
             }
             return list;
-        } catch (Exception e) { e.printStackTrace(); return List.of(); }
+        } catch (Exception e) {
+            log.error("Failed to fetch or parse jobs from work24 API", e);
+            return List.of();
+        }
     }
 
     private List<EventDto> getEvents(String apiKey, int page) {
         String url = "https://www.work24.go.kr/cm/openApi/call/wk/callOpenApiSvcInfo210L11.do?authKey=" + apiKey + "&callTp=L&returnType=XML&startPage=" + page + "&display=100";
         try {
             String xml = fetchXmlFromUrl(url);
-            if (xml.contains("<error>")) { System.err.println("WorkNet API Error (Events): " + getTagValueFromRawXml(xml, "error")); return List.of(); }
+            if (xml.contains("<error>")) { System.err.println("work24 API Error (Events): " + getTagValueFromRawXml(xml, "error")); return List.of(); }
             Document doc = parseXml(xml);
             NodeList nodeList = doc.getElementsByTagName("empEvent");
             List<EventDto> list = new ArrayList<>();
@@ -159,14 +164,17 @@ public class WorkNetApiService {
                 list.add(new EventDto(id, getTagValue(e, "eventNm"), getTagValue(e, "eventTerm"), getTagValue(e, "area")));
             }
             return list;
-        } catch (Exception e) { e.printStackTrace(); return List.of(); }
+        } catch (Exception e) {
+            log.error("Failed to fetch or parse events from work24 API", e);
+            return List.of();
+        }
     }
 
     private List<CompanyDto> getCompanies(String apiKey, int page) {
         String url = "https://www.work24.go.kr/cm/openApi/call/wk/callOpenApiSvcInfo210L31.do?authKey=" + apiKey + "&callTp=L&returnType=XML&startPage=" + page + "&display=100";
         try {
             String xml = fetchXmlFromUrl(url);
-            if (xml.contains("<error>")) { System.err.println("WorkNet API Error (Companies): " + getTagValueFromRawXml(xml, "error")); return List.of(); }
+            if (xml.contains("<error>")) { System.err.println("work24 API Error (Companies): " + getTagValueFromRawXml(xml, "error")); return List.of(); }
             Document doc = parseXml(xml);
             NodeList nodeList = doc.getElementsByTagName("dhsOpenEmpHireInfo");
             List<CompanyDto> list = new ArrayList<>();
@@ -177,7 +185,10 @@ public class WorkNetApiService {
                 list.add(new CompanyDto(id, getTagValue(e, "coClcdNm"), getTagValue(e, "coIntroSummaryCont"), getTagValue(e, "homepg"), getTagValue(e, "busino"), getTagValue(e, "regLogImgNm")));
             }
             return list;
-        } catch (Exception e) { e.printStackTrace(); return List.of(); }
+        } catch (Exception e) {
+            log.error("Failed to fetch or parse companies from work24 API", e);
+            return List.of();
+        }
     }
 
     private String fetchXmlFromUrl(String urlString) throws Exception {

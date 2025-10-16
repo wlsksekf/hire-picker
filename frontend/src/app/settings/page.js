@@ -42,7 +42,7 @@ const SettingsPage = () => {
 
     try {
       // API 키 없이 백엔드 동기화 API 호출
-      const response = await fetch(`/api/worknet/sync/${type}`);
+      const response = await fetch(`/api/work24/sync/${type}`);
       
       if (!response.ok) {
         // 백엔드에서 받은 에러 메시지를 텍스트로 읽음
@@ -145,7 +145,7 @@ const SettingsPage = () => {
         backgroundColor: (theme) => theme.palette.background.paper
       }}>
         <List>
-          <ListSubheader sx={subheaderStyle}>워크넷 API</ListSubheader>
+          <ListSubheader sx={subheaderStyle}>work24 API</ListSubheader>
 
           <ListItem>
             <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 1 }}>
