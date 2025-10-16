@@ -5,6 +5,7 @@ import com.hirepicker.dto.EventDto;
 import com.hirepicker.dto.JobDto;
 import com.hirepicker.model.Company;
 import com.hirepicker.model.EmpEvent;
+import com.hirepicker.model.JobPosting;
 import com.hirepicker.repository.CompanyRepository;
 import com.hirepicker.repository.EmpEventRepository;
 import com.hirepicker.repository.JobPostingRepository;
@@ -14,12 +15,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 @RestController
 @RequestMapping("/api/work24")
@@ -42,37 +41,52 @@ public class Work24Controller {
     @GetMapping("/jobs")
     public Page<JobDto> getJobs(Pageable pageable) {
         return jobPostingRepository.findAll(pageable)
-                .map(job -> new JobDto(
-                        job.getPostingId(),
-                        Optional.ofNullable(job.getCompany()).map(Company::getCompanyName).orElse(""),
-                        job.getTitle(),
-                        job.getEmploymentType(),
-                        job.getLocation()
-                ));
+                .map(new Function<JobPosting, JobDto>() {
+                    @Override
+                    public JobDto apply(JobPosting job) {
+                        return new JobDto(
+                                job.getPostingId(),
+                                Optional.ofNullable(job.getCompany()).map(Company::getCompanyName).orElse(""),
+                                job.getTitle(),
+                                job.getEmploymentType(),
+                                job.getLocation()
+                        );
+                    }
+                });
     }
 
     @GetMapping("/events")
     public Page<EventDto> getEvents(Pageable pageable) {
         return empEventRepository.findAll(pageable)
-                .map(event -> new EventDto(
-                        event.getEventCode(),
-                        event.getEventName(),
-                        event.getEventDuration(),
-                        event.getArea()
-                ));
+                .map(new Function<EmpEvent, EventDto>() {
+                    @Override
+                    public EventDto apply(EmpEvent event) {
+                        return new EventDto(
+                                event.getEventCode(),
+                                event.getEventName(),
+                                event.getEventDuration(),
+                                event.getArea()
+                        );
+                    }
+                });
     }
 
     @GetMapping("/companies")
     public Page<CompanyDto> getCompanies(Pageable pageable) {
         return companyRepository.findAll(pageable)
-                .map(company -> new CompanyDto(
-                        company.getCompanyId(),
-                        company.getCompanyName(),
-                        company.getDescription(),
-                        company.getWebsiteUrl(),
-                        company.getBusinessNumber(),
-                        company.getLogoUrl()
-                ));
+                .map(new Function<Company, CompanyDto>() {
+                    @Override
+                    public CompanyDto apply(Company company) {
+                        return new CompanyDto(
+                                company.getCompanyId(),
+                                company.getCompanyName(),
+                                company.getDescription(),
+                                company.getWebsiteUrl(),
+                                company.getBusinessNumber(),
+                                company.getLogoUrl()
+                        );
+                    }
+                });
     }
 
     // --- 수동 동기화 트리거 API --- //

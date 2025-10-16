@@ -10,9 +10,9 @@ const columns = [
     field: 'status',
     headerName: '상태',
     width: 120,
-    renderCell: (params) => (
-        <Chip label={params.value} color={params.value === '진행중' ? 'success' : 'default'} size="small" />
-    )
+    renderCell: function(params) {
+        return <Chip label={params.value} color={params.value === '진행중' ? 'success' : 'default'} size="small" />
+    }
   },
   { field: 'applicants', headerName: '지원자 수', type: 'number', width: 120 },
   { field: 'createdDate', headerName: '등록일', width: 150 },
@@ -20,12 +20,14 @@ const columns = [
     field: 'actions',
     headerName: '관리',
     width: 150,
-    renderCell: (params) => (
-      <Box>
-        <Button size="small" sx={{ mr: 1 }}>수정</Button>
-        <Button size="small" color="error">마감</Button>
-      </Box>
-    ),
+    renderCell: function(params) {
+      return (
+        <Box>
+          <Button size="small" sx={{ mr: 1 }}>수정</Button>
+          <Button size="small" color="error">마감</Button>
+        </Box>
+      );
+    },
   },
 ];
 
@@ -35,7 +37,7 @@ const rows = [
   { id: 3, title: '[마감] iOS 개발자', status: '마감', applicants: 25, createdDate: '2024-09-30' },
 ];
 
-const ManagePostings = () => {
+function ManagePostings() {
   return (
     <Paper sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -58,6 +60,6 @@ const ManagePostings = () => {
       </Box>
     </Paper>
   );
-};
+}
 
 export default ManagePostings;
