@@ -32,7 +32,7 @@ const MainPage = () => {
     if (loading || !hasMore || jobs.length >= MAX_ITEMS) return;
     setLoading(true);
     try {
-      const response = await fetch(`/api/worknet/jobs?page=${page}&size=${PAGE_SIZE}`);
+      const response = await fetch(`/api/work24/jobs?page=${page}&size=${PAGE_SIZE}`);
       if (!response.ok) throw new Error('Failed to fetch jobs');
       const data = await response.json();
       

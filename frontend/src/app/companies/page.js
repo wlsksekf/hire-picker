@@ -32,7 +32,7 @@ const CompaniesPage = () => {
     if (loading || !hasMore || companies.length >= MAX_ITEMS) return;
     setLoading(true);
     try {
-      const response = await fetch(`/api/worknet/companies?page=${page}&size=${PAGE_SIZE}`);
+      const response = await fetch(`/api/work24/companies?page=${page}&size=${PAGE_SIZE}`);
       if (!response.ok) throw new Error('Failed to fetch companies');
       const data = await response.json();
 

@@ -29,7 +29,7 @@ const EventsPage = () => {
     if (loading || !hasMore || events.length >= MAX_ITEMS) return;
     setLoading(true);
     try {
-      const response = await fetch(`/api/worknet/events?page=${page}&size=${PAGE_SIZE}`);
+      const response = await fetch(`/api/work24/events?page=${page}&size=${PAGE_SIZE}`);
       if (!response.ok) throw new Error('Failed to fetch events');
       const data = await response.json();
 

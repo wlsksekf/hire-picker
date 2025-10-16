@@ -33,7 +33,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class WorkNetApiService {
+public class Work24ApiService {
 
     private final CompanyRepository companyRepository;
     private final JobPostingRepository jobPostingRepository;
@@ -130,7 +130,7 @@ public class WorkNetApiService {
         String url = "https://www.work24.go.kr/cm/openApi/call/wk/callOpenApiSvcInfo210L21.do?authKey=" + apiKey + "&callTp=L&returnType=XML&startPage=" + page + "&display=100";
         try {
             String xml = fetchXmlFromUrl(url);
-            if (xml.contains("<error>")) { System.err.println("WorkNet API Error (Jobs): " + getTagValueFromRawXml(xml, "error")); return List.of(); }
+            if (xml.contains("<error>")) { System.err.println("work24 API Error (Jobs): " + getTagValueFromRawXml(xml, "error")); return List.of(); }
             Document doc = parseXml(xml);
             NodeList nodeList = doc.getElementsByTagName("dhsOpenEmpInfo");
             List<JobDto> list = new ArrayList<>();
@@ -148,7 +148,7 @@ public class WorkNetApiService {
         String url = "https://www.work24.go.kr/cm/openApi/call/wk/callOpenApiSvcInfo210L11.do?authKey=" + apiKey + "&callTp=L&returnType=XML&startPage=" + page + "&display=100";
         try {
             String xml = fetchXmlFromUrl(url);
-            if (xml.contains("<error>")) { System.err.println("WorkNet API Error (Events): " + getTagValueFromRawXml(xml, "error")); return List.of(); }
+            if (xml.contains("<error>")) { System.err.println("work24 API Error (Events): " + getTagValueFromRawXml(xml, "error")); return List.of(); }
             Document doc = parseXml(xml);
             NodeList nodeList = doc.getElementsByTagName("empEvent");
             List<EventDto> list = new ArrayList<>();
@@ -166,7 +166,7 @@ public class WorkNetApiService {
         String url = "https://www.work24.go.kr/cm/openApi/call/wk/callOpenApiSvcInfo210L31.do?authKey=" + apiKey + "&callTp=L&returnType=XML&startPage=" + page + "&display=100";
         try {
             String xml = fetchXmlFromUrl(url);
-            if (xml.contains("<error>")) { System.err.println("WorkNet API Error (Companies): " + getTagValueFromRawXml(xml, "error")); return List.of(); }
+            if (xml.contains("<error>")) { System.err.println("work24 API Error (Companies): " + getTagValueFromRawXml(xml, "error")); return List.of(); }
             Document doc = parseXml(xml);
             NodeList nodeList = doc.getElementsByTagName("dhsOpenEmpHireInfo");
             List<CompanyDto> list = new ArrayList<>();
