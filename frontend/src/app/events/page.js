@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -15,40 +15,51 @@ import {
 } from '@mui/material';
 import { faCalendar, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import axios from 'axios';
 
 const PAGE_SIZE = 20;
 
-// React Query를 위한 데이터 호출 함수
-const fetchEvents = async ({ pageParam = 0 }) => {
-  const response = await fetch(`/api/work24/events?page=${pageParam}&size=${PAGE_SIZE}`);
-  if (!response.ok) {
-    throw new Error('네트워크 응답에 문제가 있습니다.');
-  }
-  return response.json();
-};
-
-const EventsPage = () => {
+function EventsPage() {
   const theme = useTheme();
+  const [events, setEvents] = useState([]);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [hasNextPage, setHasNextPage] = useState(true);
 
-  const {
-    data,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    status,
-  } = useInfiniteQuery({
-    queryKey: ['events'],
-    queryFn: fetchEvents,
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      return lastPage && !lastPage.last ? allPages.length : undefined;
-    },
-  });
+  useEffect(function() {
+    setLoading(true);
+    axios.get(`/api/work24/events?page=0&size=${PAGE_SIZE}`)
+      .then(function(response) {
+        const data = response.data;
+        setEvents(data.content);
+        setHasNextPage(!data.last);
+        setLoading(false);
+      })
+      .catch(function(err) {
+        setError(err);
+        setLoading(false);
+      });
+  }, []);
+
+  async function handleLoadMore() {
+    const nextPage = page + 1;
+    setLoading(true);
+    try {
+      const response = await axios.get(`/api/work24/events?page=${nextPage}&size=${PAGE_SIZE}`);
+      const data = response.data;
+      setEvents(function(prevEvents) { return [...prevEvents, ...data.content] });
+      setHasNextPage(!data.last);
+      setPage(nextPage);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   // 초기 로딩 상태
-  if (status === 'pending') {
+  if (loading && events.length === 0) {
     return (
       <Container maxWidth="lg" sx={{ py: 8, textAlign: 'center' }}>
         <CircularProgress />
@@ -58,15 +69,13 @@ const EventsPage = () => {
   }
 
   // 에러 상태
-  if (status === 'error') {
+  if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 8 }}>
         <Alert severity="error">채용 행사 정보를 가져오는 데 실패했습니다: {error.message}</Alert>
       </Container>
     );
   }
-
-  const events = data.pages.flatMap(page => page.content);
 
   return (
     <Container maxWidth="lg" sx={{ py: 8 }}>
@@ -75,42 +84,44 @@ const EventsPage = () => {
       </Typography>
 
       <Stack spacing={3}>
-        {events.map((event) => (
-          <Card key={event.id} sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            width: '100%',
-            borderRadius: '16px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-            p: 3
-          }}>
-            <Box>
-              <Typography variant="h6" fontWeight="bold">{event.title}</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-              <Chip 
-                icon={<FontAwesomeIcon icon={faCalendar} />} 
-                label={event.period} 
-                sx={{ backgroundColor: theme.palette.filters.jobField, color: 'black', fontWeight: 'bold' }}
-              />
-              <Chip 
-                icon={<FontAwesomeIcon icon={faMapMarkerAlt} />} 
-                label={event.location} 
-                sx={{ backgroundColor: theme.palette.filters.location, color: 'black', fontWeight: 'bold' }}
-              />
-            </Box>
-          </Card>
-        ))}
+        {events.map(function(event) {
+          return (
+            <Card key={event.id} sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              width: '100%',
+              borderRadius: '16px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              p: 3
+            }}>
+              <Box>
+                <Typography variant="h6" fontWeight="bold">{event.title}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
+                <Chip 
+                  icon={<FontAwesomeIcon icon={faCalendar} />} 
+                  label={event.period} 
+                  sx={{ backgroundColor: theme.palette.filters.jobField, color: 'black', fontWeight: 'bold' }}
+                />
+                <Chip 
+                  icon={<FontAwesomeIcon icon={faMapMarkerAlt} />} 
+                  label={event.location} 
+                  sx={{ backgroundColor: theme.palette.filters.location, color: 'black', fontWeight: 'bold' }}
+                />
+              </Box>
+            </Card>
+          )
+        })}
       </Stack>
 
       <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
         {hasNextPage && (
           <Button
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
+            onClick={handleLoadMore}
+            disabled={loading}
           >
-            {isFetchingNextPage ? <CircularProgress size={24} /> : '더보기'}
+            {loading ? <CircularProgress size={24} /> : '더보기'}
           </Button>
         )}
       </Box>
@@ -118,6 +129,6 @@ const EventsPage = () => {
       {!hasNextPage && events.length > 0 && <Typography textAlign="center" sx={{ mt: 4, color: 'text.secondary' }}>모든 정보를 불러왔습니다.</Typography>}
     </Container>
   );
-};
+}
 
 export default EventsPage;

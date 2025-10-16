@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, Chip, useTheme } from '@mui/material';
 import { lighten, darken } from '@mui/material/styles';
 
-const FilterSection = ({ title, options, selectedOptions, onFilterChange, color }) => {
+function FilterSection({ title, options, selectedOptions, onFilterChange, color }) {
   const theme = useTheme();
 
   const unselectedBgColor = theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[200];
@@ -14,7 +14,7 @@ const FilterSection = ({ title, options, selectedOptions, onFilterChange, color 
         {title}
       </Typography>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-        {options.map(option => {
+        {options.map(function(option) {
           const isSelected = selectedOptions.includes(option);
 
           return (
@@ -22,7 +22,7 @@ const FilterSection = ({ title, options, selectedOptions, onFilterChange, color 
               key={option}
               label={option}
               variant={isSelected ? 'filled' : 'outlined'}
-              onClick={() => onFilterChange(option)}
+              onClick={function() { onFilterChange(option) }}
               sx={{
                 fontWeight: 'bold',
                 color: 'black',
@@ -49,6 +49,6 @@ const FilterSection = ({ title, options, selectedOptions, onFilterChange, color 
       </Box>
     </Box>
   );
-};
+}
 
 export default FilterSection;

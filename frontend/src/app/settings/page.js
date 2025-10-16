@@ -31,12 +31,12 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import DarkModeSwitch from '../../components/DarkModeSwitch'; // 커스텀 스위치 import
 
-const SettingsPage = () => {
+function SettingsPage() {
 
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ type: '', message: '' });
 
-  const handleSync = async (type) => {
+  async function handleSync(type) {
     setLoading(true);
     setStatus({ type: 'info', message: `${type} 동기화를 시작합니다...` });
 
@@ -58,7 +58,7 @@ const SettingsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const iconStyle = {
     minWidth: '40px',
@@ -69,7 +69,7 @@ const SettingsPage = () => {
 
   const subheaderStyle = {
     fontWeight: 'bold',
-    color: (theme) => theme.palette.text.secondary,
+    color: function(theme) { return theme.palette.text.secondary },
     backgroundColor: 'transparent'
   };
 
@@ -80,7 +80,7 @@ const SettingsPage = () => {
       </Typography>
       <Paper sx={{ 
         mt: 2,
-        backgroundColor: (theme) => theme.palette.background.paper
+        backgroundColor: function(theme) { return theme.palette.background.paper }
       }}>
         <List>
           {/* 계정 그룹 */}
@@ -142,7 +142,7 @@ const SettingsPage = () => {
       <Paper sx={{ 
         mt: 2,
         p: 2,
-        backgroundColor: (theme) => theme.palette.background.paper
+        backgroundColor: function(theme) { return theme.palette.background.paper }
       }}>
         <List>
           <ListSubheader sx={subheaderStyle}>work24 API</ListSubheader>
@@ -151,15 +151,15 @@ const SettingsPage = () => {
             <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 1 }}>
               {loading && <CircularProgress size={24} sx={{ mr: 2 }} />}
               <Stack direction="row" spacing={1}>
-                <Button variant="contained" onClick={() => handleSync('jobs')} disabled={loading}>
+                <Button variant="contained" onClick={function() { return handleSync('jobs') }} disabled={loading}>
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   공채속보 동기화
                 </Button>
-                <Button variant="contained" onClick={() => handleSync('events')} disabled={loading}>
+                <Button variant="contained" onClick={function() { return handleSync('events') }} disabled={loading}>
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   채용행사 동기화
                 </Button>
-                <Button variant="contained" onClick={() => handleSync('companies')} disabled={loading}>
+                <Button variant="contained" onClick={function() { return handleSync('companies') }} disabled={loading}>
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   기업정보 동기화
                 </Button>
@@ -175,6 +175,6 @@ const SettingsPage = () => {
       </Paper>
     </Container>
   );
-};
+}
 
 export default SettingsPage;

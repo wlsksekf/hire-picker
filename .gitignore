@@ -27,6 +27,12 @@ Thumbs.db
 # VSCode
 .vscode/
 
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
 ### 로그 및 임시 파일 (Logs & Temp Files) ###
 *.log
 *.tmp

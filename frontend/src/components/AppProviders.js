@@ -8,14 +8,10 @@ import Header from './Header';
 import Footer from './Footer';
 import { Box, Container } from '@mui/material';
 import { oklch2rgb } from 'colorizr';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeModeContext } from '../theme/ThemeModeContext';
 
-// Create a client
-const queryClient = new QueryClient();
-
 // oklch(l c h) 문자열을 rgb(r, g, b) 문자열로 변환하는 헬퍼 함수
-const convertOklchToRgb = (oklchStr) => {
+function convertOklchToRgb(oklchStr) {
   if (!oklchStr || !oklchStr.includes('oklch')) return oklchStr;
   try {
     const values = oklchStr.replace('oklch(', '').replace(')', '').split(' ').map(Number);
@@ -26,10 +22,10 @@ const convertOklchToRgb = (oklchStr) => {
     console.error('Color conversion failed:', e);
     return 'rgb(0,0,0)';
   }
-};
+}
 
 // 테마 생성 로직
-const getTheme = (mode) => {
+function getTheme(mode) {
   // ... (rest of the getTheme function is unchanged)
   const oklchPalette = {
     mode,
@@ -96,15 +92,14 @@ const getTheme = (mode) => {
       fontFamily: 'Pretendard, sans-serif',
     },
   });
-};
+}
 
 export default function AppProviders({ children }) {
   const [mode, setMode] = useState('light');
 
-  const theme = useMemo(() => getTheme(mode), [mode]);
+  const theme = useMemo(function() { return getTheme(mode) }, [mode]);
 
   return (
-    <QueryClientProvider client={queryClient}>
       <ThemeModeContext.Provider value={{ mode, setMode }}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
@@ -117,6 +112,5 @@ export default function AppProviders({ children }) {
           </Box>
         </ThemeProvider>
       </ThemeModeContext.Provider>
-    </QueryClientProvider>
   );
 }
