@@ -21,7 +21,7 @@ const columns = [
     field: 'status',
     headerName: '상태',
     width: 150,
-    renderCell: (params) => {
+    renderCell: function(params) {
         let color = 'default';
         if (params.value === '합격') color = 'success';
         if (params.value === '불합격') color = 'error';
@@ -37,12 +37,12 @@ const rows = [
   { id: 4, name: '이디비', resumeTitle: '데이터베이스 관리자 지원합니다', applyDate: '2024-10-22', status: '검토중' },
 ];
 
-const ApplicantList = () => {
+function ApplicantList() {
   const [posting, setPosting] = React.useState('');
 
-  const handleChange = (event) => {
+  function handleChange(event) {
     setPosting(event.target.value);
-  };
+  }
 
   return (
     <Paper sx={{ p: 3 }}>
@@ -70,6 +70,6 @@ const ApplicantList = () => {
       </Box>
     </Paper>
   );
-};
+}
 
 export default ApplicantList;

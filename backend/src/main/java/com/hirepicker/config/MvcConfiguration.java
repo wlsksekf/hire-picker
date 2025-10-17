@@ -10,7 +10,7 @@ public class MvcConfiguration implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**") // /api/ 로 시작하는 모든 요청을 처리
-                .allowedOrigins("http://localhost:3001") // http://localhost:3001からのリクエストを許可
+                .allowedOrigins("http://localhost:3000")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 허용할 HTTP 메소드
                 .allowedHeaders("*") // 모든 헤더 허용
                 .allowCredentials(true); // 쿠키 등 자격 증명 허용

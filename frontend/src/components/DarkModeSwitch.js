@@ -5,11 +5,11 @@ import { ThemeModeContext } from '../theme/ThemeModeContext';
 function DarkModeSwitch({ isMobile }) {
   const { mode, setMode } = useContext(ThemeModeContext);
 
-  const handleThemeChange = (event) => {
+  function handleThemeChange(event) {
     if (setMode) {
       setMode(event.target.checked ? 'dark' : 'light');
     }
-  };
+  }
 
   return (
     <StyledWrapper style={{ transform: isMobile ? 'scale(0.7)' : 'scale(0.9)' }}>

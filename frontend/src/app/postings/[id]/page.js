@@ -11,7 +11,7 @@ import {
   Chip,
 } from '@mui/material';
 
-const JobPostingDetail = ({ params }) => {
+function JobPostingDetail({ params }) {
   // params.id를 사용하여 실제 데이터를 가져올 수 있습니다.
   const { id } = params;
 
@@ -68,6 +68,6 @@ const JobPostingDetail = ({ params }) => {
       </Paper>
     </Container>
   );
-};
+}
 
 export default JobPostingDetail;
