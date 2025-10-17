@@ -13,6 +13,7 @@ public class Work24DataMapper {
         return new JobDto(id, Work24XmlParser.getTagValue(e, "empBusiNm"), Work24XmlParser.getTagValue(e, "empWantedTitle"), Work24XmlParser.getTagValue(e, "empWantedTypeNm"), Work24XmlParser.getTagValue(e, "coClcdNm"));
     }
 
+
     public static EventDto mapToEventDto(Element e) {
         String id = Work24XmlParser.getTagValue(e, "eventNo");
         if (id == null || id.isBlank()) return null; // Or throw an exception
