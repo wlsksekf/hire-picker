@@ -3,7 +3,7 @@
 import React from 'react';
 import { Box, useTheme, alpha } from '@mui/material';
 
-const ImageInBall = ({ imgSrc, alt, sx }) => {
+function ImageInBall({ imgSrc, alt, sx }) {
   const theme = useTheme();
 
   return (
@@ -63,6 +63,6 @@ const ImageInBall = ({ imgSrc, alt, sx }) => {
       />
     </Box>
   );
-};
+}
 
 export default ImageInBall;

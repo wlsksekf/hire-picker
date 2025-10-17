@@ -12,7 +12,7 @@ const columns = [
     field: 'status',
     headerName: '상태',
     width: 150,
-    renderCell: (params) => {
+    renderCell: function(params) {
         let color = 'default';
         if (params.value === '서류 통과') color = 'success';
         if (params.value === '불합격') color = 'error';
@@ -28,7 +28,7 @@ const rows = [
   { id: 4, company: '토스뱅크', posting: '서버 개발자 (신입)', applyDate: '2024-10-12', status: '지원 완료' },
 ];
 
-const ApplicationStatus = () => {
+function ApplicationStatus() {
   return (
     <Paper sx={{ p: 3 }}>
         <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -45,6 +45,6 @@ const ApplicationStatus = () => {
       </Box>
     </Paper>
   );
-};
+}
 
 export default ApplicationStatus;
