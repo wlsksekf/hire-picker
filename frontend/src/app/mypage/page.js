@@ -4,7 +4,7 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 
-const MyPageDefault = () => {
+function MyPageDefault() {
   return (
     <Box sx={{ textAlign: 'center', mt: 10 }}>
       <Typography variant="h5">마이페이지</Typography>
@@ -13,6 +13,6 @@ const MyPageDefault = () => {
       </Typography>
     </Box>
   );
-};
+}
 
 export default MyPageDefault;

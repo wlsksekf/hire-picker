@@ -17,7 +17,7 @@ const rows = [
   { id: 3, orderId: 'ORD20240801-002', product: '이력서 열람 1회권', amount: 1500, date: '2024-08-01' },
 ];
 
-const Credits = () => {
+function Credits() {
   return (
     <Paper sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -39,6 +39,6 @@ const Credits = () => {
       </Box>
     </Paper>
   );
-};
+}
 
 export default Credits;
