@@ -15,7 +15,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/api/**").permitAll()
+                .requestMatchers("/api/**", "/swagger-ui.html", "/swagger-ui/**", "/api-docs/**", "/api/work24/jobs", "/api/work24/events", "/api/work24/companies").permitAll()
                 .anyRequest().authenticated()
             );
         return http.build();
