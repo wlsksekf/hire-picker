@@ -10,6 +10,9 @@ import com.hirepicker.repository.CompanyRepository;
 import com.hirepicker.repository.EmpEventRepository;
 import com.hirepicker.repository.JobPostingRepository;
 import com.hirepicker.service.Work24ApiService;
+import com.hirepicker.service.Work24Service;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,83 +24,55 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Optional;
 import java.util.function.Function;
 
+@Tag(name = "Work24", description = "Work24 API")
 @RestController
 @RequestMapping("/api/work24")
 @RequiredArgsConstructor
 public class Work24Controller {
 
-    private final JobPostingRepository jobPostingRepository;
-    private final EmpEventRepository empEventRepository;
-    private final CompanyRepository companyRepository;
+
+
+
     private final Work24ApiService work24ApiService;
+    private final Work24Service work24Service;
 
     // --- 데이터 조회 API (페이지네이션 적용) --- //
 
+    @Operation(summary = "채용공고 목록 조회", description = "페이지네이션을 적용하여 채용공고 목록을 조회합니다.")
     @GetMapping("/jobs")
     public Page<JobDto> getJobs(Pageable pageable) {
-        return jobPostingRepository.findAll(pageable)
-                .map(new Function<JobPosting, JobDto>() {
-                    @Override
-                    public JobDto apply(JobPosting job) {
-                        return new JobDto(
-                                job.getPostingId(),
-                                Optional.ofNullable(job.getCompany()).map(Company::getCompanyName).orElse(""),
-                                job.getTitle(),
-                                job.getEmploymentType(),
-                                job.getLocation()
-                        );
-                    }
-                });
+        return work24Service.getJobs(pageable);
     }
 
+    @Operation(summary = "채용박람회 목록 조회", description = "페이지네이션을 적용하여 채용박람회 목록을 조회합니다.")
     @GetMapping("/events")
     public Page<EventDto> getEvents(Pageable pageable) {
-        return empEventRepository.findAll(pageable)
-                .map(new Function<EmpEvent, EventDto>() {
-                    @Override
-                    public EventDto apply(EmpEvent event) {
-                        return new EventDto(
-                                event.getEventCode(),
-                                event.getEventName(),
-                                event.getEventDuration(),
-                                event.getArea()
-                        );
-                    }
-                });
+        return work24Service.getEvents(pageable);
     }
 
+    @Operation(summary = "기업 목록 조회", description = "페이지네이션을 적용하여 기업 목록을 조회합니다.")
     @GetMapping("/companies")
     public Page<CompanyDto> getCompanies(Pageable pageable) {
-        return companyRepository.findAll(pageable)
-                .map(new Function<Company, CompanyDto>() {
-                    @Override
-                    public CompanyDto apply(Company company) {
-                        return new CompanyDto(
-                                company.getCompanyId(),
-                                company.getCompanyName(),
-                                company.getDescription(),
-                                company.getWebsiteUrl(),
-                                company.getBusinessNumber(),
-                                company.getLogoUrl()
-                        );
-                    }
-                });
+        return work24Service.getCompanies(pageable);
     }
 
     // --- 수동 동기화 트리거 API --- //
 
+    @Operation(summary = "채용공고 데이터 동기화", description = "Work24 API를 통해 채용공고 데이터를 수동으로 동기화합니다.")
     @GetMapping("/sync/jobs")
     public ResponseEntity<String> syncJobs() {
         work24ApiService.synchronizePublicJobs();
         return ResponseEntity.ok("Job synchronization triggered!");
     }
 
+    @Operation(summary = "채용박람회 데이터 동기화", description = "Work24 API를 통해 채용박람회 데이터를 수동으로 동기화합니다.")
     @GetMapping("/sync/events")
     public ResponseEntity<String> syncEvents() {
         work24ApiService.synchronizeEvents();
         return ResponseEntity.ok("Event synchronization triggered!");
     }
 
+    @Operation(summary = "기업 데이터 동기화", description = "Work24 API를 통해 기업 데이터를 수동으로 동기화합니다.")
     @GetMapping("/sync/companies")
     public ResponseEntity<String> syncCompanies() {
         work24ApiService.synchronizeCompanies();
