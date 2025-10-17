@@ -14,7 +14,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.PageImpl;
 @Service
 @RequiredArgsConstructor
 public class Work24ServiceImpl implements Work24Service {
@@ -25,14 +28,26 @@ public class Work24ServiceImpl implements Work24Service {
 
     @Override
     public Page<JobDto> getJobs(Pageable pageable) {
-        return jobPostingRepository.findAll(pageable)
-                .map(Work24ServiceImpl::convertToJobDto);
+        Page<JobPosting> jobPostings = jobPostingRepository.findAll(pageable);
+        
+        List<JobDto> jobDtos = new ArrayList<>();
+        for (JobPosting job : jobPostings.getContent()) {
+            JobDto jobDto = convertToJobDto(job);
+            jobDtos.add(jobDto);
+        }
+        
+        return new PageImpl<>(jobDtos, pageable, jobPostings.getTotalElements());
     }
 
     private static JobDto convertToJobDto(JobPosting job) {
+        String companyName = "";
+        if (job.getCompany() != null) {
+            companyName = job.getCompany().getCompanyName();
+        }
+        
         return new JobDto(
                 job.getPostingId(),
-                Optional.ofNullable(job.getCompany()).map(Company::getCompanyName).orElse(""),
+                companyName,
                 job.getTitle(),
                 job.getEmploymentType(),
                 job.getLocation()
@@ -41,8 +56,15 @@ public class Work24ServiceImpl implements Work24Service {
 
     @Override
     public Page<EventDto> getEvents(Pageable pageable) {
-        return empEventRepository.findAll(pageable)
-                .map(Work24ServiceImpl::convertToEventDto);
+        Page<EmpEvent> empEvents = empEventRepository.findAll(pageable);
+        
+        List<EventDto> eventDtos = new ArrayList<>();
+        for (EmpEvent event : empEvents.getContent()) {
+            EventDto eventDto = convertToEventDto(event);
+            eventDtos.add(eventDto);
+        }
+        
+        return new PageImpl<>(eventDtos, pageable, empEvents.getTotalElements());
     }
 
     private static EventDto convertToEventDto(EmpEvent event) {
@@ -56,8 +78,15 @@ public class Work24ServiceImpl implements Work24Service {
 
     @Override
     public Page<CompanyDto> getCompanies(Pageable pageable) {
-        return companyRepository.findAll(pageable)
-                .map(Work24ServiceImpl::convertToCompanyDto);
+        Page<Company> companies = companyRepository.findAll(pageable);
+        
+        List<CompanyDto> companyDtos = new ArrayList<>();
+        for (Company company : companies.getContent()) {
+            CompanyDto companyDto = convertToCompanyDto(company);
+            companyDtos.add(companyDto);
+        }
+        
+        return new PageImpl<>(companyDtos, pageable, companies.getTotalElements());
     }
 
     private static CompanyDto convertToCompanyDto(Company company) {
