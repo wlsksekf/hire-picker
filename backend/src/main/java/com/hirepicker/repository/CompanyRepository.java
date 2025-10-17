@@ -1,8 +1,9 @@
 package com.hirepicker.repository;
 
-import com.hirepicker.model.Company;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import com.hirepicker.entity.Company;
 
 import java.util.Optional;
 

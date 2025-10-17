@@ -3,9 +3,9 @@ package com.hirepicker.service;
 import com.hirepicker.dto.CompanyDto;
 import com.hirepicker.dto.EventDto;
 import com.hirepicker.dto.JobDto;
-import com.hirepicker.model.Company;
-import com.hirepicker.model.EmpEvent;
-import com.hirepicker.model.JobPosting;
+import com.hirepicker.entity.Company;
+import com.hirepicker.entity.EmpEvent;
+import com.hirepicker.entity.JobPosting;
 import com.hirepicker.repository.CompanyRepository;
 import com.hirepicker.repository.EmpEventRepository;
 import com.hirepicker.repository.JobPostingRepository;
@@ -14,9 +14,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
-
+import org.springframework.data.domain.PageImpl;
 @Service
 @RequiredArgsConstructor
 public class Work24ServiceImpl implements Work24Service {
@@ -27,52 +28,75 @@ public class Work24ServiceImpl implements Work24Service {
 
     @Override
     public Page<JobDto> getJobs(Pageable pageable) {
-        return jobPostingRepository.findAll(pageable)
-                .map(new Function<JobPosting, JobDto>() {
-                    @Override
-                    public JobDto apply(JobPosting job) {
-                        return new JobDto(
-                                job.getPostingId(),
-                                Optional.ofNullable(job.getCompany()).map(Company::getCompanyName).orElse(""),
-                                job.getTitle(),
-                                job.getEmploymentType(),
-                                job.getLocation()
-                        );
-                    }
-                });
+        Page<JobPosting> jobPostings = jobPostingRepository.findAll(pageable);
+        
+        List<JobDto> jobDtos = new ArrayList<>();
+        for (JobPosting job : jobPostings.getContent()) {
+            JobDto jobDto = convertToJobDto(job);
+            jobDtos.add(jobDto);
+        }
+        
+        return new PageImpl<>(jobDtos, pageable, jobPostings.getTotalElements());
+    }
+
+    private static JobDto convertToJobDto(JobPosting job) {
+        String companyName = "";
+        if (job.getCompany() != null) {
+            companyName = job.getCompany().getCompanyName();
+        }
+        
+        return new JobDto(
+                job.getPostingId(),
+                companyName,
+                job.getTitle(),
+                job.getEmploymentType(),
+                job.getLocation()
+        );
     }
 
     @Override
     public Page<EventDto> getEvents(Pageable pageable) {
-        return empEventRepository.findAll(pageable)
-                .map(new Function<EmpEvent, EventDto>() {
-                    @Override
-                    public EventDto apply(EmpEvent event) {
-                        return new EventDto(
-                                event.getEventCode(),
-                                event.getEventName(),
-                                event.getEventDuration(),
-                                event.getArea()
-                        );
-                    }
-                });
+        Page<EmpEvent> empEvents = empEventRepository.findAll(pageable);
+        
+        List<EventDto> eventDtos = new ArrayList<>();
+        for (EmpEvent event : empEvents.getContent()) {
+            EventDto eventDto = convertToEventDto(event);
+            eventDtos.add(eventDto);
+        }
+        
+        return new PageImpl<>(eventDtos, pageable, empEvents.getTotalElements());
+    }
+
+    private static EventDto convertToEventDto(EmpEvent event) {
+        return new EventDto(
+                event.getEventCode(),
+                event.getEventName(),
+                event.getEventDuration(),
+                event.getArea()
+        );
     }
 
     @Override
     public Page<CompanyDto> getCompanies(Pageable pageable) {
-        return companyRepository.findAll(pageable)
-                .map(new Function<Company, CompanyDto>() {
-                    @Override
-                    public CompanyDto apply(Company company) {
-                        return new CompanyDto(
-                                company.getCompanyId(),
-                                company.getCompanyName(),
-                                company.getDescription(),
-                                company.getWebsiteUrl(),
-                                company.getBusinessNumber(),
-                                company.getLogoUrl()
-                        );
-                    }
-                });
+        Page<Company> companies = companyRepository.findAll(pageable);
+        
+        List<CompanyDto> companyDtos = new ArrayList<>();
+        for (Company company : companies.getContent()) {
+            CompanyDto companyDto = convertToCompanyDto(company);
+            companyDtos.add(companyDto);
+        }
+        
+        return new PageImpl<>(companyDtos, pageable, companies.getTotalElements());
+    }
+
+    private static CompanyDto convertToCompanyDto(Company company) {
+        return new CompanyDto(
+                company.getCompanyId(),
+                company.getCompanyName(),
+                company.getDescription(),
+                company.getWebsiteUrl(),
+                company.getBusinessNumber(),
+                company.getLogoUrl()
+        );
     }
 }
