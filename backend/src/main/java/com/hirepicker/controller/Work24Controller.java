@@ -3,14 +3,10 @@ package com.hirepicker.controller;
 import com.hirepicker.dto.CompanyDto;
 import com.hirepicker.dto.EventDto;
 import com.hirepicker.dto.JobDto;
-import com.hirepicker.entity.Company;
-import com.hirepicker.entity.EmpEvent;
-import com.hirepicker.entity.JobPosting;
-import com.hirepicker.repository.CompanyRepository;
-import com.hirepicker.repository.EmpEventRepository;
-import com.hirepicker.repository.JobPostingRepository;
 import com.hirepicker.service.Work24ApiService;
 import com.hirepicker.service.Work24Service;
+import com.hirepicker.service.Work24ServiceImpl;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -21,17 +17,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Optional;
-import java.util.function.Function;
 
 @Tag(name = "Work24", description = "Work24 API")
 @RestController
 @RequestMapping("/api/work24")
 @RequiredArgsConstructor
 public class Work24Controller {
-
-
-
 
     private final Work24ApiService work24ApiService;
     private final Work24Service work24Service;
@@ -55,6 +46,7 @@ public class Work24Controller {
     public Page<CompanyDto> getCompanies(Pageable pageable) {
         return work24Service.getCompanies(pageable);
     }
+
 
     // --- 수동 동기화 트리거 API --- //
 
