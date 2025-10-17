@@ -127,7 +127,7 @@ public class Work24ApiService {
         if (apiKey == null || apiKey.isBlank()) { System.err.println("CRITICAL: 'work24_key' not found in .env file."); return null; }
         return apiKey;
     }
-
+    // 공채속보 목록(L) 반환
     private List<JobDto> getJobs(String apiKey, int page) {
         String url = "https://www.work24.go.kr/cm/openApi/call/wk/callOpenApiSvcInfo210L21.do?authKey=" + apiKey + "&callTp=L&returnType=XML&startPage=" + page + "&display=100";
         try {
@@ -148,7 +148,7 @@ public class Work24ApiService {
             return List.of();
         }
     }
-
+    // 공채행사 목록(L) 반환
     private List<EventDto> getEvents(String apiKey, int page) {
         String url = "https://www.work24.go.kr/cm/openApi/call/wk/callOpenApiSvcInfo210L11.do?authKey=" + apiKey + "&callTp=L&returnType=XML&startPage=" + page + "&display=100";
         try {
@@ -169,7 +169,7 @@ public class Work24ApiService {
             return List.of();
         }
     }
-
+    // 공채 기업 목록(L) 반환
     private List<CompanyDto> getCompanies(String apiKey, int page) {
         String url = "https://www.work24.go.kr/cm/openApi/call/wk/callOpenApiSvcInfo210L31.do?authKey=" + apiKey + "&callTp=L&returnType=XML&startPage=" + page + "&display=100";
         try {
