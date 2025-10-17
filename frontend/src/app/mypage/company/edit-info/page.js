@@ -10,7 +10,7 @@ import {
   Grid,
 } from '@mui/material';
 
-const EditCompanyInfo = () => {
+function EditCompanyInfo() {
   return (
     <Paper sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -77,6 +77,6 @@ const EditCompanyInfo = () => {
       </Box>
     </Paper>
   );
-};
+}
 
 export default EditCompanyInfo;

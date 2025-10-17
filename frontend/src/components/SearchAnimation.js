@@ -43,73 +43,75 @@ const animationConfig = {
     `,
   },
 
-  getStyles: (animate = true) => ({
-    // --- 오른쪽 애니메이션 요소들 ---
-    clawContainerRight: {
-      position: 'absolute',
-      top: '-180px',
-      left: 'calc(50% + 450px)',
-      transform: 'translateX(-50%)',
-      zIndex: 2,
-      width: '60px',
-      height: '140px',
-      animation: animate ? `${animationConfig.keyframes.grabberRight} ${animationConfig.duration} ${animationConfig.timing}` : 'none',
-    },
-    floorResume: {
-      position: 'absolute',
-      bottom: '110px',
-      left: 'calc(50% + 390px)',
-      transform: 'translateX(-50%) rotate(0deg) translateY(180px)',
-      width: '40px',
-      height: '40px',
-      zIndex: 0,
-      animation: animate ? `${animationConfig.keyframes.itemDisappear} ${animationConfig.duration} ${animationConfig.timing}` : 'none',
-    },
-    grabbedResume: {
-      position: 'absolute',
-      top: '40px',
-      left: '10px',
-      width: '40px',
-      height: '40px',
-      transform: 'rotate(5deg)',
-      animation: animate ? `${animationConfig.keyframes.itemAppear} ${animationConfig.duration} ${animationConfig.timing}` : 'none',
-    },
-    // --- 왼쪽 애니메이션 요소들 ---
-    clawContainerLeft: {
-      opacity: 0,
-      position: 'absolute',
-      top: '-230px',
-      left: 'calc(50% - 550px)',
-      transform: 'translateX(-50%)',
-      zIndex: 2,
-      width: '60px',
-      height: '140px',
-      animation: animate ? `${animationConfig.keyframes.grabberLeft} ${animationConfig.duration} ${animationConfig.timing} 2s` : 'none',
-    },
-    floorCompany: {
-      position: 'absolute',
-      bottom: '110px',
-      left: 'calc(50% - 428px)',
-      transform: 'translateX(-50%) rotate(0deg) translateY(185px)',
-      width: '40px',
-      height: '40px',
-      zIndex: 0,
-      animation: animate ? `${animationConfig.keyframes.itemDisappear} ${animationConfig.duration} ${animationConfig.timing} 2s` : 'none',
-    },
-    grabbedCompany: {
-      opacity: 0,
-      position: 'absolute',
-      top: '40px',
-      left: '10px',
-      width: '40px',
-      height: '40px',
-      transform: 'rotate(-5deg)',
-      animation: animate ? `${animationConfig.keyframes.itemAppear} ${animationConfig.duration} ${animationConfig.timing} 2s` : 'none',
-    },
-  }),
+  getStyles: function(animate = true) {
+    return {
+      // --- 오른쪽 애니메이션 요소들 ---
+      clawContainerRight: {
+        position: 'absolute',
+        top: '-180px',
+        left: 'calc(50% + 450px)',
+        transform: 'translateX(-50%)',
+        zIndex: 2,
+        width: '60px',
+        height: '140px',
+        animation: animate ? `${animationConfig.keyframes.grabberRight} ${animationConfig.duration} ${animationConfig.timing}` : 'none',
+      },
+      floorResume: {
+        position: 'absolute',
+        bottom: '110px',
+        left: 'calc(50% + 390px)',
+        transform: 'translateX(-50%) rotate(0deg) translateY(180px)',
+        width: '40px',
+        height: '40px',
+        zIndex: 0,
+        animation: animate ? `${animationConfig.keyframes.itemDisappear} ${animationConfig.duration} ${animationConfig.timing}` : 'none',
+      },
+      grabbedResume: {
+        position: 'absolute',
+        top: '40px',
+        left: '10px',
+        width: '40px',
+        height: '40px',
+        transform: 'rotate(5deg)',
+        animation: animate ? `${animationConfig.keyframes.itemAppear} ${animationConfig.duration} ${animationConfig.timing}` : 'none',
+      },
+      // --- 왼쪽 애니메이션 요소들 ---
+      clawContainerLeft: {
+        opacity: 0,
+        position: 'absolute',
+        top: '-230px',
+        left: 'calc(50% - 550px)',
+        transform: 'translateX(-50%)',
+        zIndex: 2,
+        width: '60px',
+        height: '140px',
+        animation: animate ? `${animationConfig.keyframes.grabberLeft} ${animationConfig.duration} ${animationConfig.timing} 2s` : 'none',
+      },
+      floorCompany: {
+        position: 'absolute',
+        bottom: '110px',
+        left: 'calc(50% - 428px)',
+        transform: 'translateX(-50%) rotate(0deg) translateY(185px)',
+        width: '40px',
+        height: '40px',
+        zIndex: 0,
+        animation: animate ? `${animationConfig.keyframes.itemDisappear} ${animationConfig.duration} ${animationConfig.timing} 2s` : 'none',
+      },
+      grabbedCompany: {
+        opacity: 0,
+        position: 'absolute',
+        top: '40px',
+        left: '10px',
+        width: '40px',
+        height: '40px',
+        transform: 'rotate(-5deg)',
+        animation: animate ? `${animationConfig.keyframes.itemAppear} ${animationConfig.duration} ${animationConfig.timing} 2s` : 'none',
+      },
+    }
+  },
 };
 
-const SearchAnimation = ({ onFilterClick, isFilterOpen }) => {
+function SearchAnimation({ onFilterClick, isFilterOpen }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const animate = true;
@@ -146,6 +148,6 @@ const SearchAnimation = ({ onFilterClick, isFilterOpen }) => {
       <StyledSearchBar onFilterClick={onFilterClick} isFilterOpen={isFilterOpen} />
     </Box>
   );
-};
+}
 
 export default SearchAnimation;

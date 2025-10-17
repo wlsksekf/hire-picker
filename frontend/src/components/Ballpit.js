@@ -37,9 +37,9 @@ class x {
   #t;
   size = { width: 0, height: 0, wWidth: 0, wHeight: 0, ratio: 0, pixelRatio: 0 };
   render = this.#i;
-  onBeforeRender = () => {};
-  onAfterRender = () => {};
-  onAfterResize = () => {};
+  onBeforeRender = function() {};
+  onAfterRender = function() {};
+  onAfterResize = function() {};
   #s = false;
   #n = false;
   isDisposed = false;
@@ -184,17 +184,17 @@ class x {
   }
   #w() {
     if (this.#n) return;
-    const animate = () => {
-      this.#l = requestAnimationFrame(animate);
+    function animate() {
+      this.#l = requestAnimationFrame(animate.bind(this));
       this.#h.delta = this.#c.getDelta();
       this.#h.elapsed += this.#h.delta;
       this.onBeforeRender(this.#h);
       this.render();
       this.onAfterRender(this.#h);
-    };
+    }
     this.#n = true;
     this.#c.start();
-    animate();
+    animate.call(this);
   }
   #z() {
     if (this.#n) {
@@ -207,9 +207,9 @@ class x {
     this.renderer.render(this.scene, this.camera);
   }
   clear() {
-    this.scene.traverse(e => {
+    this.scene.traverse(function(e) {
       if (e.isMesh && typeof e.material === 'object' && e.material !== null) {
-        Object.keys(e.material).forEach(t => {
+        Object.keys(e.material).forEach(function(t) {
           const i = e.material[t];
           if (i !== null && typeof i === 'object' && typeof i.dispose === 'function') {
             i.dispose();
@@ -263,7 +263,7 @@ function S(e) {
       }
     }
   })(e.domElement, t);
-  t.dispose = () => {
+  t.dispose = function() {
     const t = e.domElement;
     b.delete(t);
     if (b.size === 0) {
@@ -530,7 +530,7 @@ class Y extends c {
       thicknessScale: { value: 10 }
     };
     this.defines.USE_UV = '';
-    this.onBeforeCompile = e => {
+    this.onBeforeCompile = function(e) {
       Object.assign(e.uniforms, this.uniforms);
       e.fragmentShader =
         '\n        uniform float thicknessPower;\n        uniform float thicknessScale;\n        uniform float thicknessDistortion;\n        uniform float thicknessAmbient;\n        uniform float thicknessAttenuation;\n      ' +
@@ -604,9 +604,8 @@ class Z extends d {
         function setColors(e) {
           t = e;
           i = [];
-          t.forEach(col => {
-            i.push(new l(col));
-          });
+          i.push(new l(col));
+        });
         }
         setColors(e);
         return {
@@ -694,10 +693,10 @@ function createBallpit(e, t = {}) {
     s = new Z(i.renderer, e);
     i.scene.add(s);
   }
-  i.onBeforeRender = e => {
+  i.onBeforeRender = function(e) {
     if (!c) s.update(e);
   };
-  i.onAfterResize = e => {
+  i.onAfterResize = function(e) {
     s.config.maxX = e.wWidth / 2;
     s.config.maxY = e.wHeight / 2;
   };
@@ -719,17 +718,17 @@ function createBallpit(e, t = {}) {
   };
 }
 
-const Ballpit = ({ className = '', followCursor = true, ...props }) => {
+function Ballpit({ className = '', followCursor = true, ...props }) {
   const canvasRef = useRef(null);
   const spheresInstanceRef = useRef(null);
 
-  useEffect(() => {
+  useEffect(function() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     spheresInstanceRef.current = createBallpit(canvas, { followCursor, ...props });
 
-    return () => {
+    return function() {
       if (spheresInstanceRef.current) {
         spheresInstanceRef.current.dispose();
       }
@@ -738,6 +737,6 @@ const Ballpit = ({ className = '', followCursor = true, ...props }) => {
   }, []);
 
   return <canvas className={className} ref={canvasRef} style={{ width: '100%', height: '100%' }} />;
-};
+}
 
 export default Ballpit;

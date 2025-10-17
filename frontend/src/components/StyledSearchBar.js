@@ -9,7 +9,7 @@ import {
 import { FilterList as FilterListIcon, Search as SearchIcon } from '@mui/icons-material';
 import AnimatedButton from '@/components/AnimatedButton';
 
-const StyledSearchBar = ({ onFilterClick, isFilterOpen }) => {
+function StyledSearchBar({ onFilterClick, isFilterOpen }) {
   return (
     <Box sx={{ maxWidth: '700px', margin: 'auto', display: 'flex', gap: 1 }}>
       <TextField
@@ -54,6 +54,6 @@ const StyledSearchBar = ({ onFilterClick, isFilterOpen }) => {
       </AnimatedButton>
     </Box>
   );
-};
+}
 
 export default StyledSearchBar;

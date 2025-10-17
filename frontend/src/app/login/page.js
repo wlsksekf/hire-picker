@@ -13,12 +13,12 @@ import {
 } from '@mui/material';
 import AnimatedButton from '@/components/AnimatedButton';
 
-const LoginPage = () => {
+function LoginPage() {
   const [tabValue, setTabValue] = useState(0);
 
-  const handleTabChange = (event, newValue) => {
+  function handleTabChange(event, newValue) {
     setTabValue(newValue);
-  };
+  }
 
   return (
     <Container component="main" maxWidth="xs">
@@ -66,6 +66,6 @@ const LoginPage = () => {
       </Paper>
     </Container>
   );
-};
+}
 
 export default LoginPage;
