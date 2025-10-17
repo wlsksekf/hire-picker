@@ -1,4 +1,4 @@
-package com.hirepicker.model;
+package com.hirepicker.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
