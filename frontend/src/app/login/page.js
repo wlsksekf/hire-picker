@@ -2,15 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  TextField,
-  Tabs,
-  Tab,
-  Paper,
-} from '@mui/material';
+import {Container,Box,Typography,TextField,Tabs,Tab,Paper} from '@mui/material';
 import AnimatedButton from '@/components/AnimatedButton';
 
 function LoginPage() {

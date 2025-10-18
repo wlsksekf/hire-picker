@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.data.domain.PageImpl;
 @Service
 @RequiredArgsConstructor
@@ -28,30 +27,30 @@ public class Work24ServiceImpl implements Work24Service {
 
     @Override
     public Page<JobDto> getJobs(Pageable pageable) {
-        Page<JobPosting> jobPostings = jobPostingRepository.findAll(pageable);
+    
+    Page<JobPosting> jobPostings = jobPostingRepository.findAll(pageable);
+    
+    List<JobDto> jobDtos = new ArrayList<>();
+    for (JobPosting job : jobPostings.getContent()) {
         
-        List<JobDto> jobDtos = new ArrayList<>();
-        for (JobPosting job : jobPostings.getContent()) {
-            JobDto jobDto = convertToJobDto(job);
-            jobDtos.add(jobDto);
-        }
-        
-        return new PageImpl<>(jobDtos, pageable, jobPostings.getTotalElements());
-    }
-
-    private static JobDto convertToJobDto(JobPosting job) {
         String companyName = "";
         if (job.getCompany() != null) {
             companyName = job.getCompany().getCompanyName();
         }
         
-        return new JobDto(
-                job.getPostingId(),
-                companyName,
-                job.getTitle(),
-                job.getEmploymentType(),
-                job.getLocation()
-        );
+        JobDto jobDto = JobDto.builder()
+                .id(job.getPostingId())
+                .companyName(companyName)
+                .title(job.getTitle())
+                .employmentType(job.getEmploymentType())
+                .location(job.getLocation())
+                .build();
+        
+        
+        jobDtos.add(jobDto);
+    }
+    
+    return new PageImpl<>(jobDtos, pageable, jobPostings.getTotalElements());
     }
 
     @Override
