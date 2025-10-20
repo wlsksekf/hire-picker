@@ -25,10 +25,10 @@ public class JobPosting {
     @ManyToOne
     @JoinColumn(name = "company_idx", nullable = false)
     private Company company;
-
+ 
     // c_user_idx는 API로 채울 수 없으므로 nullable로 가정. 스키마와 다를 경우 조정 필요.
     @Column(name = "c_user_idx")
-    private Long cUserIdx;
+    private Long cUserIdx;  
 
     @Column(name = "title")
     private String title;
@@ -37,5 +37,5 @@ public class JobPosting {
     private String employmentType;
 
     @Column(name = "location")
-    private String location;
+    private String location;// DB 에 Location으로 저장되어있음
 }
