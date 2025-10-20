@@ -4,9 +4,12 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
+@Getter @Setter
 @Table(name = "company")
 @Data
 @Builder
@@ -40,5 +43,17 @@ public class Company {
 
     @Column(name = "company_type")
     private String companyType;
+
+    @Column(name = "ceo_name")
+    private String ceoName;
+
+    @Column(name = "address")
+    private String address;
+
+    @Column(name = "employee_count")
+    private String employeeCount;
+
+    @Column(name = "corp_code")
+    private String corpCode;
 
 }
