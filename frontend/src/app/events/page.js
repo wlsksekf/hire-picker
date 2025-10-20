@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { faCalendar, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import axios from 'axios';
+import { api } from '@/api'; // 공용 api 인스턴스 사용
 
 const PAGE_SIZE = 20;
 
@@ -29,7 +29,7 @@ function EventsPage() {
 
   useEffect(function() {
     setLoading(true);
-    axios.get(`/api/work24/events?page=0&size=${PAGE_SIZE}`)
+    api.get(`/api/work24/events?page=0&size=${PAGE_SIZE}`)
       .then(function(response) {
         const data = response.data;
         setEvents(data.content);
@@ -46,7 +46,7 @@ function EventsPage() {
     const nextPage = page + 1;
     setLoading(true);
     try {
-      const response = await axios.get(`/api/work24/events?page=${nextPage}&size=${PAGE_SIZE}`);
+      const response = await api.get(`/api/work24/events?page=${nextPage}&size=${PAGE_SIZE}`);
       const data = response.data;
       setEvents(function(prevEvents) { return [...prevEvents, ...data.content] });
       setHasNextPage(!data.last);

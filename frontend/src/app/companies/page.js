@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { faLink, faIdBadge } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import axios from 'axios';
+import { api } from '@/api'; // 공용 api 인스턴스 사용
 import Link from 'next/link';
 
 const PAGE_SIZE = 20;
@@ -38,7 +38,7 @@ function CompaniesPage() {
     setLoading(true);
     const apiUrl = `/api/work24/companies?page=0&size=${PAGE_SIZE}${query ? `&query=${query}` : ''}`;
     
-    axios.get(apiUrl)
+    api.get(apiUrl)
       .then(function(response) {
         const data = response.data;
         setCompanies(data.content);
@@ -66,7 +66,7 @@ function CompaniesPage() {
     setLoading(true);
     try {
       const apiUrl = `/api/work24/companies?page=${nextPage}&size=${PAGE_SIZE}${query ? `&query=${query}` : ''}`;
-      const response = await axios.get(apiUrl);
+      const response = await api.get(apiUrl);
       const data = response.data;
       setCompanies(function(prevCompanies) { return [...prevCompanies, ...data.content] });
       setHasNextPage(!data.last);

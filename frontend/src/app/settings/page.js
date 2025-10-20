@@ -30,6 +30,7 @@ import {
   faSync
 } from '@fortawesome/free-solid-svg-icons';
 import DarkModeSwitch from '../../components/DarkModeSwitch'; // 커스텀 스위치 import
+import { api } from '@/api'; // 공용 api 인스턴스 사용
 
 function SettingsPage() {
 
@@ -41,20 +42,13 @@ function SettingsPage() {
     setStatus({ type: 'info', message: `${type} 동기화를 시작합니다...` });
 
     try {
-      // API 키 없이 백엔드 동기화 API 호출
-      const response = await fetch(`/api/work24/sync/${type}`);
-      
-      if (!response.ok) {
-        // 백엔드에서 받은 에러 메시지를 텍스트로 읽음
-        const errorText = await response.text();
-        throw new Error(errorText || `${type} 동기화에 실패했습니다.`);
-      }
-
-      const resultText = await response.text();
+      const response = await api.get(`/api/work24/sync/${type}`);
+      const resultText = response.data;
       setStatus({ type: 'success', message: resultText });
 
     } catch (error) {
-      setStatus({ type: 'error', message: error.message });
+      const errorMessage = error.response?.data || error.message || `${type} 동기화에 실패했습니다.`;
+      setStatus({ type: 'error', message: errorMessage });
     } finally {
       setLoading(false);
     }

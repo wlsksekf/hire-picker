@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import axios from 'axios';
+import { api } from '@/api'; // 공용 api 인스턴스 사용
 import { 
     Container, 
     Typography, 
@@ -30,7 +30,7 @@ export default function CompanyDetailPage() {
   useEffect(() => {
     if (id) {
       setLoading(true);
-      axios.get(`/api/work24/companies/${id}`)
+      api.get(`/api/work24/companies/${id}`)
         .then(response => {
           setCompany(response.data);
           setError(null);

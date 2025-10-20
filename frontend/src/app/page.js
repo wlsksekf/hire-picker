@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
-import axios from 'axios';
+import { api } from '@/api'; // 공용 api 인스턴스 사용
 
 const PAGE_SIZE = 20;
 
@@ -33,9 +33,16 @@ function MainPage() {
   async function fetchJobs(pageNum) {
     setIsFetchingNextPage(true);
     try {
-      const response = await axios.get(`/api/work24/jobs?page=${pageNum}&size=${PAGE_SIZE}`);
+      const response = await api.get(`/api/work24/jobs?page=${pageNum}&size=${PAGE_SIZE}`);
       const data = response.data;
-      setJobs(function(prevJobs) { return [...prevJobs, ...data.content] });
+      
+      setJobs(prevJobs => {
+        const newJobs = data.content;
+        const existingIds = new Set(prevJobs.map(j => j.id));
+        const uniqueNewJobs = newJobs.filter(j => !existingIds.has(j.id));
+        return [...prevJobs, ...uniqueNewJobs];
+      });
+
       setHasNextPage(!data.last);
       setStatus('success');
     } catch (err) {
@@ -73,7 +80,7 @@ function MainPage() {
   }
 
   // 에러 상태
-  if (status === 'error') {
+  if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 8 }}>
         <Alert severity="error">채용 정보를 가져오는 데 실패했습니다: {error.message}</Alert>
