@@ -37,8 +37,4 @@ public class Company {
 
     @Column(name = "logo_url")
     private String logoUrl;
-
-    @Column(name = "company_type")
-    private String companyType;
-
 }

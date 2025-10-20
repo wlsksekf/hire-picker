@@ -48,8 +48,8 @@ public class Work24DataProcessorService {
     @Transactional
     public void processCompanyDto(CompanyDto dto) {
         companyRepository.findByCompanyId(dto.id()).ifPresentOrElse(
-            c -> { c.setCompanyName(dto.name()); c.setDescription(dto.summary()); c.setWebsiteUrl(dto.homepage()); c.setBusinessNumber(dto.businessNumber()); c.setLogoUrl(dto.logoUrl()); c.setCompanyType(dto.companyType()); companyRepository.save(c); },
-            () -> companyRepository.save(Company.builder().companyId(dto.id()).companyName(dto.name()).description(dto.summary()).websiteUrl(dto.homepage()).businessNumber(dto.businessNumber()).logoUrl(dto.logoUrl()).companyType(dto.companyType()).build())
+            c -> { c.setCompanyName(dto.name()); c.setDescription(dto.summary()); c.setWebsiteUrl(dto.homepage()); c.setBusinessNumber(dto.businessNumber()); c.setLogoUrl(dto.logoUrl()); companyRepository.save(c); },
+            () -> companyRepository.save(Company.builder().companyId(dto.id()).companyName(dto.name()).description(dto.summary()).websiteUrl(dto.homepage()).businessNumber(dto.businessNumber()).logoUrl(dto.logoUrl()).build())
         );
     }
 }

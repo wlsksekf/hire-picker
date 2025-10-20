@@ -23,6 +23,6 @@ public class Work24DataMapper {
     public static CompanyDto mapToCompanyDto(Element e) {
         String id = Work24XmlParser.getTagValue(e, "empCoNo");
         if (id == null || id.isBlank()) return null; // Or throw an exception
-        return new CompanyDto(id, Work24XmlParser.getTagValue(e, "coNm"), Work24XmlParser.getTagValue(e, "coIntroSummaryCont"), Work24XmlParser.getTagValue(e, "homepg"), Work24XmlParser.getTagValue(e, "busino"), Work24XmlParser.getTagValue(e, "regLogImgNm"),Work24XmlParser.getTagValue(e, "coClcdNm"));
+        return new CompanyDto(id, Work24XmlParser.getTagValue(e, "coClcdNm"), Work24XmlParser.getTagValue(e, "coIntroSummaryCont"), Work24XmlParser.getTagValue(e, "homepg"), Work24XmlParser.getTagValue(e, "busino"), Work24XmlParser.getTagValue(e, "regLogImgNm"));
     }
 }
