@@ -30,7 +30,7 @@ function MainPage() {
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const [status, setStatus] = useState('pending');
   const [error, setError] = useState(null);
-  const [selectedPostId, setSelectedPostId] = useState(null); //chatroom을 위한 usesState 참일경우에만 보여줘야 함으로 null;
+  const [selectedPost, setSelectedPost] = useState(null); //chatroom을 위한 usesState 참일경우에만 보여줘야 함으로 null;
 
   async function fetchJobs(pageNum) {
     setIsFetchingNextPage(true);
@@ -132,7 +132,7 @@ function MainPage() {
                   {/* ************************* 채팅 작업중>>시작**************************************** */}
                   <Button 
                     variant="outlined" 
-                    onClick={function() { setSelectedPostId(job.id); }}
+                    onClick={function() { setSelectedPost(job); }}
                   >
                     실시간 채팅
                   </Button>
@@ -167,10 +167,10 @@ function MainPage() {
         {!hasNextPage && jobs.length > 0 && <Typography textAlign="center" sx={{ mt: 4, color: 'text.secondary' }}>모든 정보를 불러왔습니다.</Typography>}
       </Box>
 
-      {selectedPostId && (
+      {selectedPost && (
         <ChatRoom
-        postId={selectedPostId}
-        onClose={function(){setSelectedPostId(null)}}/>
+        post={selectedPost}
+        onClose={function(){setSelectedPost(null)}}/>
       )}
     </Container>
   );
