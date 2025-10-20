@@ -1,4 +1,4 @@
-package com.hirepicker.model;
+package com.hirepicker.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -37,4 +37,8 @@ public class Company {
 
     @Column(name = "logo_url")
     private String logoUrl;
+
+    @Column(name = "company_type")
+    private String companyType;
+
 }
