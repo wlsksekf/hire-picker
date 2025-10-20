@@ -18,8 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.domain.PageImpl;
 
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.http.HttpStatus;
+
 
 
 import java.util.Optional;
@@ -58,6 +57,7 @@ public class Work24ServiceImpl implements Work24Service {
     }
     
     return new PageImpl<>(jobDtos, pageable, jobPostings.getTotalElements());
+    
     }
 
     @Override

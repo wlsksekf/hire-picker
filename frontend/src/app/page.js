@@ -18,6 +18,7 @@ import {
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
+import ChatRoom from '@/components/ChatRoom';
 
 const PAGE_SIZE = 20;
 
@@ -29,6 +30,7 @@ function MainPage() {
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const [status, setStatus] = useState('pending');
   const [error, setError] = useState(null);
+  const [selectedPostId, setSelectedPostId] = useState(null); //chatroom을 위한 usesState 참일경우에만 보여줘야 함으로 null;
 
   async function fetchJobs(pageNum) {
     setIsFetchingNextPage(true);
@@ -127,6 +129,15 @@ function MainPage() {
                   </Box>
                 </Box>
                 <CardActions sx={{ p: 0, mt: 2, alignSelf: 'flex-end' }}>
+                  {/* ************************* 채팅 작업중>>시작**************************************** */}
+                  <Button 
+                    variant="outlined" 
+                    onClick={function() { setSelectedPostId(job.id); }}
+                  >
+                    실시간 채팅
+                  </Button>
+                  {/* ************************* 채팅 작업중>>끝****************************************** */}
+
                   <Button 
                       variant="contained"
                       href={job.homepageUrl && (job.homepageUrl.startsWith('http') ? job.homepageUrl : `http://${job.homepageUrl}`)}
@@ -155,6 +166,12 @@ function MainPage() {
 
         {!hasNextPage && jobs.length > 0 && <Typography textAlign="center" sx={{ mt: 4, color: 'text.secondary' }}>모든 정보를 불러왔습니다.</Typography>}
       </Box>
+
+      {selectedPostId && (
+        <ChatRoom
+        postId={selectedPostId}
+        onClose={function(){setSelectedPostId(null)}}/>
+      )}
     </Container>
   );
 }
