@@ -17,6 +17,13 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.domain.PageImpl;
+
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.http.HttpStatus;
+
+
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class Work24ServiceImpl implements Work24Service {
@@ -76,8 +83,14 @@ public class Work24ServiceImpl implements Work24Service {
     }
 
     @Override
-    public Page<CompanyDto> getCompanies(Pageable pageable) {
-        Page<Company> companies = companyRepository.findAll(pageable);
+    public Page<CompanyDto> getCompanies(String query, Pageable pageable) {
+        Page<Company> companies;
+
+        if (query != null && !query.trim().isEmpty()) {
+            companies = companyRepository.findByCompanyNameContainingIgnoreCase(query, pageable);
+        } else {
+            companies = companyRepository.findAll(pageable);
+        }
         
         List<CompanyDto> companyDtos = new ArrayList<>();
         for (Company company : companies.getContent()) {
@@ -88,6 +101,13 @@ public class Work24ServiceImpl implements Work24Service {
         return new PageImpl<>(companyDtos, pageable, companies.getTotalElements());
     }
 
+    @Override
+    public CompanyDto getCompany(String id) {
+        Optional<Company> companyOptional = companyRepository.findByCompanyId(id);
+            Company company = companyOptional.get();
+            return convertToCompanyDto(company);
+    }
+
     private static CompanyDto convertToCompanyDto(Company company) {
         return new CompanyDto(
                 company.getCompanyId(),
@@ -95,7 +115,9 @@ public class Work24ServiceImpl implements Work24Service {
                 company.getDescription(),
                 company.getWebsiteUrl(),
                 company.getBusinessNumber(),
-                company.getLogoUrl()
+                company.getLogoUrl(),
+                company.getCompanyType()
         );
     }
+
 }

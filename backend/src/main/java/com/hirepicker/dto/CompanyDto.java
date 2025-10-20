@@ -9,5 +9,6 @@ public record CompanyDto(
     String summary,
     String homepage,
     String businessNumber,
-    String logoUrl
+    String logoUrl,
+    String companyType
 ) {}
