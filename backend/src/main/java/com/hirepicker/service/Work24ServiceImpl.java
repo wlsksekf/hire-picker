@@ -24,14 +24,15 @@ import org.springframework.http.HttpStatus;
 
 import java.util.Optional;
 
-@Service
-@RequiredArgsConstructor
+@Service // Spring의 서비스 빈으로 등록
+@RequiredArgsConstructor // final 필드에 대한 생성자 자동 생성
 public class Work24ServiceImpl implements Work24Service {
 
-    private final JobPostingRepository jobPostingRepository;
-    private final EmpEventRepository empEventRepository;
-    private final CompanyRepository companyRepository;
+    private final JobPostingRepository jobPostingRepository; // 채용 공고 리포지토리
+    private final EmpEventRepository empEventRepository; // 채용 행사 리포지토리
+    private final CompanyRepository companyRepository; // 기업 리포지토리
 
+    // 채용 공고 목록 조회
     @Override
     public Page<JobDto> getJobs(Pageable pageable) {
     
@@ -60,6 +61,7 @@ public class Work24ServiceImpl implements Work24Service {
     return new PageImpl<>(jobDtos, pageable, jobPostings.getTotalElements());
     }
 
+    // 채용 행사 목록 조회
     @Override
     public Page<EventDto> getEvents(Pageable pageable) {
         Page<EmpEvent> empEvents = empEventRepository.findAll(pageable);
@@ -73,6 +75,7 @@ public class Work24ServiceImpl implements Work24Service {
         return new PageImpl<>(eventDtos, pageable, empEvents.getTotalElements());
     }
 
+    // EmpEvent 엔티티를 EventDto로 변환
     private static EventDto convertToEventDto(EmpEvent event) {
         return new EventDto(
                 event.getEventCode(),
@@ -82,6 +85,7 @@ public class Work24ServiceImpl implements Work24Service {
         );
     }
 
+    // 기업 목록 조회
     @Override
     public Page<CompanyDto> getCompanies(String query, Pageable pageable) {
         Page<Company> companies;
@@ -101,6 +105,7 @@ public class Work24ServiceImpl implements Work24Service {
         return new PageImpl<>(companyDtos, pageable, companies.getTotalElements());
     }
 
+    // 특정 기업 상세 정보 조회
     @Override
     public CompanyDto getCompany(String id) {
         Optional<Company> companyOptional = companyRepository.findByCompanyId(id);
@@ -108,6 +113,7 @@ public class Work24ServiceImpl implements Work24Service {
             return convertToCompanyDto(company);
     }
 
+    // Company 엔티티를 CompanyDto로 변환
     private static CompanyDto convertToCompanyDto(Company company) {
         return new CompanyDto(
                 company.getCompanyId(),

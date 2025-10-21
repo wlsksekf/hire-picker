@@ -8,20 +8,23 @@ import AnimatedButton from '@/components/AnimatedButton';
 import { api } from '@/api';
 import useAuthStore from '@/store/authStore';
 
+// 로그인 페이지 컴포넌트
 function LoginPage() {
-  const [tabValue, setTabValue] = useState(0);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
-  const [isSocialError, setIsSocialError] = useState(false);
+  const [tabValue, setTabValue] = useState(0); // 탭 값 (개인회원/기업회원)
+  const [email, setEmail] = useState(''); // 이메일 입력 값
+  const [password, setPassword] = useState(''); // 비밀번호 입력 값
+  const [error, setError] = useState(null); // 에러 메시지
+  const [isSocialError, setIsSocialError] = useState(false); // 소셜 로그인 에러 여부
 
-  const router = useRouter();
-  const { login } = useAuthStore();
+  const router = useRouter(); // Next.js 라우터
+  const { login } = useAuthStore(); // 인증 스토어에서 로그인 함수 가져오기
 
+  // 탭 변경 핸들러
   function handleTabChange(event, newValue) {
     setTabValue(newValue);
   }
 
+  // 폼 제출 핸들러
   async function handleSubmit(event) {
     event.preventDefault();
     setError(null);
@@ -80,10 +83,10 @@ function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
           />
           
-          {error && (
+          {error && ( // 에러 메시지가 있을 경우 표시
             <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
               {error}
-              {isSocialError && (
+              {isSocialError && ( // 소셜 로그인 에러일 경우 비밀번호 설정 링크 표시
                 <Link href="/forgot-password" passHref legacyBehavior>
                   <a style={{ color: '#1976d2', textDecoration: 'underline', marginLeft: '8px' }}>
                     비밀번호 설정하기

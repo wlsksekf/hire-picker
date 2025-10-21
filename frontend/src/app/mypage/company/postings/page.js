@@ -4,6 +4,7 @@ import React from 'react';
 import { Box, Typography, Button, Paper, Chip } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 
+// DataGrid 컬럼 정의
 const columns = [
   { field: 'title', headerName: '채용공고 제목', width: 350 },
   {
@@ -31,12 +32,14 @@ const columns = [
   },
 ];
 
+// DataGrid 행 데이터 (예시)
 const rows = [
   { id: 1, title: '시니어 프론트엔드 개발자 (React)', status: '진행중', applicants: 5, createdDate: '2024-10-20' },
   { id: 2, title: '자바 백엔드 개발자 (신입/경력)', status: '진행중', applicants: 12, createdDate: '2024-10-15' },
   { id: 3, title: '[마감] iOS 개발자', status: '마감', applicants: 25, createdDate: '2024-09-30' },
 ];
 
+// 기업 마이페이지 - 채용공고 관리 컴포넌트
 function ManagePostings() {
   return (
     <Paper sx={{ p: 3 }}>

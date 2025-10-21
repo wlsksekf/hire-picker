@@ -26,7 +26,6 @@ function convertOklchToRgb(oklchStr) {
 
 // 테마 생성 로직
 function getTheme(mode) {
-  // ... (rest of the getTheme function is unchanged)
   const oklchPalette = {
     mode,
     primary: {
@@ -94,9 +93,11 @@ function getTheme(mode) {
   });
 }
 
+// 앱 전체에 테마와 레이아웃을 제공하는 컴포넌트
 export default function AppProviders({ children }) {
-  const [mode, setMode] = useState('light');
+  const [mode, setMode] = useState('light'); // 테마 모드 상태 (light/dark)
 
+  // 테마 모드가 변경될 때만 테마를 다시 생성
   const theme = useMemo(function() { return getTheme(mode) }, [mode]);
 
   return (

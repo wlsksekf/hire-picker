@@ -16,17 +16,17 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenProvider jwtTokenProvider; // JWT 토큰 제공자
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-        String accessToken = jwtTokenProvider.createAccessToken(authentication);
+        String accessToken = jwtTokenProvider.createAccessToken(authentication); // 액세스 토큰 생성
 
         // 프론트엔드로 리다이렉트할 URL 생성. 토큰을 쿼리 파라미터로 포함
         String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/oauth/redirect")
                 .queryParam("token", accessToken)
                 .build().toUriString();
 
-        getRedirectStrategy().sendRedirect(request, response, targetUrl);
+        getRedirectStrategy().sendRedirect(request, response, targetUrl); // 리다이렉트
     }
 }

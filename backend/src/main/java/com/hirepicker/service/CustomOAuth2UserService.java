@@ -15,17 +15,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 import java.util.Optional;
 
-@Service
-@RequiredArgsConstructor
-@Transactional
+@Service // Spring의 서비스 빈으로 등록
+@RequiredArgsConstructor // final 필드에 대한 생성자 자동 생성
+@Transactional // 트랜잭션 관리 활성화
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
-    private final PersonalUserRepository personalUserRepository;
+    private final PersonalUserRepository personalUserRepository; // 사용자 리포지토리
 
+    // OAuth2 사용자 정보를 로드하는 메서드
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-        OAuth2User oAuth2User = super.loadUser(userRequest);
-        Map<String, Object> attributes = oAuth2User.getAttributes();
+        OAuth2User oAuth2User = super.loadUser(userRequest); // 기본 OAuth2 사용자 정보 로드
+        Map<String, Object> attributes = oAuth2User.getAttributes(); // 속성 정보 추출
 
         String email = (String) attributes.get("email");
         String name = (String) attributes.get("name");
@@ -34,21 +35,21 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         PersonalUser personalUser;
         if (userOptional.isPresent()) {
-            // 이미 가입된 유저라면, 기존 정보를 그대로 사용 (필요 시 정보 업데이트 로직 추가 가능)
+            // 이미 가입된 유저라면, 기존 정보를 그대로 사용
             personalUser = userOptional.get();
         } else {
-            // 신규 유저라면, DB에 저장 (비밀번호는 null)
+            // 신규 유저라면, DB에 저장
             personalUser = PersonalUser.builder()
                     .email(email)
                     .name(name)
-                    .nickname(email) // 닉네임은 일단 이메일로 설정 (나중에 변경 기능 제공)
-                    .platform(Platform.GOOGLE)
-                    // TODO: 성별 정보는 구글 스코프에 따라 추가 처리가 필요할 수 있음 (현재는 임시값)
+                    .nickname(email) // 닉네임은 일단 이메일로 설정
+                    .platform(Platform.GOOGLE) // 플랫폼은 구글로 설정
+                    // TODO: 성별 정보는 구글 스코프에 따라 추가 처리가 필요
                     .gender(com.hirepicker.entity.Gender.MALE) 
                     .build();
             personalUserRepository.save(personalUser);
         }
 
-        return new CustomUserDetails(personalUser, oAuth2User.getAttributes());
+        return new CustomUserDetails(personalUser, oAuth2User.getAttributes()); // CustomUserDetails 객체 반환
     }
 }

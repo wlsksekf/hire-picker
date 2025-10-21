@@ -10,6 +10,7 @@ import {
   Grid,
 } from '@mui/material';
 
+// 개인 마이페이지 - 내 정보 수정 컴포넌트
 function EditProfile() {
   return (
     <Paper sx={{ p: 3 }}>

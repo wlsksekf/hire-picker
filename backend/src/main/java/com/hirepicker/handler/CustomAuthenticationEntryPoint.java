@@ -13,14 +13,15 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
+@Component // Spring의 컴포넌트로 등록
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper(); // JSON 파서
 
+    // 인증되지 않은 사용자의 요청에 대한 처리를 하는 메서드
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
-        // 인증되지 않은 사용자의 요청에 대해 401 Unauthorized 에러를 반환
+        // 401 Unauthorized 에러를 반환
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
@@ -30,6 +31,6 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         errorDetails.put("message", "인증이 필요합니다: " + authException.getMessage());
         errorDetails.put("path", request.getRequestURI());
 
-        response.getWriter().write(objectMapper.writeValueAsString(errorDetails));
+        response.getWriter().write(objectMapper.writeValueAsString(errorDetails)); // 에러 정보를 JSON 형태로 응답
     }
 }

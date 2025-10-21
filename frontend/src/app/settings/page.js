@@ -32,11 +32,13 @@ import {
 import DarkModeSwitch from '../../components/DarkModeSwitch'; // 커스텀 스위치 import
 import { api } from '@/api'; // 공용 api 인스턴스 사용
 
+// 설정 페이지 컴포넌트
 function SettingsPage() {
 
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState({ type: '', message: '' });
+  const [loading, setLoading] = useState(false); // 로딩 상태
+  const [status, setStatus] = useState({ type: '', message: '' }); // 상태 메시지
 
+  // 데이터 동기화 처리
   async function handleSync(type) {
     setLoading(true);
     setStatus({ type: 'info', message: `${type} 동기화를 시작합니다...` });
@@ -54,6 +56,7 @@ function SettingsPage() {
     }
   }
 
+  // 아이콘 스타일
   const iconStyle = {
     minWidth: '40px',
     display: 'flex',
@@ -61,6 +64,7 @@ function SettingsPage() {
     color: 'text.secondary'
   };
 
+  // 서브헤더 스타일
   const subheaderStyle = {
     fontWeight: 'bold',
     color: function(theme) { return theme.palette.text.secondary },
@@ -143,7 +147,7 @@ function SettingsPage() {
 
           <ListItem>
             <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 1 }}>
-              {loading && <CircularProgress size={24} sx={{ mr: 2 }} />}
+              {loading && <CircularProgress size={24} sx={{ mr: 2 }} />} {/* 로딩 중일 때 로딩 스피너 표시 */}
               <Stack direction="row" spacing={1}>
                 <Button variant="contained" onClick={function() { return handleSync('jobs') }} disabled={loading}>
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
@@ -160,7 +164,7 @@ function SettingsPage() {
               </Stack>
             </Box>
           </ListItem>
-          {status.message && (
+          {status.message && ( // 상태 메시지가 있을 경우 표시
             <ListItem sx={{ mt: 2 }}>
               <Alert severity={status.type || 'info'} sx={{ width: '100%' }}>{status.message}</Alert>
             </ListItem>

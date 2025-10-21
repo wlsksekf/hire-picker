@@ -5,8 +5,8 @@ server:
   port: 8080
 
 jwt:
-  secret: ${JWT_SECRET:aGlyZXBpY2tlci1mdXNpb24tbG9naW4tcHJvamVjdC1zZWNyZXQta2V5LWZvci1sb2NhbC1kZXZlbG9wbWVudC0yMDI1}
-  access-token-validity-in-seconds: 3600 # 1시간
+  secret: ${JWT_SECRET:aGlyZXBpY2tlci1mdXNpb24tbG9naW4tcHJvamVjdC1zZWNyZXQta2V5LWZvci1sb2NhbC1kZXZlbG9wbWVudC0yMDI1} # JWT 시크릿 키
+  access-token-validity-in-seconds: 3600 # 액세스 토큰 유효 기간 (1시간)
 
 spring:
   # 기본 프로필을 'local'으로 설정. 다른 프로필이 지정되면 무시됨.

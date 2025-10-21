@@ -2,6 +2,7 @@ import React from 'react';
 import { styled } from '@mui/material/styles';
 import Button from '@mui/material/Button';
 
+// 애니메이션 효과가 적용된 버튼 컴포넌트
 const StyledButton = styled(Button)(function({ theme }) {
   return {
     padding: '15px 25px',
