@@ -13,12 +13,10 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
@@ -47,13 +45,17 @@ import com.hirepicker.util.DataMapper;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class EmploymentDataService {
 
     private final Dotenv dotenv;
     private final CompanyRepository companyRepository;
-
     private final EmploymentDataProcessorService DataProcessorService;
+
+    public EmploymentDataService(Dotenv dotenv, CompanyRepository companyRepository, EmploymentDataProcessorService dataProcessorService) {
+        this.dotenv = dotenv;
+        this.companyRepository = companyRepository;
+        this.DataProcessorService = dataProcessorService;
+    }
 
     @Scheduled(cron = "0 0 4 * * *") @Transactional
     public void scheduledSyncJobs() { synchronizePublicJobs(); }
@@ -62,7 +64,7 @@ public class EmploymentDataService {
     public void scheduledSyncEvents() { synchronizeEvents(); }
 
     @Scheduled(cron = "0 0 6 * * MON") @Transactional
-    public void scheduledSyncCompanies() { synchronizeCompanies(); }
+    public void scheduledSyncCompanies() { syncCompanies(); }
 
     @Scheduled(cron = "0 0 6 * * MON")
     public void scheduledSyncDartInfo() {
@@ -71,7 +73,7 @@ public class EmploymentDataService {
         } catch (Exception e) {
             log.error("Error occurred during DART info synchronization", e);
         }
-}
+    }
 
     @Transactional
     public void synchronizePublicJobs() {
@@ -143,8 +145,9 @@ public class EmploymentDataService {
         log.info("Finished: Event Synchronization. Total items processed: {}", allEvents.size());
     }
 
+    
     @Transactional
-    public void synchronizeCompanies() {
+    public void syncCompanies() {
         String apiKey = getWork24Key();
         if (apiKey == null) return;
         log.info("Executing: Company Synchronization");
@@ -177,6 +180,7 @@ public class EmploymentDataService {
         }
         log.info("Finished: Company Synchronization. Total items processed: {}", allCompanies.size());
     }
+    
 
 
 
@@ -205,7 +209,7 @@ public class EmploymentDataService {
                 // exe 파일 다운로드
                 try (BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
                      FileOutputStream out = new FileOutputStream(downloadedFile)) {
-                    byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[5000];
                     int len;
                     while ((len = in.read(buffer)) > 0) {
                         out.write(buffer, 0, len);
@@ -245,16 +249,16 @@ public class EmploymentDataService {
                 NodeList list = doc.getElementsByTagName("list");
 
                 // DB 데이터 미리 로드
-                Map<String, Company> companyMap = companyRepository.findAll().stream()
-                        .collect(Collectors.toMap(Company::getCompanyName, Function.identity(), (existing, replacement) -> existing));
-
-                Set<String> existingCorpCodes = companyMap.values().stream()
+                List<Company> allCompanies = companyRepository.findAll();
+                Map<String, List<Company>> companiesByName = allCompanies.stream()
+                        .collect(Collectors.groupingBy(Company::getCompanyName));
+                Set<String> existingCorpCodes = allCompanies.stream()
                         .map(Company::getCorpCode)
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
 
                 List<Company> companiesToUpdate = new ArrayList<>();
-                Map<String, Company> newCompaniesMap = new HashMap<>();
+                List<Company> companiesToInsert = new ArrayList<>();
 
                 for (int i = 0; i < list.getLength(); i++) {
                     Element elem = (Element) list.item(i);
@@ -263,40 +267,45 @@ public class EmploymentDataService {
 
                     if (corpName.isEmpty() || corpCode.isEmpty()) continue;
 
-                    Company existingCompany = companyMap.get(corpName);
+                    if (existingCorpCodes.contains(corpCode)) {
+                        continue; // 이미 DB에 있는 corpCode는 건너뛰기
+                    }
 
-                    if (existingCompany != null) {
-                        String oldCorpCode = existingCompany.getCorpCode();
-                        if (oldCorpCode == null || !oldCorpCode.equals(corpCode)) {
-                            if (existingCorpCodes.contains(corpCode)) {
-                                log.warn("Could not update corp_code for company '{}' to '{}' because it is already in use.", corpName, corpCode);
-                            } else {
-                                existingCompany.setCorpCode(corpCode);
-                                companiesToUpdate.add(existingCompany);
-                                if (oldCorpCode != null) {
-                                    existingCorpCodes.remove(oldCorpCode);
-                                }
-                                existingCorpCodes.add(corpCode);
-                            }
-                        }
-                    } else {
-                        if (existingCorpCodes.contains(corpCode)) {
-                            log.warn("Could not insert new company '{}' with corp_code '{}' because the code is already in use.", corpName, corpCode);
+                    List<Company> matchingCompanies = companiesByName.get(corpName);
+
+                    if (matchingCompanies != null && !matchingCompanies.isEmpty()) {
+                        Optional<Company> companyToUpdateOpt = matchingCompanies.stream()
+                                .filter(c -> c.getCorpCode() == null)
+                                .findFirst();
+
+                        if (companyToUpdateOpt.isPresent()) {
+                            Company companyToUpdate = companyToUpdateOpt.get();
+                            companyToUpdate.setCorpCode(corpCode);
+                            companiesToUpdate.add(companyToUpdate);
+                            existingCorpCodes.add(corpCode); // 새로 추가된 corpCode를 Set에 반영
                         } else {
+                            // 같은 이름의 모든 회사가 이미 corpCode를 가지고 있는 경우
+                            // 새로운 회사로 추가하거나, 혹은 경고를 로깅하고 건너뛸 수 있습니다.
+                            // 여기서는 새로운 회사로 추가하는 로직을 유지합니다.
                             Company newCompany = new Company();
                             newCompany.setCompanyName(corpName);
                             newCompany.setCorpCode(corpCode);
-                            newCompaniesMap.put(corpName, newCompany);
+                            companiesToInsert.add(newCompany);
                             existingCorpCodes.add(corpCode);
                         }
+                    } else {
+                        // DB에 없는 새로운 회사
+                        Company newCompany = new Company();
+                        newCompany.setCompanyName(corpName);
+                        newCompany.setCorpCode(corpCode);
+                        companiesToInsert.add(newCompany);
+                        existingCorpCodes.add(corpCode);
                     }
                 }
 
-                List<Company> companiesToInsert = new ArrayList<>(newCompaniesMap.values());
-
                 if (!companiesToUpdate.isEmpty()) companyRepository.saveAll(companiesToUpdate);
                 if (!companiesToInsert.isEmpty()) companyRepository.saveAll(companiesToInsert);
-
+                companyRepository.flush();
                 log.info("✅ DART 동기화 완료 - 기존 업데이트: {}, 신규 추가: {}",
                         companiesToUpdate.size(), companiesToInsert.size());
             } else {

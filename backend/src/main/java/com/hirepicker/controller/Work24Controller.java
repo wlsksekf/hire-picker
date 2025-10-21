@@ -75,7 +75,7 @@ public class Work24Controller {
     @Operation(summary = "기업 데이터 동기화", description = "Work24 API를 통해 기업 데이터를 수동으로 동기화합니다.")
     @GetMapping("/sync/companies")
     public ResponseEntity<String> syncCompanies() {
-        EmploymentDataService.synchronizeCompanies();
+        // EmploymentDataService.synchronizeCompanies();
         try{
              EmploymentDataService.synchronizeDartInfo();
         } catch(Exception e){

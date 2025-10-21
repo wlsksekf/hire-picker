@@ -47,7 +47,7 @@ public class EmploymentDataProcessorService {
 
     @Transactional
     public void processCompanyDto(CompanyDto dto) {
-        companyRepository.findByCompanyName(dto.name()).ifPresentOrElse(
+        companyRepository.findByCompanyId(dto.id()).ifPresentOrElse(
             c -> {
                 c.setCompanyName(dto.name());
                 c.setDescription(dto.summary());
@@ -58,7 +58,8 @@ public class EmploymentDataProcessorService {
                 c.setAddress(dto.adres());
                 c.setCeoName(dto.ceoNm());
                 c.setEmployeeCount(dto.employeeCount());
-                c.setCorpCode(dto.corpCode());
+                // corpCode는 DART에서 업데이트되므로 여기서는 설정하지 않습니다.
+                // c.setCorpCode(dto.corpCode());
                 companyRepository.save(c);
             },
             () -> companyRepository.save(Company.builder()
@@ -72,7 +73,8 @@ public class EmploymentDataProcessorService {
                     .address(dto.adres())
                     .ceoName(dto.ceoNm())
                     .employeeCount(dto.employeeCount())
-                    .corpCode(dto.corpCode())
+                    // corpCode는 DART에서 업데이트되므로 여기서는 설정하지 않습니다.
+                    // .corpCode(dto.corpCode())
                     .build())
         );
     }
