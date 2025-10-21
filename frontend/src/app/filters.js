@@ -1,3 +1,4 @@
+// 필터링 카테고리 및 옵션 정의
 export const filterCategories = [
   {
     id: 'employmentType',
