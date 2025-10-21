@@ -91,13 +91,13 @@ public class JwtTokenProvider {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
         } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException e) {
-            log.info("잘못된 JWT 서명입니다.");
+            log.warn("잘못된 JWT 서명입니다.", e); // log.warn으로 변경
         } catch (ExpiredJwtException e) {
-            log.info("만료된 JWT 토큰입니다.");
+            log.info("만료된 JWT 토큰입니다."); // 그대로 유지
         } catch (UnsupportedJwtException e) {
-            log.info("지원되지 않는 JWT 토큰입니다.");
+            log.warn("지원되지 않는 JWT 토큰입니다.", e); // log.warn으로 변경
         } catch (IllegalArgumentException e) {
-            log.info("JWT 토큰이 잘못되었습니다.");
+            log.warn("JWT 토큰이 잘못되었습니다.", e); // log.warn으로 변경
         }
         return false;
     }
