@@ -2,7 +2,7 @@ package com.hirepicker.service;
 
 import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.entity.PersonalUser;
-import com.hirepicker.entity.Platform;
+// import com.hirepicker.entity.Platform; // Platform 임포트 제거
 import com.hirepicker.repository.PersonalUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -43,7 +43,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .email(email)
                     .name(name)
                     .nickname(email) // 닉네임은 일단 이메일로 설정
-                    .platform(Platform.GOOGLE) // 플랫폼은 구글로 설정
+                    .platform("GOOGLE") // 플랫폼은 구글로 설정 (String으로 변경)
                     // TODO: 성별 정보는 구글 스코프에 따라 추가 처리가 필요
                     .gender(com.hirepicker.entity.Gender.MALE) 
                     .build();
