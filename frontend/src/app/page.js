@@ -20,8 +20,11 @@ import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import ChatRoom from '@/components/ChatRoom';
 
-const PAGE_SIZE = 20;
+import { api } from '@/api'; // 공용 api 인스턴스 사용
 
+const PAGE_SIZE = 20; // 페이지 당 불러올 채용 공고 수
+
+// 메인 페이지 컴포넌트
 function MainPage() {
   const theme = useTheme();
   const [jobs, setJobs] = useState([]);
@@ -32,13 +35,21 @@ function MainPage() {
   const [error, setError] = useState(null);
   const [selectedPost, setSelectedPost] = useState(null); //chatroom을 위한 usesState 참일경우에만 보여줘야 함으로 null;
 
+  // 채용 공고를 불러오는 함수
   async function fetchJobs(pageNum) {
     setIsFetchingNextPage(true);
     try {
-      const response = await axios.get(`/api/work24/jobs?page=${pageNum}&size=${PAGE_SIZE}`);
+      const response = await api.get(`/api/work24/jobs?page=${pageNum}&size=${PAGE_SIZE}`);
       const data = response.data;
-      setJobs(function(prevJobs) { return [...prevJobs, ...data.content] });
-      setHasNextPage(!data.last);
+      
+      setJobs(prevJobs => {
+        const newJobs = data.content;
+        const existingIds = new Set(prevJobs.map(j => j.id));
+        const uniqueNewJobs = newJobs.filter(j => !existingIds.has(j.id)); // 중복 제거
+        return [...prevJobs, ...uniqueNewJobs];
+      });
+
+      setHasNextPage(!data.last); // 마지막 페이지인지 확인
       setStatus('success');
     } catch (err) {
       setError(err);
@@ -48,23 +59,26 @@ function MainPage() {
     }
   }
 
+  // 컴포넌트가 마운트될 때 첫 페이지의 채용 공고를 불러옴
   useEffect(function() {
     fetchJobs(0);
   }, []);
 
+  // 다음 페이지의 채용 공고를 불러오는 함수
   function fetchNextPage() {
     const nextPage = page + 1;
     setPage(nextPage);
     fetchJobs(nextPage);
   }
 
+  // 로고 URL을 반환하는 함수
   function getLogoUrl(url) {
       if (!url) return null;
       if (url.startsWith('http')) return url;
       return `https://www.work.go.kr/images/recruit/${url}`;
   }
 
-  // 초기 로딩 상태
+  // 초기 로딩 상태일 때
   if (status === 'pending') {
     return (
       <Container maxWidth="lg" sx={{ py: 8, textAlign: 'center' }}>
@@ -74,8 +88,8 @@ function MainPage() {
     );
   }
 
-  // 에러 상태
-  if (status === 'error') {
+  // 에러가 발생했을 때
+  if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 8 }}>
         <Alert severity="error">채용 정보를 가져오는 데 실패했습니다: {error.message}</Alert>

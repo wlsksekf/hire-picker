@@ -15,21 +15,23 @@ import {
 } from '@mui/material';
 import { faCalendar, faMapMarkerAlt } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import axios from 'axios';
+import { api } from '@/api'; // 공용 api 인스턴스 사용
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 20; // 페이지 당 불러올 채용 행사 수
 
+// 채용 행사 페이지 컴포넌트
 function EventsPage() {
   const theme = useTheme();
-  const [events, setEvents] = useState([]);
-  const [page, setPage] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [hasNextPage, setHasNextPage] = useState(true);
+  const [events, setEvents] = useState([]); // 채용 행사 목록
+  const [page, setPage] = useState(0); // 현재 페이지 번호
+  const [loading, setLoading] = useState(true); // 로딩 상태
+  const [error, setError] = useState(null); // 에러 상태
+  const [hasNextPage, setHasNextPage] = useState(true); // 다음 페이지 존재 여부
 
+  // 컴포넌트가 마운트될 때 첫 페이지의 채용 행사를 불러옴
   useEffect(function() {
     setLoading(true);
-    axios.get(`/api/work24/events?page=0&size=${PAGE_SIZE}`)
+    api.get(`/api/work24/events?page=0&size=${PAGE_SIZE}`)
       .then(function(response) {
         const data = response.data;
         setEvents(data.content);
@@ -42,11 +44,12 @@ function EventsPage() {
       });
   }, []);
 
+  // 다음 페이지의 채용 행사를 불러오는 함수
   async function handleLoadMore() {
     const nextPage = page + 1;
     setLoading(true);
     try {
-      const response = await axios.get(`/api/work24/events?page=${nextPage}&size=${PAGE_SIZE}`);
+      const response = await api.get(`/api/work24/events?page=${nextPage}&size=${PAGE_SIZE}`);
       const data = response.data;
       setEvents(function(prevEvents) { return [...prevEvents, ...data.content] });
       setHasNextPage(!data.last);
@@ -58,7 +61,7 @@ function EventsPage() {
     }
   }
 
-  // 초기 로딩 상태
+  // 초기 로딩 상태일 때
   if (loading && events.length === 0) {
     return (
       <Container maxWidth="lg" sx={{ py: 8, textAlign: 'center' }}>
@@ -68,7 +71,7 @@ function EventsPage() {
     );
   }
 
-  // 에러 상태
+  // 에러가 발생했을 때
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 8 }}>

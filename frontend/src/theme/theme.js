@@ -7,17 +7,18 @@ const lightFilterPalette = Object.fromEntries(
   Object.entries(filterColors).map(function([key, value]) { return [key, value.light] })
 );
 
+// MUI 테마 확장
 const theme = extendTheme({
   colorSchemes: {
     light: {
       palette: {
         primary: {
-          main: 'oklch(0.70 0.30 165)',
+          main: 'oklch(0.70 0.30 165)', // 주 색상
           light: 'oklch(0.80 0.30 165)', // 밝은 버전
           dark: 'oklch(0.60 0.30 165)',  // 어두운 버전
-          contrastText: '#ffffff',
+          contrastText: '#ffffff', // 대비 텍스트 색상
         },
-        filters: lightFilterPalette, // 수정된 부분
+        filters: lightFilterPalette, // 필터 색상 팔레트
       },
     },
     dark: {
@@ -29,14 +30,14 @@ const theme = extendTheme({
           contrastText: '#ffffff',
         },
         background: {
-          default: '#121212',
-          paper: '#1E1E1E',
+          default: '#121212', // 기본 배경색
+          paper: '#1E1E1E', // 종이 배경색
         },
         text: {
-          primary: 'rgba(255, 255, 255, 0.87)',
-          secondary: 'rgba(255, 255, 255, 0.6)',
+          primary: 'rgba(255, 255, 255, 0.87)', // 주 텍스트 색상
+          secondary: 'rgba(255, 255, 255, 0.6)', // 보조 텍스트 색상
         },
-        filters: { // 이 구조는 이미 올바르게 플랫합니다.
+        filters: { // 다크 모드 필터 색상 팔레트
           employmentType: 'oklch(0.80 0.25 30)',
           jobField: 'oklch(0.80 0.25 90)',
           experienceLevel: 'oklch(0.75 0.25 200)',
@@ -62,11 +63,11 @@ const theme = extendTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          boxShadow: 'none',
+          boxShadow: 'none', // 버튼 그림자 제거
         },
         contained: {
           '&:hover': {
-            boxShadow: 'none',
+            boxShadow: 'none', // 호버 시 버튼 그림자 제거
           },
         },
       },
@@ -74,30 +75,30 @@ const theme = extendTheme({
     MuiPaper: {
         styleOverrides: {
             root: {
-                boxShadow: 'none',
-                border: '1px solid #e8e8e8',
+                boxShadow: 'none', // 종이 그림자 제거
+                border: '1px solid #e8e8e8', // 테두리 추가
             }
         }
     },
     MuiCard: {
         styleOverrides: {
             root: {
-                boxShadow: 'none',
-                border: '1px solid #e8e8e8',
+                boxShadow: 'none', // 카드 그림자 제거
+                border: '1px solid #e8e8e8', // 테두리 추가
                 '&:hover': {
-                    boxShadow: '0 4px 20px 0 rgba(0,0,0,0.07)'
+                    boxShadow: '0 4px 20px 0 rgba(0,0,0,0.07)' // 호버 시 그림자 효과
                 }
             }
         }
     },
     MuiTextField: {
         defaultProps: {
-            variant: 'filled',
+            variant: 'filled', // 텍스트 필드 기본 variant 설정
         }
     },
     MuiSelect: {
         defaultProps: {
-            variant: 'filled',
+            variant: 'filled', // 선택 상자 기본 variant 설정
         }
     }
   },

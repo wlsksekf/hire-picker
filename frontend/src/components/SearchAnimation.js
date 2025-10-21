@@ -1,9 +1,9 @@
 import React from 'react';
 import { Box, keyframes, useTheme, useMediaQuery } from '@mui/material';
 import StyledSearchBar from './StyledSearchBar';
-import ImageInBall from './ImageInBall'; // Import the new component
+import ImageInBall from './ImageInBall'; // 새로운 컴포넌트 임포트
 
-// --- Animation logic remains the same ---
+// --- 애니메이션 로직 ---
 const animationConfig = {
   duration: '10s',
   timing: 'infinite forwards',
@@ -111,6 +111,7 @@ const animationConfig = {
   },
 };
 
+// 검색 바와 애니메이션을 포함하는 컴포넌트
 function SearchAnimation({ onFilterClick, isFilterOpen }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -121,7 +122,7 @@ function SearchAnimation({ onFilterClick, isFilterOpen }) {
     <Box sx={{ position: 'relative', width: '100%', maxWidth: '600px', margin: 'auto', height: isMobile ? 'auto' : '80px' }}>
       {!isMobile && (
         <>
-          {/* Replace Box with ImageInBall */}
+          {/* 잡기 전의 회사 이미지 */}
           <ImageInBall
             imgSrc="/company.png"
             alt="Company before grab"
@@ -129,10 +130,10 @@ function SearchAnimation({ onFilterClick, isFilterOpen }) {
           />
           <Box sx={styles.clawContainerLeft}>
             <Box component="img" src="/claw.png" alt="Claw Left" sx={{ position: 'absolute', top: '0px', left: '0px', width: '60px', height: '60px', objectFit: 'contain' }} />
-            {/* Replace Box with ImageInBall */}
+            {/* 잡힌 회사 이미지 */}
             <ImageInBall imgSrc="/company.png" alt="Grabbed Company" sx={styles.grabbedCompany} />
           </Box>
-          {/* Replace Box with ImageInBall */}
+          {/* 잡기 전의 이력서 이미지 */}
           <ImageInBall
             imgSrc="/resume.png"
             alt="Resume before grab"
@@ -140,7 +141,7 @@ function SearchAnimation({ onFilterClick, isFilterOpen }) {
           />
           <Box sx={styles.clawContainerRight}>
             <Box component="img" src="/claw.png" alt="Claw Right" sx={{ position: 'absolute', top: '0px', left: '0px', width: '60px', height: '60px', objectFit: 'contain' }} />
-            {/* Replace Box with ImageInBall */}
+            {/* 잡힌 이력서 이미지 */}
             <ImageInBall imgSrc="/resume.png" alt="Grabbed Resume" sx={styles.grabbedResume} />
           </Box>
         </>

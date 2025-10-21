@@ -1,9 +1,9 @@
-
 'use client';
 
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 
+// 마이페이지 기본 화면 컴포넌트
 function MyPageDefault() {
   return (
     <Box sx={{ textAlign: 'center', mt: 10 }}>

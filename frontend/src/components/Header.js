@@ -10,11 +10,12 @@ import {
 } from '@mui/material';
 import Link from 'next/link';
 
+// 웹사이트의 헤더 컴포넌트
 function Header() {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // 모바일 화면 여부 확인
 
-  // 메인 메뉴
+  // 메인 메뉴 항목
   const mainNavItems = [
     { text: '채용행사', path: '/events' },
     { text: '공채기업정보', path: '/companies' },
@@ -26,14 +27,14 @@ function Header() {
     { text: '커뮤니티', path: '/community' },
   ];
 
-  // 로그인 관련 메뉴
+  // 로그인 관련 메뉴 항목
   const authNavItems = [
     { text: '로그인', path: '/login' },
     { text: '회원가입', path: '/signup' },
     { text: '설정', path: '/settings' },
   ];
 
-  // 모바일에서는 기존의 심플한 헤더 유지
+  // 모바일 화면일 경우
   if (isMobile) {
     return (
       <AppBar position="sticky" elevation={0} sx={{ borderBottom: '1px solid', borderColor: 'divider', backgroundColor: 'background.paper' }}>
@@ -47,7 +48,7 @@ function Header() {
     );
   }
 
-  // 데스크탑용 새로운 한 줄 헤더
+  // 데스크탑 화면일 경우
   return (
     <AppBar
       position="sticky"
@@ -58,7 +59,7 @@ function Header() {
         backgroundColor: 'background.paper',
       }}
     >
-      <Toolbar sx={{ minHeight: '72px' }}> {/* 헤더 높이 증가 */}
+      <Toolbar sx={{ minHeight: '72px' }}>
         {/* 로고 */}
         <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, mr: 4 }}>
           <Link href="/" passHref style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
