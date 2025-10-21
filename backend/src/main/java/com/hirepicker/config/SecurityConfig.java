@@ -39,7 +39,8 @@ public class SecurityConfig {
             .formLogin(form -> form.disable()) // 폼 로그인 비활성화
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션을 사용하지 않음 (상태 없음)
             .authorizeHttpRequests(authorize -> authorize
-                .anyRequest().permitAll() // 모든 요청을 임시로 허용 (디버깅 목적)
+                .requestMatchers("/api/auth/**", "/api/users/**").permitAll()
+                .anyRequest().authenticated()
             )
             // .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 추가 (임시 제거)
             // .oauth2Login(oauth2 -> oauth2 // OAuth2 로그인 임시 비활성화
