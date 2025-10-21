@@ -82,7 +82,7 @@ function ChatRoom({post, onClose}){
         <Modal open={true} onClose={onClose} aria-labelledby="modal-title">
             <Box sx={style}>
                 <Typography id="modal-title" variant="h6" component="h2">
-                    기업: {post.companyName}<br/>{post.title} 채팅방
+                    기업: {post.companyName}<br/>{post.title}
                 </Typography>
                     {/* evaluation:그림자?, flexGrow:부모의 남는공간차이, my :margin, p:padding, overflow:스크롤바 자동생성  */}
                 <Paper elevation={2} sx={{ flexGrow: 1, my: 2, p: 2, overflowY: 'auto' }}>
