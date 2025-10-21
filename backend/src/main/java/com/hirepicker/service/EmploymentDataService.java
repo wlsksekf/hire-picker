@@ -63,14 +63,14 @@ public class EmploymentDataService {
     @Scheduled(cron = "0 0 6 * * MON") @Transactional
     public void scheduledSyncCompanies() { synchronizeCompanies(); }
 
-    @Scheduled(cron = "0 0 6 * * MON")
-    public void scheduledSyncDartInfo() {
-        try {
-            synchronizeDartInfo();
-        } catch (Exception e) {
-            log.error("Error occurred during DART info synchronization", e);
-        }
-}
+    // @Scheduled(cron = "0 0 6 * * MON")
+    // public void scheduledSyncDartInfo() {
+    //     try {
+    //         synchronizeDartInfo();
+    //     } catch (Exception e) {
+    //         log.error("Error occurred during DART info synchronization", e);
+    //     }
+    // }
 
     @Transactional
     public void synchronizePublicJobs() {

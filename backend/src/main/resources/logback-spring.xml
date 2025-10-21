@@ -6,7 +6,7 @@
     <property name="LOG_FILE_NAME" value="demo"/>
     <!--property name="LOG_PATTERN" value="[%d{yyyyMMdd HH:mm:ss:SSS}] [%-5level] [%thread] [%logger{40}] - %msg%n"/-->
     <property name="LOG_PATTERN" value="[%d{yyyyMMdd HH:mm:ss:SSS}][%-5level][%logger{40}] %msg%n"/>
-    <property name="LOG_LEVEL" value="info"/>
+    <property name="LOG_LEVEL" value="warn"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
