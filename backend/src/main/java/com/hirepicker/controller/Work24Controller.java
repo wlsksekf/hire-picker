@@ -3,8 +3,8 @@ package com.hirepicker.controller;
 import com.hirepicker.dto.CompanyDto;
 import com.hirepicker.dto.EventDto;
 import com.hirepicker.dto.JobDto;
-import com.hirepicker.service.Work24ApiService;
-import com.hirepicker.service.Work24Service;
+import com.hirepicker.service.EmploymentDataService;
+import com.hirepicker.service.EmploymentData;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -24,21 +24,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class Work24Controller {
 
-    private final Work24ApiService work24ApiService;
-    private final Work24Service work24Service;
+    private final EmploymentDataService EmploymentDataService;
+    private final EmploymentData EmploymentData;
 
     // --- 데이터 조회 API (페이지네이션 적용) --- //
 
     @Operation(summary = "채용공고 목록 조회", description = "페이지네이션을 적용하여 채용공고 목록을 조회합니다.")
     @GetMapping("/jobs")
     public Page<JobDto> getJobs(Pageable pageable) {
-        return work24Service.getJobs(pageable);
+        return EmploymentData.getJobs(pageable);
     }
 
     @Operation(summary = "채용박람회 목록 조회", description = "페이지네이션을 적용하여 채용박람회 목록을 조회합니다.")
     @GetMapping("/events")
     public Page<EventDto> getEvents(Pageable pageable) {
-        return work24Service.getEvents(pageable);
+        return EmploymentData.getEvents(pageable);
     }
 
     @Operation(summary = "기업 목록 조회", description = "페이지네이션과 검색 기능을 적용하여 기업 목록을 조회합니다.")
@@ -46,13 +46,13 @@ public class Work24Controller {
     public Page<CompanyDto> getCompanies(
             @RequestParam(value = "query", required = false, defaultValue = "") String query,
             Pageable pageable) {
-        return work24Service.getCompanies(query, pageable);
+        return EmploymentData.getCompanies(query, pageable);
     }
 
     @Operation(summary = "기업 상세 정보 조회", description = "ID를 이용하여 특정 기업의 상세 정보를 조회합니다.")
     @GetMapping("/companies/{id}")
     public ResponseEntity<CompanyDto> getCompany(@PathVariable("id") String id) {
-        CompanyDto companyDto = work24Service.getCompany(id);
+        CompanyDto companyDto = EmploymentData.getCompany(id);
         return ResponseEntity.ok(companyDto);
     }
 
@@ -61,21 +61,26 @@ public class Work24Controller {
     @Operation(summary = "채용공고 데이터 동기화", description = "Work24 API를 통해 채용공고 데이터를 수동으로 동기화합니다.")
     @GetMapping("/sync/jobs")
     public ResponseEntity<String> syncJobs() {
-        work24ApiService.synchronizePublicJobs();
+        EmploymentDataService.synchronizePublicJobs();
         return ResponseEntity.ok("Job synchronization triggered!");
     }
 
     @Operation(summary = "채용박람회 데이터 동기화", description = "Work24 API를 통해 채용박람회 데이터를 수동으로 동기화합니다.")
     @GetMapping("/sync/events")
     public ResponseEntity<String> syncEvents() {
-        work24ApiService.synchronizeEvents();
+        EmploymentDataService.synchronizeEvents();
         return ResponseEntity.ok("Event synchronization triggered!");
     }
 
     @Operation(summary = "기업 데이터 동기화", description = "Work24 API를 통해 기업 데이터를 수동으로 동기화합니다.")
     @GetMapping("/sync/companies")
     public ResponseEntity<String> syncCompanies() {
-        work24ApiService.synchronizeCompanies();
+        EmploymentDataService.synchronizeCompanies();
+        try{
+             EmploymentDataService.synchronizeDartInfo();
+        } catch(Exception e){
+            System.out.println("Dart synchronization failed: " + e.getMessage());
+        }
         return ResponseEntity.ok("Company synchronization triggered!");
     }
 }

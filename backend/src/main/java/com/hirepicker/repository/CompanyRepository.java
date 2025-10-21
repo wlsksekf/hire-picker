@@ -12,6 +12,5 @@ import java.util.Optional;
 public interface CompanyRepository extends JpaRepository<Company, Long> {
     Optional<Company> findByCompanyName(String companyName);
     Optional<Company> findByCompanyId(String companyId);
-    
     Page<Company> findByCompanyNameContainingIgnoreCase(String companyName, Pageable pageable);
 }
