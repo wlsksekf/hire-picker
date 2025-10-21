@@ -1,6 +1,4 @@
-'use client';
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react'; // useEffect 추가
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { filterColors } from '../theme/filterPalette';
@@ -9,6 +7,7 @@ import Footer from './Footer';
 import { Box, Container } from '@mui/material';
 import { oklch2rgb } from 'colorizr';
 import { ThemeModeContext } from '../theme/ThemeModeContext';
+import useAuthStore from '@/store/authStore'; // useAuthStore 임포트 (추가됨)
 
 // oklch(l c h) 문자열을 rgb(r, g, b) 문자열로 변환하는 헬퍼 함수
 function convertOklchToRgb(oklchStr) {
@@ -96,6 +95,12 @@ function getTheme(mode) {
 // 앱 전체에 테마와 레이아웃을 제공하는 컴포넌트
 export default function AppProviders({ children }) {
   const [mode, setMode] = useState('light'); // 테마 모드 상태 (light/dark)
+  const { initializeAuth } = useAuthStore(); // useAuthStore에서 initializeAuth 함수 가져오기 (추가됨)
+
+  // 컴포넌트 마운트 시 인증 상태 초기화 (추가됨)
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]); // initializeAuth는 변경되지 않으므로 한 번만 실행
 
   // 테마 모드가 변경될 때만 테마를 다시 생성
   const theme = useMemo(function() { return getTheme(mode) }, [mode]);

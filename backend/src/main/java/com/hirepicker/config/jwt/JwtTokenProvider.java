@@ -26,13 +26,16 @@ public class JwtTokenProvider {
     private static final String AUTHORITIES_KEY = "auth"; // 권한 정보 키
     private final Key key; // 서명 키
     private final long accessTokenValidityInMilliseconds; // 액세스 토큰 유효 기간
+    private final long refreshTokenValidityInMilliseconds; // 리프레시 토큰 유효 기간
 
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.access-token-validity-in-seconds}") long accessTokenValidityInSeconds) {
+            @Value("${jwt.access-token-validity-in-seconds}") long accessTokenValidityInSeconds,
+            @Value("${jwt.refresh-token-validity-in-seconds}") long refreshTokenValidityInSeconds) {
         byte[] keyBytes = Decoders.BASE64.decode(secret); // 시크릿 키를 Base64 디코딩
         this.key = Keys.hmacShaKeyFor(keyBytes); // HMAC SHA 키 생성
         this.accessTokenValidityInMilliseconds = accessTokenValidityInSeconds * 1000; // 유효 기간을 밀리초로 변환
+        this.refreshTokenValidityInMilliseconds = refreshTokenValidityInSeconds * 1000; // 리프레시 토큰 유효 기간
     }
 
     // 액세스 토큰 생성
@@ -47,6 +50,18 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .setSubject(authentication.getName()) // 주체 설정
                 .claim(AUTHORITIES_KEY, authorities) // 권한 정보 추가
+                .signWith(key, SignatureAlgorithm.HS512) // 서명
+                .setExpiration(validity) // 만료 시간 설정
+                .compact(); // 압축하여 반환
+    }
+
+    // 리프레시 토큰 생성
+    public String createRefreshToken(Authentication authentication) {
+        long now = (new Date()).getTime();
+        Date validity = new Date(now + this.refreshTokenValidityInMilliseconds); // 만료 시간 설정
+
+        return Jwts.builder()
+                .setSubject(authentication.getName()) // 주체 설정
                 .signWith(key, SignatureAlgorithm.HS512) // 서명
                 .setExpiration(validity) // 만료 시간 설정
                 .compact(); // 압축하여 반환
@@ -85,5 +100,25 @@ public class JwtTokenProvider {
             log.info("JWT 토큰이 잘못되었습니다.");
         }
         return false;
+    }
+
+    // 토큰에서 사용자 이름(subject) 추출
+    public String getUsernameFromToken(String token) {
+        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().getSubject();
+    }
+
+    // 토큰에서 만료 시간(expiration date) 추출
+    public Date getExpirationDateFromToken(String token) {
+        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().getExpiration();
+    }
+
+    // 액세스 토큰 유효 기간 반환
+    public long getAccessTokenValidityInMilliseconds() {
+        return accessTokenValidityInMilliseconds;
+    }
+
+    // 리프레시 토큰 유효 기간 반환
+    public long getRefreshTokenValidityInMilliseconds() {
+        return refreshTokenValidityInMilliseconds;
     }
 }
