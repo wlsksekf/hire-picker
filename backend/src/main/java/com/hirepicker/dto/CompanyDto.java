@@ -11,5 +11,9 @@ public record CompanyDto(
     String homepage, // 홈페이지 URL
     String businessNumber, // 사업자 등록번호
     String logoUrl, // 로고 URL
-    String companyType // 기업 형태
+    String companyType, // 기업 형태
+    String ceoNm, // 대표자명
+    String adres, // 주소
+    String employeeCount, // 직원 수
+    String corpCode // 기업 코드
 ) {}

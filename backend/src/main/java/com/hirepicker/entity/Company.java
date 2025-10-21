@@ -41,4 +41,16 @@ public class Company {
     @Column(name = "company_type") // "company_type" 컬럼과 매핑
     private String companyType;
 
+    @Column(name = "ceo_name") // 대표자명 컬럼
+    private String ceoName;
+
+    @Column(name = "address") // 주소 컬럼
+    private String address;
+
+    @Column(name = "employee_count") // 직원 수 컬럼
+    private String employeeCount;
+
+    @Column(name = "corp_code") // 기업 코드 컬럼
+    private String corpCode;
+
 }
