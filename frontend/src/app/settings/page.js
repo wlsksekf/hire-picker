@@ -30,36 +30,33 @@ import {
   faSync
 } from '@fortawesome/free-solid-svg-icons';
 import DarkModeSwitch from '../../components/DarkModeSwitch'; // 커스텀 스위치 import
+import { api } from '@/api'; // 공용 api 인스턴스 사용
 
+// 설정 페이지 컴포넌트
 function SettingsPage() {
 
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState({ type: '', message: '' });
+  const [loading, setLoading] = useState(false); // 로딩 상태
+  const [status, setStatus] = useState({ type: '', message: '' }); // 상태 메시지
 
+  // 데이터 동기화 처리
   async function handleSync(type) {
     setLoading(true);
     setStatus({ type: 'info', message: `${type} 동기화를 시작합니다...` });
 
     try {
-      // API 키 없이 백엔드 동기화 API 호출
-      const response = await fetch(`/api/work24/sync/${type}`);
-      
-      if (!response.ok) {
-        // 백엔드에서 받은 에러 메시지를 텍스트로 읽음
-        const errorText = await response.text();
-        throw new Error(errorText || `${type} 동기화에 실패했습니다.`);
-      }
-
-      const resultText = await response.text();
+      const response = await api.get(`/api/work24/sync/${type}`);
+      const resultText = response.data;
       setStatus({ type: 'success', message: resultText });
 
     } catch (error) {
-      setStatus({ type: 'error', message: error.message });
+      const errorMessage = error.response?.data || error.message || `${type} 동기화에 실패했습니다.`;
+      setStatus({ type: 'error', message: errorMessage });
     } finally {
       setLoading(false);
     }
   }
 
+  // 아이콘 스타일
   const iconStyle = {
     minWidth: '40px',
     display: 'flex',
@@ -67,6 +64,7 @@ function SettingsPage() {
     color: 'text.secondary'
   };
 
+  // 서브헤더 스타일
   const subheaderStyle = {
     fontWeight: 'bold',
     color: function(theme) { return theme.palette.text.secondary },
@@ -149,7 +147,7 @@ function SettingsPage() {
 
           <ListItem>
             <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 1 }}>
-              {loading && <CircularProgress size={24} sx={{ mr: 2 }} />}
+              {loading && <CircularProgress size={24} sx={{ mr: 2 }} />} {/* 로딩 중일 때 로딩 스피너 표시 */}
               <Stack direction="row" spacing={1}>
                 <Button variant="contained" onClick={function() { return handleSync('jobs') }} disabled={loading}>
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
@@ -166,7 +164,7 @@ function SettingsPage() {
               </Stack>
             </Box>
           </ListItem>
-          {status.message && (
+          {status.message && ( // 상태 메시지가 있을 경우 표시
             <ListItem sx={{ mt: 2 }}>
               <Alert severity={status.type || 'info'} sx={{ width: '100%' }}>{status.message}</Alert>
             </ListItem>

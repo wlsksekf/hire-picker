@@ -2,9 +2,11 @@ import React, { useContext } from 'react';
 import styled from '@emotion/styled';
 import { ThemeModeContext } from '../theme/ThemeModeContext';
 
+// 다크 모드/라이트 모드 전환 스위치 컴포넌트
 function DarkModeSwitch({ isMobile }) {
-  const { mode, setMode } = useContext(ThemeModeContext);
+  const { mode, setMode } = useContext(ThemeModeContext); // 테마 모드 컨텍스트 사용
 
+  // 테마 변경 핸들러
   function handleThemeChange(event) {
     if (setMode) {
       setMode(event.target.checked ? 'dark' : 'light');
@@ -74,6 +76,7 @@ function DarkModeSwitch({ isMobile }) {
   );
 }
 
+// 스타일 정의 (이하 생략)
 const StyledWrapper = styled.div`
   .switch {
     position: relative;

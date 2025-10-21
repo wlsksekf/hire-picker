@@ -9,6 +9,7 @@ import {
 import { FilterList as FilterListIcon, Search as SearchIcon } from '@mui/icons-material';
 import AnimatedButton from '@/components/AnimatedButton';
 
+// 스타일이 적용된 검색 바 컴포넌트
 function StyledSearchBar({ onFilterClick, isFilterOpen }) {
   return (
     <Box sx={{ maxWidth: '700px', margin: 'auto', display: 'flex', gap: 1 }}>
@@ -27,10 +28,10 @@ function StyledSearchBar({ onFilterClick, isFilterOpen }) {
         InputProps={{
           endAdornment: (
             <IconButton
-              onClick={onFilterClick}
+              onClick={onFilterClick} // 필터 아이콘 클릭 시
               sx={{
                 borderRadius: '50%', // 아이콘 버튼을 둥글게
-                color: isFilterOpen ? 'primary.main' : 'inherit',
+                color: isFilterOpen ? 'primary.main' : 'inherit', // 필터가 열려있으면 색상 변경
                 marginRight: '8px' // 아이콘과 검색 버튼 사이 간격 조정
               }}
             >
@@ -39,15 +40,15 @@ function StyledSearchBar({ onFilterClick, isFilterOpen }) {
           ),
         }}
       />
-      {/* 검색 버튼을 AnimatedButton으로 교체 */}
+      {/* 검색 버튼 */}
       <AnimatedButton 
         color="primary" 
         sx={{ 
-            minWidth: '56px', // 너비 고정
+            minWidth: '56px', 
             width: '56px', 
             height: '56px', 
             padding: 0, 
-            borderRadius: '50px' // 다른 버튼과 통일
+            borderRadius: '50px'
         }}
       >
         <SearchIcon />

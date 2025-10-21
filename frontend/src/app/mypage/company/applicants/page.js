@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 
+// DataGrid 컬럼 정의
 const columns = [
   { field: 'name', headerName: '이름', width: 150 },
   { field: 'resumeTitle', headerName: '이력서', width: 300 },
@@ -30,6 +31,7 @@ const columns = [
   },
 ];
 
+// DataGrid 행 데이터 (예시)
 const rows = [
   { id: 1, name: '김개발', resumeTitle: '프론트엔드 개발자 이력서', applyDate: '2024-10-25', status: '검토중' },
   { id: 2, name: '박서버', resumeTitle: '[경력] 백엔드 엔지니어', applyDate: '2024-10-24', status: '합격' },
@@ -37,9 +39,11 @@ const rows = [
   { id: 4, name: '이디비', resumeTitle: '데이터베이스 관리자 지원합니다', applyDate: '2024-10-22', status: '검토중' },
 ];
 
+// 기업 마이페이지 - 지원자 목록 컴포넌트
 function ApplicantList() {
-  const [posting, setPosting] = React.useState('');
+  const [posting, setPosting] = React.useState(''); // 선택된 채용 공고
 
+  // 채용 공고 선택 변경 핸들러
   function handleChange(event) {
     setPosting(event.target.value);
   }

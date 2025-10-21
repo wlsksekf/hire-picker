@@ -56,7 +56,7 @@
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/너의-팀-계정/hirepicker.git
+    git clone https://github.com/wlsksekf/hirepicker.git
     cd hirepicker
     ```
 
@@ -85,7 +85,8 @@
 
 | Role / 역할 | Name / 이름 | GitHub |
 | :---: | :---: | :---: |
-| Team Lead, Backend | OOO | [GitHub ID](https://github.com/아이디) |
-| Frontend | OOO | [GitHub ID](https://github.com/아이디) |
-| Frontend | OOO | [GitHub ID](https://github.com/아이디) |
-| Backend | OOO | [GitHub ID](https://github.com/아이디) |
+| Team Lead, Frontend, Backend | 김진환 | [GitHub ID](https://github.com/wlsksekf) |
+| Frontend, Backend | 허가람 | [GitHub ID](https://github.com/CodeGlove) |
+| Frontend, Backend | 김완희 | [GitHub ID](https://github.com/wanhee79) |
+| Frontend, Backend | 신준수 | [GitHub ID](https://github.com/sjs0506) |
+| Frontend, Backend | 박재윤 | [GitHub ID](https://github.com/park990) |

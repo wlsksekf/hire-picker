@@ -4,6 +4,11 @@
 server:
   port: 8080
 
+jwt:
+  secret: ${JWT_SECRET} # JWT 시크릿 키 (환경 변수로 주입 필수, 기본값 제거됨)
+  access-token-validity-in-seconds: 600 # 액세스 토큰 유효 기간 (10분) - 리프레시 토큰 도입으로 단축됨
+  refresh-token-validity-in-seconds: 604800 # 리프레시 토큰 유효 기간 (7일) (추가됨)
+
 spring:
   # 기본 프로필을 'local'으로 설정. 다른 프로필이 지정되면 무시됨.
   profiles:
@@ -21,6 +26,19 @@ spring:
     hibernate:
       ddl-auto: none # 오토 업데이트 막아놓음
     defer-datasource-initialization: true
+
+  # OAuth2 Client 설정
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_OAUTH_CLIENT_ID}
+            client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET}
+            scope:
+              - profile
+              - email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
 
 # jwt:
 #   secret:

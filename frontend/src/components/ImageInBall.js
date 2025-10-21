@@ -3,6 +3,7 @@
 import React from 'react';
 import { Box, useTheme, alpha } from '@mui/material';
 
+// 이미지를 3D 유리구슬 효과로 감싸는 컴포넌트
 function ImageInBall({ imgSrc, alt, sx }) {
   const theme = useTheme();
 
