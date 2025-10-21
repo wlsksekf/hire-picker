@@ -10,6 +10,7 @@ import {
   Grid,
 } from '@mui/material';
 
+// 기업 정보 수정 페이지 컴포넌트
 function EditCompanyInfo() {
   return (
     <Paper sx={{ p: 3 }}>

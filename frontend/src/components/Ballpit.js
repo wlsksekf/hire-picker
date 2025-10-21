@@ -1,3 +1,6 @@
+// 이 파일은 Three.js를 사용하여 인터랙티브한 공 애니메이션을 생성합니다.
+// 코드가 난독화되어 있어 상세한 주석 추가가 어렵습니다.
+
 import { useRef, useEffect } from 'react';
 import {
   Clock as e,

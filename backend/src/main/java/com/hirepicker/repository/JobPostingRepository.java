@@ -7,7 +7,8 @@ import com.hirepicker.entity.JobPosting;
 
 import java.util.Optional;
 
-@Repository
+@Repository // Spring의 리포지토리 빈으로 등록
 public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
+    // 공고 ID로 채용 공고를 찾는 메서드
     Optional<JobPosting> findByPostingId(String postingId);
 }

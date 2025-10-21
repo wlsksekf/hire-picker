@@ -4,6 +4,7 @@ import React from 'react';
 import { Box, Typography, Paper, Button } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 
+// DataGrid 컬럼 정의
 const columns = [
   { field: 'orderId', headerName: '주문번호', width: 200 },
   { field: 'product', headerName: '상품명', width: 250 },
@@ -11,12 +12,14 @@ const columns = [
   { field: 'date', headerName: '결제일', width: 180 },
 ];
 
+// DataGrid 행 데이터 (예시)
 const rows = [
   { id: 1, orderId: 'ORD20241026-001', product: '이력서 열람 10회권', amount: 10000, date: '2024-10-26' },
   { id: 2, orderId: 'ORD20240915-003', product: '[PROMOTION] AI 추천 1개월권', amount: 5000, date: '2024-09-15' },
   { id: 3, orderId: 'ORD20240801-002', product: '이력서 열람 1회권', amount: 1500, date: '2024-08-01' },
 ];
 
+// 개인 마이페이지 - 크레딧/결제 내역 컴포넌트
 function Credits() {
   return (
     <Paper sx={{ p: 3 }}>

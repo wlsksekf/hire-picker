@@ -4,6 +4,7 @@ import React from 'react';
 import { Box, Typography, Button, Paper } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 
+// DataGrid 컬럼 정의
 const columns = [
   { field: 'title', headerName: '이력서 제목', width: 400 },
   { field: 'status', headerName: '상태', width: 150 },
@@ -23,12 +24,14 @@ const columns = [
   },
 ];
 
+// DataGrid 행 데이터 (예시)
 const rows = [
   { id: 1, title: '프론트엔드 개발자 이력서 (React)', status: '작성 완료', lastModified: '2024-10-26' },
   { id: 2, title: '신입 백엔드 개발자 포트폴리오', status: '작성 중', lastModified: '2024-10-25' },
   { id: 3, title: '[경력] 데브옵스 엔지니어', status: '작성 완료', lastModified: '2024-10-24' },
 ];
 
+// 개인 마이페이지 - 이력서 관리 컴포넌트
 function ManageResumes() {
   return (
     <Paper sx={{ p: 3 }}>

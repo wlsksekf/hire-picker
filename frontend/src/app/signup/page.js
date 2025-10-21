@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -13,9 +12,11 @@ import {
 } from '@mui/material';
 import AnimatedButton from '@/components/AnimatedButton';
 
+// 회원가입 페이지 컴포넌트
 function SignupPage() {
-  const [tabValue, setTabValue] = useState(0);
+  const [tabValue, setTabValue] = useState(0); // 탭 값 (개인회원/기업회원)
 
+  // 탭 변경 핸들러
   function handleTabChange(event, newValue) {
     setTabValue(newValue);
   }
