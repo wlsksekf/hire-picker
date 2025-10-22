@@ -1,6 +1,6 @@
 package com.hirepicker.config;
 
-import com.hirepicker.config.jwt.JwtAuthenticationFilter;
+import com.hirepicker.config.filter.JwtAuthenticationFilter;
 import com.hirepicker.handler.CustomAuthenticationEntryPoint;
 import com.hirepicker.handler.OAuth2LoginSuccessHandler;
 import com.hirepicker.service.CustomOAuth2UserService;
@@ -39,7 +39,7 @@ public class SecurityConfig {
             .formLogin(form -> form.disable()) // 폼 로그인 비활성화
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션을 사용하지 않음 (상태 없음)
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/api/auth/**", "/api/users/**", "/api/work24/**", "/actuator/**").permitAll()
+                .requestMatchers("/api/auth/**", "/api/users/**", "/api/work24/**", "/actuator/**", "/api/health/**", "/api/manage/**", "/confirm/**", "/confirm-billing", "/issue-billing-key", "/callback-auth", "/fail", "/swagger-ui/**", "/api-docs/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 추가

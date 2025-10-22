@@ -1,10 +1,12 @@
 package com.hirepicker.controller;
 
-import com.hirepicker.config.jwt.JwtTokenProvider;
+
 import com.hirepicker.entity.Gender;
 import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.repository.PersonalUserRepository;
-import com.hirepicker.repository.RefreshTokenRepository;
+
+import io.swagger.v3.oas.annotations.Operation; // Added import
+import io.swagger.v3.oas.annotations.tags.Tag;   // Added import
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+@Tag(name = "사용자", description = "사용자 정보 및 회원가입 관련 API") // Added Tag
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class UserController {
     private final PasswordEncoder passwordEncoder;
 
 
+    @Operation(summary = "회원가입", description = "새로운 개인 회원을 등록합니다.") // Added Operation
     @PostMapping("/signup")
     public ResponseEntity<Map<String, String>> signup(@RequestBody Map<String, String> signupRequest) {
         String email = signupRequest.get("email");
