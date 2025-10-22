@@ -13,9 +13,16 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/manage")
 @RequiredArgsConstructor
 public class ManageController {
+    
     private final ManageService mService;
+    
     @GetMapping("/update/school")
     public ResponseEntity<String> updateSchool() {
-        return ResponseEntity.ok("School updated");
+        return mService.updateSchool();
+    }
+    
+    @GetMapping("/schools")
+    public ResponseEntity<?> getSchools() {
+        return ResponseEntity.ok(mService.fetchSchoolData());
     }
 }
