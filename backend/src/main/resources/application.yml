@@ -27,12 +27,7 @@ spring:
         # [추가됨] MySQL 8+ 버전 호환용 Dialect(방언) 설정
         dialect: org.hibernate.dialect.MySQLDialect
 
-  # === OAuth2 AutoConfiguration 제외 ===
-  # 수동 구성을 위해 자동 설정 제외
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
-      - org.springframework.boot.autoconfigure.security.oauth2.client.reactive.ReactiveOAuth2ClientAutoConfiguration
+
 
   # === Spring Security (OAuth2) ===
   security:
@@ -88,6 +83,14 @@ payment:
     widget-secret-key: ${TOSS_WIDGET_SECRET_KEY}
     api-secret-key: ${TOSS_API_SECRET_KEY}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"  # 모든 엔드포인트 노출 (개발용)
+  endpoint:
+    health:
+      show-details: always # /health 엔드포인트에 세부 정보 표시
 ---
 
 # ===================================================================
