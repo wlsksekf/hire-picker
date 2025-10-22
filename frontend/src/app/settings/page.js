@@ -39,21 +39,22 @@ function SettingsPage() {
   const [status, setStatus] = useState({ type: '', message: '' }); // 상태 메시지
 
   // 데이터 동기화 처리
-  async function handleSync(type) {
+  function handleSync(type) {
     setLoading(true);
     setStatus({ type: 'info', message: `${type} 동기화를 시작합니다...` });
 
-    try {
-      const response = await api.get(`/api/work24/sync/${type}`);
-      const resultText = response.data;
-      setStatus({ type: 'success', message: resultText });
-
-    } catch (error) {
-      const errorMessage = error.response?.data || error.message || `${type} 동기화에 실패했습니다.`;
-      setStatus({ type: 'error', message: errorMessage });
-    } finally {
-      setLoading(false);
-    }
+    api.get(`/api/work24/sync/${type}`)
+      .then(function(response) {
+        const resultText = response.data;
+        setStatus({ type: 'success', message: resultText });
+      })
+      .catch(function(error) {
+        const errorMessage = error.response?.data || error.message || `${type} 동기화에 실패했습니다.`;
+        setStatus({ type: 'error', message: errorMessage });
+      })
+      .finally(function() {
+        setLoading(false);
+      });
   }
 
   // 아이콘 스타일
