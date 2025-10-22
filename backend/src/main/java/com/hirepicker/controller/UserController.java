@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,8 +24,7 @@ public class UserController {
 
     private final PersonalUserRepository personalUserRepository;
     private final PasswordEncoder passwordEncoder;
-    private final RefreshTokenRepository refreshTokenRepository; // 주입
-    private final JwtTokenProvider jwtTokenProvider; // 주입
+
 
     @PostMapping("/signup")
     public ResponseEntity<Map<String, String>> signup(@RequestBody Map<String, String> signupRequest) {

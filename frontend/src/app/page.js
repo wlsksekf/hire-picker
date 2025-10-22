@@ -32,27 +32,30 @@ function MainPage() {
   const [error, setError] = useState(null); // 에러 상태
 
   // 채용 공고를 불러오는 함수
-  async function fetchJobs(pageNum) {
+  function fetchJobs(pageNum) {
     setIsFetchingNextPage(true);
-    try {
-      const response = await api.get(`/api/work24/jobs?page=${pageNum}&size=${PAGE_SIZE}`);
-      const data = response.data;
-      
-      setJobs(prevJobs => {
-        const newJobs = data._embedded ? data._embedded.jobDtoList : [];
-        const existingIds = new Set(prevJobs.map(j => j.id));
-        const uniqueNewJobs = newJobs.filter(j => !existingIds.has(j.id)); // 중복 제거
-        return [...prevJobs, ...uniqueNewJobs];
-      });
+    
+    api.get(`/api/work24/jobs?page=${pageNum}&size=${PAGE_SIZE}`)
+      .then(response => {
+        const data = response.data;
+        
+        setJobs(prevJobs => {
+          const newJobs = data._embedded ? data._embedded.jobDtoList : [];
+          const existingIds = new Set(prevJobs.map(j => j.id));
+          const uniqueNewJobs = newJobs.filter(j => !existingIds.has(j.id)); // 중복 제거
+          return [...prevJobs, ...uniqueNewJobs];
+        });
 
-      setHasNextPage(data.page && data.page.number < data.page.totalPages - 1); // 마지막 페이지인지 확인
-      setStatus('success');
-    } catch (err) {
-      setError(err);
-      setStatus('error');
-    } finally {
-      setIsFetchingNextPage(false);
-    }
+        setHasNextPage(data.page && data.page.number < data.page.totalPages - 1); // 마지막 페이지인지 확인
+        setStatus('success');
+      })
+      .catch(err => {
+        setError(err);
+        setStatus('error');
+      })
+      .finally(() => {
+        setIsFetchingNextPage(false);
+      });
   }
 
   // 컴포넌트가 마운트될 때 첫 페이지의 채용 공고를 불러옴

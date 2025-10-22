@@ -38,45 +38,51 @@
 
 ## 🛠️ Tech Stack / 기술 스택
 
-### Backend
-<img src="https://img.shields.io/badge/Java-007396?style=for-the-badge&logo=java&logoColor=white"> <img src="https://img.shields.io/badge/Spring Boot-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white"> <img src="https://img.shields.io/badge/Spring Security-6DB33F?style=for-the-badge&logo=spring-security&logoColor=white"> <img src="https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=json-web-tokens&logoColor=white">
 
-### Frontend
-<img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black"> <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black"> <img src="https://img.shields.io/badge/Zustand-000000?style=for-the-badge&logo=zustand&logoColor=white"> <img src="https://img.shields.io/badge/axios-5A29E4?style=for-the-badge&logo=axios&logoColor=white">
+### Backend
+
+<img alt="Java" src="https://img.shields.io/badge/Java-007396?style=for-the-badge&logo=java&logoColor=white"> <img alt="Spring Boot" src="https://img.shields.io/badge/Spring Boot-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white"> <img alt="Spring Security" src="https://img.shields.io/badge/Spring Security-6DB33F?style=for-the-badge&logo=spring-security&logoColor=white"> ### Frontend
+
+<img alt="React" src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black">
+<img alt="React" src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black"> <img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black"> <img alt="Zustand" src="https://img.shields.io/badge/Zustand-000000?style=for-the-badge&logo=zustand&logoColor=white"> <img alt="Axios" src="https://img.shields.io/badge/axios-5A29E4?style=for-the-badge&logo=axios&logoColor=white">
+
 
 ### Database
-<img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white">
+
+<img alt="MySQL" src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white">
+
 
 ### DevOps
-<img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"> <img src="https://img.shields.io/badge/GitHub Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white">
+
+<img alt="Docker" src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"> <img alt="GitHub Actions" src="https://img.shields.io/badge/GitHub Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white">
 
 ---
 
 ## 🔧 Getting Started / 실행 방법
 
-1.  **Clone the repository**
-    ```bash
+
+```bash
     git clone https://github.com/wlsksekf/hirepicker.git
     cd hirepicker
     ```
 
-2.  **Run Frontend**
+2. **Run Frontend**
+
     ```bash
     cd frontend
     npm install
     npm start
     ```
 
-3.  **Run Backend**
+3. **Run Backend**
     - Open the `backend` directory as a Gradle project in your IDE (e.g., IntelliJ IDEA) and run the main application.
     - Please check the DB and JWT settings in the `application.yml` file.
 
     <details>
     <summary>🇰🇷 한국어 실행 안내 (Korean Guide)</summary>
-    
-    - IDE(IntelliJ IDEA 등)에서 `backend` 폴더를 Gradle 프로젝트로 열고 실행합니다.
-    - `application.yml` 파일에서 DB 및 JWT 설정을 확인해주세요.
-    
+
+    * IDE(IntelliJ IDEA 등)에서 `backend` 폴더를 Gradle 프로젝트로 열고 실행합니다.
+    * `application.yml` 파일에서 DB 및 JWT 설정을 확인해주세요.
     </details>
 
 ---

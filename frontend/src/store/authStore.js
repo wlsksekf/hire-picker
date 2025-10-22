@@ -26,30 +26,31 @@ const useAuthStore = create((set, get) => ({
   },
 
   // 액세스 토큰 갱신 처리 (추가됨)
-  refreshAccessToken: async () => {
+  refreshAccessToken: () => {
     const currentRefreshToken = get().refreshToken || localStorage.getItem('refreshToken');
     if (!currentRefreshToken) {
       get().logout(); // 리프레시 토큰이 없으면 로그아웃
-      return false;
+      return Promise.resolve(false); // Return a resolved promise for consistency
     }
 
-    try {
-      const response = await api.post('/api/auth/refresh', { refreshToken: currentRefreshToken });
-      const { accessToken: newAccessToken } = response.data;
+    return api.post('/api/auth/refresh', { refreshToken: currentRefreshToken })
+      .then(response => {
+        const { accessToken: newAccessToken } = response.data;
 
-      if (newAccessToken) {
-        // 새로운 액세스 토큰으로 상태 및 헤더 업데이트
-        api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
-        set({ accessToken: newAccessToken });
-        localStorage.setItem('accessToken', newAccessToken);
-        return true;
-      }
-    } catch (error) {
-      console.error('액세스 토큰 갱신 실패:', error);
-      get().logout(); // 갱신 실패 시 로그아웃
-      return false;
-    }
-    return false;
+        if (newAccessToken) {
+          // 새로운 액세스 토큰으로 상태 및 헤더 업데이트
+          api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+          set({ accessToken: newAccessToken });
+          localStorage.setItem('accessToken', newAccessToken);
+          return true;
+        }
+        return false; // If newAccessToken is null/undefined
+      })
+      .catch(error => {
+        console.error('액세스 토큰 갱신 실패:', error);
+        get().logout(); // 갱신 실패 시 로그아웃
+        return false;
+      });
   },
 
   // 초기 로드 시 로컬 스토리지에서 토큰 불러오기 (추가됨)
