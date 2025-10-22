@@ -52,6 +52,7 @@ application-local.yml
 secret*.yml
 secret*.yaml
 /backend/src/test/resources/application.yml
+/backend/src/test/resources/application-test.yml # 테스트용 설정 파일 추가
 
 
 # =======================================

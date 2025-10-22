@@ -34,8 +34,9 @@ function EventsPage() {
     api.get(`/api/work24/events?page=0&size=${PAGE_SIZE}`)
       .then(function(response) {
         const data = response.data;
-        setEvents(data.content);
-        setHasNextPage(!data.last);
+        const newEvents = data._embedded ? data._embedded.eventDtoList : [];
+        setEvents(newEvents);
+        setHasNextPage(data.page && data.page.number < data.page.totalPages - 1);
         setLoading(false);
       })
       .catch(function(err) {
@@ -51,8 +52,9 @@ function EventsPage() {
     try {
       const response = await api.get(`/api/work24/events?page=${nextPage}&size=${PAGE_SIZE}`);
       const data = response.data;
-      setEvents(function(prevEvents) { return [...prevEvents, ...data.content] });
-      setHasNextPage(!data.last);
+      const newEvents = data._embedded ? data._embedded.eventDtoList : [];
+      setEvents(function(prevEvents) { return [...prevEvents, ...newEvents] });
+      setHasNextPage(data.page && data.page.number < data.page.totalPages - 1);
       setPage(nextPage);
     } catch (err) {
       setError(err);
