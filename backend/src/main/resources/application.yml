@@ -1,33 +1,35 @@
 # ===================================================================
 #  공용 설정 (모든 환경에서 사용)
 # ===================================================================
+
 server:
   port: 8080
 
-jwt:
-  secret: ${JWT_SECRET} # JWT 시크릿 키 (환경 변수로 주입 필수, 기본값 제거됨)
-  access-token-validity-in-seconds: 600 # 액세스 토큰 유효 기간 (10분) - 리프레시 토큰 도입으로 단축됨
-  refresh-token-validity-in-seconds: 604800 # 리프레시 토큰 유효 기간 (7일) (추가됨)
-
+# === 데이터베이스(DB) 설정 ===
+# [수정됨] H2 DB로 연결되는 문제를 해결하기 위해 RDS(MySQL) 설정을 명시적으로 추가
+# .env 파일의 변수(${DB_URL} 등)를 참조함
 spring:
-  # 기본 프로필을 'local'으로 설정. 다른 프로필이 지정되면 무시됨.
-  profiles:
-    default: local
-
-  # 공용 데이터소스 설정
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver # MySQL 드라이버
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
-  # 공용 JPA 설정
+  # === JPA 설정 ===
   jpa:
+    # [수정됨] OSIV 경고(WARN) 해결: 성능 향상을 위해 false로 설정
+    open-in-view: false
     hibernate:
-      ddl-auto: none # 오토 업데이트 막아놓음
-    defer-datasource-initialization: true
+      # 공통 ddl-auto는 여기서 관리 (prod에서 실수로 update/create 되는 것을 방지)
+      ddl-auto: none
+    properties:
+      hibernate:
+        # [추가됨] MySQL 8+ 버전 호환용 Dialect(방언) 설정
+        dialect: org.hibernate.dialect.MySQLDialect
 
-  # OAuth2 Client 설정
+
+
+  # === Spring Security (OAuth2) ===
   security:
     oauth2:
       client:
@@ -40,10 +42,13 @@ spring:
               - email
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
 
-# jwt:
-#   secret:
-#     key: ${JWT_SECRET_KEY}
+# === JWT 설정 ===
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity-in-seconds: 600     # 10분
+  refresh-token-validity-in-seconds: 604800 # 7일
 
+# === Swagger (Springdoc) ===
 springdoc:
   api-docs:
     path: /api-docs
@@ -59,6 +64,33 @@ info:
   description: 구인구직 사이트 Hire-Picker 프로젝트 API 명세서
   version: v1.0.0
 
+# === 로깅 설정 ===
+logging:
+  level:
+    root: INFO
+    org.springframework.security: INFO
+    # [수정됨] CustomAuthenticationProvider 사용 시 발생하는 UserDetailsService 경고(WARN) 로그 끄기
+    org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR
+
+# === 외부 API 키 ===
+# [추가됨] .env 파일의 API 키들을 Spring에서 쉽게 주입받아 사용하기 위한 설정
+api:
+  work24:
+    key: ${work24_key}
+
+payment:
+  toss:
+    widget-secret-key: ${TOSS_WIDGET_SECRET_KEY}
+    api-secret-key: ${TOSS_API_SECRET_KEY}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"  # 모든 엔드포인트 노출 (개발용)
+  endpoint:
+    health:
+      show-details: always # /health 엔드포인트에 세부 정보 표시
 ---
 
 # ===================================================================
@@ -68,10 +100,9 @@ spring:
   config:
     activate:
       on-profile: "local"
-  # local 환경에서는 엔티티 변경 시 DB 테이블 수동 관리
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: none # local 환경에서는 엔티티 변경 시 DB 테이블 수동 관리 (기존 설정 유지)
     properties:
       hibernate:
         format_sql: true
@@ -86,14 +117,15 @@ spring:
   config:
     activate:
       on-profile: "prod"
-  # 운영 환경에서는 SQL 로그를 보지 않도록 설정
   jpa:
+    hibernate:
+      ddl-auto: none # [수정됨] prod 환경에서도 ddl-auto는 none 또는 validate 권장
     properties:
       hibernate:
         format_sql: false
         show_sql: false
 
-# 시스템 메트릭 바인더 비활성화
+# 시스템 메트릭 바인더 비활성화 (기존 설정 유지)
 management:
   metrics:
     binders:

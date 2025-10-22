@@ -85,8 +85,8 @@
 
 | Role / 역할 | Name / 이름 | GitHub |
 | :---: | :---: | :---: |
-| Team Lead, Frontend, Backend | 김진환 | [GitHub ID](https://github.com/wlsksekf) |
-| Frontend, Backend | 허가람 | [GitHub ID](https://github.com/CodeGlove) |
-| Frontend, Backend | 김완희 | [GitHub ID](https://github.com/wanhee79) |
-| Frontend, Backend | 신준수 | [GitHub ID](https://github.com/sjs0506) |
-| Frontend, Backend | 박재윤 | [GitHub ID](https://github.com/park990) |
+| Team Lead, Frontend, Backend | 김진환 | [wlsksekf](https://github.com/wlsksekf) |
+| Frontend, Backend | 허가람 | [CodeGlove](https://github.com/CodeGlove) |
+| Frontend, Backend | 김완희 | [wanhee79](https://github.com/wanhee79) |
+| Frontend, Backend | 신준수 | [sjs0506](https://github.com/sjs0506) |
+| Frontend, Backend | 박재윤 | [park990](https://github.com/park990) |

@@ -1,13 +1,5 @@
 package com.hirepicker.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value; // Value 임포트
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -19,6 +11,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value; // Value 임포트
+import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @Service // Spring의 서비스 빈으로 등록
 public class TossPaymentServiceImpl implements TossPaymentService {
@@ -52,7 +54,8 @@ public class TossPaymentServiceImpl implements TossPaymentService {
     @Override
     public Map<String, Object> issueBillingKey(String jsonBody) throws Exception {
         Map<String, Object> requestData = parseRequestData(jsonBody);
-        Map<String, Object> response = sendRequest(requestData, apiSecretKey, "https://api.tosspayments.com/v1/billing/authorizations/issue");
+        Map<String, Object> response = sendRequest(requestData, apiSecretKey,
+                "https://api.tosspayments.com/v1/billing/authorizations/issue");
 
         if (!response.containsKey("error")) {
             billingKeyMap.put((String) requestData.get("customerKey"), (String) response.get("billingKey"));
@@ -67,7 +70,7 @@ public class TossPaymentServiceImpl implements TossPaymentService {
         requestData.put("grantType", "AuthorizationCode");
         requestData.put("customerKey", customerKey);
         requestData.put("code", code);
-        
+
         String url = "https://api.tosspayments.com/v1/brandpay/authorizations/access-token";
         return sendRequest(requestData, apiSecretKey, url);
     }
@@ -82,19 +85,23 @@ public class TossPaymentServiceImpl implements TossPaymentService {
 
     // JSON 본문을 Map으로 파싱
     private Map<String, Object> parseRequestData(String jsonBody) throws IOException {
-        return objectMapper.readValue(jsonBody, new TypeReference<>() {});
+        return objectMapper.readValue(jsonBody, new TypeReference<>() {
+        });
     }
 
     // Toss Payments API에 요청 전송
-    private Map<String, Object> sendRequest(Map<String, Object> requestData, String secretKey, String urlString) throws IOException {
+    private Map<String, Object> sendRequest(Map<String, Object> requestData, String secretKey, String urlString)
+            throws IOException {
         HttpURLConnection connection = createConnection(secretKey, urlString);
         try (OutputStream os = connection.getOutputStream()) {
             os.write(objectMapper.writeValueAsBytes(requestData));
         }
 
-        try (InputStream responseStream = connection.getResponseCode() == 200 ? connection.getInputStream() : connection.getErrorStream();
-             Reader reader = new InputStreamReader(responseStream, StandardCharsets.UTF_8)) {
-            return objectMapper.readValue(reader, new TypeReference<>() {});
+        try (InputStream responseStream = connection.getResponseCode() == 200 ? connection.getInputStream()
+                : connection.getErrorStream();
+                Reader reader = new InputStreamReader(responseStream, StandardCharsets.UTF_8)) {
+            return objectMapper.readValue(reader, new TypeReference<>() {
+            });
         } catch (IOException e) {
             logger.error("응답 읽기 오류", e);
             Map<String, Object> errorResponse = new HashMap<>();
@@ -107,7 +114,8 @@ public class TossPaymentServiceImpl implements TossPaymentService {
     private HttpURLConnection createConnection(String secretKey, String urlString) throws IOException {
         URL url = new URL(urlString);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestProperty("Authorization", "Basic " + Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8)));
+        connection.setRequestProperty("Authorization",
+                "Basic " + Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8)));
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestMethod("POST");
         connection.setDoOutput(true);

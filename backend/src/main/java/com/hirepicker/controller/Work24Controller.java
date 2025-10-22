@@ -10,6 +10,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,22 +34,25 @@ public class Work24Controller {
 
     @Operation(summary = "채용공고 목록 조회", description = "페이지네이션을 적용하여 채용공고 목록을 조회합니다.")
     @GetMapping("/jobs")
-    public Page<JobDto> getJobs(Pageable pageable) {
-        return employmentData.getJobs(pageable);
+    public ResponseEntity<PagedModel<EntityModel<JobDto>>> getJobs(Pageable pageable, PagedResourcesAssembler<JobDto> assembler) {
+        Page<JobDto> jobs = employmentData.getJobs(pageable);
+        return ResponseEntity.ok(assembler.toModel(jobs));
     }
 
     @Operation(summary = "채용박람회 목록 조회", description = "페이지네이션을 적용하여 채용박람회 목록을 조회합니다.")
     @GetMapping("/events")
-    public Page<EventDto> getEvents(Pageable pageable) {
-        return employmentData.getEvents(pageable);
+    public ResponseEntity<PagedModel<EntityModel<EventDto>>> getEvents(Pageable pageable, PagedResourcesAssembler<EventDto> assembler) {
+        Page<EventDto> events = employmentData.getEvents(pageable);
+        return ResponseEntity.ok(assembler.toModel(events));
     }
 
     @Operation(summary = "기업 목록 조회", description = "페이지네이션과 검색 기능을 적용하여 기업 목록을 조회합니다.")
     @GetMapping("/companies")
-    public Page<CompanyDto> getCompanies(
+    public ResponseEntity<PagedModel<EntityModel<CompanyDto>>> getCompanies(
             @RequestParam(value = "query", required = false, defaultValue = "") String query,
-            Pageable pageable) {
-        return employmentData.getCompanies(query, pageable);
+            Pageable pageable, PagedResourcesAssembler<CompanyDto> assembler) {
+        Page<CompanyDto> companies = employmentData.getCompanies(query, pageable);
+        return ResponseEntity.ok(assembler.toModel(companies));
     }
 
     @Operation(summary = "기업 상세 정보 조회", description = "ID를 이용하여 특정 기업의 상세 정보를 조회합니다.")
@@ -77,7 +83,7 @@ public class Work24Controller {
     public ResponseEntity<String> syncCompanies() {
         employmentDataService.synchronizeCompanies();
         try{
-             employmentDataService.synchronizeDartInfo();
+             employmentDataService.SyncDartInfo();
         } catch(Exception e){
             System.out.println("Dart synchronization failed: " + e.getMessage());
         }

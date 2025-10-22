@@ -9,11 +9,20 @@ import {
   Button,
 } from '@mui/material';
 import Link from 'next/link';
+import useAuthStore from '@/store/authStore';
+import { useRouter } from 'next/navigation';
 
 // 웹사이트의 헤더 컴포넌트
 function Header() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // 모바일 화면 여부 확인
+  const { isAuthenticated, logout } = useAuthStore();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
 
   // 메인 메뉴 항목
   const mainNavItems = [
@@ -25,13 +34,6 @@ function Header() {
     { text: '기업.연봉', path: '/companies' },
     { text: '취업전략', path: '/strategy' },
     { text: '커뮤니티', path: '/community' },
-  ];
-
-  // 로그인 관련 메뉴 항목
-  const authNavItems = [
-    { text: '로그인', path: '/login' },
-    { text: '회원가입', path: '/signup' },
-    { text: '설정', path: '/settings' },
   ];
 
   // 모바일 화면일 경우
@@ -97,9 +99,25 @@ function Header() {
 
         {/* 로그인/회원가입 메뉴 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {authNavItems.map(function(item) {
-            return (
-              <Link key={item.text} href={item.path} passHref style={{ textDecoration: 'none' }}>
+          {isAuthenticated ? (
+            <>
+              <Button
+                variant="text"
+                onClick={handleLogout}
+                sx={{
+                  color: 'text.primary',
+                  fontWeight: 'bold',
+                  textTransform: 'none',
+                  fontSize: '0.9rem',
+                  '&:hover': {
+                    color: 'primary.main',
+                    backgroundColor: 'action.hover',
+                  },
+                }}
+              >
+                로그아웃
+              </Button>
+              <Link href="/mypage" passHref style={{ textDecoration: 'none' }}>
                 <Button
                   variant="text"
                   sx={{
@@ -113,11 +131,65 @@ function Header() {
                     },
                   }}
                 >
-                  {item.text}
+                  마이페이지
                 </Button>
               </Link>
-            )
-          })}
+            </>
+          ) : (
+            <>
+              <Link href="/login" passHref style={{ textDecoration: 'none' }}>
+                <Button
+                  variant="text"
+                  sx={{
+                    color: 'text.primary',
+                    fontWeight: 'bold',
+                    textTransform: 'none',
+                    fontSize: '0.9rem',
+                    '&:hover': {
+                      color: 'primary.main',
+                      backgroundColor: 'action.hover',
+                    },
+                  }}
+                >
+                  로그인
+                </Button>
+              </Link>
+              <Link href="/signup" passHref style={{ textDecoration: 'none' }}>
+                <Button
+                  variant="text"
+                  sx={{
+                    color: 'text.primary',
+                    fontWeight: 'bold',
+                    textTransform: 'none',
+                    fontSize: '0.9rem',
+                    '&:hover': {
+                      color: 'primary.main',
+                      backgroundColor: 'action.hover',
+                    },
+                  }}
+                >
+                  회원가입
+                </Button>
+              </Link>
+            </>
+          )}
+          <Link href="/settings" passHref style={{ textDecoration: 'none' }}>
+            <Button
+              variant="text"
+              sx={{
+                color: 'text.primary',
+                fontWeight: 'bold',
+                textTransform: 'none',
+                fontSize: '0.9rem',
+                '&:hover': {
+                  color: 'primary.main',
+                  backgroundColor: 'action.hover',
+                },
+              }}
+            >
+              설정
+            </Button>
+          </Link>
         </Box>
       </Toolbar>
     </AppBar>
