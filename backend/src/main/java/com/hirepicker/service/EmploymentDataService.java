@@ -54,7 +54,8 @@ public class EmploymentDataService {
 
     private final EmploymentDataProcessorService DataProcessorService;
 
-    @Scheduled(cron = "0 0 4 * * *") @Transactional
+    @Scheduled(cron = "0 0 4 * * *") /*  매일 4시에 채용공고 동기화 */
+    @Transactional // Transactional : 트랜잭션 관리를 위한 어노테이션, 메서드 실행 중 예외 발생 시 롤백 처리
     public void scheduledSyncJobs() { synchronizePublicJobs(); }
 
     @Scheduled(cron = "0 0 5 * * *") @Transactional
