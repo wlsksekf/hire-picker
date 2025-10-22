@@ -77,7 +77,7 @@ public class Work24Controller {
     public ResponseEntity<String> syncCompanies() {
         employmentDataService.synchronizeCompanies();
         try{
-             employmentDataService.synchronizeDartInfo();
+             employmentDataService.SyncDartInfo();
         } catch(Exception e){
             System.out.println("Dart synchronization failed: " + e.getMessage());
         }
