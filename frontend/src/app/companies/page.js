@@ -86,6 +86,12 @@ function CompaniesPage() {
     return `https://www.work.go.kr/images/recruit/${url}`;
   }
 
+  // 검색 폼 제출 시 실행될 함수
+  function handleSearchSubmit(event) {
+    event.preventDefault(); // 폼의 기본 제출 동작 방지
+    setQuery(searchTerm); // 검색어를 쿼리로 설정하여 데이터 요청 트리거
+  }
+
   return (
     <Container maxWidth="lg" sx={{ py: 8 }}>
       <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
