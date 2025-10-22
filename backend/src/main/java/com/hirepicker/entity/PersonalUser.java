@@ -41,9 +41,8 @@ public class PersonalUser {
     @Column(name = "address") // "address" 컬럼과 매핑
     private String address;
 
-    @Enumerated(EnumType.STRING) // Enum 타입을 문자열로 저장
     @Column(nullable = false) // null이 될 수 없는 컬럼
-    private Platform platform;
+    private String platform; // Platform enum 대신 String으로 변경
 
     @Column(name = "reg_date") // "reg_date" 컬럼과 매핑
     private LocalDate regDate;
@@ -54,8 +53,12 @@ public class PersonalUser {
     @Column(name = "is_cancel", nullable = false) // null이 될 수 없는 컬럼
     private boolean isCancel;
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "refresh_idx", nullable = true)
+    private RefreshToken refreshToken;
+
     @Builder // 빌더 패턴을 사용하여 객체 생성
-    public PersonalUser(String email, String password, String nickname, String name, Gender gender, String phoneNumber, String address, Platform platform) {
+    public PersonalUser(String email, String password, String nickname, String name, Gender gender, String phoneNumber, String address, String platform) { // refreshIdx 파라미터 제거
         this.email = email;
         this.password = password;
         this.nickname = nickname;
@@ -71,5 +74,15 @@ public class PersonalUser {
     // 비밀번호 설정/변경 시 사용
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    // 로그인 로직에서 사용할 setter
+    public void setRefreshToken(RefreshToken refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    // 로그인 로직에서 사용할 getter
+    public Long getRefreshIdx() {
+        return (this.refreshToken != null) ? this.refreshToken.getId() : null;
     }
 }

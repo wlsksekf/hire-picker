@@ -13,6 +13,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 @Component // Spring Bean으로 등록
 @RequiredArgsConstructor
@@ -22,6 +24,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public static final String BEARER_PREFIX = "Bearer "; // Bearer 접두사
 
     private final JwtTokenProvider jwtTokenProvider; // JWT 토큰 제공자
+
+    // JWT 필터가 적용되지 않을 경로 목록
+    private static final List<String> EXCLUDE_URLS = Arrays.asList(
+            "/api/auth/**",
+            "/api/users/signup",
+            "/api/oauth2/**",
+            "/login/oauth2/code/google",
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/api/events/**",
+            "/api/companies/**",
+            "/api/postings/**",
+            "/api/work24/**"
+    );
+
+    @Override
+    protected boolean shouldNotFilter(@Nonnull HttpServletRequest request) throws ServletException {
+        String requestUri = request.getRequestURI();
+        return EXCLUDE_URLS.stream().anyMatch(uri -> {
+            // Ant-style path matching (e.g., /api/auth/**)
+            if (uri.endsWith("/**")) {
+                return requestUri.startsWith(uri.substring(0, uri.length() - 3));
+            }
+            return requestUri.equals(uri);
+        });
+    }
 
     // 실제 필터링 로직
     @Override
