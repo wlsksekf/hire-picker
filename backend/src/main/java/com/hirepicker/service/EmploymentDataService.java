@@ -160,8 +160,7 @@ public class EmploymentDataService {
                         String corpName = parsedCompany.getCompanyName();
 
                         if (corpName == null || corpName.isEmpty() || corpCode == null || corpCode.isEmpty()) {
-                            String apiurl = "https://opendart.fss.or.kr/api/list.json?crtfc_key=" + apiKey
-                                    + "&corp_code=" + corpCode;
+
                             // api 호출하자 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                             log.warn(
                                     "파싱된 데이터에 corpName 또는 corpCode가 비어있어 건너<binary data, 1 bytes>니다: corpName={}, corpCode={}",

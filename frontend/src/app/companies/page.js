@@ -59,22 +59,25 @@ function CompaniesPage() {
   }, [query]);
 
   // 다음 페이지의 기업 정보를 불러오는 함수
-  async function handleLoadMore() {
+  function handleLoadMore() {
     const nextPage = page + 1;
     setLoading(true);
-    try {
-      const apiUrl = `/api/work24/companies?page=${nextPage}&size=${PAGE_SIZE}${query ? `&query=${query}` : ''}`;
-      const response = await api.get(apiUrl);
-      const data = response.data;
-      const newCompanies = data._embedded ? data._embedded.companyDtoList : [];
-      setCompanies(function(prevCompanies) { return [...prevCompanies, ...newCompanies] });
-      setHasNextPage(data.page && data.page.number < data.page.totalPages - 1);
-      setPage(nextPage);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
+    const apiUrl = `/api/work24/companies?page=${nextPage}&size=${PAGE_SIZE}${query ? `&query=${query}` : ''}`;
+    
+    api.get(apiUrl)
+      .then(function(response) {
+        const data = response.data;
+        const newCompanies = data._embedded ? data._embedded.companyDtoList : [];
+        setCompanies(function(prevCompanies) { return [...prevCompanies, ...newCompanies] });
+        setHasNextPage(data.page && data.page.number < data.page.totalPages - 1);
+        setPage(nextPage);
+      })
+      .catch(function(err) {
+        setError(err);
+      })
+      .finally(function() {
+        setLoading(false);
+      });
   }
 
   // 로고 URL을 반환하는 함수
@@ -84,6 +87,12 @@ function CompaniesPage() {
         return url;
     }
     return `https://www.work.go.kr/images/recruit/${url}`;
+  }
+
+  // 검색 폼 제출 시 실행될 함수
+  function handleSearchSubmit(event) {
+    event.preventDefault(); // 폼의 기본 제출 동작 방지
+    setQuery(searchTerm); // 검색어를 쿼리로 설정하여 데이터 요청 트리거
   }
 
   return (

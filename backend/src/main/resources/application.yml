@@ -57,7 +57,8 @@ springdoc:
     display-request-duration: true
   paths-to-match:
     - /api/**
-  version: v1.0.0
+  info: # New section
+    version: v1.0.0
 
 info:
   title: Hire-Picker API
@@ -70,7 +71,7 @@ logging:
     root: INFO
     org.springframework.security: INFO
     # [수정됨] CustomAuthenticationProvider 사용 시 발생하는 UserDetailsService 경고(WARN) 로그 끄기
-    org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR
+    'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer': ERROR
 
 # === 외부 API 키 ===
 # [추가됨] .env 파일의 API 키들을 Spring에서 쉽게 주입받아 사용하기 위한 설정
@@ -129,5 +130,5 @@ spring:
 management:
   metrics:
     binders:
-      system:
+      'system':
         enabled: false

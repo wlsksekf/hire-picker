@@ -32,7 +32,7 @@ function SignupPage() {
     setTabValue(newValue);
   }
 
-  async function handleSubmit(event) {
+  function handleSubmit(event) {
     event.preventDefault(); // 기본 폼 제출 동작 방지
 
     if (password !== confirmPassword) {
@@ -40,27 +40,25 @@ function SignupPage() {
       return;
     }
 
-    try {
-      const response = await fetch('/api/users/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, nickname, name, gender }), // 닉네임, 이름, 성별 추가
+    api.post('/api/users/signup', { email, password, nickname, name, gender }) // Replaced fetch with api.post
+      .then(function(response) {
+        if (response.status === 201) { // Assuming 201 Created for success
+          alert('회원가입 성공!');
+          // 성공 시 로그인 페이지로 리다이렉트 또는 다른 처리
+          // router.push('/login'); // Next.js router 사용 시
+        } else {
+          // Axios automatically handles non-2xx status codes as errors,
+          // so this else block might not be reached for typical API errors.
+          // However, if the server returns a 2xx status with an error message,
+          // this logic would apply.
+          alert(`회원가입 실패: ${response.data.message || '알 수 없는 오류'}`);
+        }
+      })
+      .catch(function(error) {
+        console.error('회원가입 요청 중 오류 발생:', error);
+        const errorMessage = error.response?.data?.message || error.message || '회원가입 요청 중 오류가 발생했습니다.';
+        alert(`회원가입 실패: ${errorMessage}`);
       });
-
-      if (response.ok) {
-        alert('회원가입 성공!');
-        // 성공 시 로그인 페이지로 리다이렉트 또는 다른 처리
-        // router.push('/login'); // Next.js router 사용 시
-      } else {
-        const errorData = await response.json();
-        alert(`회원가입 실패: ${errorData.message || response.statusText}`);
-      }
-    } catch (error) {
-      console.error('회원가입 요청 중 오류 발생:', error);
-      alert('회원가입 요청 중 오류가 발생했습니다.');
-    }
   }
 
   return (
