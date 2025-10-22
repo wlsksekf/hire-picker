@@ -39,13 +39,13 @@ function MainPage() {
       const data = response.data;
       
       setJobs(prevJobs => {
-        const newJobs = data.content;
+        const newJobs = data._embedded ? data._embedded.jobDtoList : [];
         const existingIds = new Set(prevJobs.map(j => j.id));
         const uniqueNewJobs = newJobs.filter(j => !existingIds.has(j.id)); // 중복 제거
         return [...prevJobs, ...uniqueNewJobs];
       });
 
-      setHasNextPage(!data.last); // 마지막 페이지인지 확인
+      setHasNextPage(data.page && data.page.number < data.page.totalPages - 1); // 마지막 페이지인지 확인
       setStatus('success');
     } catch (err) {
       setError(err);

@@ -39,15 +39,15 @@ public class SecurityConfig {
             .formLogin(form -> form.disable()) // 폼 로그인 비활성화
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션을 사용하지 않음 (상태 없음)
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/api/auth/**", "/api/users/**").permitAll()
+                .requestMatchers("/api/auth/**", "/api/users/**", "/api/work24/**", "/actuator/**").permitAll()
                 .anyRequest().authenticated()
             )
-            // .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 추가 (임시 제거)
-            // .oauth2Login(oauth2 -> oauth2 // OAuth2 로그인 임시 비활성화
-            //     .authorizationEndpoint(auth -> auth.baseUri("/api/oauth2/authorization"))
-            //     .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
-            //     .successHandler(oAuth2LoginSuccessHandler)
-            // )
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 추가
+            .oauth2Login(oauth2 -> oauth2 // OAuth2 로그인 설정
+                .authorizationEndpoint(auth -> auth.baseUri("/api/oauth2/authorization"))
+                .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                .successHandler(oAuth2LoginSuccessHandler)
+            )
             .exceptionHandling(e -> e.authenticationEntryPoint(customAuthenticationEntryPoint));
 
         return http.build();
