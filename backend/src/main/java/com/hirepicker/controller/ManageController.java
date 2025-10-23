@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hirepicker.service.ManageService;
+
 
 @Tag(name = "관리", description = "관리자 기능 관련 API") // Added Tag
 @RestController
