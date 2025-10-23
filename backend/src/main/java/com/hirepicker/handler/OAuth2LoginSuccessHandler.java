@@ -1,23 +1,24 @@
 package com.hirepicker.handler;
 
+import java.io.IOException;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
+
 import com.hirepicker.config.jwt.JwtTokenProvider;
 import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.entity.RefreshToken;
 import com.hirepicker.entity.UserType;
 import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.repository.RefreshTokenRepository;
+
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-import org.springframework.stereotype.Component;
-import org.springframework.web.util.UriComponentsBuilder;
-
-import java.io.IOException;
-import java.time.Instant;
 
 @Component
 @RequiredArgsConstructor
@@ -28,7 +29,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private final PersonalUserRepository personalUserRepository;
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+            Authentication authentication) throws IOException, ServletException {
         // 1. 사용자 조회
         String username = authentication.getName();
         PersonalUser personalUser = personalUserRepository.findByEmail(username)
