@@ -93,7 +93,7 @@ const CardContainer = styled.div`
 `;
 
 const PurchaseButton = styled.button`
-  background-color: ${({ theme }) => theme.palette.primary.main};
+  background-color: ${({ theme }) => theme?.palette?.primary?.main || '#0070f3'};
   color: white;
   padding: 1rem 2rem;
   border: none;
@@ -103,7 +103,7 @@ const PurchaseButton = styled.button`
   transition: background-color 0.3s;
 
   &:hover {
-    background-color: ${({ theme }) => theme.palette.primary.dark};
+    background-color: ${({ theme }) => theme?.palette?.primary?.dark || '#0050bb'};
   }
 
   &:disabled {
