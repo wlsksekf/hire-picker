@@ -11,30 +11,28 @@ function OAuthRedirectContent() {
     const { login } = useAuthStore(); // 인증 스토어에서 로그인 함수 가져오기
 
     useEffect(() => {
-        const fetchToken = async () => {
-            try {
-                // 백엔드의 새로운 /api/auth/token 엔드포인트 호출 (토큰을 URL에서 제거했으므로 API 호출로 가져옴)
-                const response = await fetch('/api/auth/token');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch token');
-                }
-                const data = await response.json();
-                const accessToken = data.accessToken;
-                const refreshToken = data.refreshToken; // 리프레시 토큰 추출 (추가됨)
+        const fetchToken = () => {
+            // 백엔드의 새로운 /api/auth/token 엔드포인트 호출 (토큰을 URL에서 제거했으므로 API 호출로 가져옴)
+            api.get('/api/auth/token')
+                .then(response => {
+                    const data = response.data;
+                    const accessToken = data.accessToken;
+                    const refreshToken = data.refreshToken; // 리프레시 토큰 추출 (추가됨)
 
-                if (accessToken && refreshToken) { // 두 토큰 모두 확인 (조건 변경됨)
-                    // Zustand 스토어에 토큰 저장 (액세스 및 리프레시 토큰 모두 저장)
-                    login(accessToken, refreshToken); // 두 토큰 모두 전달 (함수 시그니처 변경됨)
-                    // 로그인 성공 후 메인 페이지로 리다이렉트
-                    router.replace('/');
-                } else {
-                    console.error("OAuth 토큰을 찾을 수 없습니다.");
+                    if (accessToken && refreshToken) { // 두 토큰 모두 확인 (조건 변경됨)
+                        // Zustand 스토어에 토큰 저장 (액세스 및 리프레시 토큰 모두 저장)
+                        login(accessToken, refreshToken); // 두 토큰 모두 전달 (함수 시그니처 변경됨)
+                        // 로그인 성공 후 메인 페이지로 리다이렉트
+                        router.replace('/');
+                    } else {
+                        console.error("OAuth 토큰을 찾을 수 없습니다.");
+                        router.replace('/login');
+                    }
+                })
+                .catch(error => {
+                    console.error("토큰을 가져오는 중 오류 발생:", error);
                     router.replace('/login');
-                }
-            } catch (error) {
-                console.error("토큰을 가져오는 중 오류 발생:", error);
-                router.replace('/login');
-            }
+                });
         };
 
         fetchToken();

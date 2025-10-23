@@ -1,116 +1,222 @@
 package com.hirepicker.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value; // Value 임포트
+import com.hirepicker.config.security.CustomUserDetails;
+import com.hirepicker.dto.payment.*;
+import com.hirepicker.entity.CompanyUser;
+import com.hirepicker.entity.payment.CompanyUserCredit;
+import com.hirepicker.entity.PersonalUser;
+import com.hirepicker.entity.payment.PersonalUserCredit;
+import com.hirepicker.entity.UserType;
+import com.hirepicker.entity.payment.Payment;
+import com.hirepicker.entity.payment.PaymentStatus;
+import com.hirepicker.repository.payment.CompanyUserCreditRepository;
+import com.hirepicker.repository.CompanyUserRepository;
+import com.hirepicker.repository.payment.PersonalUserCreditRepository;
+import com.hirepicker.repository.PersonalUserRepository;
+import com.hirepicker.repository.payment.PaymentRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.Reader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
-@Service // Spring의 서비스 빈으로 등록
+@Slf4j
+@Service @RequiredArgsConstructor @Transactional
 public class TossPaymentServiceImpl implements TossPaymentService {
 
-    private final Logger logger = LoggerFactory.getLogger(this.getClass()); // 로거
-    private final ObjectMapper objectMapper = new ObjectMapper(); // JSON 파서
+    private final PaymentRepository paymentRepository;
+    private final PersonalUserRepository personalUserRepository;
+    private final CompanyUserRepository companyUserRepository;
+    private final PersonalUserCreditRepository personalUserCreditRepository;
+    private final CompanyUserCreditRepository companyUserCreditRepository;
+    private final WebClient tossWebClient;
+    private final ObjectMapper objectMapper; // JSON 처리를 위해 추가
 
-    @Value("${TOSS_WIDGET_SECRET_KEY}") // .env에서 TOSS_WIDGET_SECRET_KEY 값 주입
-    private String widgetSecretKey;
-    @Value("${TOSS_API_SECRET_KEY}") // .env에서 TOSS_API_SECRET_KEY 값 주입
-    private String apiSecretKey;
+    @Value("${toss.client-key}")
+    private String clientKey;
+    @Value("${toss.secret-key}")
+    private String secretKey;
 
-    private final Map<String, String> billingKeyMap = new HashMap<>(); // 빌링키 저장 맵
-
-    // 결제 승인
+    // 1. 결제 생성 (서버에서 주문 생성)
     @Override
-    public Map<String, Object> confirmPayment(HttpServletRequest request, String jsonBody) throws Exception {
-        String secretKey = request.getRequestURI().contains("/confirm/payment") ? apiSecretKey : widgetSecretKey;
-        return sendRequest(parseRequestData(jsonBody), secretKey, "https://api.tosspayments.com/v1/payments/confirm");
-    }
+    public PaymentInitiateResponseDto initiatePayment(PaymentInitiateRequestDto requestDto, CustomUserDetails userDetails) {
+        long amount;
+        long credits;
+        String orderName;
 
-    // 자동 결제
-    @Override
-    public Map<String, Object> confirmBilling(String jsonBody) throws Exception {
-        Map<String, Object> requestData = parseRequestData(jsonBody);
-        String billingKey = billingKeyMap.get(requestData.get("customerKey"));
-        return sendRequest(requestData, apiSecretKey, "https://api.tosspayments.com/v1/billing/" + billingKey);
-    }
-
-    // 빌링키 발급
-    @Override
-    public Map<String, Object> issueBillingKey(String jsonBody) throws Exception {
-        Map<String, Object> requestData = parseRequestData(jsonBody);
-        Map<String, Object> response = sendRequest(requestData, apiSecretKey, "https://api.tosspayments.com/v1/billing/authorizations/issue");
-
-        if (!response.containsKey("error")) {
-            billingKeyMap.put((String) requestData.get("customerKey"), (String) response.get("billingKey"));
+        switch (requestDto.packageId()) {
+            case "PRODUCT_10K":
+                amount = 10000L;
+                credits = 10000L;
+                orderName = "10,000 크레딧";
+                break;
+            case "PRODUCT_100K":
+                amount = 70000L; // 할인
+                credits = 100000L;
+                orderName = "100,000 크레딧 (할인)";
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid package ID: " + requestDto.packageId());
         }
-        return response;
-    }
 
-    // 브랜드페이 인증 콜백 처리
-    @Override
-    public Map<String, Object> callbackAuth(String customerKey, String code) throws Exception {
-        Map<String, Object> requestData = new HashMap<>();
-        requestData.put("grantType", "AuthorizationCode");
-        requestData.put("customerKey", customerKey);
-        requestData.put("code", code);
+        String orderId = UUID.randomUUID().toString();
+        String customerKey = userDetails.getUsername() + "_" + userDetails.getUserType();
+
+        Payment payment = Payment.builder()
+                .orderId(orderId)
+                .amount(amount)
+                .chargedCredits(credits)
+                .status(PaymentStatus.PENDING)
+                .build();
+
+        // userDetails에서 ID와 타입을 직접 사용하여 유저를 찾음
+        if (userDetails.getUserType() == UserType.PERSONAL) {
+            PersonalUser user = personalUserRepository.findById(userDetails.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("PersonalUser not found with id: " + userDetails.getId()));
+            payment.setPersonalUser(user);
+        } else {
+            CompanyUser user = companyUserRepository.findById(userDetails.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("CompanyUser not found with id: " + userDetails.getId()));
+            payment.setCompanyUser(user);
+        }
         
-        String url = "https://api.tosspayments.com/v1/brandpay/authorizations/access-token";
-        return sendRequest(requestData, apiSecretKey, url);
+        paymentRepository.save(payment);
+
+        return new PaymentInitiateResponseDto(clientKey, customerKey, orderId, orderName, amount);
     }
 
-    // 브랜드페이 결제 승인
+    // 2. 결제 승인
     @Override
-    public Map<String, Object> confirmBrandpay(String jsonBody) throws Exception {
-        Map<String, Object> requestData = parseRequestData(jsonBody);
-        String url = "https://api.tosspayments.com/v1/brandpay/payments/confirm";
-        return sendRequest(requestData, apiSecretKey, url);
-    }
+    public Object confirmPayment(PaymentConfirmRequestDto confirmDto, CustomUserDetails userDetails) {
+        Payment payment = paymentRepository.findByOrderIdAndStatus(confirmDto.orderId(), PaymentStatus.PENDING)
+                .orElseThrow(() -> new EntityNotFoundException("Payment not found or already processed"));
 
-    // JSON 본문을 Map으로 파싱
-    private Map<String, Object> parseRequestData(String jsonBody) throws IOException {
-        return objectMapper.readValue(jsonBody, new TypeReference<>() {});
-    }
-
-    // Toss Payments API에 요청 전송
-    private Map<String, Object> sendRequest(Map<String, Object> requestData, String secretKey, String urlString) throws IOException {
-        HttpURLConnection connection = createConnection(secretKey, urlString);
-        try (OutputStream os = connection.getOutputStream()) {
-            os.write(objectMapper.writeValueAsBytes(requestData));
+        if (!payment.getAmount().equals(confirmDto.amount())) {
+            payment.setStatus(PaymentStatus.FAILED);
+            throw new SecurityException("Payment amount manipulated");
         }
 
-        try (InputStream responseStream = connection.getResponseCode() == 200 ? connection.getInputStream() : connection.getErrorStream();
-             Reader reader = new InputStreamReader(responseStream, StandardCharsets.UTF_8)) {
-            return objectMapper.readValue(reader, new TypeReference<>() {});
-        } catch (IOException e) {
-            logger.error("응답 읽기 오류", e);
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "응답 읽기 오류");
-            return errorResponse;
+        String encodedSecretKey = Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
+
+        Map<String, Object> responseMap = tossWebClient.post()
+                .uri("/v1/payments/confirm")
+                .header(HttpHeaders.AUTHORIZATION, "Basic " + encodedSecretKey)
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .bodyValue(Map.of(
+                        "paymentKey", confirmDto.paymentKey(),
+                        "orderId", confirmDto.orderId(),
+                        "amount", confirmDto.amount()
+                ))
+                .retrieve()
+                .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                        clientResponse -> clientResponse.bodyToMono(Map.class)
+                                .flatMap(errorBody -> {
+                                    log.error("Toss API Error: {}", errorBody);
+                                    return Mono.error(new RuntimeException((String) errorBody.getOrDefault("message", "Toss API Error")));
+                                })
+                )
+                .bodyToMono(Map.class)
+                .block();
+
+        String status = (String) responseMap.get("status");
+        
+        if ("DONE".equals(status)) {
+            processPaymentSuccess(payment, responseMap);
+        } else if ("WAITING_FOR_DEPOSIT".equals(status)) {
+            processVirtualAccount(payment, responseMap);
+        } else {
+            payment.setStatus(PaymentStatus.FAILED);
+        }
+        
+        return responseMap;
+    }
+    
+    // 3. (공통) 결제 성공 및 크레딧 지급 로직
+    @Transactional
+    public void processPaymentSuccess(Payment payment, Map<String, Object> responseMap) {
+        payment.setStatus(PaymentStatus.DONE);
+        payment.setPaymentKey((String) responseMap.get("paymentKey"));
+        payment.setPaymentMethod((String) responseMap.get("method"));
+        
+        String approvedAtStr = (String) responseMap.get("approvedAt");
+        if (approvedAtStr != null) {
+            payment.setApprovedAt(LocalDateTime.parse(approvedAtStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        }
+
+        if (payment.getPersonalUser() != null) {
+            PersonalUserCredit credit = personalUserCreditRepository.findById(payment.getPersonalUser().getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Credit info not found for personal user"));
+            credit.setBalance(credit.getBalance() + payment.getChargedCredits());
+            credit.setUpdatedAt(LocalDateTime.now());
+        } else if (payment.getCompanyUser() != null) {
+            CompanyUserCredit credit = companyUserCreditRepository.findById(payment.getCompanyUser().getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Credit info not found for company user"));
+            credit.setBalance(credit.getBalance() + payment.getChargedCredits());
+            credit.setUpdatedAt(LocalDateTime.now());
         }
     }
 
-    // HttpURLConnection 생성
-    private HttpURLConnection createConnection(String secretKey, String urlString) throws IOException {
-        URL url = new URL(urlString);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestProperty("Authorization", "Basic " + Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8)));
-        connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestMethod("POST");
-        connection.setDoOutput(true);
-        return connection;
+    // 4. (공통) 가상계좌 발급 처리
+    @Transactional
+    public void processVirtualAccount(Payment payment, Map<String, Object> responseMap) {
+        payment.setStatus(PaymentStatus.PENDING_DEPOSIT);
+        payment.setPaymentKey((String) responseMap.get("paymentKey"));
+        payment.setPaymentMethod((String) responseMap.get("method"));
+        
+        Map<String, Object> vaInfo = (Map<String, Object>) responseMap.get("virtualAccount");
+        try {
+            payment.setVirtualAccountInfo(objectMapper.writeValueAsString(vaInfo));
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize virtual account info", e);
+            payment.setVirtualAccountInfo("Error serializing VA info");
+        }
+    }
+    
+    // 5. 가상계좌 웹훅 처리
+    @Override @Transactional
+    public void handleWebhook(TossWebhookDto webhookDto) {
+        if (!"VIRTUAL_ACCOUNT_DEPOSIT_COMPLETED".equals(webhookDto.eventType())) {
+            log.info("Received webhook for event type: {}, skipping.", webhookDto.eventType());
+            return;
+        }
+        
+        String orderId = webhookDto.getOrderId();
+        if (orderId == null) {
+            log.error("Webhook received without orderId");
+            return;
+        }
+        
+        log.info("Processing webhook for orderId: {}", orderId);
+        Payment payment = paymentRepository.findByOrderIdAndStatus(orderId, PaymentStatus.PENDING_DEPOSIT)
+                .orElseThrow(() -> new EntityNotFoundException("Webhook target payment not found or not in PENDING_DEPOSIT state for orderId: " + orderId));
+        
+        // Toss API에 해당 결제 건 재조회 (Toss에 직접 확인)
+        String encodedSecretKey = Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
+        Map<String, Object> responseMap = tossWebClient.get()
+                .uri("/v1/payments/orders/" + orderId)
+                .header(HttpHeaders.AUTHORIZATION, "Basic " + encodedSecretKey)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+
+        if (responseMap != null && "DONE".equals(responseMap.get("status"))){
+             processPaymentSuccess(payment, responseMap);
+             log.info("Successfully processed webhook for orderId: {}", orderId);
+        } else {
+            log.warn("Webhook for orderId {} did not result in DONE status. Status was {}.", orderId, responseMap != null ? responseMap.get("status") : "null");
+        }
     }
 }

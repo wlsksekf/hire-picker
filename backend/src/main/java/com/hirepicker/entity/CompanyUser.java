@@ -1,0 +1,68 @@
+package com.hirepicker.entity;
+
+import com.hirepicker.entity.payment.CompanyUserCredit;
+import com.hirepicker.entity.payment.Payment;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "company_user")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class CompanyUser {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "c_user_idx")
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_idx", nullable = false)
+    private Company company;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "refresh_idx", nullable = true)
+    private RefreshToken refreshToken;
+
+    @Column(name = "id", nullable = false, length = 15)
+    private String loginId;
+
+    @Column(nullable = false, length = 300)
+    private String password;
+
+    @Column(nullable = false, length = 10)
+    private String name;
+
+    @Column(nullable = false, length = 50)
+    private String email;
+
+    @Column(name = "phone_number", length = 16)
+    private String phoneNumber;
+
+    @Column(name = "reg_date")
+    private LocalDate regDate;
+
+    @Column(name = "mod_date")
+    private LocalDate modDate;
+
+    @Column(name = "is_cancel")
+    private boolean isCancel;
+
+    // 회사 크레딧 정보와 1:1 매핑
+    @OneToOne(mappedBy = "companyUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private CompanyUserCredit credit;
+
+    // 회사 결제 내역과 1:N 매핑
+    @OneToMany(mappedBy = "companyUser")
+    private List<Payment> payments = new ArrayList<>();
+
+    public void setRefreshToken(RefreshToken refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+}
