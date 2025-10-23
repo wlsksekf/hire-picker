@@ -5,6 +5,9 @@ import com.hirepicker.handler.CustomAuthenticationEntryPoint;
 import com.hirepicker.handler.OAuth2LoginSuccessHandler;
 import com.hirepicker.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,6 +18,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration // Spring의 설정 클래스임을 선언
 @EnableWebSecurity // Spring Security 활성화
@@ -35,6 +41,7 @@ public class SecurityConfig {
     @Bean // Spring의 빈으로 등록
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable()) // CSRF 보호 비활성화
             .httpBasic(basic -> basic.disable()) // HTTP Basic 인증 비활성화
             .formLogin(form -> form.disable()) // 폼 로그인 비활성화
@@ -45,7 +52,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/users/signup").permitAll()
                 .requestMatchers("/api/auth/**", "/api/users/**", "/api/work24/**", "/actuator/**", "/api/health/**", "/api/manage/**", "/confirm/**", "/confirm-billing", "/issue-billing-key", "/callback-auth", "/fail", "/swagger-ui/**", "/api-docs/**", "/error").permitAll()
                 .requestMatchers("/api/payment/webhook").permitAll() // 웹훅 엔드포인트는 모두 허용
-                .requestMatchers("/chat/**").permitAll()
+                .requestMatchers("/chat/**","/ws","/ws/**","/chat/history/**").permitAll()
                 .requestMatchers("/api/payment/**").authenticated() // 나머지 결제 관련 API는 인증 필요
                 .anyRequest().authenticated()
 
@@ -59,5 +66,20 @@ public class SecurityConfig {
             .exceptionHandling(e -> e.authenticationEntryPoint(customAuthenticationEntryPoint));
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        
+        config.setAllowCredentials(true);
+        config.setAllowedOriginPatterns(List.of("*")); // [중요] 모든 출처 허용
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("*")); 
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config); // 모든 경로에 대해 이 설정 적용
+        return source;
     }
 }
