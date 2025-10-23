@@ -151,10 +151,10 @@ public class TossPaymentServiceImpl implements TossPaymentService {
         payment.setPaymentKey((String) responseMap.get("paymentKey"));
         payment.setPaymentMethod((String) responseMap.get("method"));
         
-        String approvedAtStr = (String) responseMap.get("approvedAt");
-        if (approvedAtStr != null) {
-            payment.setApprovedAt(LocalDateTime.parse(approvedAtStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        }
+        // String approvedAtStr = (String) responseMap.get("approvedAt");
+        // if (approvedAtStr != null) {
+        //     payment.setApprovedAt(LocalDateTime.parse(approvedAtStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        // }
 
         if (payment.getPersonalUser() != null) {
             PersonalUserCredit credit = personalUserCreditRepository.findById(payment.getPersonalUser().getId())
@@ -176,13 +176,13 @@ public class TossPaymentServiceImpl implements TossPaymentService {
         payment.setPaymentKey((String) responseMap.get("paymentKey"));
         payment.setPaymentMethod((String) responseMap.get("method"));
         
-        Map<String, Object> vaInfo = (Map<String, Object>) responseMap.get("virtualAccount");
-        try {
-            payment.setVirtualAccountInfo(objectMapper.writeValueAsString(vaInfo));
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize virtual account info", e);
-            payment.setVirtualAccountInfo("Error serializing VA info");
-        }
+        // Map<String, Object> vaInfo = (Map<String, Object>) responseMap.get("virtualAccount");
+        // try {
+        //     payment.setVirtualAccountInfo(objectMapper.writeValueAsString(vaInfo));
+        // } catch (JsonProcessingException e) {
+        //     log.error("Failed to serialize virtual account info", e);
+        //     // payment.setVirtualAccountInfo("Error serializing VA info");
+        // }
     }
     
     // 5. 가상계좌 웹훅 처리
