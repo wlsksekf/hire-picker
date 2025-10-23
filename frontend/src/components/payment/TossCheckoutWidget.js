@@ -13,15 +13,16 @@ export default function TossCheckoutWidget({ packageId, onCancel }) {
 
     // 1. 컴포넌트 마운트 시, 서버에 결제 정보 생성 요청
     useEffect(() => {
-        const initiate = async () => {
-            try {
-                const response = await axios.post('/api/payment/initiate', { packageId });
-                setPaymentInfo(response.data);
-            } catch (err) {
-                console.error("Failed to initiate payment", err);
-                setError("결제 정보를 불러오는 데 실패했습니다.");
-            }
-        };
+        function initiate() {
+            axios.post('/api/payment/initiate', { packageId })
+                .then(function(response) {
+                    setPaymentInfo(response.data);
+                })
+                .catch(function(err) {
+                    console.error("Failed to initiate payment", err);
+                    setError("결제 정보를 불러오는 데 실패했습니다.");
+                });
+        }
         initiate();
     }, [packageId]);
 
@@ -29,18 +30,19 @@ export default function TossCheckoutWidget({ packageId, onCancel }) {
     useEffect(() => {
         if (!paymentInfo) return;
 
-        const initTossWidgets = async () => {
-            try {
-                const tossPayments = await loadTossPayments(paymentInfo.clientKey);
-                const widgets = tossPayments.widgets({
-                    customerKey: paymentInfo.customerKey,
+        function initTossWidgets() {
+            loadTossPayments(paymentInfo.clientKey)
+                .then(function(tossPayments) {
+                    const widgets = tossPayments.widgets({
+                        customerKey: paymentInfo.customerKey,
+                    });
+                    setTossWidgets(widgets);
+                })
+                .catch(function(err) {
+                    console.error("Failed to load Toss SDK", err);
+                    setError("결제 모듈 로딩에 실패했습니다.");
                 });
-                setTossWidgets(widgets);
-            } catch (err) {
-                console.error("Failed to load Toss SDK", err);
-                setError("결제 모듈 로딩에 실패했습니다.");
-            }
-        };
+        }
         initTossWidgets();
     }, [paymentInfo]);
 
@@ -48,14 +50,13 @@ export default function TossCheckoutWidget({ packageId, onCancel }) {
     useEffect(() => {
         if (!tossWidgets || !paymentInfo) return;
 
-        const renderWidgets = async () => {
-            try {
-                await tossWidgets.setAmount({
-                    currency: "KRW",
-                    value: paymentInfo.amount,
-                });
-
-                await Promise.all([
+        function renderWidgets() {
+            tossWidgets.setAmount({
+                currency: "KRW",
+                value: paymentInfo.amount,
+            })
+            .then(() => {
+                return Promise.all([
                     tossWidgets.renderPaymentMethods({
                         selector: "#payment-method",
                         variantKey: "DEFAULT",
@@ -65,31 +66,32 @@ export default function TossCheckoutWidget({ packageId, onCancel }) {
                         variantKey: "AGREEMENT",
                     }),
                 ]);
+            })
+            .then(() => {
                 setReady(true);
-            } catch (err) {
+            })
+            .catch(function(err) {
                 console.error("Failed to render widgets", err);
                 setError("결제 UI 렌더링에 실패했습니다.");
-            }
-        };
+            });
+        }
         renderWidgets();
     }, [tossWidgets, paymentInfo]);
 
     // 4. "결제하기" 버튼 클릭 시
-    const handlePaymentRequest = async () => {
+    const handlePaymentRequest = () => { // async 제거
         if (!tossWidgets || !paymentInfo || !ready) return;
 
-        try {
-            // 결제 요청
-            await tossWidgets.requestPayment({
-                orderId: paymentInfo.orderId,
-                orderName: paymentInfo.orderName,
-                successUrl: `${window.location.origin}/store/success`,
-                failUrl: `${window.location.origin}/store/fail`,
-            });
-        } catch (error) {
+        tossWidgets.requestPayment({
+            orderId: paymentInfo.orderId,
+            orderName: paymentInfo.orderName,
+            successUrl: `${window.location.origin}/store/success`,
+            failUrl: `${window.location.origin}/store/fail`,
+        })
+        .catch(function(error) {
             console.error(error);
             setError("결제 요청에 실패했습니다.");
-        }
+        });
     };
 
     if (error) return <Typography color="error">{error}</Typography>;

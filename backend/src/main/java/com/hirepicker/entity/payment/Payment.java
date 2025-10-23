@@ -42,13 +42,13 @@ public class Payment {
     @Column(name = "status", nullable = false)
     private PaymentStatus status; // 결제 상태
 
-    @Column(name = "approved_at")
-    private LocalDateTime approvedAt; // 결제 승인 시각
+    // @Column(name = "approved_at")
+    // private LocalDateTime approvedAt; // 결제 승인 시각 - DB 스키마에 존재하지 않을 가능성 높아 주석 처리
 
-    @CreationTimestamp @Column(name = "created_at", updatable = false, nullable = false)
-    private LocalDateTime createdAt; // 생성 시각
+    // @CreationTimestamp @Column(name = "created_at", updatable = false, nullable = false)
+    // private LocalDateTime createdAt; // 생성 시각 - DB 스키마에 존재하지 않아 주석 처리
     
     // 가상계좌 정보 (JSON 또는 별도 컬럼)
-    @Column(name = "virtual_account_info", length = 512)
-    private String virtualAccountInfo; // 가상계좌 정보
+    // @Column(name = "virtual_account_info", length = 512)
+    // private String virtualAccountInfo; // 가상계좌 정보 - DB 스키마에 존재하지 않아 주석 처리
 }

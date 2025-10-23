@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { Container, Typography, Card, CardContent, Button, Grid, Box } from '@mui/material';
 import useAuthStore from '@/store/authStore';
 import { useRouter } from 'next/navigation';
@@ -17,10 +17,17 @@ function CreditStore() {
     const router = useRouter();
     const [selectedPackage, setSelectedPackage] = useState(null); // 선택된 상품
 
-    // 비로그인 사용자는 로그인 페이지로 리디렉션
-    if (typeof window !== 'undefined' && !isAuthenticated) {
-        router.replace('/login');
-        return null; 
+    // useEffect를 사용하여 렌더링이 완료된 후 리다이렉트 처리
+    useEffect(() => {
+        // 브라우저 환경이고, 로그인하지 않았다면 로그인 페이지로 이동
+        if (typeof window !== 'undefined' && !isAuthenticated) {
+            router.replace('/login');
+        }
+    }, [isAuthenticated, router]);
+
+    // 인증 상태가 확인되기 전이나 리다이렉트 되기 전에는 로딩 상태를 보여주거나 아무것도 렌더링하지 않음
+    if (!isAuthenticated) {
+        return null; // 또는 <CircularProgress /> 같은 로딩 인디케이터
     }
 
     // 상품을 선택하면 결제 위젯을 보여줌
