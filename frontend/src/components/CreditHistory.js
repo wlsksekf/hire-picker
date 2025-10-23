@@ -16,11 +16,11 @@ const HistoryTable = styled.table`
   th, td {
     padding: 0.75rem;
     text-align: left;
-    border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
+    border-bottom: 1px solid ${({ theme }) => theme?.palette?.divider || '#e0e0e0'};
   }
 
   th {
-    background-color: ${({ theme }) => theme.palette.background.paper};
+    background-color: ${({ theme }) => theme?.palette?.background?.paper || '#f5f5f5'};
   }
 `;
 
