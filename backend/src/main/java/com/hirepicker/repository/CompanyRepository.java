@@ -14,7 +14,7 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     Optional<Company> findByCompanyName(String companyName);
     // 회사 ID로 회사를 찾는 메서드
     Optional<Company> findByCompanyId(String companyId);
-    
+
     // 회사 이름에 특정 문자열을 포함하는 회사를 페이징하여 찾는 메서드 (대소문자 무시)
     Page<Company> findByCompanyNameContainingIgnoreCase(String companyName, Pageable pageable);
 }
