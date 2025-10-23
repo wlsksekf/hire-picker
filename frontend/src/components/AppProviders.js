@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react'; // useEffect 추가
 import { createTheme as createMuiTheme, ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
-import { ThemeProvider as StyledThemeProvider } from 'styled-components';
 import CssBaseline from '@mui/material/CssBaseline';
 import { filterColors } from '../theme/filterPalette';
 import Header from './Header';
@@ -110,7 +109,6 @@ export default function AppProviders({ children }) {
 
   return (
       <ThemeModeContext.Provider value={{ mode, setMode }}>
-        <StyledThemeProvider theme={theme}>
           <MuiThemeProvider theme={theme}>
             <CssBaseline />
             <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -121,7 +119,6 @@ export default function AppProviders({ children }) {
               <Footer />
             </Box>
           </MuiThemeProvider>
-        </StyledThemeProvider>
       </ThemeModeContext.Provider>
   );
 }
