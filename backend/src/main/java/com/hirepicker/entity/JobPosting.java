@@ -25,10 +25,10 @@ public class JobPosting {
     @ManyToOne // 다대일 관계
     @JoinColumn(name = "company_idx", nullable = false) // "company_idx" 컬럼을 통해 Company 엔티티와 조인
     private Company company;
- 
+
     // c_user_idx는 API로 채울 수 없으므로 nullable로 가정. 스키마와 다를 경우 조정 필요.
     @Column(name = "c_user_idx") // "c_user_idx" 컬럼과 매핑
-    private Long cUserIdx;  
+    private Long cUserIdx;
 
     @Column(name = "title") // "title" 컬럼과 매핑
     private String title;

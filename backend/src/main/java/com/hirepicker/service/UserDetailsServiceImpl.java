@@ -1,27 +1,46 @@
 package com.hirepicker.service;
 
+import com.hirepicker.config.security.CustomUserDetails;
+import com.hirepicker.entity.CompanyUser;
+import com.hirepicker.entity.PersonalUser;
+import com.hirepicker.repository.CompanyUserRepository;
+import com.hirepicker.repository.PersonalUserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.hirepicker.config.security.CustomUserDetails;
-import com.hirepicker.entity.PersonalUser;
-import com.hirepicker.repository.PersonalUserRepository;
-
-import lombok.RequiredArgsConstructor;
-
-@Service // Spring의 서비스 빈으로 등록
-@RequiredArgsConstructor // final 필드에 대한 생성자 자동 생성
+@Service
+@RequiredArgsConstructor
+@Slf4j
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private final PersonalUserRepository personalUserRepository; // 사용자 리포지토리
+    private final PersonalUserRepository personalUserRepository;
+    private final CompanyUserRepository companyUserRepository; // 기업 유저 리포지토리 추가
 
-    // 이메일을 사용하여 사용자 정보를 로드하는 메서드
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        PersonalUser personalUser = personalUserRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + email));
-        return new CustomUserDetails(personalUser); // CustomUserDetails 객체 반환
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        log.info("[Auth] loadUserByUsername 호출. 사용자명: {}", username);
+        // 먼저 개인 유저(이메일 기준)를 찾음
+        return personalUserRepository.findByEmail(username)
+                .<UserDetails>map(user -> {
+                    log.info("[Auth] 개인 사용자를 찾았습니다: {}", username);
+                    return new CustomUserDetails(user);
+                })
+                .orElseGet(() -> {
+                    log.info("[Auth] 개인 사용자를 찾지 못해 기업 사용자를 조회합니다: {}", username);
+                    // 개인 유저가 없으면 기업 유저(로그인 ID 기준)를 찾음
+                    return companyUserRepository.findByLoginId(username)
+                        .map(user -> {
+                            log.info("[Auth] 기업 사용자를 찾았습니다: {}", username);
+                            return new CustomUserDetails(user);
+                        })
+                        .orElseThrow(() -> {
+                            log.warn("[Auth] 사용자를 찾지 못했습니다: {}", username);
+                            return new UsernameNotFoundException("User not found with username: " + username);
+                        });
+                });
     }
 }

@@ -20,5 +20,15 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", "SOCIAL_ACCOUNT_NEEDS_PASSWORD_SETUP", "message", ex.getMessage()));
     }
 
-    // 다른 예외 핸들러들을 여기에 추가할 수 있습니다.
+    // 예상치 못한 모든 서버 오류를 처리하는 핸들러 추가
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleAllUncaughtException(Exception ex) {
+        // 서버 로그에는 전체 에러를 기록해서 원인 파악을 쉽게 함
+        // log.error("Unhandled server error occurred: ", ex);
+        
+        // 클라이언트에게는 상세 내용을 숨기고 일반적인 에러 메시지를 반환
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR) // 500 Internal Server Error
+                .body(Map.of("error", "INTERNAL_SERVER_ERROR", "message", "서버 내부 오류가 발생했습니다. 관리자에게 문의하세요."));
+    }
 }
