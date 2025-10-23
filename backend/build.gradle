@@ -54,19 +54,15 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    //Chat room 관련 
+    // Chat room 관련
     // Web & WebSocket
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
     // Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
-    // JPA (Database)
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    runtimeOnly 'com.h2database:h2' // 예시로 H2 DB 사용, MySQL 등으로 변경 가능
-
-    
-
+    // JPA (Database) - (첫 번째 파일에서 중복 선언되어 제거)
+    // H2 (Database) - (첫 번째 파일에서 중복 선언되어 제거)
 }
 
 tasks.named('test') {

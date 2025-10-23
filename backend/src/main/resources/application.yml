@@ -17,7 +17,7 @@ spring:
     default: local
   data:
     redis:
-      host: localhost
+      host: 192.168.10.116
       port: 6379
 
   # 공용 데이터소스 설정
