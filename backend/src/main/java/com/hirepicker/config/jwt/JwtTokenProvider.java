@@ -44,12 +44,19 @@ public class JwtTokenProvider {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(",")); // 권한 정보 문자열로 변환
 
+        // CustomUserDetails에서 id와 userType을 가져와 클레임에 추가
+        com.hirepicker.config.security.CustomUserDetails userDetails = (com.hirepicker.config.security.CustomUserDetails) authentication.getPrincipal();
+        Long userId = userDetails.getId();
+        String userType = userDetails.getUserType().name();
+
         long now = (new Date()).getTime();
         Date validity = new Date(now + this.accessTokenValidityInMilliseconds); // 만료 시간 설정
 
         return Jwts.builder()
                 .setSubject(authentication.getName()) // 주체 설정
                 .claim(AUTHORITIES_KEY, authorities) // 권한 정보 추가
+                .claim("id", userId) // 사용자 ID 추가
+                .claim("userType", userType) // 사용자 타입 추가
                 .signWith(key, SignatureAlgorithm.HS512) // 서명
                 .setExpiration(validity) // 만료 시간 설정
                 .compact(); // 압축하여 반환
@@ -75,14 +82,16 @@ public class JwtTokenProvider {
                 .parseClaimsJws(token)
                 .getBody(); // 토큰 파싱하여 클레임 추출
 
-        Collection<? extends GrantedAuthority> authorities =
-                Arrays.stream(claims.get(AUTHORITIES_KEY).toString().split(","))
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList()); // 권한 정보 컬렉션으로 변환
+        // 클레임에서 사용자 ID, 사용자명, 사용자 타입 추출
+        Long userId = claims.get("id", Long.class);
+        String username = claims.getSubject();
+        com.hirepicker.entity.UserType userType = com.hirepicker.entity.UserType.valueOf(claims.get("userType", String.class));
 
-        UserDetails principal = new User(claims.getSubject(), "", authorities); // 사용자 정보 생성
+        // 추출한 정보로 CustomUserDetails 객체 생성
+        UserDetails principal = new com.hirepicker.config.security.CustomUserDetails(userId, username, userType);
 
-        return new UsernamePasswordAuthenticationToken(principal, token, authorities); // 인증 객체 반환
+        // CustomUserDetails 객체에서 직접 권한을 가져와서 사용
+        return new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
     }
 
     // 토큰 유효성 검증
