@@ -51,6 +51,7 @@ public class ChatController {
         // 2. DTO 정보 설정 (Redis로 보낼 정보)
         // (프론트가 이미 TALK, roomId, content, senderName을 줬다고 가정)
         receivedDto.setTimestamp(now.toString()); 
+        receivedDto.setSenderName(senderId);
 
         // 3. Redis로 발행 (모든 서버의 Subscriber들에게 전송)
         redisPublisher.publish(receivedDto);

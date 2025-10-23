@@ -121,7 +121,7 @@ function ChatRoom({ post, onClose }) {
       type: "TALK",
       roomId: post.id,
       content: newMessage,
-      senderName: "누군가.." // (TODO: 실제 로그인된 유저 이름)
+      senderName: post.senderName // (TODO: 실제 로그인된 유저 이름)
     };
 
     // ChatController의 @MessageMapping("/chat.sendMessage")로 발행
