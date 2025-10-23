@@ -1,6 +1,8 @@
 package com.hirepicker.config.security;
 
+import com.hirepicker.entity.CompanyUser;
 import com.hirepicker.entity.PersonalUser;
+import com.hirepicker.entity.UserType;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,74 +13,91 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-@Getter // 모든 필드에 대한 Getter 자동 생성
+@Getter
 public class CustomUserDetails implements UserDetails, OAuth2User {
 
-    private final PersonalUser personalUser; // 사용자 정보
-    private Map<String, Object> attributes; // OAuth2 로그인 시 사용될 속성
+    private final Long id;
+    private final String username; // email or loginId
+    private final String password;
+    private final boolean isEnabled;
+    private final UserType userType;
+    private Map<String, Object> attributes; // OAuth2
 
-    // 일반 로그인용 생성자
+    // 생성자: 개인 또는 기업 유저에 따라 CustomUserDetails 생성
     public CustomUserDetails(PersonalUser personalUser) {
-        this.personalUser = personalUser;
+        this.id = personalUser.getId();
+        this.username = personalUser.getEmail();
+        this.password = personalUser.getPassword();
+        this.isEnabled = !personalUser.isCancel();
+        this.userType = UserType.PERSONAL;
     }
 
-    // OAuth2 로그인용 생성자
+    public CustomUserDetails(CompanyUser companyUser) {
+        this.id = companyUser.getId();
+        this.username = companyUser.getLoginId();
+        this.password = companyUser.getPassword();
+        this.isEnabled = !companyUser.isCancel();
+        this.userType = UserType.COMPANY;
+    }
+    
+    // OAuth2 로그인용 생성자 (PersonalUser만 해당)
     public CustomUserDetails(PersonalUser personalUser, Map<String, Object> attributes) {
-        this.personalUser = personalUser;
+        this.id = personalUser.getId();
+        this.username = personalUser.getEmail();
+        this.password = personalUser.getPassword();
+        this.isEnabled = !personalUser.isCancel();
+        this.userType = UserType.PERSONAL;
         this.attributes = attributes;
     }
 
-    // 사용자의 권한을 반환
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singleton(new SimpleGrantedAuthority("ROLE_USER"));
+        // 여기에서 userType에 따라 다른 ROLE을 부여할 수 있음
+        if (userType == UserType.COMPANY) {
+            return Collections.singleton(new SimpleGrantedAuthority("ROLE_COMPANY"));
+        }
+        return Collections.singleton(new SimpleGrantedAuthority("ROLE_PERSONAL"));
     }
 
-    // 사용자의 비밀번호를 반환
     @Override
     public String getPassword() {
-        return personalUser.getPassword();
+        return password;
     }
 
-    // 사용자의 이메일(사용자 이름)을 반환
     @Override
     public String getUsername() {
-        return personalUser.getEmail();
+        return username;
     }
 
-    // 계정이 만료되지 않았는지 확인
     @Override
     public boolean isAccountNonExpired() {
         return true;
     }
 
-    // 계정이 잠기지 않았는지 확인
     @Override
     public boolean isAccountNonLocked() {
         return true;
     }
 
-    // 자격 증명이 만료되지 않았는지 확인
     @Override
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
-    // 계정이 활성화되었는지 확인
     @Override
     public boolean isEnabled() {
-        return !personalUser.isCancel();
+        return isEnabled;
     }
 
-    // OAuth2 사용자의 속성을 반환
+    // OAuth2User 인터페이스 메서드
     @Override
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    // OAuth2 사용자의 이름을 반환
     @Override
     public String getName() {
-        return personalUser.getEmail();
+        // OAuth2에서는 보통 고유 식별자를 반환
+        return String.valueOf(id);
     }
 }

@@ -73,6 +73,20 @@ logging:
     # [수정됨] CustomAuthenticationProvider 사용 시 발생하는 UserDetailsService 경고(WARN) 로그 끄기
     'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer': ERROR
 
+    # 디버깅을 위한 특정 패키지 로그 레벨 설정
+    com.hirepicker.config.filter.JwtAuthenticationFilter: DEBUG
+    com.hirepicker.config.security.CustomAuthenticationProvider: DEBUG
+    com.hirepicker.service.UserDetailsServiceImpl: DEBUG
+    com.hirepicker.controller.AuthController: DEBUG
+    com.hirepicker.controller.UserController: DEBUG
+    com.hirepicker.service.AuthService: DEBUG
+
+# === 토스페이먼츠 설정 ===
+toss:
+  client-key: test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm
+  secret-key: test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6
+  api-url: "https://api.tosspayments.com"
+
 # === 외부 API 키 ===
 # [추가됨] .env 파일의 API 키들을 Spring에서 쉽게 주입받아 사용하기 위한 설정
 api:
