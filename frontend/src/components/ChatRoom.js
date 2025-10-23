@@ -1,6 +1,6 @@
 "use client"
 
-import { Box, Button, Modal, Paper, Stack, TextField, Typography } from "node_modules/@mui/material";
+import { Box, Button, Modal, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react"
 
 // 모달 스타일
@@ -42,8 +42,9 @@ function ChatRoom({post, onClose}){
         }
 
         ws.onmessage = function(event){
+            const dto =JSON.parse(event.data)
             setMessages(function(prevMessages){
-                return[...prevMessages, event.data]; // prevMessage를 복사해서 event.data를 추가해라.
+                return[...prevMessages, dto]; // prevMessage를 복사해서 event.data를 추가해라.
             });
         }
 
@@ -66,7 +67,14 @@ function ChatRoom({post, onClose}){
 
     const handleSendMessage = function(){
         if(websocket.current && newMessage.trim() !== ""){
-            websocket.current.send(newMessage);
+            const dto = {
+                type: "TALK",
+                roomId: post.id,
+                senderName: "TEMP_USER", // (어차피 서버가 덮어쓸 예정)
+                content: newMessage,
+                timestamp: new Date().toISOString() // (어차피 서버가 덮어쓸 예정)
+            };
+            websocket.current.send(JSON.stringify(dto));
             setNewMessage("");
         }
     };
@@ -88,7 +96,23 @@ function ChatRoom({post, onClose}){
                 <Paper elevation={2} sx={{ flexGrow: 1, my: 2, p: 2, overflowY: 'auto' }}>
                     <Stack spacing={1}>
                         {messages.map(function(msg, idx){
-                            return<Typography key={idx} variant="body1">{msg}</Typography>;
+                            // msg는 이제 DTO 객체입니다.
+
+                            // 입장/퇴장 메시지 처리
+                            if (msg.type === "ENTER" || msg.type === "LEAVE") {
+                                return (
+                                    <Typography key={idx} variant="body2" sx={{ textAlign: 'center', color: 'gray' }}>
+                                        {msg.content} {/* 예: "익명123님이 입장했습니다." */}
+                                    </Typography>
+                                );
+                            }
+
+                            // 일반 대화(TALK) 메시지 처리
+                            return (
+                                <Typography key={idx} variant="body1">
+                                    <strong>{msg.senderName}:</strong> {msg.content}
+                                </Typography>
+                            );
                         })}
                             <div ref={messagesEndRef}/>
                     </Stack>

@@ -41,18 +41,13 @@ public class SecurityConfig {
             .authenticationManager(authenticationManager) // 인증 관리자 설정
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers( // 다음 경로에 대한 요청은 모두 허용
-                    "/api/auth/**",
-                    "/api/users/signup",
-                    "/api/oauth2/**",
                     "/login/oauth2/code/google",
                     "/swagger-ui.html", 
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     // 정보 조회 API 허용
-                    "/api/events/**", 
-                    "/api/companies/**", 
-                    "/api/postings/**", 
-                    "/api/work24/**"
+                    "/api/**",
+                    "/chat/**"
                 ).permitAll()
                 .anyRequest().authenticated() // 그 외의 모든 요청은 인증 필요
             )
