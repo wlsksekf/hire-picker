@@ -17,6 +17,9 @@ import {
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
+import axios from 'axios';
+import ChatRoom from '@/components/ChatRoom';
+
 import { api } from '@/api'; // 공용 api 인스턴스 사용
 
 const PAGE_SIZE = 20; // 페이지 당 불러올 채용 공고 수
@@ -24,12 +27,13 @@ const PAGE_SIZE = 20; // 페이지 당 불러올 채용 공고 수
 // 메인 페이지 컴포넌트
 function MainPage() {
   const theme = useTheme();
-  const [jobs, setJobs] = useState([]); // 채용 공고 목록
-  const [page, setPage] = useState(0); // 현재 페이지 번호
-  const [hasNextPage, setHasNextPage] = useState(true); // 다음 페이지 존재 여부
-  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false); // 다음 페이지 로딩 중 여부
-  const [status, setStatus] = useState('pending'); // 데이터 로딩 상태
-  const [error, setError] = useState(null); // 에러 상태
+  const [jobs, setJobs] = useState([]);
+  const [page, setPage] = useState(0);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+  const [status, setStatus] = useState('pending');
+  const [error, setError] = useState(null);
+  const [selectedPost, setSelectedPost] = useState(null); //chatroom을 위한 usesState 참일경우에만 보여줘야 함으로 null;
 
   // 채용 공고를 불러오는 함수
   function fetchJobs(pageNum) {
@@ -142,6 +146,15 @@ function MainPage() {
                   </Box>
                 </Box>
                 <CardActions sx={{ p: 0, mt: 2, alignSelf: 'flex-end' }}>
+                  {/* ************************* 채팅 작업중>>시작**************************************** */}
+                  <Button 
+                    variant="outlined" 
+                    onClick={function() { setSelectedPost(job); }}
+                  >
+                    실시간 채팅
+                  </Button>
+                  {/* ************************* 채팅 작업중>>끝****************************************** */}
+
                   <Button 
                       variant="contained"
                       href={job.homepageUrl && (job.homepageUrl.startsWith('http') ? job.homepageUrl : `http://${job.homepageUrl}`)}
@@ -170,6 +183,12 @@ function MainPage() {
 
         {!hasNextPage && jobs.length > 0 && <Typography textAlign="center" sx={{ mt: 4, color: 'text.secondary' }}>모든 정보를 불러왔습니다.</Typography>}
       </Box>
+
+      {selectedPost && (
+        <ChatRoom
+        post={selectedPost}
+        onClose={function(){setSelectedPost(null)}}/>
+      )}
     </Container>
   );
 }
