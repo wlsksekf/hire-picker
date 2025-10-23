@@ -10,9 +10,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -140,18 +140,58 @@ public class EmploymentDataService {
                     List<Company> allCompanies = companyRepository.findAll();
                     log.info("DB에 있는 총 회사 수: {}", allCompanies.size());
 
-                    Map<String, Company> companyByCorpCode = allCompanies.stream()
-                            .filter(c -> c.getCorpCode() != null)
-                            .collect(Collectors.toMap(Company::getCorpCode, c -> c, (c1, c2) -> {
-                                log.warn("DB에 중복된 corpCode 발견: {}. '{}'와 '{}' 중 첫 번째 회사 '{}'를 사용합니다.", c1.getCorpCode(),
-                                        c1.getCompanyName(), c2.getCompanyName(), c1.getCompanyName());
-                                return c1;
-                            }));
+                    Map<String, Company> companyByCorpCode = new HashMap<>();
+
+                    for (Company company : allCompanies) {
+                        corpCode = company.getCorpCode();
+
+                        if (corpCode == null) {
+                            continue; // corpCode가 없는 경우 건너뜀
+                        }
+
+                        if (companyByCorpCode.containsKey(corpCode)) {
+                            Company existing = companyByCorpCode.get(corpCode);
+                            log.warn("DB에 중복된 corpCode 발견: {}. '{}'와 '{}' 중 첫 번째 회사 '{}'를 사용합니다.",
+                                    corpCode, existing.getCompanyName(), company.getCompanyName(),
+                                    existing.getCompanyName());
+                            continue; // 기존 값 유지
+                        }
+
+                        companyByCorpCode.put(corpCode, company);
+
+                    }
+
+                    // Map<String, Company> companyByCorpCode = allCompanies.stream()
+                    // .filter(c -> c.getCorpCode() != null)
+                    // .collect(Collectors.toMap(Company::getCorpCode, c -> c, (c1, c2) -> {
+                    // log.warn("DB에 중복된 corpCode 발견: {}. '{}'와 '{}' 중 첫 번째 회사 '{}'를 사용합니다.",
+                    // c1.getCorpCode(),
+                    // c1.getCompanyName(), c2.getCompanyName(), c1.getCompanyName());
+                    // return c1;
+                    // }));
                     log.info("DB에 있는 corpCode 기준 회사 수: {}", companyByCorpCode.size());
 
-                    Map<String, List<Company>> companiesByName = allCompanies.stream()
-                            .filter(c -> c.getCorpCode() == null)
-                            .collect(Collectors.groupingBy(Company::getCompanyName));
+                    Map<String, List<Company>> companiesByName = new HashMap<>();
+
+                    for (Company company : allCompanies) {
+                        if (company.getCorpCode() != null) {
+                            continue; // corpCode가 있는 회사는 제외
+                        }
+
+                        String name = company.getCompanyName();
+
+                        // 기존에 등록된 회사 목록이 있는지 확인
+                        if (!companiesByName.containsKey(name)) {
+                            companiesByName.put(name, new ArrayList<>()); // 없으면 새 리스트 생성
+                        }
+
+                        // 해당 이름의 리스트에 추가
+                        companiesByName.get(name).add(company);
+                    }
+
+                    // Map<String, List<Company>> companiesByName = allCompanies.stream()
+                    // .filter(c -> c.getCorpCode() == null)
+                    // .collect(Collectors.groupingBy(Company::getCompanyName));
                     log.info("DB에 corpCode가 없는 회사 이름 기준 그룹 수: {}", companiesByName.size());
 
                     List<Company> companiesToUpdate = new ArrayList<>();
@@ -182,8 +222,8 @@ public class EmploymentDataService {
                             URL corpUrl = new URL(companyApiUrl);
                             HttpURLConnection conn = (HttpURLConnection) corpUrl.openConnection();
                             conn.setRequestMethod("GET");
-                            conn.setConnectTimeout(5000);
-                            conn.setReadTimeout(15000);
+                            conn.setConnectTimeout(30000);
+                            conn.setReadTimeout(30000);
 
                             int responseCode2 = conn.getResponseCode();
                             if (responseCode2 == 200) { // HTTP OK
@@ -218,12 +258,12 @@ public class EmploymentDataService {
                         }
 
                         // API 호출 제한을 피하기 위해 딜레이 추가
-                        try {
-                            Thread.sleep(200); // 500ms 딜레이
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
-                            log.error("Thread interrupted during DART API call delay", ie);
-                        }
+                        // try {
+                        // Thread.sleep(200); // 500ms 딜레이
+                        // } catch (InterruptedException ie) {
+                        // Thread.currentThread().interrupt();
+                        // log.error("Thread interrupted during DART API call delay", ie);
+                        // }
 
                         Company existingCompanyByCorpCode = companyByCorpCode.get(corpCode);
                         if (existingCompanyByCorpCode != null) {
