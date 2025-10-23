@@ -60,6 +60,9 @@ dependencies {
 
     // Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // JPA (Database) - (첫 번째 파일에서 중복 선언되어 제거)
+    // H2 (Database) - (첫 번째 파일에서 중복 선언되어 제거)
 }
 
 tasks.named('test') {

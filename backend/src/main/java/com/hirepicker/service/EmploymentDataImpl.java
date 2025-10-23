@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.domain.PageImpl;
 
+
 import java.util.Optional;
 
 @Service // Spring의 서비스 빈으로 등록
@@ -55,6 +56,7 @@ public class EmploymentDataImpl implements EmploymentData {
     }
     
     return new PageImpl<>(jobDtos, pageable, jobPostings.getTotalElements());
+    
     }
 
     // 채용 행사 목록 조회
