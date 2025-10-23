@@ -1,23 +1,17 @@
 package com.hirepicker.service;
 
-import java.util.Map;
+import com.hirepicker.config.security.CustomUserDetails;
+import com.hirepicker.dto.payment.*;
 
-import jakarta.servlet.http.HttpServletRequest;
-
-// 토스페이먼츠 관련 비즈니스 로직을 정의하는 인터페이스
+// 토스페이먼츠 결제 로직을 처리하는 서비스 인터페이스
 public interface TossPaymentService {
+    
+    // 결제 정보 생성 (주문서 생성)
+    PaymentInitiateResponseDto initiatePayment(PaymentInitiateRequestDto requestDto, CustomUserDetails userDetails);
+    
     // 결제 승인
-    Map<String, Object> confirmPayment(HttpServletRequest request, String jsonBody) throws Exception;
-
-    // 자동 결제
-    Map<String, Object> confirmBilling(String jsonBody) throws Exception;
-
-    // 빌링키 발급
-    Map<String, Object> issueBillingKey(String jsonBody) throws Exception;
-
-    // 브랜드페이 인증 콜백 처리
-    Map<String, Object> callbackAuth(String customerKey, String code) throws Exception;
-
-    // 브랜드페이 결제 승인
-    Map<String, Object> confirmBrandpay(String jsonBody) throws Exception;
+    Object confirmPayment(PaymentConfirmRequestDto confirmDto, CustomUserDetails userDetails);
+    
+    // 가상계좌 입금 처리 웹훅
+    void handleWebhook(TossWebhookDto webhookDto);
 }

@@ -9,6 +9,17 @@ server:
 # [수정됨] H2 DB로 연결되는 문제를 해결하기 위해 RDS(MySQL) 설정을 명시적으로 추가
 # .env 파일의 변수(${DB_URL} 등)를 참조함
 spring:
+
+  # 기본 프로필을 'local'으로 설정. 다른 프로필이 지정되면 무시됨.
+  profiles:
+    default: local
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  # 공용 데이터소스 설정
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver # MySQL 드라이버
     url: ${DB_URL}
@@ -72,6 +83,20 @@ logging:
     org.springframework.security: INFO
     # [수정됨] CustomAuthenticationProvider 사용 시 발생하는 UserDetailsService 경고(WARN) 로그 끄기
     'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer': ERROR
+
+    # 디버깅을 위한 특정 패키지 로그 레벨 설정
+    com.hirepicker.config.filter.JwtAuthenticationFilter: DEBUG
+    com.hirepicker.config.security.CustomAuthenticationProvider: DEBUG
+    com.hirepicker.service.UserDetailsServiceImpl: DEBUG
+    com.hirepicker.controller.AuthController: DEBUG
+    com.hirepicker.controller.UserController: DEBUG
+    com.hirepicker.service.AuthService: DEBUG
+
+# === 토스페이먼츠 설정 ===
+toss:
+  client-key: test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm
+  secret-key: test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6
+  api-url: "https://api.tosspayments.com"
 
 # === 외부 API 키 ===
 # [추가됨] .env 파일의 API 키들을 Spring에서 쉽게 주입받아 사용하기 위한 설정

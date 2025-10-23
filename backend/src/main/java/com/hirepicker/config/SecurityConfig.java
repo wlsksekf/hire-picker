@@ -7,6 +7,7 @@ import com.hirepicker.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -39,8 +40,15 @@ public class SecurityConfig {
             .formLogin(form -> form.disable()) // 폼 로그인 비활성화
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션을 사용하지 않음 (상태 없음)
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/api/auth/**", "/api/users/**", "/api/work24/**", "/actuator/**", "/api/health/**", "/api/manage/**", "/confirm/**", "/confirm-billing", "/issue-billing-key", "/callback-auth", "/fail", "/swagger-ui/**", "/api-docs/**").permitAll()
+ 
+                // 회원가입 엔드포인트는 무조건 허용 (가장 먼저 체크)
+                .requestMatchers(HttpMethod.POST, "/api/users/signup").permitAll()
+                .requestMatchers("/api/auth/**", "/api/users/**", "/api/work24/**", "/actuator/**", "/api/health/**", "/api/manage/**", "/confirm/**", "/confirm-billing", "/issue-billing-key", "/callback-auth", "/fail", "/swagger-ui/**", "/api-docs/**", "/error").permitAll()
+                .requestMatchers("/api/payment/webhook").permitAll() // 웹훅 엔드포인트는 모두 허용
+                .requestMatchers("/chat/**").permitAll()
+                .requestMatchers("/api/payment/**").authenticated() // 나머지 결제 관련 API는 인증 필요
                 .anyRequest().authenticated()
+
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 추가
             .oauth2Login(oauth2 -> oauth2 // OAuth2 로그인 설정

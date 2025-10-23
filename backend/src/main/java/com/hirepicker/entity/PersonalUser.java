@@ -1,5 +1,7 @@
 package com.hirepicker.entity;
 
+import com.hirepicker.entity.payment.PersonalUserCredit;
+import com.hirepicker.entity.payment.Payment;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -7,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity // JPA 엔티티임을 선언
 @Table(name = "personal_user") // "personal_user" 테이블과 매핑
@@ -57,6 +61,14 @@ public class PersonalUser {
     @JoinColumn(name = "refresh_idx", nullable = true)
     private RefreshToken refreshToken;
 
+    // 개인 크레딧 정보와 1:1 매핑
+    @OneToOne(mappedBy = "personalUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private PersonalUserCredit credit;
+
+    // 개인 결제 내역과 1:N 매핑
+    @OneToMany(mappedBy = "personalUser")
+    private List<Payment> payments = new ArrayList<>();
+
     @Builder // 빌더 패턴을 사용하여 객체 생성
     public PersonalUser(String email, String password, String nickname, String name, Gender gender, String phoneNumber, String address, String platform) { // refreshIdx 파라미터 제거
         this.email = email;
@@ -70,7 +82,7 @@ public class PersonalUser {
         this.regDate = LocalDate.now(); // 등록일은 현재 날짜로 설정
         this.isCancel = false; // 기본값은 false
     }
-    
+
     // 비밀번호 설정/변경 시 사용
     public void setPassword(String password) {
         this.password = password;

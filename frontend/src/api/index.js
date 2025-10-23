@@ -10,9 +10,19 @@ const api = axios.create({
 // 요청 인터셉터: 모든 요청에 액세스 토큰 추가 (추가됨)
 api.interceptors.request.use(
   (config) => {
+    console.log('Axios Request Interceptor:', config.method.toUpperCase(), config.url);
+    // 공개 경로(회원가입 등)에는 토큰을 추가하지 않음
+    if (config.url.includes('/api/users/signup')) {
+      console.log('Public route, not adding token.');
+      return config;
+    }
+
     const { accessToken } = useAuthStore.getState(); // Zustand 스토어에서 토큰 가져오기
     if (accessToken) {
+      console.log('Attaching token to request.');
       config.headers.Authorization = `Bearer ${accessToken}`;
+    } else {
+      console.log('No access token found.');
     }
     return config;
   },

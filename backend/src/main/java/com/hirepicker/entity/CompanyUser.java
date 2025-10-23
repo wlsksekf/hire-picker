@@ -1,11 +1,15 @@
 package com.hirepicker.entity;
 
+import com.hirepicker.entity.payment.CompanyUserCredit;
+import com.hirepicker.entity.payment.Payment;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "company_user")
@@ -49,6 +53,14 @@ public class CompanyUser {
 
     @Column(name = "is_cancel")
     private boolean isCancel;
+
+    // 회사 크레딧 정보와 1:1 매핑
+    @OneToOne(mappedBy = "companyUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private CompanyUserCredit credit;
+
+    // 회사 결제 내역과 1:N 매핑
+    @OneToMany(mappedBy = "companyUser")
+    private List<Payment> payments = new ArrayList<>();
 
     public void setRefreshToken(RefreshToken refreshToken) {
         this.refreshToken = refreshToken;

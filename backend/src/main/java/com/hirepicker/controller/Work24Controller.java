@@ -21,9 +21,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 
-@Tag(name = "Work24", description = "Work24 관련 API") // Swagger 태그 설정
-@RestController // REST 컨트롤러임을 선언
-@RequestMapping("/api/work24") // "/api/work24" 경로에 매핑
+@Tag(name = "Work24", description = "Work24 관련 API")
+@RestController
+@RequestMapping("/api/work24")
 @RequiredArgsConstructor // final 필드에 대한 생성자 자동 생성
 public class Work24Controller {
 
@@ -83,7 +83,7 @@ public class Work24Controller {
     public ResponseEntity<String> syncCompanies() {
         employmentDataService.synchronizeCompanies();
         try{
-             employmentDataService.SyncDartInfo();
+            employmentDataService.SyncDartInfo();
         } catch(Exception e){
             System.out.println("Dart synchronization failed: " + e.getMessage());
         }
