@@ -2,6 +2,7 @@ package com.hirepicker.controller; // (패키지 경로는 본인에 맞게)
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,13 +30,14 @@ public class ChatController {
      * 클라이언트가 /app/chat.sendMessage 주소로 메시지를 보낼 때 이 메소드가 실행됩니다.
      */
     @MessageMapping("/chat.sendMessage") 
-    public void sendMessage(ChatMessageDTO receivedDto) {
+    public void sendMessage(ChatMessageDTO receivedDto, SimpMessageHeaderAccessor headerAccessor) {
         
         // (로그인 기능이 없으므로, 임시 senderId 사용. 
         //  나중에 Spring Security와 연동하면 실제 유저 ID를 가져올 수 있음)
         String senderId = receivedDto.getSenderName(); // (프론트가 보낸 이름을 일단 신뢰)
         if (senderId == null || senderId.isEmpty()) {
-            senderId = "UnknownUser";
+            String sessionId = headerAccessor.getSessionId();
+            senderId = "픽붕이"+ (sessionId.substring(0, 2)); // 예: 앞 8자리만 사용;
         }
         
         LocalDateTime now = LocalDateTime.now();
