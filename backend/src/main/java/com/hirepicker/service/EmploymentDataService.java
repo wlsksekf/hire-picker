@@ -37,22 +37,17 @@ import com.hirepicker.util.DataMapper;
 import com.hirepicker.util.XmlParser;
 
 import io.github.cdimascio.dotenv.Dotenv;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class EmploymentDataService {
 
     private final Dotenv dotenv;
     private final CompanyRepository companyRepository;
     private final EmploymentDataProcessorService DataProcessorService;
-
-    public EmploymentDataService(Dotenv dotenv, CompanyRepository companyRepository,
-            EmploymentDataProcessorService dataProcessorService) {
-        this.dotenv = dotenv;
-        this.companyRepository = companyRepository;
-        this.DataProcessorService = dataProcessorService;
-    }
 
     @Scheduled(cron = "0 0 4 * * *")
     @Transactional
