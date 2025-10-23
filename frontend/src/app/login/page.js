@@ -25,24 +25,28 @@ function LoginPage() {
   }
 
   // 폼 제출 핸들러
-  async function handleSubmit(event) {
+  function handleSubmit(event) {
     event.preventDefault();
     setError(null);
     setIsSocialError(false);
+    console.log('로그인 시도...', { email, password });
 
-    try {
-      const response = await api.post('/api/auth/login', { email, password });
-      const { accessToken } = response.data;
-      login(accessToken); // Zustand 스토어에 토큰 저장
-      router.push('/'); // 로그인 성공 시 메인 페이지로 이동
-    } catch (err) {
-      if (err.response?.data?.error === 'SOCIAL_ACCOUNT_NEEDS_PASSWORD_SETUP') {
-        setError(err.response.data.message || '소셜 계정입니다. 비밀번호를 설정해주세요.');
-        setIsSocialError(true);
-      } else {
-        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
-      }
-    }
+    api.post('/api/auth/login', { email, password })
+      .then(function(response) {
+        console.log('로그인 성공 응답:', response);
+        const { accessToken } = response.data;
+        login(accessToken); // Zustand 스토어에 토큰 저장
+        router.push('/'); // 로그인 성공 시 메인 페이지로 이동
+      })
+      .catch(function(err) {
+        console.error('로그인 요청 중 오류 발생:', err.response || err);
+        if (err.response?.data?.error === 'SOCIAL_ACCOUNT_NEEDS_PASSWORD_SETUP') {
+          setError(err.response.data.message || '소셜 계정입니다. 비밀번호를 설정해주세요.');
+          setIsSocialError(true);
+        } else {
+          setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+        }
+      });
   }
 
   return (

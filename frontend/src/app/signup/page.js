@@ -16,6 +16,7 @@ import {
   Radio,       // 추가
 } from '@mui/material';
 import AnimatedButton from '@/components/AnimatedButton';
+import { api } from '@/api'; // Axios 인스턴스 임포트
 
 // 회원가입 페이지 컴포넌트
 function SignupPage() {
@@ -32,35 +33,33 @@ function SignupPage() {
     setTabValue(newValue);
   }
 
-  async function handleSubmit(event) {
+  function handleSubmit(event) {
     event.preventDefault(); // 기본 폼 제출 동작 방지
+    console.log('회원가입 시도...', { email, password, confirmPassword, nickname, name, gender });
 
     if (password !== confirmPassword) {
       alert('비밀번호가 일치하지 않습니다.');
+      console.error('비밀번호 불일치');
       return;
     }
 
-    try {
-      const response = await fetch('/api/users/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, nickname, name, gender }), // 닉네임, 이름, 성별 추가
-      });
+    const signupData = { email, password, nickname, name, gender };
+    console.log('회원가입 데이터 전송:', signupData);
 
-      if (response.ok) {
-        alert('회원가입 성공!');
-        // 성공 시 로그인 페이지로 리다이렉트 또는 다른 처리
-        // router.push('/login'); // Next.js router 사용 시
-      } else {
-        const errorData = await response.json();
-        alert(`회원가입 실패: ${errorData.message || response.statusText}`);
-      }
-    } catch (error) {
-      console.error('회원가입 요청 중 오류 발생:', error);
-      alert('회원가입 요청 중 오류가 발생했습니다.');
-    }
+    api.post('/api/users/signup', signupData)
+      .then(function(response) {
+        console.log('회원가입 성공 응답:', response);
+        if (response.status === 201) { // Assuming 201 Created for success
+          alert('회원가입 성공!');
+        } else {
+          alert(`회원가입 실패: ${response.data.message || '알 수 없는 오류'}`);
+        }
+      })
+      .catch(function(error) {
+        console.error('회원가입 요청 중 오류 발생:', error.response || error);
+        const errorMessage = error.response?.data?.message || error.message || '회원가입 요청 중 오류가 발생했습니다.';
+        alert(`회원가입 실패: ${errorMessage}`);
+      });
   }
 
   return (
@@ -80,20 +79,21 @@ function SignupPage() {
             margin="normal"
             required
             fullWidth
-            id="email"
-            label="이메일 주소"
-            name="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            id="name" // 이름 필드
+            label="이름"
+            name="name"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
           />
           <TextField
             margin="normal"
             required
             fullWidth
-            id="nickname" // 닉네임 필드 추가
+            id="nickname" // 닉네임 필드
             label="닉네임"
             name="nickname"
+            autoComplete="nickname"
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
           />
@@ -101,12 +101,12 @@ function SignupPage() {
             margin="normal"
             required
             fullWidth
-            id="name" // 이름 필드 추가
-            label="이름"
-            name="name"
-            autoComplete="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            id="email"
+            label="이메일 주소"
+            name="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
           <FormControl component="fieldset" margin="normal" required fullWidth>
             <FormLabel component="legend">성별</FormLabel>
@@ -129,6 +129,7 @@ function SignupPage() {
             label="비밀번호"
             type="password"
             id="password"
+            autoComplete="new-password" // 자동완성 속성 추가
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -140,6 +141,7 @@ function SignupPage() {
             label="비밀번호 확인"
             type="password"
             id="confirmPassword"
+            autoComplete="new-password" // 자동완성 속성 추가
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
           />

@@ -1,15 +1,18 @@
 package com.hirepicker.controller;
 
-import com.hirepicker.config.jwt.JwtTokenProvider;
+
 import com.hirepicker.entity.Gender;
 import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.repository.PersonalUserRepository;
-import com.hirepicker.repository.RefreshTokenRepository;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,18 +20,21 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+@Tag(name = "사용자", description = "사용자 정보 및 회원가입 관련 API")
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
 
     private final PersonalUserRepository personalUserRepository;
     private final PasswordEncoder passwordEncoder;
-    private final RefreshTokenRepository refreshTokenRepository; // 주입
-    private final JwtTokenProvider jwtTokenProvider; // 주입
 
+
+    @Operation(summary = "회원가입", description = "새로운 개인 회원을 등록합니다.")
     @PostMapping("/signup")
     public ResponseEntity<Map<String, String>> signup(@RequestBody Map<String, String> signupRequest) {
+        log.info("[API] /api/users/signup 요청 수신. 사용자: {}", signupRequest.get("email"));
         String email = signupRequest.get("email");
         String password = signupRequest.get("password");
         String nickname = signupRequest.get("nickname"); // 닉네임 추가
