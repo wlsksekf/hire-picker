@@ -10,9 +10,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -69,280 +69,233 @@ public class EmploymentDataService {
     }
 
     // Dart API 가져와서 DB에 저장
-    @Transactional
     public void SyncDartInfo() {
+
+        String apiKey = getDartKey();
+        if (apiKey == null) {
+            log.error("DART API 키가 없어 동기화를 중단합니다.");
+            return;
+        }
+        String urlString = "https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key=" + apiKey;
+
+        File downloadedFile = new File("build/downloaded_dart_data.exe");
+        File zipFile = new File("build/downloaded_dart_data.zip");
+        File extractedXmlFile = new File("build/corpCode.xml");
+
+        HttpURLConnection connection = null;
+
         try {
+            URL url = new URL(urlString);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
 
-            String apiKey = getDartKey();
-            String urlString = "https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key=" + apiKey;
+            int responseCode = connection.getResponseCode();
 
-            File downloadedFile = new File("downloaded_dart_data.exe");
-            File zipFile = new File("downloaded_dart_data.zip");
-            File extractedXmlFile = new File("corpCode.xml");
-            String corpCode = "";
-
-            HttpURLConnection connection = null;
-
-            try {
-                URL url = new URL(urlString);
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-
-                int responseCode = connection.getResponseCode();
-
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    // exe 파일 다운로드
-                    try (BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
-                            FileOutputStream out = new FileOutputStream(downloadedFile)) {
-                        byte[] buffer = new byte[5000];
-                        int len;
-                        while ((len = in.read(buffer)) > 0) {
-                            out.write(buffer, 0, len);
-                        }
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                try (BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
+                        FileOutputStream out = new FileOutputStream(downloadedFile)) {
+                    byte[] buffer = new byte[8192];
+                    int len;
+                    while ((len = in.read(buffer)) > 0) {
+                        out.write(buffer, 0, len);
                     }
+                }
 
-                    // 확장자 변경 exe → zip
-                    if (!downloadedFile.renameTo(zipFile)) {
-                        throw new RuntimeException("❌ Failed to rename downloaded file to .zip");
-                    }
+                if (!downloadedFile.renameTo(zipFile)) {
+                    throw new RuntimeException("❌ Failed to rename downloaded file to .zip");
+                }
 
-                    // 압축 해제
-                    try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
-                        ZipEntry entry;
-                        while ((entry = zis.getNextEntry()) != null) {
-                            if (entry.getName().endsWith(".xml")) {
-                                try (FileOutputStream fos = new FileOutputStream(extractedXmlFile)) {
-                                    byte[] buffer = new byte[1024];
-                                    int len;
-                                    while ((len = zis.read(buffer)) > 0) {
-                                        fos.write(buffer, 0, len);
-                                    }
-                                }
-                                break;
+                try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
+                    ZipEntry entry;
+                    if ((entry = zis.getNextEntry()) != null && entry.getName().endsWith(".xml")) {
+                        try (FileOutputStream fos = new FileOutputStream(extractedXmlFile)) {
+                            byte[] buffer = new byte[1024];
+                            int len;
+                            while ((len = zis.read(buffer)) > 0) {
+                                fos.write(buffer, 0, len);
                             }
                         }
                     }
+                }
 
-                    if (!extractedXmlFile.exists()) {
-                        throw new RuntimeException("❌ XML file not found in the downloaded zip");
+                if (!extractedXmlFile.exists()) {
+                    throw new RuntimeException("❌ XML file not found in the downloaded zip");
+                }
+
+                log.info("DART 전체 기업 목록 파싱 시작...");
+                SAXParserFactory saxFactory = SAXParserFactory.newInstance();
+                SAXParser saxParser = saxFactory.newSAXParser();
+                DartCorpCodeSaxHandler handler = new DartCorpCodeSaxHandler();
+                saxParser.parse(extractedXmlFile, handler);
+                List<Company> allParsedCompanies = handler.getCompanies();
+                log.info("파싱된 전체 회사 수: {}", allParsedCompanies.size());
+
+                List<Company> allDbCompanies = companyRepository.findAll();
+                log.info("DB에 있는 총 회사 수: {}", allDbCompanies.size());
+
+                Map<String, Company> companyByCorpCode = new HashMap<>();
+                for (Company company : allDbCompanies) {
+                    String currentCorpCode = company.getCorpCode();
+                    if (currentCorpCode != null && !currentCorpCode.isEmpty()) {
+                        if (!companyByCorpCode.containsKey(currentCorpCode)) {
+                            companyByCorpCode.put(currentCorpCode, company);
+                        } else {
+                            log.warn("DB에 중복된 corpCode 발견: {}. 기존 회사 '{}' 유지.", currentCorpCode,
+                                    companyByCorpCode.get(currentCorpCode).getCompanyName());
+                        }
                     }
+                }
+                log.info("DB에 있는 corpCode 기준 회사 수: {}", companyByCorpCode.size());
 
-                    log.info("DART 동기화 시작...");
-                    // XML 파싱 (SAX)
-                    SAXParserFactory saxFactory = SAXParserFactory.newInstance();
-                    SAXParser saxParser = saxFactory.newSAXParser();
-                    DartCorpCodeSaxHandler handler = new DartCorpCodeSaxHandler();
-                    saxParser.parse(extractedXmlFile, handler);
-                    List<Company> parsedCompanies = handler.getCompanies();
-                    log.info("파싱된 회사 수: {}", parsedCompanies.size());
+                Map<String, List<Company>> companiesByName = new HashMap<>();
+                for (Company company : allDbCompanies) {
+                    if (company.getCorpCode() == null || company.getCorpCode().isEmpty()) {
+                        companiesByName.computeIfAbsent(company.getCompanyName(), k -> new ArrayList<>()).add(company);
+                    }
+                }
+                log.info("DB에 corpCode가 없는 회사 이름 기준 그룹 수: {}", companiesByName.size());
 
-                    // DB 데이터를 corpCode와 companyName 기준으로 미리 로드
-                    List<Company> allCompanies = companyRepository.findAll();
-                    log.info("DB에 있는 총 회사 수: {}", allCompanies.size());
+                int batchSize = 200;
+                int totalPages = (int) Math.ceil((double) allParsedCompanies.size() / batchSize);
 
-                    Map<String, Company> companyByCorpCode = allCompanies.stream()
-                            .filter(c -> c.getCorpCode() != null)
-                            .collect(Collectors.toMap(Company::getCorpCode, c -> c, (c1, c2) -> {
-                                log.warn("DB에 중복된 corpCode 발견: {}. '{}'와 '{}' 중 첫 번째 회사 '{}'를 사용합니다.", c1.getCorpCode(),
-                                        c1.getCompanyName(), c2.getCompanyName(), c1.getCompanyName());
-                                return c1;
-                            }));
-                    log.info("DB에 있는 corpCode 기준 회사 수: {}", companyByCorpCode.size());
+                for (int page = 0; page < totalPages; page++) {
+                    int start = page * batchSize;
+                    int end = Math.min(start + batchSize, allParsedCompanies.size());
+                    List<Company> batch = allParsedCompanies.subList(start, end);
 
-                    Map<String, List<Company>> companiesByName = allCompanies.stream()
-                            .filter(c -> c.getCorpCode() == null)
-                            .collect(Collectors.groupingBy(Company::getCompanyName));
-                    log.info("DB에 corpCode가 없는 회사 이름 기준 그룹 수: {}", companiesByName.size());
+                    log.info("DART 동기화 배치 처리 시작: 페이지 {}/{}, 처리할 회사 수: {}", page + 1, totalPages, batch.size());
 
                     List<Company> companiesToUpdate = new ArrayList<>();
                     List<Company> companiesToInsert = new ArrayList<>();
 
-                    for (Company parsedCompany : parsedCompanies) {
-                        corpCode = parsedCompany.getCorpCode();
+                    for (Company parsedCompany : batch) {
+                        String corpCode = parsedCompany.getCorpCode();
                         String corpName = parsedCompany.getCompanyName();
 
                         if (corpName == null || corpName.isEmpty() || corpCode == null || corpCode.isEmpty()) {
-                            log.warn(
-                                    "파싱된 데이터에 corpName 또는 corpCode가 비어있습니다 corpName={}, corpCode={}",
-                                    corpName, corpCode);
+                            log.warn("파싱된 데이터에 corpName 또는 corpCode가 비어있습니다. 건너뜁니다. corpName={}, corpCode={}", corpName,
+                                    corpCode);
                             continue;
                         }
 
-                        log.debug("처리 중인 회사: {}, {}", corpName, corpCode);
-
-                        // DART 기업개황 API 호출해서 상세 정보 가져오기
-                        String ceo_name = null;
-                        String business_number = null;
-                        String address = null;
-                        String website_url = null;
-
+                        String ceo_name = null, business_number = null, address = null, website_url = null;
                         String companyApiUrl = "https://opendart.fss.or.kr/api/company.json?crtfc_key=" + apiKey
                                 + "&corp_code=" + corpCode;
                         try {
                             URL corpUrl = new URL(companyApiUrl);
                             HttpURLConnection conn = (HttpURLConnection) corpUrl.openConnection();
                             conn.setRequestMethod("GET");
-                            conn.setConnectTimeout(5000);
-                            conn.setReadTimeout(15000);
+                            conn.setConnectTimeout(60000);
+                            conn.setReadTimeout(60000);
 
                             int responseCode2 = conn.getResponseCode();
-                            if (responseCode2 == 200) { // HTTP OK
+                            if (responseCode2 == 200) {
                                 try (BufferedReader br = new BufferedReader(
                                         new InputStreamReader(conn.getInputStream(), "UTF-8"))) {
-                                    StringBuilder response = new StringBuilder();
-                                    String line;
-                                    while ((line = br.readLine()) != null) {
-                                        response.append(line);
-                                    }
-
-                                    JSONObject json = new JSONObject(response.toString());
-                                    if ("000".equals(json.optString("status"))) {
+                                    String jsonText = br.lines().collect(java.util.stream.Collectors.joining());
+                                    JSONObject json = new JSONObject(jsonText);
+                                    String status = json.optString("status");
+                                    if ("000".equals(status)) {
                                         ceo_name = json.optString("ceo_nm");
                                         business_number = json.optString("bizr_no");
                                         address = json.optString("adres");
                                         website_url = json.optString("hm_url");
-                                        log.debug("DART API 성공: {} ({}) - CEO: {}", corpName, corpCode, ceo_name);
-                                    } else if ("013".equals(json.optString("status"))) {
-                                        log.warn("DART API에서 '{}'({})에 대한 데이터를 찾을 수 없습니다.", corpName, corpCode);
+                                    } else if ("013".equals(status)) {
+                                        log.warn("DART API에서 '{}'({})에 대한 데이터를 찾을 수 없습니다. (상태: {})", corpName, corpCode,
+                                                status);
                                     } else {
-                                        log.error("DART API 오류: status={}, message={}", json.optString("status"),
-                                                json.optString("message"));
+                                        log.error("DART API 오류 (회사: {}, 코드: {}): status={}, message={}", corpName,
+                                                corpCode, status, json.optString("message"));
                                     }
                                 }
                             } else {
-                                log.error("DART API company.json 호출 실패. 응답 코드: {}", responseCode2);
+                                log.error("DART API company.json 호출 실패 (회사: {}, 코드: {}). 응답 코드: {}", corpName, corpCode,
+                                        responseCode2);
                             }
                             conn.disconnect();
                         } catch (Exception e) {
-                            log.error("DART API company.json 호출 중 예외 발생", e);
+                            log.error("DART company.json API 호출 중 예외 발생 (회사: {}, 코드: {})", corpName, corpCode, e);
                         }
 
-                        // API 호출 제한을 피하기 위해 딜레이 추가
-                        try {
-                            Thread.sleep(200); // 500ms 딜레이
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
-                            log.error("Thread interrupted during DART API call delay", ie);
-                        }
-
-                        Company existingCompanyByCorpCode = companyByCorpCode.get(corpCode);
-                        if (existingCompanyByCorpCode != null) {
-                            log.debug("DB에서 corpCode '{}'를 찾았습니다: '{}'", corpCode,
-                                    existingCompanyByCorpCode.getCompanyName());
-
-                            boolean needsUpdate = false;
-                            // corpCode가 이미 존재함. 이름이 다르면 업데이트
-                            if (!existingCompanyByCorpCode.getCompanyName().equals(corpName)) {
-                                log.info("corpCode '{}'의 회사 이름이 변경되었습니다. DB: '{}' -> DART: '{}'. 업데이트합니다.", corpCode,
-                                        existingCompanyByCorpCode.getCompanyName(), corpName);
-                                existingCompanyByCorpCode.setCompanyName(corpName);
-                                needsUpdate = true;
-                            }
-
-                            // 상세 정보 업데이트 (변경되었을 경우에만)
-                            if (ceo_name != null && !ceo_name.equals(existingCompanyByCorpCode.getCeoName())) {
-                                existingCompanyByCorpCode.setCeoName(ceo_name);
-                                needsUpdate = true;
-                            }
-                            if (business_number != null
-                                    && !business_number.equals(existingCompanyByCorpCode.getBusinessNumber())) {
-                                existingCompanyByCorpCode.setBusinessNumber(business_number);
-                                needsUpdate = true;
-                            }
-                            if (address != null && !address.equals(existingCompanyByCorpCode.getAddress())) {
-                                existingCompanyByCorpCode.setAddress(address);
-                                needsUpdate = true;
-                            }
-                            if (website_url != null && !website_url.equals(existingCompanyByCorpCode.getWebsiteUrl())) {
-                                existingCompanyByCorpCode.setWebsiteUrl(website_url);
-                                needsUpdate = true;
-                            }
+                        Company existingCompany = companyByCorpCode.get(corpCode);
+                        if (existingCompany != null) {
+                            boolean needsUpdate = !existingCompany.getCompanyName().equals(corpName)
+                                    || (ceo_name != null && !ceo_name.equals(existingCompany.getCeoName()))
+                                    || (business_number != null
+                                            && !business_number.equals(existingCompany.getBusinessNumber()))
+                                    || (address != null && !address.equals(existingCompany.getAddress()))
+                                    || (website_url != null && !website_url.equals(existingCompany.getWebsiteUrl()));
 
                             if (needsUpdate) {
-                                log.info("회사 정보 변경사항 감지. '{}' ({}) 업데이트 리스트에 추가.", corpName, corpCode);
-                                if (!companiesToUpdate.contains(existingCompanyByCorpCode)) {
-                                    companiesToUpdate.add(existingCompanyByCorpCode);
-                                }
-                            } else {
-                                log.debug("corpCode '{}'의 회사 정보에 변경사항이 없습니다.", corpCode);
+                                existingCompany.setCompanyName(corpName);
+                                existingCompany.setCeoName(ceo_name);
+                                existingCompany.setBusinessNumber(business_number);
+                                existingCompany.setAddress(address);
+                                existingCompany.setWebsiteUrl(website_url);
+                                companiesToUpdate.add(existingCompany);
                             }
-
                         } else {
-                            log.debug("DB에 corpCode '{}'가 없습니다. 새로운 코드로 처리합니다.", corpCode);
-                            // 새로운 corpCode. 같은 이름의 회사가 있는지 확인 (corpCode가 없는)
                             List<Company> matchingCompanies = companiesByName.get(corpName);
                             if (matchingCompanies != null && !matchingCompanies.isEmpty()) {
-                                // 찾은 회사 중 첫 번째 회사의 corpCode를 업데이트
-                                Company companyToUpdate = matchingCompanies.get(0);
-                                log.info("DB에 이름은 같지만 corpCode가 없는 회사 '{}'를 찾았습니다. corpCode '{}'를 설정합니다.", corpName,
-                                        corpCode);
+                                Company companyToUpdate = matchingCompanies.remove(0);
                                 companyToUpdate.setCorpCode(corpCode);
-                                // 상세 정보도 업데이트
                                 companyToUpdate.setCeoName(ceo_name);
                                 companyToUpdate.setBusinessNumber(business_number);
                                 companyToUpdate.setAddress(address);
                                 companyToUpdate.setWebsiteUrl(website_url);
-
                                 companiesToUpdate.add(companyToUpdate);
-                                // 맵에서 제거하여 중복 업데이트 방지
-                                matchingCompanies.remove(0);
                             } else {
-                                // 새로운 회사로 추가
-                                log.info("DB에 '{}'에 해당하는 회사가 없습니다. 새 회사로 추가합니다. (corpCode: {})", corpName, corpCode);
                                 Company newCompany = new Company();
                                 newCompany.setCompanyName(corpName);
                                 newCompany.setCorpCode(corpCode);
-                                // 상세 정보도 설정
                                 newCompany.setCeoName(ceo_name);
                                 newCompany.setBusinessNumber(business_number);
                                 newCompany.setAddress(address);
                                 newCompany.setWebsiteUrl(website_url);
-
                                 companiesToInsert.add(newCompany);
                             }
                         }
                     }
 
-                    log.info("업데이트할 회사 수: {}", companiesToUpdate.size());
-                    log.info("추가할 회사 수: {}", companiesToInsert.size());
-
                     if (!companiesToUpdate.isEmpty()) {
-                        log.info("회사 정보 업데이트를 시작합니다...");
+                        log.info("[배치 {}/{}] 업데이트할 회사 수: {}", page + 1, totalPages, companiesToUpdate.size());
                         companyRepository.saveAll(companiesToUpdate);
-                        log.info("회사 정보 업데이트 완료.");
                     }
 
                     if (!companiesToInsert.isEmpty()) {
-                        log.info("새 회사 정보 추가를 시작합니다...");
-                        int batchSize = 1000;
-                        for (int i = 0; i < companiesToInsert.size(); i += batchSize) {
-                            int end = Math.min(i + batchSize, companiesToInsert.size());
-                            List<Company> batch = companiesToInsert.subList(i, end);
-                            log.info("  - {}/{} : {}개 회사 추가 중...", (i / batchSize) + 1,
-                                    (companiesToInsert.size() / batchSize) + 1, batch.size());
-                            companyRepository.saveAll(batch);
-                            companyRepository.flush(); // 각 배치 후 flush하여 메모리 관리
-                        }
-                        log.info("새 회사 정보 추가 완료.");
+                        log.info("[배치 {}/{}] 추가할 회사 수: {}", page + 1, totalPages, companiesToInsert.size());
+                        companyRepository.saveAll(companiesToInsert);
                     }
 
-                    companyRepository.flush();
-                    log.info("DART 동기화 완료.");
+                    if (!companiesToUpdate.isEmpty() || !companiesToInsert.isEmpty()) {
+                        companyRepository.flush();
+                        log.info("[배치 {}/{}] DB 저장 완료.", page + 1, totalPages);
+                    }
 
-                } else {
-                    throw new RuntimeException("❌ DART API 요청 실패, ResponseCode=" + responseCode);
+                    // if (page < totalPages - 1) {
+                    // try {
+                    // log.info("다음 배치 처리를 위해 2초간 대기합니다...");
+                    // Thread.sleep(2000);
+                    // } catch (InterruptedException e) {
+                    // Thread.currentThread().interrupt();
+                    // log.error("배치 처리 대기 중 오류 발생", e);
+                    // }
+                    // }
                 }
-            } catch (Exception e) {
-                log.error("❌ DART 동기화 중 오류 발생: {}", e.getMessage(), e);
-                throw new RuntimeException(e);
-            } finally {
-                if (connection != null)
-                    connection.disconnect();
+
+                log.info("DART 전체 동기화 완료.");
+
+            } else {
+                throw new RuntimeException("❌ DART API corpCode.xml 요청 실패, ResponseCode=" + responseCode);
             }
         } catch (Exception e) {
-            log.error("Error occurred during DART info synchronization", e);
+            log.error("❌ DART 동기화 중 심각한 오류 발생: {}", e.getMessage(), e);
+            throw new RuntimeException(e);
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
-
     }
 
     @Transactional
@@ -478,7 +431,7 @@ public class EmploymentDataService {
     }
 
     private String getDartKey() {
-        String apiKey = dotenv.get("dart_key");
+        String apiKey = dotenv.get("dart_key2");
         if (apiKey == null || apiKey.isBlank()) {
             System.err.println("CRITICAL: 'dart_key' not found in .env file.");
             log.error("CRITICAL: 'dart_key' not found in .env file.");
