@@ -5,7 +5,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // .env 파일의 변수들을 브라우저 환경에 노출시킵니다.
+  // .env 파일의 변수들을 브라우저 환경에 노출시킵니다。
   env: {
     NEXT_PUBLIC_TOSS_CLIENT_KEY: process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY,
     NEXT_PUBLIC_TOSS_CUSTOMER_KEY: process.env.NEXT_PUBLIC_TOSS_CUSTOMER_KEY,
