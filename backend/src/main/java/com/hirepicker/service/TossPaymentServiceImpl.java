@@ -47,7 +47,7 @@ public class TossPaymentServiceImpl implements TossPaymentService {
 
     @Value("${toss.client-key}")
     private String clientKey;
-    @Value("${toss.secret-key}")
+    @Value("${payment.toss.widget-secret-key}")
     private String secretKey;
 
     // 1. 결제 생성 (서버에서 주문 생성)

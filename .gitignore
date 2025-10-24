@@ -51,9 +51,6 @@ bin/
 application-local.yml
 secret*.yml
 secret*.yaml
-/backend/src/test/resources/application.yml
-/backend/src/test/resources/application-test.yml # 테스트용 설정 파일 추가
-
 
 # =======================================
 # 2. 백엔드 규칙 (Backend - Java/Gradle)
@@ -85,7 +82,6 @@ hs_err_pid*
 /backend/.apt_core/
 /backend/.apt_generated_tests/
 /backend/.apt_core_tests/
-
 
 # ==========================================
 # 3. 프론트엔드 규칙 (Frontend - Node/Next.js)

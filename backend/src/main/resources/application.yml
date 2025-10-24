@@ -96,11 +96,6 @@ logging:
     com.hirepicker.service.AuthService: DEBUG
     com.zaxxer.hikari: DEBUG
 
-# === 토스페이먼츠 설정 ===
-toss:
-  client-key: test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm
-  secret-key: test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6
-  api-url: 'https://api.tosspayments.com'
 
 # === 외부 API 키 ===
 # [추가됨] .env 파일의 API 키들을 Spring에서 쉽게 주입받아 사용하기 위한 설정
