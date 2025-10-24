@@ -1,154 +1,149 @@
 import React from 'react';
-import { Box, keyframes, useTheme, useMediaQuery } from '@mui/material';
+import { Box } from '@mui/material';
 import StyledSearchBar from './StyledSearchBar';
-import ImageInBall from './ImageInBall'; // 새로운 컴포넌트 임포트
+import {
+  animationDuration,
+  grabberAnimation,
+  grabbedItemVisibility,
+  itemDisappear,
+} from '../theme/animations';
 
-// --- 애니메이션 로직 ---
-const animationConfig = {
-  duration: '10s',
-  timing: 'infinite forwards',
+// Font Awesome 아이콘 임포트
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+// (수정) Pro Duotone 대신 Free Solid 아이콘 임포트
+import { faSackDollar } from '@fortawesome/free-solid-svg-icons';
+// (삭제) import { byPrefixAndName } from '@fortawesome/fontawesome-svg-core/import.macro';
 
-  keyframes: {
-    grabberRight: keyframes`
-      0% { transform: translate(-50%, 0px); opacity: 1; }
-      10% { transform: translate(-150%, 0px); }
-      40% { transform: translate(-150%, 260px); }
-      50% { transform: translate(-150%, 260px); }
-      80% { transform: translate(-150%, 0px); }
-      89.9% { opacity: 1; }
-      90% { opacity: 0; }
-      100% { transform: translate(-50%, 0px); opacity: 0; }
-    `,
-    grabberLeft: keyframes`
-      0% { transform: translate(50%, 0px); opacity: 1; }
-      10% { transform: translate(150%, 0px); }
-      40% { transform: translate(150%, 260px); }
-      50% { transform: translate(150%, 260px); }
-      80% { transform: translate(150%, 0px); }
-      89.9% { opacity: 1; }
-      90% { opacity: 0; }
-      100% { transform: translate(50%, 0px); opacity: 0; }
-    `,
-    itemAppear: keyframes`
-      0%, 39.9% { opacity: 0; }
-      40% { opacity: 1; }
-      89.9% { opacity: 1; }
-      90%, 100% { opacity: 0; }
-    `,
-    itemDisappear: keyframes`
-      0%, 39.9% { opacity: 1; }
-      40% { opacity: 0; }
-      99.9% { opacity: 0; }
-      100% { opacity: 1; }
-    `,
-  },
-
-  getStyles: function(animate = true) {
-    return {
-      // --- 오른쪽 애니메이션 요소들 ---
-      clawContainerRight: {
-        position: 'absolute',
-        top: '-180px',
-        left: 'calc(50% + 450px)',
-        transform: 'translateX(-50%)',
-        zIndex: 2,
-        width: '60px',
-        height: '140px',
-        animation: animate ? `${animationConfig.keyframes.grabberRight} ${animationConfig.duration} ${animationConfig.timing}` : 'none',
-      },
-      floorResume: {
-        position: 'absolute',
-        bottom: '110px',
-        left: 'calc(50% + 390px)',
-        transform: 'translateX(-50%) rotate(0deg) translateY(180px)',
-        width: '40px',
-        height: '40px',
-        zIndex: 0,
-        animation: animate ? `${animationConfig.keyframes.itemDisappear} ${animationConfig.duration} ${animationConfig.timing}` : 'none',
-      },
-      grabbedResume: {
-        position: 'absolute',
-        top: '40px',
-        left: '10px',
-        width: '40px',
-        height: '40px',
-        transform: 'rotate(5deg)',
-        animation: animate ? `${animationConfig.keyframes.itemAppear} ${animationConfig.duration} ${animationConfig.timing}` : 'none',
-      },
-      // --- 왼쪽 애니메이션 요소들 ---
-      clawContainerLeft: {
-        opacity: 0,
-        position: 'absolute',
-        top: '-230px',
-        left: 'calc(50% - 550px)',
-        transform: 'translateX(-50%)',
-        zIndex: 2,
-        width: '60px',
-        height: '140px',
-        animation: animate ? `${animationConfig.keyframes.grabberLeft} ${animationConfig.duration} ${animationConfig.timing} 2s` : 'none',
-      },
-      floorCompany: {
-        position: 'absolute',
-        bottom: '110px',
-        left: 'calc(50% - 428px)',
-        transform: 'translateX(-50%) rotate(0deg) translateY(185px)',
-        width: '40px',
-        height: '40px',
-        zIndex: 0,
-        animation: animate ? `${animationConfig.keyframes.itemDisappear} ${animationConfig.duration} ${animationConfig.timing} 2s` : 'none',
-      },
-      grabbedCompany: {
-        opacity: 0,
-        position: 'absolute',
-        top: '40px',
-        left: '10px',
-        width: '40px',
-        height: '40px',
-        transform: 'rotate(-5deg)',
-        animation: animate ? `${animationConfig.keyframes.itemAppear} ${animationConfig.duration} ${animationConfig.timing} 2s` : 'none',
-      },
-    }
-  },
-};
-
-// 검색 바와 애니메이션을 포함하는 컴포넌트
-function SearchAnimation({ onFilterClick, isFilterOpen }) {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+const SearchAnimation = ({ onFilterClick, isFilterOpen }) => {
   const animate = true;
-  const styles = animationConfig.getStyles(animate);
 
   return (
-    <Box sx={{ position: 'relative', width: '100%', maxWidth: '600px', margin: 'auto', height: isMobile ? 'auto' : '80px' }}>
-      {!isMobile && (
-        <>
-          {/* 잡기 전의 회사 이미지 */}
-          <ImageInBall
-            imgSrc="/company.png"
-            alt="Company before grab"
-            sx={styles.floorCompany}
+    <Box sx={{ position: 'relative', width: '100%', maxWidth: '600px', margin: 'auto', height: '280px' }}>
+      {/* 바닥에 놓인 아이템들 */}
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: '0px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          zIndex: 0,
+          width: '200px',
+          justifyContent: 'center',
+        }}
+      >
+        {/* 아이템 1 (회사) */}
+        <Box
+          component="img"
+          src="/company.png"
+          alt="Company"
+          sx={{
+            position: 'absolute',
+            bottom: '0px',
+            left: '20px',
+            width: '50px',
+            height: '50px',
+            objectFit: 'contain',
+            transform: 'rotate(-10deg)',
+            animation: animate ? `${itemDisappear} ${animationDuration} infinite forwards` : 'none',
+          }}
+        />
+        {/* 잡히기 전 돈주머니 (바닥) */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: '110px',
+            left: 'calc(50% + 410px)',
+            transform: 'translateX(-50%)',
+            zIndex: 0,
+            animation: animate ? `${itemDisappear} ${animationDuration} infinite forwards` : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '50px',
+            height: '50px',
+          }}
+        >
+          {/* (수정) icon={faSackDollar} 사용, Duotone style 제거 */}
+          <FontAwesomeIcon
+            icon={faSackDollar}
+            size="2x"
+            color="#E6C700" // (수정) 돈주머니 색상 (금색 계열)
           />
-          <Box sx={styles.clawContainerLeft}>
-            <Box component="img" src="/claw.png" alt="Claw Left" sx={{ position: 'absolute', top: '0px', left: '0px', width: '60px', height: '60px', objectFit: 'contain' }} />
-            {/* 잡힌 회사 이미지 */}
-            <ImageInBall imgSrc="/company.png" alt="Grabbed Company" sx={styles.grabbedCompany} />
-          </Box>
-          {/* 잡기 전의 이력서 이미지 */}
-          <ImageInBall
-            imgSrc="/resume.png"
-            alt="Resume before grab"
-            sx={styles.floorResume}
+        </Box>
+        {/* 아이템 3 (회사) */}
+        <Box
+          component="img"
+          src="/company.png"
+          alt="Company"
+          sx={{
+            position: 'absolute',
+            bottom: '0px',
+            left: '100px',
+            width: '50px',
+            height: '50px',
+            objectFit: 'contain',
+            transform: 'rotate(-5deg)',
+            animation: animate ? `${itemDisappear} ${animationDuration} infinite forwards` : 'none',
+          }}
+        />
+      </Box>
+
+      {/* 집게 컨테이너 */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '-150px',
+          left: 'calc(50% + 500px)',
+          transform: 'translateX(-50%)',
+          zIndex: 2,
+          animation: animate ? `${grabberAnimation} ${animationDuration} infinite forwards` : 'none',
+          width: '50px',
+          height: '180px',
+        }}
+      >
+        {/* 집게 이미지 */}
+        <Box
+          component="img"
+          src="/claw.png"
+          alt="Claw"
+          sx={{
+            position: 'absolute',
+            top: '0px',
+            left: '0px',
+            width: '50px',
+            height: '50px',
+            objectFit: 'contain',
+          }}
+        />
+        {/* 잡힌 돈주머니 이미지 */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '35px',
+            left: '0px',
+            width: '50px',
+            height: '50px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transform: 'rotate(5deg)',
+            animation: animate ? `${grabbedItemVisibility} ${animationDuration} infinite forwards` : 'none',
+          }}
+        >
+          {/* (수정) icon={faSackDollar} 사용, Duotone style 제거 */}
+          <FontAwesomeIcon
+            icon={faSackDollar}
+            size="2x"
+            color="#E6C700" // (수정) 돈주머니 색상 (금색 계열)
           />
-          <Box sx={styles.clawContainerRight}>
-            <Box component="img" src="/claw.png" alt="Claw Right" sx={{ position: 'absolute', top: '0px', left: '0px', width: '60px', height: '60px', objectFit: 'contain' }} />
-            {/* 잡힌 이력서 이미지 */}
-            <ImageInBall imgSrc="/resume.png" alt="Grabbed Resume" sx={styles.grabbedResume} />
-          </Box>
-        </>
-      )}
+        </Box>
+      </Box>
+
+      {/* 검색 바 */}
       <StyledSearchBar onFilterClick={onFilterClick} isFilterOpen={isFilterOpen} />
     </Box>
   );
-}
+};
 
 export default SearchAnimation;

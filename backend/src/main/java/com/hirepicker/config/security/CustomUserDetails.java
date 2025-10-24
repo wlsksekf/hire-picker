@@ -50,6 +50,15 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
         this.attributes = attributes;
     }
 
+    // JWT 토큰에서 직접 CustomUserDetails를 생성하기 위한 생성자
+    public CustomUserDetails(Long id, String username, UserType userType) {
+        this.id = id;
+        this.username = username;
+        this.password = null; // 토큰에는 비밀번호가 없으므로 null
+        this.isEnabled = true; // 토큰이 유효하다는 것은 계정이 활성화되었다는 의미로 간주
+        this.userType = userType;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // 여기에서 userType에 따라 다른 ROLE을 부여할 수 있음

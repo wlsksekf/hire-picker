@@ -45,9 +45,9 @@ public class TossPaymentServiceImpl implements TossPaymentService {
     private final WebClient tossWebClient;
     private final ObjectMapper objectMapper; // JSON 처리를 위해 추가
 
-    @Value("${toss.client-key}")
+    @Value("${payment.toss.client-key}")
     private String clientKey;
-    @Value("${toss.secret-key}")
+    @Value("${payment.toss.widget-secret-key}")
     private String secretKey;
 
     // 1. 결제 생성 (서버에서 주문 생성)
@@ -58,15 +58,20 @@ public class TossPaymentServiceImpl implements TossPaymentService {
         String orderName;
 
         switch (requestDto.packageId()) {
-            case "PRODUCT_10K":
+            case "CREDIT_10K":
                 amount = 10000L;
                 credits = 10000L;
                 orderName = "10,000 크레딧";
                 break;
-            case "PRODUCT_100K":
-                amount = 70000L; // 할인
+            case "CREDIT_50K":
+                amount = 45000L; // 10% 할인
+                credits = 50000L;
+                orderName = "50,000 크레딧 (10% 할인)";
+                break;
+            case "CREDIT_100K":
+                amount = 70000L; // 30% 할인
                 credits = 100000L;
-                orderName = "100,000 크레딧 (할인)";
+                orderName = "100,000 크레딧 (30% 할인)";
                 break;
             default:
                 throw new IllegalArgumentException("Invalid package ID: " + requestDto.packageId());
@@ -101,15 +106,20 @@ public class TossPaymentServiceImpl implements TossPaymentService {
     // 2. 결제 승인
     @Override
     public Object confirmPayment(PaymentConfirmRequestDto confirmDto, CustomUserDetails userDetails) {
+        log.info("[TossPaymentService] confirmPayment 요청 수신. confirmDto: {}, userDetails: {}", confirmDto, userDetails);
+
         Payment payment = paymentRepository.findByOrderIdAndStatus(confirmDto.orderId(), PaymentStatus.PENDING)
                 .orElseThrow(() -> new EntityNotFoundException("Payment not found or already processed"));
+        log.info("[TossPaymentService] Payment 객체 조회: {}", payment);
 
         if (!payment.getAmount().equals(confirmDto.amount())) {
             payment.setStatus(PaymentStatus.FAILED);
+            log.warn("[TossPaymentService] 결제 금액 조작 감지! payment.amount: {}, confirmDto.amount: {}", payment.getAmount(), confirmDto.amount());
             throw new SecurityException("Payment amount manipulated");
         }
 
         String encodedSecretKey = Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
+        log.info("[TossPaymentService] 토스 API 호출 시도. orderId: {}, amount: {}, paymentKey: {}", confirmDto.orderId(), confirmDto.amount(), confirmDto.paymentKey());
 
         Map<String, Object> responseMap = tossWebClient.post()
                 .uri("/v1/payments/confirm")
@@ -130,17 +140,22 @@ public class TossPaymentServiceImpl implements TossPaymentService {
                 )
                 .bodyToMono(Map.class)
                 .block();
+        log.info("[TossPaymentService] 토스 API 응답 수신: {}", responseMap);
 
         String status = (String) responseMap.get("status");
         
         if ("DONE".equals(status)) {
             processPaymentSuccess(payment, responseMap);
+            log.info("[TossPaymentService] 결제 성공 처리 완료. paymentId: {}", payment.getId());
         } else if ("WAITING_FOR_DEPOSIT".equals(status)) {
             processVirtualAccount(payment, responseMap);
+            log.info("[TossPaymentService] 가상계좌 입금 대기 처리 완료. paymentId: {}", payment.getId());
         } else {
             payment.setStatus(PaymentStatus.FAILED);
+            log.warn("[TossPaymentService] 결제 실패 또는 알 수 없는 상태. paymentId: {}, status: {}", payment.getId(), status);
         }
         
+        log.info("[TossPaymentService] confirmPayment 메서드 종료. 결과: {}", responseMap);
         return responseMap;
     }
     
@@ -151,10 +166,10 @@ public class TossPaymentServiceImpl implements TossPaymentService {
         payment.setPaymentKey((String) responseMap.get("paymentKey"));
         payment.setPaymentMethod((String) responseMap.get("method"));
         
-        String approvedAtStr = (String) responseMap.get("approvedAt");
-        if (approvedAtStr != null) {
-            payment.setApprovedAt(LocalDateTime.parse(approvedAtStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        }
+        // String approvedAtStr = (String) responseMap.get("approvedAt");
+        // if (approvedAtStr != null) {
+        //     payment.setApprovedAt(LocalDateTime.parse(approvedAtStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        // }
 
         if (payment.getPersonalUser() != null) {
             PersonalUserCredit credit = personalUserCreditRepository.findById(payment.getPersonalUser().getId())
@@ -176,13 +191,13 @@ public class TossPaymentServiceImpl implements TossPaymentService {
         payment.setPaymentKey((String) responseMap.get("paymentKey"));
         payment.setPaymentMethod((String) responseMap.get("method"));
         
-        Map<String, Object> vaInfo = (Map<String, Object>) responseMap.get("virtualAccount");
-        try {
-            payment.setVirtualAccountInfo(objectMapper.writeValueAsString(vaInfo));
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize virtual account info", e);
-            payment.setVirtualAccountInfo("Error serializing VA info");
-        }
+        // Map<String, Object> vaInfo = (Map<String, Object>) responseMap.get("virtualAccount");
+        // try {
+        //     payment.setVirtualAccountInfo(objectMapper.writeValueAsString(vaInfo));
+        // } catch (JsonProcessingException e) {
+        //     log.error("Failed to serialize virtual account info", e);
+        //     // payment.setVirtualAccountInfo("Error serializing VA info");
+        // }
     }
     
     // 5. 가상계좌 웹훅 처리

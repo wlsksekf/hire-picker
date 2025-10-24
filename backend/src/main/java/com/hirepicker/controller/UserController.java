@@ -3,7 +3,9 @@ package com.hirepicker.controller;
 
 import com.hirepicker.entity.Gender;
 import com.hirepicker.entity.PersonalUser;
+import com.hirepicker.entity.payment.PersonalUserCredit;
 import com.hirepicker.repository.PersonalUserRepository;
+import com.hirepicker.repository.payment.PersonalUserCreditRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,11 +30,13 @@ import java.util.Map;
 public class UserController {
 
     private final PersonalUserRepository personalUserRepository;
+    private final PersonalUserCreditRepository personalUserCreditRepository; // 크레딧 리포지토리 주입
     private final PasswordEncoder passwordEncoder;
 
 
     @Operation(summary = "회원가입", description = "새로운 개인 회원을 등록합니다.")
     @PostMapping("/signup")
+    @Transactional // 사용자 생성과 크레딧 생성을 하나의 트랜잭션으로 묶음
     public ResponseEntity<Map<String, String>> signup(@RequestBody Map<String, String> signupRequest) {
         log.info("[API] /api/users/signup 요청 수신. 사용자: {}", signupRequest.get("email"));
         String email = signupRequest.get("email");
@@ -67,6 +71,13 @@ public class UserController {
                 .build();
 
         personalUserRepository.save(newUser);
+
+        // [수정] 회원가입 시 크레딧 정보 생성
+        PersonalUserCredit newUserCredit = PersonalUserCredit.builder()
+                .personalUser(newUser)
+                .balance(0L) // 초기 크레딧 0으로 설정
+                .build();
+        personalUserCreditRepository.save(newUserCredit);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "회원가입 성공!"));
     }

@@ -4,6 +4,7 @@ import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.payment.*;
 import com.hirepicker.service.TossPaymentService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,7 @@ import java.util.Map;
 
 @RestController @RequestMapping("/api/payment")
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentController {
 
     private final TossPaymentService tossPaymentService;
@@ -22,7 +24,9 @@ public class PaymentController {
             @RequestBody PaymentInitiateRequestDto requestDto,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         
+        log.info("[API] /api/payment/initiate - 요청 수신");
         PaymentInitiateResponseDto response = tossPaymentService.initiatePayment(requestDto, userDetails);
+        log.info("[API] /api/payment/initiate - 생성된 주문 정보: {}", response);
         return ResponseEntity.ok(response);
     }
 

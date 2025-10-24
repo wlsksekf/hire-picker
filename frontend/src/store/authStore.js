@@ -9,7 +9,7 @@ const useAuthStore = create((set, get) => ({
 
   // 로그인 처리 (액세스 및 리프레시 토큰 모두 받도록 변경됨)
   login: (accessToken, refreshToken) => {
-    api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+    // 헤더 설정은 인터셉터가 담당하므로 여기서는 상태만 변경합니다.
     set({ accessToken, refreshToken, isAuthenticated: true });
     // 로컬 스토리지에 토큰 저장 (새로고침 시 유지)
     localStorage.setItem('accessToken', accessToken);
@@ -18,7 +18,7 @@ const useAuthStore = create((set, get) => ({
 
   // 로그아웃 처리 (액세스 및 리프레시 토큰 모두 제거하도록 변경됨)
   logout: () => {
-    delete api.defaults.headers.common['Authorization'];
+    // 헤더 설정은 인터셉터가 담당하므로 여기서는 상태만 변경합니다.
     set({ accessToken: null, refreshToken: null, isAuthenticated: false });
     // 로컬 스토리지에서 토큰 제거
     localStorage.removeItem('accessToken');
@@ -38,8 +38,7 @@ const useAuthStore = create((set, get) => ({
         const { accessToken: newAccessToken } = response.data;
 
         if (newAccessToken) {
-          // 새로운 액세스 토큰으로 상태 및 헤더 업데이트
-          api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+          // 새로운 액세스 토큰으로 상태만 업데이트합니다.
           set({ accessToken: newAccessToken });
           localStorage.setItem('accessToken', newAccessToken);
           return true;
