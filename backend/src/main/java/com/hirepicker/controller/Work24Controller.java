@@ -1,13 +1,5 @@
 package com.hirepicker.controller;
 
-import com.hirepicker.dto.CompanyDto;
-import com.hirepicker.dto.EventDto;
-import com.hirepicker.dto.JobDto;
-import com.hirepicker.service.EmploymentDataService;
-import com.hirepicker.service.EmploymentData;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -20,6 +12,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hirepicker.dto.CompanyDto;
+import com.hirepicker.dto.EventDto;
+import com.hirepicker.dto.JobDto;
+import com.hirepicker.service.EmploymentData;
+import com.hirepicker.service.EmploymentDataService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @Tag(name = "Work24", description = "Work24 관련 API")
 @RestController
@@ -34,14 +35,16 @@ public class Work24Controller {
 
     @Operation(summary = "채용공고 목록 조회", description = "페이지네이션을 적용하여 채용공고 목록을 조회합니다.")
     @GetMapping("/jobs")
-    public ResponseEntity<PagedModel<EntityModel<JobDto>>> getJobs(Pageable pageable, PagedResourcesAssembler<JobDto> assembler) {
+    public ResponseEntity<PagedModel<EntityModel<JobDto>>> getJobs(Pageable pageable,
+            PagedResourcesAssembler<JobDto> assembler) {
         Page<JobDto> jobs = employmentData.getJobs(pageable);
         return ResponseEntity.ok(assembler.toModel(jobs));
     }
 
     @Operation(summary = "채용박람회 목록 조회", description = "페이지네이션을 적용하여 채용박람회 목록을 조회합니다.")
     @GetMapping("/events")
-    public ResponseEntity<PagedModel<EntityModel<EventDto>>> getEvents(Pageable pageable, PagedResourcesAssembler<EventDto> assembler) {
+    public ResponseEntity<PagedModel<EntityModel<EventDto>>> getEvents(Pageable pageable,
+            PagedResourcesAssembler<EventDto> assembler) {
         Page<EventDto> events = employmentData.getEvents(pageable);
         return ResponseEntity.ok(assembler.toModel(events));
     }
@@ -82,9 +85,9 @@ public class Work24Controller {
     @GetMapping("/sync/companies")
     public ResponseEntity<String> syncCompanies() {
         employmentDataService.synchronizeCompanies();
-        try{
+        try {
             employmentDataService.SyncDartInfo();
-        } catch(Exception e){
+        } catch (Exception e) {
             System.out.println("Dart synchronization failed: " + e.getMessage());
         }
         return ResponseEntity.ok("기업 데이터 동기화가 시작되었습니다!");

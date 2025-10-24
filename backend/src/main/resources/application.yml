@@ -27,6 +27,9 @@ spring:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    hikari:
+      # DB 연결의 최대 수명 시간을 설정합니다. (단위: 밀리초, ms)
+      max-lifetime: 20000000
 
   # === JPA 설정 ===
   jpa:
@@ -40,8 +43,6 @@ spring:
         # [추가됨] MySQL 8+ 버전 호환용 Dialect(방언) 설정
         dialect: org.hibernate.dialect.MySQLDialect
 
-
-
   # === Spring Security (OAuth2) ===
   security:
     oauth2:
@@ -53,12 +54,12 @@ spring:
             scope:
               - profile
               - email
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            redirect-uri: '{baseUrl}/login/oauth2/code/{registrationId}'
 
 # === JWT 설정 ===
 jwt:
   secret: ${JWT_SECRET}
-  access-token-validity-in-seconds: 600     # 10분
+  access-token-validity-in-seconds: 600 # 10분
   refresh-token-validity-in-seconds: 604800 # 7일
 
 # === Swagger (Springdoc) ===
@@ -93,6 +94,7 @@ logging:
     com.hirepicker.controller.AuthController: DEBUG
     com.hirepicker.controller.UserController: DEBUG
     com.hirepicker.service.AuthService: DEBUG
+    com.zaxxer.hikari: DEBUG
 
 
 # === 외부 API 키 ===
@@ -110,19 +112,18 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"  # 모든 엔드포인트 노출 (개발용)
+        include: '*' # 모든 엔드포인트 노출 (개발용)
   endpoint:
     health:
       show-details: always # /health 엔드포인트에 세부 정보 표시
 ---
-
 # ===================================================================
 #  'local' 프로필 전용 설정 (개발용)
 # ===================================================================
 spring:
   config:
     activate:
-      on-profile: "local"
+      on-profile: 'local'
   jpa:
     hibernate:
       ddl-auto: none # local 환경에서는 엔티티 변경 시 DB 테이블 수동 관리 (기존 설정 유지)
@@ -132,14 +133,13 @@ spring:
         show_sql: true
 
 ---
-
 # ===================================================================
 #  'prod' 프로필 전용 설정 (배포용)
 # ===================================================================
 spring:
   config:
     activate:
-      on-profile: "prod"
+      on-profile: 'prod'
   jpa:
     hibernate:
       ddl-auto: none # [수정됨] prod 환경에서도 ddl-auto는 none 또는 validate 권장
