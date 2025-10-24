@@ -59,8 +59,8 @@ spring:
 # === JWT 설정 ===
 jwt:
   secret: ${JWT_SECRET}
-  access-token-validity-in-seconds: 600 # 10분
-  refresh-token-validity-in-seconds: 604800 # 7일
+  access-token-validity-in-seconds: 1800 # 30분
+  refresh-token-validity-in-seconds: 2592000 # 30일
 
 # === Swagger (Springdoc) ===
 springdoc:
