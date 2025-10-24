@@ -3,15 +3,32 @@ package com.hirepicker.config;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MapPropertySource;
 
-@Configuration // Spring의 설정 클래스임을 선언
+import java.util.HashMap;
+import java.util.Map;
+
+@Configuration
 public class DotenvConfig {
 
-    @Bean // Spring의 빈으로 등록
+    private final ConfigurableEnvironment environment;
+
+    public DotenvConfig(ConfigurableEnvironment environment) {
+        this.environment = environment;
+    }
+
+    @Bean
     public Dotenv dotenv() {
-        // .env 파일을 로드하여 Dotenv 객체를 생성
-        // directory("../")는 상위 디렉토리에서 .env 파일을 찾도록 설정
-        // ignoreIfMissing()은 .env 파일이 없어도 오류를 발생시키지 않도록 설정
-        return Dotenv.configure().directory("../").ignoreIfMissing().load();
+        Dotenv dotenv = Dotenv.configure()
+                .directory("../") // 상위 디렉토리에서 .env 파일을 찾도록 설정
+                .load();
+
+        // .env 파일에서 로드된 변수들을 Spring Environment에 추가
+        Map<String, Object> dotenvMap = new HashMap<>();
+        dotenv.entries().forEach(entry -> dotenvMap.put(entry.getKey(), entry.getValue()));
+        environment.getPropertySources().addFirst(new MapPropertySource("dotenvProperties", dotenvMap));
+
+        return dotenv;
     }
 }

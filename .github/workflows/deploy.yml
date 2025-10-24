@@ -51,6 +51,7 @@ jobs:
       BACKEND_IMAGE: hirepicker-backend
       FRONTEND_IMAGE: hirepicker-frontend
       GITHUB_SHA: ${{ github.sha }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -61,7 +62,7 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          source: "docker-compose.prod.yml,nginx.conf"
+          source: "docker-compose.yml,nginx.conf"
           target: "/home/ubuntu/hirepicker"
 
       - name: Deploy to EC2
@@ -79,7 +80,7 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          envs: DB_URL,DB_USERNAME,DB_PASSWORD,DOCKER_TOKEN,DOCKER_USERNAME,BACKEND_IMAGE,FRONTEND_IMAGE,GITHUB_SHA
+          envs: DB_URL,DB_USERNAME,DB_PASSWORD,DOCKER_TOKEN,DOCKER_USERNAME,BACKEND_IMAGE,FRONTEND_IMAGE,GITHUB_SHA,JWT_SECRET
           script: |
             set -e
             cd /home/ubuntu/hirepicker
@@ -92,17 +93,19 @@ jobs:
             BACKEND_IMAGE=${BACKEND_IMAGE}
             FRONTEND_IMAGE=${FRONTEND_IMAGE}
             GITHUB_SHA=${GITHUB_SHA}
+            JWT_SECRET=${JWT_SECRET}
+            jwt.secret=${JWT_SECRET}
             EOF
 
             echo "${DOCKER_TOKEN}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
             # Stop and remove old containers defined in the compose file
-            docker compose -f docker-compose.prod.yml down --remove-orphans
+            docker compose --profile prod down --remove-orphans
 
             # Clean up any other stopped containers and all unused images
             docker container prune -f
             docker image prune -a -f
 
             # Pull new images and start new containers
-            docker compose -f docker-compose.prod.yml --env-file ./.env pull
-            docker compose -f docker-compose.prod.yml --env-file ./.env up -d
+            docker compose --profile prod --env-file ./.env pull
+            docker compose --profile prod --env-file ./.env up -d

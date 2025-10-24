@@ -55,7 +55,7 @@ const StyledWrapper = styled.div.withConfig({
     ${({ isSelected }) =>
       isSelected &&
       css`
-        border-color: ${({ theme }) => theme.colors.primary};
+        border-color: ${({ theme }) => theme.palette.primary.main}; // 테마의 기본 색상을 사용하도록 수정
       `}
   }
 
