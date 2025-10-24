@@ -7,15 +7,15 @@ import java.net.URL;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
-import io.github.cdimascio.dotenv.Dotenv;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class ManageService {
-    // .env 파일에서 키 가져오기위한 객체
-    private final Dotenv dotenv;
+
+    @Value("${school-key}")
+    private String schoolKey;
 
     public ResponseEntity<String> updateSchool() {
         String apiKey = getSchoolKey();
@@ -43,11 +43,10 @@ public class ManageService {
     }
 
     private String getSchoolKey() {
-        String apiKey = dotenv.get("school_key");
-        if (apiKey == null || apiKey.isBlank()) {
+        if (schoolKey == null || schoolKey.isBlank()) {
             System.err.println("CRITICAL: 'school_key' not found in .env file.");
             return null;
         }
-        return apiKey;
+        return schoolKey;
     }
 }

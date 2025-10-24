@@ -1,95 +1,116 @@
 'use client';
-
-import { Suspense, useState, useEffect } from 'react';
-import { Container, Typography, Card, CardContent, Button, Grid, Box } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import styled from 'styled-components';
+import CreditCard from '../../components/CreditCard';
+import CreditHistory from '../../components/CreditHistory';
+import { getCreditBalance } from '@/api';
 import useAuthStore from '@/store/authStore';
-import { useRouter } from 'next/navigation';
-import TossCheckoutWidget from '@/components/payment/TossCheckoutWidget'; // 생성할 컴포넌트
+import { useRouter } from 'next/navigation'; // useRouter 임포트
 
-// 크레딧 구매 상품 목록
-const packages = [
-    { id: "PRODUCT_10K", name: "10,000 크레딧", price: 10000 },
-    { id: "PRODUCT_100K", name: "100,000 크레딧", price: 70000, discount: true }
+const StoreContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+`;
+
+const CreditBalance = styled.div`
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  color: #333;
+  background-color: #f0f0f0;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+`;
+
+const CardContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+`;
+
+const PurchaseButton = styled.button`
+  background-color: ${({ theme }) => theme?.palette?.primary?.main || '#0070f3'};
+  color: white;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 1.5rem;
+
+  &:hover {
+    background-color: ${({ theme }) => theme?.palette?.primary?.dark || '#0050bb'};
+  }
+
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+`;
+
+const creditOptions = [
+  { id: 'CREDIT_10K', credits: 10000, price: 10000, description: '기본 10,000 크레딧' },
+  { id: 'CREDIT_50K', credits: 50000, price: 45000, description: '10% 할인!' },
+  { id: 'CREDIT_100K', credits: 100000, price: 70000, description: '30% 할인!' },
 ];
 
-function CreditStore() {
-    const { isAuthenticated } = useAuthStore();
-    const router = useRouter();
-    const [selectedPackage, setSelectedPackage] = useState(null); // 선택된 상품
+const StorePage = () => {
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [userCredits, setUserCredits] = useState(0);
+  const { isAuthenticated } = useAuthStore();
+  const router = useRouter(); // useRouter 훅 사용
 
-    // useEffect를 사용하여 렌더링이 완료된 후 리다이렉트 처리
-    useEffect(() => {
-        // 브라우저 환경이고, 로그인하지 않았다면 로그인 페이지로 이동
-        if (typeof window !== 'undefined' && !isAuthenticated) {
-            router.replace('/login');
-        }
-    }, [isAuthenticated, router]);
-
-    // 인증 상태가 확인되기 전이나 리다이렉트 되기 전에는 로딩 상태를 보여주거나 아무것도 렌더링하지 않음
-    if (!isAuthenticated) {
-        return null; // 또는 <CircularProgress /> 같은 로딩 인디케이터
+  // 크레딧 잔액 조회
+  useEffect(() => {
+    if (isAuthenticated) {
+      getCreditBalance().then(setUserCredits);
     }
+  }, [isAuthenticated]);
 
-    // 상품을 선택하면 결제 위젯을 보여줌
-    if (selectedPackage) {
-        return (
-            <Container maxWidth="md" sx={{ mt: 4 }}>
-                <Typography variant="h4" gutterBottom>
-                    {selectedPackage.name} 결제
-                </Typography>
-                {/* 결제 위젯 컴포넌트 */}
-                <Suspense fallback={<div>결제 모듈을 불러오는 중...</div>}>
-                    <TossCheckoutWidget 
-                        packageId={selectedPackage.id}
-                        onCancel={() => setSelectedPackage(null)} // 뒤로가기 버튼
-                    />
-                </Suspense>
-            </Container>
-        );
+  const handleCardClick = (cardId) => {
+    setSelectedCard(cardId);
+  };
+
+  const handlePayment = () => {
+    if (!selectedCard) {
+      alert('상품을 선택해주세요.');
+      return;
     }
+    // 선택된 상품 ID를 가지고 Checkout 페이지로 이동
+    router.push(`/mypage/checkout?productId=${selectedCard}`);
+  };
 
-    // 상품 선택 화면
-    return (
-        <Container maxWidth="md" sx={{ mt: 4 }}>
-            <Typography variant="h4" gutterBottom>
-                크레딧 상점
-            </Typography>
-            <Grid container spacing={3}>
-                {packages.map((pkg) => (
-                    <Grid item xs={12} md={6} key={pkg.id}>
-                        <Card>
-                            <CardContent>
-                                <Typography variant="h5">{pkg.name}</Typography>
-                                {pkg.discount && (
-                                    <Typography color="error">
-                                        <s>100,000원</s> 30% 할인!
-                                    </Typography>
-                                )}
-                                <Typography variant="h6" sx={{ mt: 2 }}>
-                                    {pkg.price.toLocaleString()}원
-                                </Typography>
-                                <Button
-                                    variant="contained"
-                                    fullWidth
-                                    sx={{ mt: 2 }}
-                                    onClick={() => setSelectedPackage(pkg)}
-                                >
-                                    구매하기
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                ))}
-            </Grid>
-        </Container>
-    );
-}
+  return (
+    <StoreContainer>
+      <h1>크레딧 상점</h1>
+      {isAuthenticated && (
+        <CreditBalance>💰 보유 크레딧: {userCredits.toLocaleString()} C</CreditBalance>
+      )}
 
-// Suspense로 감싸서 클라이언트 사이드 훅(useRouter 등) 사용 문제를 방지
-export default function StorePage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <CreditStore />
-        </Suspense>
-    );
-}
+      <CardContainer>
+        {creditOptions.map(option => (
+          <CreditCard
+            key={option.id}
+            {...option}
+            isSelected={selectedCard === option.id}
+            onClick={() => handleCardClick(option.id)}
+          />
+        ))}
+      </CardContainer>
+
+      <PurchaseButton onClick={handlePayment} disabled={!isAuthenticated || !selectedCard}>
+        {isAuthenticated ? '결제하기' : '로그인이 필요합니다'}
+      </PurchaseButton>
+
+      {isAuthenticated && <CreditHistory />}
+    </StoreContainer>
+  );
+};
+
+export default StorePage;

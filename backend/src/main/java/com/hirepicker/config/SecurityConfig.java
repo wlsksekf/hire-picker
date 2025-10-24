@@ -54,6 +54,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/payment/webhook").permitAll() // 웹훅 엔드포인트는 모두 허용
                 .requestMatchers("/chat/**","/ws","/ws/**","/chat/history/**").permitAll()
                 .requestMatchers("/api/payment/**").authenticated() // 나머지 결제 관련 API는 인증 필요
+                .requestMatchers("/api/ai/**").authenticated() // [AI 기능 추가] AI 관련 API는 인증된 사용자만 접근 가능
+                .requestMatchers("/api/credits/**").authenticated() // [크레딧 기능 추가] 크레딧 관련 API는 인증된 사용자만 접근 가능
                 .anyRequest().authenticated()
 
             )

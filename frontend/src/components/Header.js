@@ -134,7 +134,6 @@ function Header() {
                   마이페이지
                 </Button>
               </Link>
-              {/* 크레딧 상점 메뉴 추가 */}
               <Link href="/store" passHref style={{ textDecoration: 'none' }}>
                 <Button
                   variant="text"
