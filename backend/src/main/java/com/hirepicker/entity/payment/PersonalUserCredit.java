@@ -2,13 +2,20 @@ package com.hirepicker.entity.payment;
 
 import com.hirepicker.entity.PersonalUser;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "personal_user_credit")
 @Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class PersonalUserCredit {
 
     @Id
@@ -25,4 +32,10 @@ public class PersonalUserCredit {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    public PersonalUserCredit(PersonalUser personalUser, Long balance) {
+        this.personalUser = personalUser;
+        this.balance = balance;
+        this.updatedAt = LocalDateTime.now();
+    }
 }
