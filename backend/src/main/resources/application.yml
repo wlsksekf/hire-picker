@@ -119,7 +119,7 @@ payment:
   toss:
     widget-secret-key: ${TOSS_WIDGET_SECRET_KEY}
     api-secret-key: ${TOSS_API_SECRET_KEY}
-    client-key: ${TOSS_CLIENT_KEY}
+    client-key: ${NEXT_PUBLIC_TOSS_CLIENT_KEY}
     api-url: "https://api.tosspayments.com"
 
 management:
