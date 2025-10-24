@@ -31,6 +31,7 @@
     "@vercel/analytics": "^1.5.0",
     "axios": "^1.12.2",
     "colorizr": "^3.0.8",
+    "dotenv": "^17.2.3",
     "gsap": "^3.13.0",
     "next": "^15.5.4",
     "react": "^19.1.1",
