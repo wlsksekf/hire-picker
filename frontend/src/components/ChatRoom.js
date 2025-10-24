@@ -43,7 +43,7 @@ function ChatRoom({ post, onClose }) {
       brokerURL: "ws://localhost:8080/ws", // WebSocketConfig의 엔드포인트
       
       // [4. 연결 성공 시 실행될 *이름있는* 함수]
-      onConnect: handleStompConnect,
+      onConnect: handleStompConnect, // 연결이 성공한다면 handleStompconnect 실행 
 
       onStompError: function(frame) {
         console.error('STOMP 에러:', frame);
@@ -84,6 +84,7 @@ function ChatRoom({ post, onClose }) {
         
         // [성공] API로 불러온 과거 기록을 state에 세팅
         setMessages(response.data); 
+
         // [7. 연결 활성화]
         stompClient.activate();
         clientRef.current = stompClient; // 나중에 쓸 수 있게 저장

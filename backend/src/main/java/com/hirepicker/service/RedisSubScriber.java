@@ -18,6 +18,7 @@ public class RedisSubScriber implements MessageListener {
     private final ObjectMapper objectMapper;
     private final SimpMessagingTemplate messagingTemplate; // [추가] Spring의 발송기를 주입받음
 
+    @SuppressWarnings("null")
     @Override
     public void onMessage(Message message, @Nullable byte[] pattern) {
  
