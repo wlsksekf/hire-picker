@@ -51,6 +51,7 @@ jobs:
       BACKEND_IMAGE: hirepicker-backend
       FRONTEND_IMAGE: hirepicker-frontend
       GITHUB_SHA: ${{ github.sha }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -79,7 +80,7 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          envs: DB_URL,DB_USERNAME,DB_PASSWORD,DOCKER_TOKEN,DOCKER_USERNAME,BACKEND_IMAGE,FRONTEND_IMAGE,GITHUB_SHA
+          envs: DB_URL,DB_USERNAME,DB_PASSWORD,DOCKER_TOKEN,DOCKER_USERNAME,BACKEND_IMAGE,FRONTEND_IMAGE,GITHUB_SHA,JWT_SECRET
           script: |
             set -e
             cd /home/ubuntu/hirepicker
@@ -92,6 +93,8 @@ jobs:
             BACKEND_IMAGE=${BACKEND_IMAGE}
             FRONTEND_IMAGE=${FRONTEND_IMAGE}
             GITHUB_SHA=${GITHUB_SHA}
+            JWT_SECRET=${JWT_SECRET}
+            jwt.secret=${JWT_SECRET}
             EOF
 
             echo "${DOCKER_TOKEN}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
