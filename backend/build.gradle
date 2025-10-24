@@ -28,7 +28,7 @@ dependencies {
     // Spring AI BOM 추가 (안정화 버전 사용)
     implementation platform("org.springframework.ai:spring-ai-bom:1.0.3")
 
-    // [AI 기능 추가] Spring AI - Vertex AI (Gemini) 스타터
+    // Spring AI - Vertex AI (Gemini) 스타터
     implementation 'org.springframework.ai:spring-ai-starter-model-vertex-ai-gemini'
 
     implementation 'io.github.cdimascio:java-dotenv:5.2.2'
