@@ -52,6 +52,21 @@ jobs:
       FRONTEND_IMAGE: hirepicker-frontend
       GITHUB_SHA: ${{ github.sha }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      work24_key: ${{ secrets.work24_key }}
+      school_key: ${{ secrets.school_key }}
+      dart_key1: ${{ secrets.dart_key1 }}
+      dart_key2: ${{ secrets.dart_key2 }}
+      dart_key3: ${{ secrets.dart_key3 }}
+      dart_key4: ${{ secrets.dart_key4 }}
+      dart_key5: ${{ secrets.dart_key5 }}
+      GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+      NEXT_PUBLIC_TOSS_CLIENT_KEY: ${{ secrets.NEXT_PUBLIC_TOSS_CLIENT_KEY }}
+      NEXT_PUBLIC_TOSS_CUSTOMER_KEY: ${{ secrets.NEXT_PUBLIC_TOSS_CUSTOMER_KEY }}
+      TOSS_WIDGET_SECRET_KEY: ${{ secrets.TOSS_WIDGET_SECRET_KEY }}
+      SPRING_AI_VERTEX_AI_GEMINI_PROJECT_ID: ${{ secrets.SPRING_AI_VERTEX_AI_GEMINI_PROJECT_ID }}
+      SPRING_AI_VERTEX_AI_GEMINI_LOCATION: ${{ secrets.SPRING_AI_VERTEX_AI_GEMINI_LOCATION }}
+      SPRING_AI_VERTEX_AI_GEMINI_API_KEY: ${{ secrets.SPRING_AI_VERTEX_AI_GEMINI_API_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -80,7 +95,7 @@ jobs:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          envs: DB_URL,DB_USERNAME,DB_PASSWORD,DOCKER_TOKEN,DOCKER_USERNAME,BACKEND_IMAGE,FRONTEND_IMAGE,GITHUB_SHA,JWT_SECRET
+          envs: DB_URL,DB_USERNAME,DB_PASSWORD,DOCKER_TOKEN,DOCKER_USERNAME,BACKEND_IMAGE,FRONTEND_IMAGE,GITHUB_SHA,JWT_SECRET,work24_key,school_key,dart_key1,dart_key2,dart_key3,dart_key4,dart_key5,GOOGLE_OAUTH_CLIENT_ID,GOOGLE_OAUTH_CLIENT_SECRET,NEXT_PUBLIC_TOSS_CLIENT_KEY,NEXT_PUBLIC_TOSS_CUSTOMER_KEY,TOSS_WIDGET_SECRET_KEY,SPRING_AI_VERTEX_AI_GEMINI_PROJECT_ID,SPRING_AI_VERTEX_AI_GEMINI_LOCATION,SPRING_AI_VERTEX_AI_GEMINI_API_KEY
           script: |
             set -e
             cd /home/ubuntu/hirepicker
@@ -95,6 +110,21 @@ jobs:
             GITHUB_SHA=${GITHUB_SHA}
             JWT_SECRET=${JWT_SECRET}
             jwt.secret=${JWT_SECRET}
+            work24_key=${work24_key}
+            school_key=${school_key}
+            dart_key1=${dart_key1}
+            dart_key2=${dart_key2}
+            dart_key3=${dart_key3}
+            dart_key4=${dart_key4}
+            dart_key5=${dart_key5}
+            GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
+            GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
+            NEXT_PUBLIC_TOSS_CLIENT_KEY=${NEXT_PUBLIC_TOSS_CLIENT_KEY}
+            NEXT_PUBLIC_TOSS_CUSTOMER_KEY=${NEXT_PUBLIC_TOSS_CUSTOMER_KEY}
+            TOSS_WIDGET_SECRET_KEY=${TOSS_WIDGET_SECRET_KEY}
+            SPRING_AI_VERTEX_AI_GEMINI_PROJECT_ID=${SPRING_AI_VERTEX_AI_GEMINI_PROJECT_ID}
+            SPRING_AI_VERTEX_AI_GEMINI_LOCATION=${SPRING_AI_VERTEX_AI_GEMINI_LOCATION}
+            SPRING_AI_VERTEX_AI_GEMINI_API_KEY=${SPRING_AI_VERTEX_AI_GEMINI_API_KEY}
             EOF
 
             echo "${DOCKER_TOKEN}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
