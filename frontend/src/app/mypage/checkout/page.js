@@ -51,6 +51,7 @@ const creditOptions = [
 ];
 
 const CheckoutPage = () => {
+  const [mounted, setMounted] = useState(false); // [추가] 마운트 상태
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
@@ -58,8 +59,15 @@ const CheckoutPage = () => {
   const [widgets, setWidgets] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
-  // URL 파라미터에서 상품 ID 가져오기
+  // [추가] 컴포넌트 마운트 시 mounted 상태를 true로 설정
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // URL 파라미터에서 상품 ID 가져오기 (mounted 상태일 때만 실행)
+  useEffect(() => {
+    if (!mounted) return; // 마운트되지 않았다면 실행하지 않음
+
     const productId = searchParams.get('productId');
     if (productId) {
       const product = creditOptions.find(o => o.id === productId);
@@ -73,11 +81,11 @@ const CheckoutPage = () => {
       alert('상품 정보가 없습니다.');
       router.push('/store');
     }
-  }, [searchParams, router]);
+  }, [mounted, searchParams, router]); // mounted를 의존성 배열에 추가
 
-  // 위젯 인스턴스 생성 및 렌더링
+  // 위젯 인스턴스 생성 및 렌더링 (mounted 상태일 때만 실행)
   useEffect(() => {
-    if (selectedProduct == null) return;
+    if (!mounted || selectedProduct == null) return; // 마운트되지 않았거나 상품이 선택되지 않았다면 실행하지 않음
 
     loadTossPayments(clientKey)
       .then(tossPayments => {
@@ -95,29 +103,28 @@ const CheckoutPage = () => {
           variantKey: "AGREEMENT",
         });
       });
-  }, [selectedProduct]);
+  }, [mounted, selectedProduct]); // mounted를 의존성 배열에 추가
 
   const handlePayment = () => {
     if (!widgets || !selectedProduct) return;
 
     initiateTossPayment(selectedProduct.id)
       .then(paymentDetails => {
-        console.log('Payment Details from Backend:', paymentDetails); // 디버깅용 로그
         widgets.requestPayment({
           orderId: paymentDetails.orderId,
           orderName: paymentDetails.orderName,
           customerName: paymentDetails.customerName,
+          amount: paymentDetails.amount,
           successUrl: `${window.location.origin}/mypage/payment-success`,
           failUrl: `${window.location.origin}/mypage/payment-fail`,
         });
       })
       .catch(error => {
-        console.error('결제 시작 중 오류 발생:', error);
         alert('결제 시작 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       });
   };
 
-  if (!selectedProduct) {
+  if (!mounted || !selectedProduct) {
     return <CheckoutContainer><p>상품 정보를 불러오는 중...</p></CheckoutContainer>;
   }
 
