@@ -4,13 +4,14 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.RequiredArgsConstructor;
@@ -84,36 +85,56 @@ public class ManageService {
     // JSON 응답을 파싱해서 학교 데이터 리스트로 변환
     private List<Map<String, Object>> parseSchoolData(String jsonResponse) {
         try {
-            // 1. Jackson ObjectMapper 생성 - JSON ↔ Java 객체 변환을 담당하는 핵심 클래스
-            //    - JSON 문자열을 Java 객체로 변환 (deserialization)
-            //    - Java 객체를 JSON 문자열로 변환 (serialization)
-            //    - Spring Boot에서 자동으로 제공되는 라이브러리
-            ObjectMapper objectMapper = new ObjectMapper();
+            // 1. JSON 문자열을 JSONObject로 변환
+            //    - JSONObject: org.json 라이브러리의 핵심 클래스
+            //    - JSON 문자열을 파싱하여 키-값 쌍으로 접근 가능한 객체 생성
+            //    - 예: {"name": "서울대"} → jsonObject.getString("name") 으로 접근
+            JSONObject jsonObject = new JSONObject(jsonResponse);
             
-            // 2. JSON 문자열을 Map<String, Object>로 변환
-            //    - readValue(): JSON 문자열을 지정된 타입으로 변환
-            //    - Map.class: 모든 JSON 객체를 Map으로 변환 (키-값 쌍)
-            //    - 예: {"name": "서울대", "type": "대학교"} → Map{"name"="서울대", "type"="대학교"}
-            Map<String, Object> responseMap = objectMapper.readValue(jsonResponse, Map.class);
-            
-            // 3. 응답에서 dataSearch 객체 추출
-            //    - responseMap.get("dataSearch"): 최상위 JSON에서 "dataSearch" 키의 값 가져오기
+            // 2. 최상위 JSON에서 "dataSearch" 객체 추출
+            //    - has(): 해당 키가 존재하는지 확인
+            //    - getJSONObject(): 중첩된 JSON 객체를 JSONObject로 가져오기
             //    - JSON 구조: {"dataSearch": {"content": [...]}}
-            Map<String, Object> dataSearch = (Map<String, Object>) responseMap.get("dataSearch");
+            if (!jsonObject.has("dataSearch")) {
+                System.err.println("'dataSearch' key not found in JSON response");
+                return List.of();//  List.of() : 빈 리스트 반환
+            }
+            JSONObject dataSearch = jsonObject.getJSONObject("dataSearch");
             
-            // 4. dataSearch가 존재하고 content 키가 있는지 확인
-            if (dataSearch != null && dataSearch.containsKey("content")) {
-                // 5. dataSearch 안의 content 배열을 학교 리스트로 변환
-                //    - content는 JSON 배열이므로 List<Map<String, Object>>로 변환
-                //    - 각 배열 요소는 학교 정보를 담은 JSON 객체
-                List<Map<String, Object>> contentList = (List<Map<String, Object>>) dataSearch.get("content");
-                return contentList;
+            // 3. dataSearch 안에 "content" 배열이 있는지 확인
+            if (!dataSearch.has("content")) {
+                System.err.println("'content' key not found in dataSearch");
+                return List.of();
             }
             
-            // 6. 데이터가 없으면 빈 리스트 반환
-            return List.of();
+            // 4. content를 JSONArray로 추출
+            //    - JSONArray: JSON 배열을 다루는 클래스
+            //    - 배열의 각 요소에 인덱스로 접근 가능
+            JSONArray contentArray = dataSearch.getJSONArray("content");
+            
+            // 5. JSONArray를 List<Map<String, Object>>로 변환
+            //    - 각 JSON 객체를 Map으로 변환하여 리스트에 추가
+            List<Map<String, Object>> schoolList = new ArrayList<>();
+            
+            // 6. 배열의 각 요소를 순회하며 Map으로 변환
+            for (int i = 0; i < contentArray.length(); i++) {
+                // 6-1. 배열의 i번째 요소를 JSONObject로 가져오기
+                JSONObject schoolObject = contentArray.getJSONObject(i);
+                
+                // 6-2. JSONObject를 Map으로 변환
+                //      - toMap(): JSONObject의 모든 키-값을 Map으로 변환
+                Map<String, Object> schoolMap = schoolObject.toMap();
+                
+                // 6-3. 변환된 Map을 리스트에 추가
+                schoolList.add(schoolMap);
+            }
+            System.out.println("schoolList: " + schoolList);
+            // 7. 변환된 학교 리스트 반환
+            return schoolList;
+            
         } catch (Exception e) {
             System.err.println("Error parsing JSON response: " + e.getMessage());
+            e.printStackTrace();
             return List.of();
         }
     }
