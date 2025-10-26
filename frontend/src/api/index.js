@@ -67,3 +67,59 @@ api.interceptors.response.use(
 
 // `api` 변수를 기본 내보내기로 설정
 export { api };
+
+/**
+ * [AI 기능 추가] AI 이력서 문장 생성을 요청
+ * @param {string} keywords - 사용자가 입력한 키워드
+ * @returns {Promise<string>} AI가 생성한 텍스트
+ */
+export const generateAiResume = (keywords) => {
+  return api.get('/api/ai/generate-resume', {
+    params: { keywords }, // 쿼리 파라미터로 keywords 전달
+  }).then(response => response.data)
+    .catch(error => {
+      console.error('AI 이력서 생성 실패:', error);
+      throw error;
+    });
+};
+
+/**
+ * [크레딧 기능 추가] 현재 사용자의 크레딧 잔액을 조회
+ * @returns {Promise<number>} 크레딧 잔액
+ */
+export const getCreditBalance = () => {
+  return api.get('/api/credits/balance')
+    .then(response => response.data.balance)
+    .catch(error => {
+      console.error('크레딧 잔액 조회 실패:', error);
+      return 0;
+    });
+};
+
+/**
+ * [크레딧 기능 추가] 토스 페이먼츠 결제를 위한 주문을 백엔드에 생성
+ * @param {string} packageId - 선택한 상품 ID
+ * @returns {Promise<object>} 결제 시작에 필요한 정보 (orderId, orderName, amount 등)
+ */
+export const initiateTossPayment = (packageId) => {
+  return api.post('/api/payment/initiate', { packageId })
+    .then(response => response.data)
+    .catch(error => {
+      console.error('결제 시작 실패:', error);
+      throw error;
+    });
+};
+
+/**
+ * [크레딧 기능 추가] 토스 페이먼츠 결제를 백엔드에 최종 승인 요청
+ * @param {object} paymentData - { paymentKey, orderId, amount }
+ * @returns {Promise<object>} 결제 승인 결과
+ */
+export const confirmTossPayment = (paymentData) => {
+  return api.post('/api/payment/confirm', paymentData)
+    .then(response => response.data)
+    .catch(error => {
+      console.error('결제 승인 실패:', error);
+      throw error;
+    });
+};
