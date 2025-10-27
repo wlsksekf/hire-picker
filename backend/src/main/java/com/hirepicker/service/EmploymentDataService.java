@@ -23,6 +23,7 @@ import org.json.JSONObject;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value; // Ensure this is present
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -36,7 +37,6 @@ import com.hirepicker.util.DartCorpCodeSaxHandler;
 import com.hirepicker.util.DataMapper;
 import com.hirepicker.util.XmlParser;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,9 +45,14 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class EmploymentDataService {
 
-    private final Dotenv dotenv;
     private final CompanyRepository companyRepository;
     private final EmploymentDataProcessorService DataProcessorService;
+
+    @Value("${work24-key}")
+    private String work24Key;
+
+    @Value("${dart-key2}")
+    private String dartKey;
 
     @Scheduled(cron = "0 0 4 * * *")
     @Transactional
@@ -70,8 +75,7 @@ public class EmploymentDataService {
 
     // Dart API 가져와서 DB에 저장
     public void SyncDartInfo() {
-
-        String apiKey = getDartKey();
+        String apiKey = getDartKey(); // Call the fixed getter
         if (apiKey == null) {
             log.error("DART API 키가 없어 동기화를 중단합니다.");
             return;
@@ -173,7 +177,7 @@ public class EmploymentDataService {
                         String corpName = parsedCompany.getCompanyName();
 
                         if (corpName == null || corpName.isEmpty() || corpCode == null || corpCode.isEmpty()) {
-                            log.warn("파싱된 데이터에 corpName 또는 corpCode가 비어있습니다. 건너뜁니다. corpName={}, corpCode={}", corpName,
+                            log.warn("파싱된 데이터에 corpName 또는 corpCode가 비어있습니다. 건너뜐니다. corpName={}, corpCode={}", corpName,
                                     corpCode);
                             continue;
                         }
@@ -271,16 +275,6 @@ public class EmploymentDataService {
                         companyRepository.flush();
                         log.info("[배치 {}/{}] DB 저장 완료.", page + 1, totalPages);
                     }
-
-                    // if (page < totalPages - 1) {
-                    // try {
-                    // log.info("다음 배치 처리를 위해 2초간 대기합니다...");
-                    // Thread.sleep(2000);
-                    // } catch (InterruptedException e) {
-                    // Thread.currentThread().interrupt();
-                    // log.error("배치 처리 대기 중 오류 발생", e);
-                    // }
-                    // }
                 }
 
                 log.info("DART 전체 동기화 완료.");
@@ -300,7 +294,7 @@ public class EmploymentDataService {
 
     @Transactional
     public void synchronizePublicJobs() {
-        String apiKey = getWork24Key();
+        String apiKey = getWork24Key(); // Call the fixed getter
         if (apiKey == null)
             return;
         log.info("Executing: Job Synchronization");
@@ -341,7 +335,7 @@ public class EmploymentDataService {
 
     @Transactional
     public void synchronizeEvents() {
-        String apiKey = getWork24Key();
+        String apiKey = getWork24Key(); // Call the fixed getter
         if (apiKey == null)
             return;
         log.info("Executing: Event Synchronization");
@@ -382,7 +376,7 @@ public class EmploymentDataService {
 
     @Transactional
     public void synchronizeCompanies() {
-        String apiKey = getWork24Key();
+        String apiKey = getWork24Key(); // Call the fixed getter
         if (apiKey == null)
             return;
         log.info("Executing: Company Synchronization");
@@ -422,23 +416,21 @@ public class EmploymentDataService {
     }
 
     private String getWork24Key() {
-        String apiKey = dotenv.get("work24_key");
-        if (apiKey == null || apiKey.isBlank()) {
+        if (work24Key == null || work24Key.isBlank()) {
             System.err.println("CRITICAL: 'work24_key' not found in .env file.");
             return null;
         }
-        return apiKey;
+        return work24Key;
     }
 
     private String getDartKey() {
-        String apiKey = dotenv.get("dart_key2");
-        if (apiKey == null || apiKey.isBlank()) {
+        if (dartKey == null || dartKey.isBlank()) {
             System.err.println("CRITICAL: 'dart_key' not found in .env file.");
             log.error("CRITICAL: 'dart_key' not found in .env file.");
             return null;
         }
-        log.info("Using DART API Key: {}", apiKey);
-        return apiKey;
+        log.info("Using DART API Key: {}", dartKey);
+        return dartKey;
     }
 
     private String fetchXmlFromUrl(String urlString) throws Exception {

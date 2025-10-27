@@ -17,17 +17,18 @@ import org.springframework.stereotype.Service;
 import com.hirepicker.entity.School;
 import com.hirepicker.repository.SchoolRepository;
 
-import io.github.cdimascio.dotenv.Dotenv;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class ManageService {
-    // .env 파일에서 키 가져오기위한 객체
-    private final Dotenv dotenv;
     
     // 학교 데이터 저장을 위한 리포지토리
     private final SchoolRepository schoolRepository;
+
+    @Value("${school-key}")
+    private String schoolKey;
 
     // 학교 데이터 업데이트 시도하는 메서드
     public ResponseEntity<String> updateSchool() {
@@ -231,16 +232,10 @@ public class ManageService {
 
     // .env 파일에서 학교 API 키를 가져오는 메서드
     private String getSchoolKey() {
-        // 1. .env 파일에서 'school_key' 값 읽기
-        String apiKey = dotenv.get("school_key");
-        
-        // 2. 키가 없거나 비어있으면 에러 로그 출력 후 null 반환
-        if (apiKey == null || apiKey.isBlank()) {
+        if (schoolKey == null || schoolKey.isBlank()) {
             System.err.println("CRITICAL: 'school_key' not found in .env file.");
             return null;
         }
-        
-        // 3. 유효한 API 키 반환
-        return apiKey;
+        return schoolKey;
     }
 }

@@ -62,7 +62,7 @@ services:
   # =============================================
   #  프로필: prod (프로덕션 환경)
   # =============================================
-  nginx-prod:
+  nginx:
     container_name: hirepicker-nginx
     image: nginx:1.23-alpine
     restart: on-failure
@@ -71,13 +71,13 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
-      - frontend-prod
-      - backend-prod
+      - frontend
+      - backend
     networks:
       - hirepicker-network
     profiles: ["prod"]
 
-  frontend-prod:
+  frontend:
     container_name: hirepicker-frontend
     image: ${DOCKER_USERNAME}/${FRONTEND_IMAGE}:${GITHUB_SHA}
     restart: on-failure
@@ -85,17 +85,16 @@ services:
       - hirepicker-network
     profiles: ["prod"]
 
-  backend-prod:
+  backend:
     container_name: hirepicker-backend
     image: ${DOCKER_USERNAME}/${BACKEND_IMAGE}:${GITHUB_SHA}
     restart: on-failure
     security_opt:
       - seccomp:unconfined
+    env_file:
+      - ./.env
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - SPRING_DATASOURCE_URL=${DB_URL}
-      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
