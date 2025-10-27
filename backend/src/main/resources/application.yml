@@ -10,6 +10,7 @@ server:
 # [수정됨] H2 DB로 연결되는 문제를 해결하기 위해 RDS(MySQL) 설정을 명시적으로 추가
 # .env 파일의 변수(${DB_URL} 등)를 참조함
 spring:
+
   ai:
     vertex:
       ai:
@@ -22,14 +23,12 @@ spring:
               # 무료 등급에서 빠르고 성능 좋은 모델 (2025년 기준)
               model: gemini-1.5-flash-001
               temperature: 0.7 # 0.0(정확) ~ 1.0(창의적)
-  autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration 
   # 기본 프로필을 'local'으로 설정. 다른 프로필이 지정되면 무시됨.
   profiles:
     default: local
   data:
     redis:
-      host: 192.168.10.116
+      host: localhost
       port: 6379
 
   # 공용 데이터소스 설정
@@ -73,6 +72,10 @@ jwt:
   secret: ${JWT_SECRET}
   access-token-validity-in-seconds: 1800 # 30분
   refresh-token-validity-in-seconds: 2592000 # 30일
+
+# ★ SendGrid API 키 설정 추가 (환경 변수에서 읽어옴)
+sendgrid:
+  api-key: ${SENDGRID_API_KEY}
 
 # === Swagger (Springdoc) ===
 springdoc:

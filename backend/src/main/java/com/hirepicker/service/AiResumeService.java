@@ -1,59 +1,114 @@
 package com.hirepicker.service;
 
-import org.springframework.ai.chat.client.ChatClient;
+import com.hirepicker.dto.ai.FullResumeDraftDto;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.converter.BeanOutputConverter;
+import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.stereotype.Service;
 
-import com.hirepicker.config.security.CustomUserDetails;
+import java.util.List;
+import java.util.Map;
 
+/**
+ * AI 기반 자기소개서 초안 생성 서비스
+ * - Spring AI (Vertex AI Gemini) 기반
+ * - 사용자가 제공한 키워드로 전문적인 자기소개서 초안을 생성
+ */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class AiResumeService {
 
-    private static final Long AI_RESUME_COST = 100L; // AI 이력서 생성 비용
-
-    private final ChatClient chatClient;
-    private final CreditService creditService; // CreditService 주입
-
-    // 생성자 주입.
-    public AiResumeService(ChatClient.Builder chatClientBuilder, CreditService creditService) {
-        this.chatClient = chatClientBuilder.build();
-        this.creditService = creditService;
-    }
+    private final VertexAiGeminiChatModel chatModel;
+    // private final CreditService creditService; // 결제/크레딧 연동 시 주입
 
     /**
-     * 키워드를 기반으로 이력서 경력 사항 문장을 생성하고 크레딧을 차감합니다.
-     * 
-     * @param keywords    사용자가 입력한 키워드
-     * @param userDetails 현재 인증된 사용자 정보
-     * @return AI가 생성한 이력서 문장 (String)
+     * 사용자 키워드를 기반으로 AI 자기소개서 초안 생성
+     * @param userKeywords 사용자 제공 키워드 (예: "성실함, 리더십, 협업능력, 개발자")
+     * @param userId 사용자 ID (추후 크레딧 차감용)
+     * @return 생성된 자기소개서 초안 DTO
      */
-    public String generateResumeSection(String keywords, CustomUserDetails userDetails) {
+    public FullResumeDraftDto generateFullDraft(String userKeywords, Long userId) {
 
-        // 1. 크레딧 차감 로직 호출
-        creditService.useCredits(userDetails, "AI 이력서 생성", AI_RESUME_COST);
+        // (선택) 크레딧 차감 로직 예시
+        // creditService.useCredits(userId, 10, "AI 자기소개서 초안 생성");
 
-        // 2. AI 프롬프트 생성 및 호출 (기존 로직)
-        String promptTemplate = """
-                너는 'hirepicker'의 전문 이력서 컨설턴트 AI야.
-                주어진 [키워드]를 바탕으로, 구인구직 사이트에 등록할 '경력 기술서'에 들어갈 3개의 핵심 불렛 포인트를 작성해줘.
+        var outputConverter = new BeanOutputConverter<>(FullResumeDraftDto.class);
 
-                [규칙]
-                1. 각 불렛 포인트는 2줄을 넘지 않게 요약해.
-                2. 성과(Result)가 드러나는 **STAR 기법** (Situation, Task, Action, Result)으로 작성해.
-                3. "저는", "~했습니다" 같은 1인칭 서술어 대신, "~함", "~했음", "~ 달성" 같은 개조식으로 명료하게 작성해.
+        // 🧠 시스템 프롬프트
+        String systemMessageTemplate = """
+            당신은 취업 플랫폼 'hirepicker'의 전문 이력서 코치입니다.
+            사용자가 제공한 핵심 키워드를 바탕으로 다음 네 가지 항목을
+            전문적이고 설득력 있게 한국어로 작성하세요.
 
-                [키워드]: {keywords}
+            [작성 항목]
+            1. 성장과정 (growthProcess)
+            2. 업무 관련 역량 (jobCompetencies)
+            3. 성격 장단점 (prosAndCons)
+            4. 입사 후 포부 (aspirations)
 
-                [예시]
-                - Spring Boot와 JWT를 활용하여, 월 1만 명이 사용하는 서비스의 인증 시스템을 구축함 (보안성 20% 향상).
-                - React와 Zustand를 사용하여 'hirepicker' 프로젝트의 프론트엔드 상태 관리를 구현하고, 로딩 속도를 1.5초 단축함.
+            각 항목은 300~500자 내외로 작성해야 합니다.
+            반드시 아래 JSON 형식으로만 응답하세요:
+            {format}
+            """;
 
-                이제, 위 규칙에 맞춰서 작성해줘:
-                """;
+        var systemPrompt = new SystemPromptTemplate(systemMessageTemplate)
+                .createMessage(Map.of("format", outputConverter.getFormat()));
 
-        // ChatClient의 fluent API를 사용하여 AI 호출
-        return chatClient.prompt()
-                .user(p -> p.text(promptTemplate).param("keywords", keywords))
-                .call()
-                .content();
+        var userMessage = new UserMessage("다음은 사용자의 핵심 키워드입니다: " + userKeywords);
+
+        // 🧩 최종 프롬프트 구성
+        Prompt finalPrompt = new Prompt(List.of(systemPrompt, userMessage));
+
+        try {
+            // 🤖 Gemini 모델 호출
+            ChatResponse chatResponse = chatModel.call(finalPrompt);
+
+            Generation generation = chatResponse.getResult();
+            if (generation == null || generation.getOutput() == null) {
+                log.error("Gemini 응답 결과 또는 내용이 비어 있습니다. (userId: {})", userId);
+                throw new IllegalStateException("AI 응답 결과 또는 내용이 비어 있습니다.");
+            }
+
+            // [WORKAROUND] IDE 컴파일 오류 우회를 위해 Reflection 사용
+            String aiOutput;
+            try {
+                Object assistantMessage = generation.getOutput();
+                java.lang.reflect.Method getContentMethod = assistantMessage.getClass().getMethod("getContent");
+                aiOutput = (String) getContentMethod.invoke(assistantMessage);
+            } catch (Exception e) {
+                log.error("AI 응답 내용을 Reflection으로 가져오는 중 오류 발생: {}", e.getMessage(), e);
+                throw new RuntimeException("AI 응답 내용을 가져오는 중 오류가 발생했습니다. IDE의 Gradle 프로젝트 새로고침을 권장합니다.", e);
+            }
+
+            if (aiOutput == null || aiOutput.isBlank()) {
+                log.error("Gemini 응답 내용이 비어 있습니다. (userId: {})", userId);
+                throw new IllegalStateException("AI 응답 내용은 비어 있습니다.");
+            }
+            
+            log.info("AI raw output: {}", aiOutput);
+
+            // [WORKAROUND] IDE 컴파일 오류 우회를 위해 ObjectMapper 직접 사용
+            try {
+                // AI가 생성한 JSON 앞뒤의 ```json ... ``` 마크다운을 제거합니다.
+                String jsonContent = aiOutput.trim().replace("```json", "").replace("```", "").trim();
+                
+                com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                return objectMapper.readValue(jsonContent, FullResumeDraftDto.class);
+            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                log.error("AI 응답 JSON 파싱 중 오류 발생: {}", e.getMessage(), e);
+                throw new RuntimeException("AI 응답을 파싱하는 중 오류가 발생했습니다.", e);
+            }
+
+        } catch (Exception e) {
+            log.error("AI 자기소개서 생성 중 오류 발생: {}", e.getMessage(), e);
+            throw new RuntimeException("AI 자기소개서 생성 중 오류가 발생했습니다.", e);
+        }
     }
 }

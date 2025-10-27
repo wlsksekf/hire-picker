@@ -29,7 +29,9 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/hirepicker-backend:${{ github.sha }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/hirepicker-backend:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/hirepicker-backend:latest
 
       - name: Build and push Frontend image
         uses: docker/build-push-action@v5
@@ -37,27 +39,19 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/hirepicker-frontend:${{ github.sha }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/hirepicker-frontend:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/hirepicker-frontend:latest
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    env:
-      DB_URL: ${{ secrets.DB_URL }}
-      DB_USERNAME: ${{ secrets.DB_USERNAME }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      BACKEND_IMAGE: hirepicker-backend
-      FRONTEND_IMAGE: hirepicker-frontend
-      GITHUB_SHA: ${{ github.sha }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Transfer config files to EC2
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
@@ -66,46 +60,33 @@ jobs:
           target: "/home/ubuntu/hirepicker"
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          DB_URL: ${{ secrets.DB_URL }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          BACKEND_IMAGE: hirepicker-backend
-          FRONTEND_IMAGE: hirepicker-frontend
-          GITHUB_SHA: ${{ github.sha }}
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          envs: DB_URL,DB_USERNAME,DB_PASSWORD,DOCKER_TOKEN,DOCKER_USERNAME,BACKEND_IMAGE,FRONTEND_IMAGE,GITHUB_SHA,JWT_SECRET
           script: |
             set -e
             cd /home/ubuntu/hirepicker
 
-            cat << EOF > .env
-            DB_URL=${DB_URL}
-            DB_USERNAME=${DB_USERNAME}
-            DB_PASSWORD=${DB_PASSWORD}
-            DOCKER_USERNAME=${DOCKER_USERNAME}
-            BACKEND_IMAGE=${BACKEND_IMAGE}
-            FRONTEND_IMAGE=${FRONTEND_IMAGE}
-            GITHUB_SHA=${GITHUB_SHA}
-            JWT_SECRET=${JWT_SECRET}
-            jwt.secret=${JWT_SECRET}
-            EOF
+            # 1. DB 비번 등이 담긴 .env 파일 생성
+            echo "${{ secrets.DOT_ENV }}" > .env
 
-            echo "${DOCKER_TOKEN}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> .env
+            echo "BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}" >> .env
+            echo "FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}" >> .env
 
-            # Stop and remove old containers defined in the compose file
+            # 3. Docker 로그인
+            echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+            # 4. 이전 컨테이너 중지 및 삭제
             docker compose --profile prod down --remove-orphans
 
-            # Clean up any other stopped containers and all unused images
+            # 5. 불필요한 이미지 정리
             docker container prune -f
             docker image prune -a -f
 
-            # Pull new images and start new containers
+            # 6. 새 이미지 pull 및 컨테이너 시작
+            #    (이제 docker-compose.yml이 .env 파일에서 변수를 잘 읽어올 거야)
             docker compose --profile prod --env-file ./.env pull
             docker compose --profile prod --env-file ./.env up -d

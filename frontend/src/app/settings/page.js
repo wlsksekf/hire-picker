@@ -43,6 +43,8 @@ function SettingsPage() {
     setLoading(true);
     setStatus({ type: 'info', message: `${type} 동기화를 시작합니다...` });
 
+    api.get(`/api/${type}`)
+      .then(function(response) {
     api
       .get(`/api/work24/sync/${type}`)
       .then(function (response) {
@@ -174,6 +176,7 @@ function SettingsPage() {
               {loading && <CircularProgress size={24} sx={{ mr: 2 }} />}{' '}
               {/* 로딩 중일 때 로딩 스피너 표시 */}
               <Stack direction="row" spacing={1}>
+                <Button variant="contained" onClick={function() { return handleSync('work24/sync/jobs') }} disabled={loading}>
                 <Button
                   variant="contained"
                   onClick={function () {
@@ -184,6 +187,7 @@ function SettingsPage() {
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   공채속보 동기화
                 </Button>
+                <Button variant="contained" onClick={function() { return handleSync('work24/sync/events') }} disabled={loading}>
                 <Button
                   variant="contained"
                   onClick={function () {
@@ -194,6 +198,7 @@ function SettingsPage() {
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   채용행사 동기화
                 </Button>
+                <Button variant="contained" onClick={function() { return handleSync('work24/sync/companies') }} disabled={loading}>
                 <Button
                   variant="contained"
                   onClick={function () {
@@ -262,6 +267,10 @@ function SettingsPage() {
                 >
                   <FontAwesomeIcon icon={faFileUpload} style={{ marginRight: 8 }} />
                   CSV 정보 업데이트
+                </Button>
+                <Button variant="contained" onClick={function() { return handleSync('manage/update/school') }} disabled={loading}>
+                  <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
+                  학교정보 불러오기
                 </Button>
               </Stack>
             </Box>

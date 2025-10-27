@@ -2,12 +2,16 @@ package com.hirepicker.service;
 
 import com.hirepicker.config.jwt.JwtTokenProvider;
 import com.hirepicker.config.security.CustomUserDetails;
+import com.hirepicker.dto.CompanySignupRequestDto;
 import com.hirepicker.dto.LoginRequest;
 import com.hirepicker.dto.LoginResponse;
+import com.hirepicker.dto.SignupRequestDto;
+import com.hirepicker.entity.Company;
 import com.hirepicker.entity.CompanyUser;
 import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.entity.RefreshToken;
 import com.hirepicker.entity.UserType;
+import com.hirepicker.repository.CompanyRepository;
 import com.hirepicker.repository.CompanyUserRepository;
 import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.repository.RefreshTokenRepository;
@@ -17,6 +21,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,9 +32,11 @@ public class AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final PersonalUserRepository personalUserRepository;
-    private final CompanyUserRepository companyUserRepository; // 기업 유저 리포지토리 주입
+    private final CompanyUserRepository companyUserRepository;
+    private final CompanyRepository companyRepository; // ★ 회사 리포지토리 주입
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final PasswordEncoder passwordEncoder; // ★ 비밀번호 암호화기 주입
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
@@ -76,6 +83,112 @@ public class AuthService {
         }
     }
 
+    /**
+     * [신규] 이메일 중복 확인
+     * @param email 확인할 이메일
+     * @return 중복 여부 (true: 중복, false: 사용 가능)
+     */
+    @Transactional(readOnly = true)
+    public boolean isEmailDuplicate(String email) {
+        return personalUserRepository.existsByEmail(email) || companyUserRepository.existsByEmail(email);
+    }
+
+    /**
+     * [신규] 개인 회원 가입 처리
+     * @param signupRequest 회원가입 요청 DTO
+     * @return 로그인 응답 (JWT 토큰 포함)
+     */
+    @Transactional
+    public LoginResponse registerPersonalUser(SignupRequestDto signupRequest) {
+        // 이중 체크: 이미 가입된 이메일인지 확인
+        if (isEmailDuplicate(signupRequest.getEmail())) {
+            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+        }
+
+        // 닉네임 중복 확인
+        if (personalUserRepository.existsByNickname(signupRequest.getNickname())) {
+            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+        }
+
+        // 비밀번호와 비밀번호 확인이 일치하는지 검증
+        if (!signupRequest.getPassword().equals(signupRequest.getPasswordConfirm())) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+
+        // 1. PersonalUser 엔티티 생성 및 저장
+        PersonalUser newUser = PersonalUser.builder()
+                .email(signupRequest.getEmail())
+                .password(passwordEncoder.encode(signupRequest.getPassword()))
+                .name(signupRequest.getName())
+                .nickname(signupRequest.getNickname())
+                .gender(signupRequest.getGender())
+                .phoneNumber(signupRequest.getPhone_number())
+                .address(signupRequest.getAddress())
+                .platform(signupRequest.getPlatform().name()) // ★ .name()으로 enum을 String으로 변환
+                .build();
+        
+        PersonalUser savedUser = personalUserRepository.save(newUser);
+        log.info("새로운 개인 회원이 등록되었습니다. ID: {}, Email: {}", savedUser.getId(), savedUser.getEmail());
+
+        // 2. 가입된 정보로 Authentication 객체 생성
+        CustomUserDetails userDetails = new CustomUserDetails(savedUser);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // 3. 토큰 생성
+        String accessToken = jwtTokenProvider.createAccessToken(authentication);
+        String refreshTokenValue = jwtTokenProvider.createRefreshToken(authentication);
+
+        // 4. 리프레시 토큰 저장
+        handleRefreshToken(savedUser, refreshTokenValue, UserType.PERSONAL);
+
+        // 5. 토큰 반환
+        return new LoginResponse(accessToken, refreshTokenValue);
+    }
+
+    /**
+     * [신규] 기업 회원 가입 처리
+     * @param request 회원가입 요청 DTO
+     * @return 로그인 응답 (JWT 토큰 포함)
+     */
+    @Transactional
+    public LoginResponse registerCompanyUser(CompanySignupRequestDto request) {
+        if (companyUserRepository.existsByLoginId(request.getId())) {
+            throw new IllegalArgumentException("이미 사용중인 아이디입니다.");
+        }
+        if (isEmailDuplicate(request.getEmail())) {
+            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+        }
+
+        Company company = companyRepository.findById(request.getCompanyIdx())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회사입니다."));
+
+        CompanyUser newUser = CompanyUser.builder()
+                .loginId(request.getId())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .name(request.getName())
+                .email(request.getEmail())
+                .phoneNumber(request.getPhone_number())
+                .company(company)
+                .build();
+
+        CompanyUser savedUser = companyUserRepository.save(newUser);
+        log.info("새로운 기업 회원이 등록되었습니다. ID: {}, Email: {}", savedUser.getId(), savedUser.getEmail());
+
+        CustomUserDetails userDetails = new CustomUserDetails(savedUser);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        String accessToken = jwtTokenProvider.createAccessToken(authentication);
+        String refreshTokenValue = jwtTokenProvider.createRefreshToken(authentication);
+
+        handleRefreshToken(savedUser, refreshTokenValue, UserType.COMPANY);
+
+        return new LoginResponse(accessToken, refreshTokenValue);
+    }
+
     // 리프레시 토큰 처리 로직을 별도 메서드로 분리 (PersonalUser, CompanyUser 공용)
     private void handleRefreshToken(Object user, String newRefreshTokenValue, UserType userType) {
         RefreshToken refreshToken = null;
@@ -106,10 +219,13 @@ public class AuthService {
             }
             log.info("New RefreshToken saved and user updated.");
         } else {
-            log.info("Scenario B: Re-login for user.");
-            refreshToken.updateTokenValue(newRefreshTokenValue);
-            refreshTokenRepository.save(refreshToken);
-            log.info("Existing refresh token updated.");
+            // ★ Potential NPE 경고 해결을 위한 null 체크 추가
+            if (refreshToken != null) {
+                log.info("Scenario B: Re-login for user.");
+                refreshToken.updateTokenValue(newRefreshTokenValue);
+                refreshTokenRepository.save(refreshToken);
+                log.info("Existing refresh token updated.");
+            }
         }
     }
 }

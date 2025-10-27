@@ -3,6 +3,7 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import useAuthStore from '@/store/authStore';
+import { api } from '@/api'; // ★ api 임포트 추가
 import { Container, Box, CircularProgress, Typography } from '@mui/material';
 
 // OAuth 리다이렉트 페이지 컴포넌트의 실제 내용

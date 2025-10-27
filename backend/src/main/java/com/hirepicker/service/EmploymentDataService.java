@@ -29,6 +29,7 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value; // Ensure this is present
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,6 +65,12 @@ public class EmploymentDataService {
     private final Dotenv dotenv;
     private final CompanyRepository companyRepository;
     private final EmploymentDataProcessorService DataProcessorService;
+
+    @Value("${work24-key}")
+    private String work24Key;
+
+    @Value("${dart-key2}")
+    private String dartKey;
 
     @Scheduled(cron = "0 0 4 * * *")
     @Transactional
@@ -230,7 +237,7 @@ public class EmploymentDataService {
 
     @Transactional
     public void synchronizePublicJobs() {
-        String apiKey = getWork24Key();
+        String apiKey = getWork24Key(); // Call the fixed getter
         if (apiKey == null)
             return;
         log.info("Executing: Job Synchronization");
@@ -271,7 +278,7 @@ public class EmploymentDataService {
 
     @Transactional
     public void synchronizeEvents() {
-        String apiKey = getWork24Key();
+        String apiKey = getWork24Key(); // Call the fixed getter
         if (apiKey == null)
             return;
         log.info("Executing: Event Synchronization");
@@ -312,7 +319,7 @@ public class EmploymentDataService {
 
     @Transactional
     public void synchronizeCompanies() {
-        String apiKey = getWork24Key();
+        String apiKey = getWork24Key(); // Call the fixed getter
         if (apiKey == null)
             return;
         log.info("Executing: Company Synchronization");
@@ -352,8 +359,7 @@ public class EmploymentDataService {
     }
 
     private String getWork24Key() {
-        String apiKey = dotenv.get("work24_key");
-        if (apiKey == null || apiKey.isBlank()) {
+        if (work24Key == null || work24Key.isBlank()) {
             System.err.println("CRITICAL: 'work24_key' not found in .env file.");
             return null;
         }
