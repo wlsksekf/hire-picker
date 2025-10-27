@@ -105,6 +105,16 @@ public class AuthService {
             throw new IllegalArgumentException("이미 가입된 이메일입니다.");
         }
 
+        // 닉네임 중복 확인
+        if (personalUserRepository.existsByNickname(signupRequest.getNickname())) {
+            throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+        }
+
+        // 비밀번호와 비밀번호 확인이 일치하는지 검증
+        if (!signupRequest.getPassword().equals(signupRequest.getPasswordConfirm())) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+
         // 1. PersonalUser 엔티티 생성 및 저장
         PersonalUser newUser = PersonalUser.builder()
                 .email(signupRequest.getEmail())
