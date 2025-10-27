@@ -11,7 +11,6 @@ import {
   CardActions,
   Button,
   Chip,
-  Avatar,
   useTheme,
   Alert,
   TextField
@@ -39,7 +38,7 @@ function CompaniesPage() {
   useEffect(function() {
     setLoading(true);
     const apiUrl = `/api/work24/companies?page=0&size=${PAGE_SIZE}${query ? `&query=${query}` : ''}`;
-    
+
     api.get(apiUrl)
       .then(function(response) {
         const data = response.data;
@@ -63,7 +62,7 @@ function CompaniesPage() {
     const nextPage = page + 1;
     setLoading(true);
     const apiUrl = `/api/work24/companies?page=${nextPage}&size=${PAGE_SIZE}${query ? `&query=${query}` : ''}`;
-    
+
     api.get(apiUrl)
       .then(function(response) {
         const data = response.data;
@@ -132,7 +131,7 @@ function CompaniesPage() {
       <Stack spacing={3}>
         {companies.map(function(company, index) {
           return (
-            <Link href={`/companies/${company.id}`} key={company.id || index} style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href={`/companies/${company.companyIdx}`} key={company.companyIdx || index} style={{ textDecoration: 'none', color: 'inherit' }}>
               <Card sx={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -150,35 +149,49 @@ function CompaniesPage() {
               }}>
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                      <Avatar 
-                          src={getLogoUrl(company.logoUrl)}
-                          alt={`${company.name} logo`}
-                          sx={{ width: 40, height: 40, mr: 2, border: `1px solid ${theme.palette.divider}` }}
-                      >
-                          {company.name ? company.name.charAt(0) : 'C'}
-                      </Avatar>
-                      <Typography variant="h6" fontWeight="bold">{company.name}</Typography>
+                  {getLogoUrl(company.logoUrl) ? (
+                    <Box
+                      component="img"
+                      src={getLogoUrl(company.logoUrl)}
+                      alt={`${company.name} logo`}
+                      sx={{
+                          width: 40,
+                          height: 40,
+                          mr: 2,
+                          objectFit: 'contain',
+                          border: `1px solid ${theme.palette.divider}`,
+                          borderRadius: '4px'
+                      }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                          width: 40,
+                          height: 40,
+                          mr: 2,
+                          backgroundColor: '#fff',
+                          border: `1px solid ${theme.palette.divider}`,
+                          borderRadius: '4px'
+                      }}
+                    />
+                  )}
+                  <Typography variant="h6" fontWeight="bold">{company.name}</Typography>
                   </Box>
                   <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
                     {company.summary}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: 2 }}>
-                  {company.businessNumber && <Chip 
-                    icon={<FontAwesomeIcon icon={faIdBadge} />} 
-                    label={`사업자번호: ${company.businessNumber}`}
-                    variant="outlined"
-                  />}
-                  <CardActions sx={{ p: 0 }}>
+                  <CardActions sx={{ p: 0, ml: 'auto' }}>
                     {company.homepage && (
-                      <Button 
+                      <Button
                         variant="contained"
                         onClick={(e) => {
                           e.stopPropagation();
                           const url = company.homepage.startsWith('http') ? company.homepage : `http://${company.homepage}`;
                           window.open(url, '_blank', 'noopener,noreferrer');
                         }}
-                        startIcon={<FontAwesomeIcon icon={faLink} />} 
+                        startIcon={<FontAwesomeIcon icon={faLink} />}
                       >
                         홈페이지
                       </Button>

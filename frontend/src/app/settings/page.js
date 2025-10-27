@@ -17,7 +17,7 @@ import {
   Stack,
   Box,
   CircularProgress,
-  Alert
+  Alert,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -27,14 +27,14 @@ import {
   faGear,
   faCreditCard,
   faCookieBite,
-  faSync
+  faSync,
+  faFileUpload,
 } from '@fortawesome/free-solid-svg-icons';
 import DarkModeSwitch from '../../components/DarkModeSwitch'; // 커스텀 스위치 import
 import { api } from '@/api'; // 공용 api 인스턴스 사용
 
 // 설정 페이지 컴포넌트
 function SettingsPage() {
-
   const [loading, setLoading] = useState(false); // 로딩 상태
   const [status, setStatus] = useState({ type: '', message: '' }); // 상태 메시지
 
@@ -43,16 +43,18 @@ function SettingsPage() {
     setLoading(true);
     setStatus({ type: 'info', message: `${type} 동기화를 시작합니다...` });
 
-    api.get(`/api/work24/sync/${type}`)
-      .then(function(response) {
+    api
+      .get(`/api/work24/sync/${type}`)
+      .then(function (response) {
         const resultText = response.data;
         setStatus({ type: 'success', message: resultText });
       })
-      .catch(function(error) {
-        const errorMessage = error.response?.data || error.message || `${type} 동기화에 실패했습니다.`;
+      .catch(function (error) {
+        const errorMessage =
+          error.response?.data || error.message || `${type} 동기화에 실패했습니다.`;
         setStatus({ type: 'error', message: errorMessage });
       })
-      .finally(function() {
+      .finally(function () {
         setLoading(false);
       });
   }
@@ -62,14 +64,16 @@ function SettingsPage() {
     minWidth: '40px',
     display: 'flex',
     justifyContent: 'center',
-    color: 'text.secondary'
+    color: 'text.secondary',
   };
 
   // 서브헤더 스타일
   const subheaderStyle = {
     fontWeight: 'bold',
-    color: function(theme) { return theme.palette.text.secondary },
-    backgroundColor: 'transparent'
+    color: function (theme) {
+      return theme.palette.text.secondary;
+    },
+    backgroundColor: 'transparent',
   };
 
   return (
@@ -77,10 +81,14 @@ function SettingsPage() {
       <Typography variant="h4" component="h1" gutterBottom>
         설정
       </Typography>
-      <Paper sx={{ 
-        mt: 2,
-        backgroundColor: function(theme) { return theme.palette.background.paper }
-      }}>
+      <Paper
+        sx={{
+          mt: 2,
+          backgroundColor: function (theme) {
+            return theme.palette.background.paper;
+          },
+        }}
+      >
         <List>
           {/* 계정 그룹 */}
           <ListSubheader sx={subheaderStyle}>계정</ListSubheader>
@@ -129,7 +137,10 @@ function SettingsPage() {
             <ListItemIcon sx={iconStyle}>
               <FontAwesomeIcon icon={faCookieBite} size="lg" />
             </ListItemIcon>
-            <ListItemText primary="쿠키 및 개인정보" secondary="서비스의 쿠키 및 개인정보 처리 방침을 확인합니다." />
+            <ListItemText
+              primary="쿠키 및 개인정보"
+              secondary="서비스의 쿠키 및 개인정보 처리 방침을 확인합니다."
+            />
           </ListItemButton>
         </List>
       </Paper>
@@ -138,36 +149,128 @@ function SettingsPage() {
       <Typography variant="h5" component="h2" gutterBottom sx={{ mt: 4 }}>
         데이터 동기화 (테스트용)
       </Typography>
-      <Paper sx={{ 
-        mt: 2,
-        p: 2,
-        backgroundColor: function(theme) { return theme.palette.background.paper }
-      }}>
+      <Paper
+        sx={{
+          mt: 2,
+          p: 2,
+          backgroundColor: function (theme) {
+            return theme.palette.background.paper;
+          },
+        }}
+      >
         <List>
           <ListSubheader sx={subheaderStyle}>work24 API</ListSubheader>
 
           <ListItem>
-            <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 1 }}>
-              {loading && <CircularProgress size={24} sx={{ mr: 2 }} />} {/* 로딩 중일 때 로딩 스피너 표시 */}
+            <Box
+              sx={{
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                mt: 1,
+              }}
+            >
+              {loading && <CircularProgress size={24} sx={{ mr: 2 }} />}{' '}
+              {/* 로딩 중일 때 로딩 스피너 표시 */}
               <Stack direction="row" spacing={1}>
-                <Button variant="contained" onClick={function() { return handleSync('jobs') }} disabled={loading}>
+                <Button
+                  variant="contained"
+                  onClick={function () {
+                    return handleSync('jobs');
+                  }}
+                  disabled={loading}
+                >
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   공채속보 동기화
                 </Button>
-                <Button variant="contained" onClick={function() { return handleSync('events') }} disabled={loading}>
+                <Button
+                  variant="contained"
+                  onClick={function () {
+                    return handleSync('events');
+                  }}
+                  disabled={loading}
+                >
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   채용행사 동기화
                 </Button>
-                <Button variant="contained" onClick={function() { return handleSync('companies') }} disabled={loading}>
+                <Button
+                  variant="contained"
+                  onClick={function () {
+                    return handleSync('companies');
+                  }}
+                  disabled={loading}
+                  sx={{ mr: 1 }} // 버튼 사이 간격
+                >
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
-                  기업정보 동기화
+                  기업정보 동기화(DART)
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    setLoading(true);
+                    setStatus({ type: 'info', message: '기업정보 크롤링을 시작합니다...' });
+
+                    api
+                      .post('/api/crawler/companies')
+                      .then(response => {
+                        setStatus({ type: 'success', message: response.data });
+                      })
+                      .catch(error => {
+                        const errorData = error.response?.data || error.message;
+                        const errorMessage =
+                          typeof errorData === 'object'
+                            ? JSON.stringify(errorData)
+                            : errorData || '기업정보 크롤링 시작에 실패했습니다.';
+                        setStatus({ type: 'error', message: errorMessage });
+                      })
+                      .finally(() => {
+                        setLoading(false);
+                      });
+                  }}
+                  disabled={loading}
+                >
+                  <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
+                  기업정보 크롤링
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    setLoading(true);
+                    setStatus({
+                      type: 'info',
+                      message: 'CSV 파일에서 기업정보를 업데이트합니다...',
+                    });
+
+                    api
+                      .post('/api/companies/update-from-csv')
+                      .then(response => {
+                        setStatus({ type: 'success', message: response.data });
+                      })
+                      .catch(error => {
+                        const errorMessage =
+                          error.response?.data ||
+                          error.message ||
+                          'CSV 파일 업데이트에 실패했습니다.';
+                        setStatus({ type: 'error', message: errorMessage });
+                      })
+                      .finally(() => {
+                        setLoading(false);
+                      });
+                  }}
+                  disabled={loading}
+                >
+                  <FontAwesomeIcon icon={faFileUpload} style={{ marginRight: 8 }} />
+                  CSV 정보 업데이트
                 </Button>
               </Stack>
             </Box>
           </ListItem>
           {status.message && ( // 상태 메시지가 있을 경우 표시
             <ListItem sx={{ mt: 2 }}>
-              <Alert severity={status.type || 'info'} sx={{ width: '100%' }}>{status.message}</Alert>
+              <Alert severity={status.type || 'info'} sx={{ width: '100%' }}>
+                {status.message}
+              </Alert>
             </ListItem>
           )}
         </List>

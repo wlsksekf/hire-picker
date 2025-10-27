@@ -69,6 +69,12 @@ dependencies {
 
     // JPA (Database) - (첫 번째 파일에서 중복 선언되어 제거)
     // H2 (Database) - (첫 번째 파일에서 중복 선언되어 제거)
+    // HTML parsing for lightweight crawling
+    implementation 'org.jsoup:jsoup:1.15.3'
+
+    // Excel file processing
+    implementation 'org.apache.poi:poi:5.2.5'
+    implementation 'org.apache.poi:poi-ooxml:5.2.5'
 }
 
 tasks.named('test') {

@@ -58,10 +58,13 @@ public class Work24Controller {
         return ResponseEntity.ok(assembler.toModel(companies));
     }
 
-    @Operation(summary = "기업 상세 정보 조회", description = "ID를 이용하여 특정 기업의 상세 정보를 조회합니다.")
-    @GetMapping("/companies/{id}")
-    public ResponseEntity<CompanyDto> getCompany(@PathVariable("id") String id) {
-        CompanyDto companyDto = employmentData.getCompany(id);
+    @Operation(summary = "기업 상세 정보 조회", description = "company_idx를 이용하여 특정 기업의 상세 정보를 조회합니다.")
+    @GetMapping("/companies/{idx}")
+    public ResponseEntity<CompanyDto> getCompany(@PathVariable("idx") Long idx) {
+        CompanyDto companyDto = employmentData.getCompany(idx);
+        if (companyDto == null) {
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok(companyDto);
     }
 
