@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid'; // 기존 UI 유지를 위해 DataGrid 임포트
 import { useAuthStore } from '@/store/authStore'; // 4. authStore 임포트 (토큰 필요)
-import { generateAiResume } from '@/api'; // 5. 방금 만든 API 함수 임포트
+import { generateAiFullDraft as generateAiResume } from '@/api'; // 5. API 함수 임포트 (이름 별칭 사용)
 
 // --- 기존 이력서 목록 관련 코드 시작 ---
 // DataGrid 컬럼 정의
