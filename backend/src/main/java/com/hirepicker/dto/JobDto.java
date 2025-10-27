@@ -2,6 +2,7 @@ package com.hirepicker.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+
 import lombok.Builder;
 
 // 채용 공고 정보 DTO (Data Transfer Object)
