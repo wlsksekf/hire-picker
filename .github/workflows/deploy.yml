@@ -29,7 +29,7 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: | 
+          tags: |
             ${{ secrets.DOCKER_USERNAME }}/hirepicker-backend:${{ github.sha }}
             ${{ secrets.DOCKER_USERNAME }}/hirepicker-backend:latest
 
@@ -39,7 +39,7 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: | 
+          tags: |
             ${{ secrets.DOCKER_USERNAME }}/hirepicker-frontend:${{ github.sha }}
             ${{ secrets.DOCKER_USERNAME }}/hirepicker-frontend:latest
 
@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Transfer config files to EC2
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
@@ -60,7 +60,7 @@ jobs:
           target: "/home/ubuntu/hirepicker"
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
@@ -69,19 +69,24 @@ jobs:
             set -e
             cd /home/ubuntu/hirepicker
 
-            # 단일 시크릿으로 .env 파일 생성
+            # 1. DB 비번 등이 담긴 .env 파일 생성
             echo "${{ secrets.DOT_ENV }}" > .env
 
-            # Docker 로그인
+            echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> .env
+            echo "BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}" >> .env
+            echo "FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}" >> .env
+
+            # 3. Docker 로그인
             echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-            # 이전 컨테이너 중지 및 삭제
+            # 4. 이전 컨테이너 중지 및 삭제
             docker compose --profile prod down --remove-orphans
 
-            # 불필요한 컨테이너 및 이미지 정리
+            # 5. 불필요한 이미지 정리
             docker container prune -f
             docker image prune -a -f
 
-            # 새 이미지 pull 및 컨테이너 시작
+            # 6. 새 이미지 pull 및 컨테이너 시작
+            #    (이제 docker-compose.yml이 .env 파일에서 변수를 잘 읽어올 거야)
             docker compose --profile prod --env-file ./.env pull
             docker compose --profile prod --env-file ./.env up -d

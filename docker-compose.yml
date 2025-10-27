@@ -11,7 +11,7 @@
 #
 services:
   # =============================================
-  #  프로필: dev (개발 환경)
+  #   프로필: dev (개발 환경)
   # =============================================
   backend-dev:
     container_name: local-backend
@@ -60,7 +60,7 @@ services:
     profiles: ["dev"]
 
   # =============================================
-  #  프로필: prod (프로덕션 환경)
+  #   프로필: prod (프로덕션 환경)
   # =============================================
   nginx:
     container_name: hirepicker-nginx
@@ -79,7 +79,7 @@ services:
 
   frontend:
     container_name: hirepicker-frontend
-    image: ${DOCKER_USERNAME}/${FRONTEND_IMAGE}:${GITHUB_SHA}
+    image: ${DOCKER_USERNAME}/${FRONTEND_IMAGE}:latest
     restart: on-failure
     networks:
       - hirepicker-network
@@ -87,7 +87,7 @@ services:
 
   backend:
     container_name: hirepicker-backend
-    image: ${DOCKER_USERNAME}/${BACKEND_IMAGE}:${GITHUB_SHA}
+    image: ${DOCKER_USERNAME}/${BACKEND_IMAGE}:latest
     restart: on-failure
     security_opt:
       - seccomp:unconfined
