@@ -1,5 +1,6 @@
 package com.hirepicker;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -9,6 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class HirepickerApplication {
 
     public static void main(String[] args) {
+        Dotenv.load(); // ★ .env 파일 로드
         SpringApplication.run(HirepickerApplication.class, args);
     }
 

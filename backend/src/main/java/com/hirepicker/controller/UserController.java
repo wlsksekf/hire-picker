@@ -1,6 +1,8 @@
 package com.hirepicker.controller;
 
 
+import com.hirepicker.config.security.CustomUserDetails;
+import com.hirepicker.dto.UserProfileDto;
 import com.hirepicker.entity.Gender;
 import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.entity.payment.PersonalUserCredit;
@@ -13,8 +15,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,6 +36,18 @@ public class UserController {
     private final PersonalUserRepository personalUserRepository;
     private final PersonalUserCreditRepository personalUserCreditRepository; // 크레딧 리포지토리 주입
     private final PasswordEncoder passwordEncoder;
+
+    @Operation(summary = "내 프로필 정보 조회", description = "현재 로그인된 개인 회원의 프로필 정보를 조회합니다.")
+    @GetMapping("/my-profile")
+    public ResponseEntity<UserProfileDto> getMyProfile(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        return personalUserRepository.findById(userDetails.getId())
+                .map(user -> ResponseEntity.ok(UserProfileDto.fromEntity(user)))
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    }
 
 
     @Operation(summary = "회원가입", description = "새로운 개인 회원을 등록합니다.")
