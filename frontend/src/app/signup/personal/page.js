@@ -158,8 +158,8 @@ export default function SignupPage() {
             <div className="form-container">
                 <p className="title">회원가입</p>
 
-                {error && <Alert severity="error" sx={{ width: '100%', mt: 2 }}>{error}</Alert>}
-                {successMessage && <Alert severity="success" sx={{ width: '100%', mt: 2 }}>{successMessage}</Alert>}
+                {error && <Alert severity="error" sx={{ width: '100%', mt: 2 }}>{typeof error === 'object' ? error.message : error}</Alert>}
+                {successMessage && <Alert severity="success" sx={{ width: '100%', mt: 2 }}>{typeof successMessage === 'object' ? successMessage.message : successMessage}</Alert>}
                 
                 <form className="form" onSubmit={handleSubmit} noValidate>
                     <div className="input-group">
