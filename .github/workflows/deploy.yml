@@ -29,7 +29,9 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/hirepicker-backend:${{ github.sha }}
+          tags: | 
+            ${{ secrets.DOCKER_USERNAME }}/hirepicker-backend:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/hirepicker-backend:latest
 
       - name: Build and push Frontend image
         uses: docker/build-push-action@v5
@@ -37,36 +39,13 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/hirepicker-frontend:${{ github.sha }}
+          tags: | 
+            ${{ secrets.DOCKER_USERNAME }}/hirepicker-frontend:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/hirepicker-frontend:latest
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    env:
-      DB_URL: ${{ secrets.DB_URL }}
-      DB_USERNAME: ${{ secrets.DB_USERNAME }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
-      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-      BACKEND_IMAGE: hirepicker-backend
-      FRONTEND_IMAGE: hirepicker-frontend
-      GITHUB_SHA: ${{ github.sha }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      work24_key: ${{ secrets.work24_key }}
-      school_key: ${{ secrets.school_key }}
-      dart_key1: ${{ secrets.dart_key1 }}
-      dart_key2: ${{ secrets.dart_key2 }}
-      dart_key3: ${{ secrets.dart_key3 }}
-      dart_key4: ${{ secrets.dart_key4 }}
-      dart_key5: ${{ secrets.dart_key5 }}
-      GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
-      GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
-      NEXT_PUBLIC_TOSS_CLIENT_KEY: ${{ secrets.NEXT_PUBLIC_TOSS_CLIENT_KEY }}
-      NEXT_PUBLIC_TOSS_CUSTOMER_KEY: ${{ secrets.NEXT_PUBLIC_TOSS_CUSTOMER_KEY }}
-      TOSS_WIDGET_SECRET_KEY: ${{ secrets.TOSS_WIDGET_SECRET_KEY }}
-      SPRING_AI_VERTEX_AI_GEMINI_PROJECT_ID: ${{ secrets.SPRING_AI_VERTEX_AI_GEMINI_PROJECT_ID }}
-      SPRING_AI_VERTEX_AI_GEMINI_LOCATION: ${{ secrets.SPRING_AI_VERTEX_AI_GEMINI_LOCATION }}
-      SPRING_AI_VERTEX_AI_GEMINI_API_KEY: ${{ secrets.SPRING_AI_VERTEX_AI_GEMINI_API_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -82,60 +61,27 @@ jobs:
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          DB_URL: ${{ secrets.DB_URL }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          BACKEND_IMAGE: hirepicker-backend
-          FRONTEND_IMAGE: hirepicker-frontend
-          GITHUB_SHA: ${{ github.sha }}
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USER }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-          envs: DB_URL,DB_USERNAME,DB_PASSWORD,DOCKER_TOKEN,DOCKER_USERNAME,BACKEND_IMAGE,FRONTEND_IMAGE,GITHUB_SHA,JWT_SECRET,work24_key,school_key,dart_key1,dart_key2,dart_key3,dart_key4,dart_key5,GOOGLE_OAUTH_CLIENT_ID,GOOGLE_OAUTH_CLIENT_SECRET,NEXT_PUBLIC_TOSS_CLIENT_KEY,NEXT_PUBLIC_TOSS_CUSTOMER_KEY,TOSS_WIDGET_SECRET_KEY,SPRING_AI_VERTEX_AI_GEMINI_PROJECT_ID,SPRING_AI_VERTEX_AI_GEMINI_LOCATION,SPRING_AI_VERTEX_AI_GEMINI_API_KEY
           script: |
             set -e
             cd /home/ubuntu/hirepicker
 
-            cat << EOF > .env
-            DB_URL=${DB_URL}
-            DB_USERNAME=${DB_USERNAME}
-            DB_PASSWORD=${DB_PASSWORD}
-            DOCKER_USERNAME=${DOCKER_USERNAME}
-            BACKEND_IMAGE=${BACKEND_IMAGE}
-            FRONTEND_IMAGE=${FRONTEND_IMAGE}
-            GITHUB_SHA=${GITHUB_SHA}
-            JWT_SECRET=${JWT_SECRET}
-            jwt.secret=${JWT_SECRET}
-            work24_key=${work24_key}
-            school_key=${school_key}
-            dart_key1=${dart_key1}
-            dart_key2=${dart_key2}
-            dart_key3=${dart_key3}
-            dart_key4=${dart_key4}
-            dart_key5=${dart_key5}
-            GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
-            GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
-            NEXT_PUBLIC_TOSS_CLIENT_KEY=${NEXT_PUBLIC_TOSS_CLIENT_KEY}
-            NEXT_PUBLIC_TOSS_CUSTOMER_KEY=${NEXT_PUBLIC_TOSS_CUSTOMER_KEY}
-            TOSS_WIDGET_SECRET_KEY=${TOSS_WIDGET_SECRET_KEY}
-            SPRING_AI_VERTEX_AI_GEMINI_PROJECT_ID=${SPRING_AI_VERTEX_AI_GEMINI_PROJECT_ID}
-            SPRING_AI_VERTEX_AI_GEMINI_LOCATION=${SPRING_AI_VERTEX_AI_GEMINI_LOCATION}
-            SPRING_AI_VERTEX_AI_GEMINI_API_KEY=${SPRING_AI_VERTEX_AI_GEMINI_API_KEY}
-            EOF
+            # 단일 시크릿으로 .env 파일 생성
+            echo "${{ secrets.DOT_ENV }}" > .env
 
-            echo "${DOCKER_TOKEN}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+            # Docker 로그인
+            echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-            # Stop and remove old containers defined in the compose file
+            # 이전 컨테이너 중지 및 삭제
             docker compose --profile prod down --remove-orphans
 
-            # Clean up any other stopped containers and all unused images
+            # 불필요한 컨테이너 및 이미지 정리
             docker container prune -f
             docker image prune -a -f
 
-            # Pull new images and start new containers
+            # 새 이미지 pull 및 컨테이너 시작
             docker compose --profile prod --env-file ./.env pull
             docker compose --profile prod --env-file ./.env up -d
