@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class HirepickerApplication {
 
     public static void main(String[] args) {
-        Dotenv.load(); // ★ .env 파일 로드
+        Dotenv.configure().directory("../").load(); // ★ .env 파일 로드 (상위 경로)
         SpringApplication.run(HirepickerApplication.class, args);
     }
 
