@@ -29,7 +29,9 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/hirepicker-backend:${{ github.sha }}
+          tags: | 
+            ${{ secrets.DOCKER_USERNAME }}/hirepicker-backend:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/hirepicker-backend:latest
 
       - name: Build and push Frontend image
         uses: docker/build-push-action@v5
@@ -37,7 +39,9 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/hirepicker-frontend:${{ github.sha }}
+          tags: | 
+            ${{ secrets.DOCKER_USERNAME }}/hirepicker-frontend:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/hirepicker-frontend:latest
 
   deploy:
     needs: build
