@@ -61,14 +61,15 @@ public class AuthController {
     /**
      * [신규] 이메일 인증 코드 확인
      */
-    @Operation(summary = "이메일 인증 코드 확인", description = "입력된 인증 코드가 유효한지 확인합니다.")
+    @Operation(summary = "이메일 인증 코드 확인", description = "입력된 인증 코드가 유효한지 확인하고 '인증 완료' 상태로 변경합니다.")
     @PostMapping("/check-verification")
     public ResponseEntity<String> checkVerificationCode(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String code = payload.get("verificationCode");
         log.info("[API] /api/auth/check-verification 요청 수신. 이메일: {}", email);
 
-        boolean isVerified = emailService.checkCode(email, code);
+        // [수정] verifyCodeAndSetStatus 호출
+        boolean isVerified = emailService.verifyCodeAndSetStatus(email, code);
 
         if (isVerified) {
             return ResponseEntity.ok("이메일이 성공적으로 인증되었습니다.");
@@ -78,22 +79,19 @@ public class AuthController {
     }
 
     /**
-     * [수정] 개인 회원 회원가입 처리 (이메일 코드 검증 추가)
+     * [수정] 개인 회원 회원가입 처리 ('인증 완료' 상태 검증)
      */
-    @Operation(summary = "개인 회원가입", description = "이메일 인증 후 개인 회원으로 가입합니다.")
+    @Operation(summary = "개인 회원가입", description = "'인증 완료' 상태 확인 후 개인 회원으로 가입합니다.")
     @PostMapping("/signup/personal")
     public ResponseEntity<?> registerPersonalUser(@RequestBody SignupRequestDto signupRequest) {
         log.info("[API] /api/auth/signup/personal 요청 수신. 사용자: {}", signupRequest.getEmail());
 
-        // 1. (★필수) 인증 코드 검증
-        boolean isVerified = emailService.verifyCode(
-            signupRequest.getEmail(),
-            signupRequest.getVerificationCode()
-        );
+        // 1. (★수정) '인증 완료' 상태 검증
+        boolean isVerified = emailService.isEmailVerified(signupRequest.getEmail());
 
         if (!isVerified) {
-            log.warn("인증 코드가 유효하지 않거나 만료되었습니다. 이메일: {}", signupRequest.getEmail());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("인증 코드가 유효하지 않거나 만료되었습니다.");
+            log.warn("'인증 완료' 상태가 아닙니다. 이메일: {}", signupRequest.getEmail());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("이메일 인증이 완료되지 않았거나 만료되었습니다.");
         }
 
         // 2. (검증 통과) 기존 회원가입 로직 수행
@@ -120,14 +118,12 @@ public class AuthController {
     public ResponseEntity<?> registerCompanyUser(@RequestBody CompanySignupRequestDto signupRequest) {
         log.info("[API] /api/auth/signup/company 요청 수신. 사용자 ID: {}", signupRequest.getId());
 
-        boolean isVerified = emailService.verifyCode(
-            signupRequest.getEmail(),
-            signupRequest.getVerificationCode()
-        );
+        // (★수정) '인증 완료' 상태 검증
+        boolean isVerified = emailService.isEmailVerified(signupRequest.getEmail());
 
         if (!isVerified) {
-            log.warn("인증 코드가 유효하지 않거나 만료되었습니다. 이메일: {}", signupRequest.getEmail());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("인증 코드가 유효하지 않거나 만료되었습니다.");
+            log.warn("'인증 완료' 상태가 아닙니다. 이메일: {}", signupRequest.getEmail());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("이메일 인증이 완료되지 않았거나 만료되었습니다.");
         }
 
         try {
