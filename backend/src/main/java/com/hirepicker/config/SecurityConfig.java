@@ -44,7 +44,7 @@ public class SecurityConfig {
                 // 회원가입 엔드포인트는 무조건 허용 (가장 먼저 체크)
                 .requestMatchers(HttpMethod.POST, "/api/users/signup").permitAll()
                 .requestMatchers("/api/auth/**", "/api/users/**", "/api/work24/**", "/actuator/**", "/api/health/**", "/api/manage/**", "/confirm/**", "/confirm-billing", "/issue-billing-key", "/callback-auth", "/fail", "/swagger-ui/**", "/api-docs/**", "/error").permitAll()
-                .requestMatchers("/api/payment/webhook").permitAll() // 웹훅 엔드포인트는 모두 허용
+                .requestMatchers("/api/payment/webhook", "/api/posts/**").permitAll() // 웹훅 엔드포인트는 모두 허용
                 .requestMatchers("/chat/**").permitAll()
                 .requestMatchers("/api/payment/**").authenticated() // 나머지 결제 관련 API는 인증 필요
                 .requestMatchers("/api/ai/**").authenticated() // [AI 기능 추가] AI 관련 API는 인증된 사용자만 접근 가능
