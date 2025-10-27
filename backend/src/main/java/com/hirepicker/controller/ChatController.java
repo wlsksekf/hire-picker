@@ -76,7 +76,6 @@ public class ChatController {
                 .content(msg.getContent())
                 .timestamp(msg.getCreatedAt()!=null ? msg.getCreatedAt().toString():null)
                 .build();
-        
                 dtos.add(dto);
         }
         return ResponseEntity.ok(dtos);
