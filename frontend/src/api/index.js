@@ -12,7 +12,7 @@ api.interceptors.request.use(
   (config) => {
     console.log('Axios Request Interceptor:', config.method.toUpperCase(), config.url);
     // 공개 경로(회원가입 등)에는 토큰을 추가하지 않음
-    if (config.url.includes('/api/users/signup')) {
+    if (config.url.includes('/api/auth/signup') || config.url.includes('/api/auth/send-verification') || config.url.includes('/api/auth/check-verification')) {
       console.log('Public route, not adding token.');
       return config;
     }
@@ -64,6 +64,51 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+/**
+ * [신규] 이메일 인증 코드 발송 요청
+ * @param {string} email - 인증받을 이메일
+ */
+export const sendVerificationEmail = (email) => {
+    // 백엔드 /api/auth/send-verification 호출
+    return api.post('/api/auth/send-verification', { email });
+};
+
+/**
+ * [신규] 이메일 인증 코드 확인 요청
+ * @param {string} email - 인증받을 이메일
+ * @param {string} verificationCode - 사용자가 입력한 코드
+ */
+export const checkVerificationCode = (email, verificationCode) => {
+    return api.post('/api/auth/check-verification', { email, verificationCode });
+}; 
+
+/**
+ * [수정] 개인 회원가입 (모든 데이터 전송)
+ * @param {object} signupData - SignupRequestDto와 일치하는 객체
+ * (e.g., { email, password, nickname, name, address, verificationCode, ... })
+ */
+export const signupPersonal = (signupData) => {
+    // 백엔드 /api/auth/signup/personal 호출
+    return api.post('/api/auth/signup/personal', signupData);
+};
+
+/**
+ * [신규] 회사 이름으로 회사 검색
+ * @param {string} query - 검색할 회사 이름
+ */
+export const searchCompanies = (query) => {
+    return api.get('/api/companies/search', { params: { name: query } });
+};
+
+/**
+ * [신규] 기업 회원가입
+ * @param {object} signupData - CompanySignupRequestDto와 일치하는 객체
+ */
+export const signupCompany = (signupData) => {
+    return api.post('/api/auth/signup/company', signupData);
+};
+
 
 // `api` 변수를 기본 내보내기로 설정
 export { api };
