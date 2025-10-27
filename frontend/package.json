@@ -23,11 +23,8 @@
     "@mui/material": "^7.3.2",
     "@mui/material-nextjs": "^7.3.2",
     "@mui/x-data-grid": "^7.10.0",
-<<<<<<< HEAD
     "@stomp/stompjs": "^7.2.1",
-=======
     "@react-google-maps/api": "^2.20.7",
->>>>>>> 151a4ac61e7fc1fbeec68e6ed89b2f7a6c1e9c84
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
