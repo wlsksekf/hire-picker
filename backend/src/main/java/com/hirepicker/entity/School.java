@@ -31,4 +31,7 @@ public class School {
 
     private String address;
     
+    private String campus;
+
+    private String schoolUrl;
 }
