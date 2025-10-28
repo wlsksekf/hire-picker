@@ -10,8 +10,8 @@ import java.util.Optional;
 
 @Repository // Spring의 리포지토리 빈으로 등록
 public interface CompanyRepository extends JpaRepository<Company, Long> {
-    // 회사 이름으로 회사를 찾는 메서드
-    Optional<Company> findByCompanyName(String companyName);
+    // 회사 이름으로 회사를 찾는 메서드 (중복 시 첫 번째 결과 반환)
+    Optional<Company> findTopByCompanyName(String companyName);
     // 회사 ID로 회사를 찾는 메서드
     Optional<Company> findByCompanyId(String companyId);
 

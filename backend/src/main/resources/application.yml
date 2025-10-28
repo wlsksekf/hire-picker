@@ -14,14 +14,12 @@ spring:
   ai:
     vertex:
       ai:
+        project-id: ${SPRING_AI_VERTEX_AI_PROJECT_ID}
         gemini:
-          project-id: ${SPRING_AI_VERTEX_AI_GEMINI_PROJECT_ID} # .env 파일에서 프로젝트 ID를 읽어옴
-          location: ${SPRING_AI_VERTEX_AI_GEMINI_LOCATION} # .env 파일에서 리전 정보를 읽어옴
-          api-key: ${SPRING_AI_VERTEX_AI_GEMINI_API_KEY} # .env 파일에서 키를 읽어옴
+          location: ${SPRING_AI_VERTEX_AI_GEMINI_LOCATION}
           chat:
             options:
-              # 무료 등급에서 빠르고 성능 좋은 모델 (2025년 기준)
-              model: gemini-1.5-flash-001
+              model: ${SPRING_AI_VERTEX_AI_GEMINI_CHAT_MODEL}
               temperature: 0.7 # 0.0(정확) ~ 1.0(창의적)
   # 기본 프로필을 'local'으로 설정. 다른 프로필이 지정되면 무시됨.
   profiles:

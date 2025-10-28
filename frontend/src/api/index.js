@@ -5,6 +5,7 @@ import useAuthStore from '../store/authStore'; // useAuthStore 임포트 (추가
 const api = axios.create({
   // baseURL을 상대경로로 설정하여 Next.js의 rewrites 프록시를 사용
   baseURL: '/',
+  withCredentials: true, // 백엔드와 쿠키를 주고받기 위해 추가
 });
 
 // 요청 인터셉터: 모든 요청에 액세스 토큰 추가 (추가됨)

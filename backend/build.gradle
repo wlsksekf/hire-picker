@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.6'
+    id 'org.springframework.boot' version '3.5.7'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -22,16 +22,17 @@ configurations {
 
 repositories {
     mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+    maven { url 'https://repo.spring.io/snapshot' }
+    maven {
+    name = 'Central Portal Snapshots'
+    url = 'https://central.sonatype.com/repository/maven-snapshots/'
+  }
 }
 
 dependencies {
-    // Spring AI BOM 추가 (안정화 버전 사용)
-    implementation(enforcedPlatform("org.springframework.ai:spring-ai-bom:1.0.3"))
-    implementation "org.springframework.ai:spring-ai-starter-model-vertex-ai-gemini"
-
-    // .env 파일 로딩을 위한 dotenv-java 라이브러리 추가
+    implementation 'com.google.genai:google-genai:1.24.0'
     implementation 'io.github.cdimascio:dotenv-java:3.0.0'
-
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'

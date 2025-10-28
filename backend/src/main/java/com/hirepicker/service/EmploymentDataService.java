@@ -1,5 +1,6 @@
 package com.hirepicker.service;
 
+import java.net.SocketException;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -185,40 +186,69 @@ public class EmploymentDataService {
                         String ceo_name = null, business_number = null, address = null, website_url = null;
                         String companyApiUrl = "https://opendart.fss.or.kr/api/company.json?crtfc_key=" + apiKey
                                 + "&corp_code=" + corpCode;
-                        try {
-                            URL corpUrl = new URL(companyApiUrl);
-                            HttpURLConnection conn = (HttpURLConnection) corpUrl.openConnection();
-                            conn.setRequestMethod("GET");
-                            conn.setConnectTimeout(60000);
-                            conn.setReadTimeout(60000);
+                        int maxRetries = 3; // 최대 재시도 횟수
+                        int retryCount = 0;
+                        boolean success = false;
 
-                            int responseCode2 = conn.getResponseCode();
-                            if (responseCode2 == 200) {
-                                try (BufferedReader br = new BufferedReader(
-                                        new InputStreamReader(conn.getInputStream(), "UTF-8"))) {
-                                    String jsonText = br.lines().collect(java.util.stream.Collectors.joining());
-                                    JSONObject json = new JSONObject(jsonText);
-                                    String status = json.optString("status");
-                                    if ("000".equals(status)) {
-                                        ceo_name = json.optString("ceo_nm");
-                                        business_number = json.optString("bizr_no");
-                                        address = json.optString("adres");
-                                        website_url = json.optString("hm_url");
-                                    } else if ("013".equals(status)) {
-                                        log.warn("DART API에서 '{}'({})에 대한 데이터를 찾을 수 없습니다. (상태: {})", corpName, corpCode,
-                                                status);
-                                    } else {
-                                        log.error("DART API 오류 (회사: {}, 코드: {}): status={}, message={}", corpName,
-                                                corpCode, status, json.optString("message"));
+                        while (retryCount < maxRetries && !success) {
+                            try {
+                                URL corpUrl = new URL(companyApiUrl);
+                                HttpURLConnection conn = (HttpURLConnection) corpUrl.openConnection();
+                                conn.setRequestMethod("GET");
+                                conn.setConnectTimeout(60000);
+                                conn.setReadTimeout(60000);
+
+                                int responseCode2 = conn.getResponseCode();
+                                if (responseCode2 == 200) {
+                                    try (BufferedReader br = new BufferedReader(
+                                            new InputStreamReader(conn.getInputStream(), "UTF-8"))) {
+                                        String jsonText = br.lines().collect(java.util.stream.Collectors.joining());
+                                        JSONObject json = new JSONObject(jsonText);
+                                        String status = json.optString("status");
+                                        if ("000".equals(status)) {
+                                            ceo_name = json.optString("ceo_nm");
+                                            business_number = json.optString("bizr_no");
+                                            address = json.optString("adres");
+                                            website_url = json.optString("hm_url");
+                                            success = true; // 성공 시 루프 종료
+                                        } else if ("013".equals(status)) {
+                                            log.warn("DART API에서 '{}'({})에 대한 데이터를 찾을 수 없습니다. (상태: {})", corpName, corpCode,
+                                                    status);
+                                            success = true; // 데이터를 찾을 수 없는 경우도 성공으로 간주하고 다음 회사로 진행
+                                        } else {
+                                            log.error("DART API 오류 (회사: {}, 코드: {}): status={}, message={}", corpName,
+                                                    corpCode, status, json.optString("message"));
+                                            // API 오류는 재시도하지 않고 다음 회사로 진행
+                                            success = true;
+                                        }
+                                    }
+                                } else {
+                                    log.error("DART API company.json 호출 실패 (회사: {}, 코드: {}). 응답 코드: {}", corpName, corpCode,
+                                            responseCode2);
+                                    // HTTP 응답 코드 오류는 재시도하지 않고 다음 회사로 진행
+                                    success = true;
+                                }
+                                conn.disconnect();
+                            } catch (SocketException e) {
+                                retryCount++;
+                                log.warn("DART company.json API 호출 중 SocketException 발생 (회사: {}, 코드: {}). {}/{} 재시도...",
+                                        corpName, corpCode, retryCount, maxRetries, e);
+                                if (retryCount < maxRetries) {
+                                    try {
+                                        Thread.sleep(2000L * retryCount); // 2초, 4초, 6초 대기 후 재시도
+                                    } catch (InterruptedException ie) {
+                                        Thread.currentThread().interrupt();
+                                        log.error("Thread interrupted during retry sleep", ie);
+                                        success = true; // 인터럽트 발생 시 루프 종료
                                     }
                                 }
-                            } else {
-                                log.error("DART API company.json 호출 실패 (회사: {}, 코드: {}). 응답 코드: {}", corpName, corpCode,
-                                        responseCode2);
+                            } catch (Exception e) {
+                                log.error("DART company.json API 호출 중 예외 발생 (회사: {}, 코드: {})", corpName, corpCode, e);
+                                success = true; // 다른 예외 발생 시 재시도 없이 다음 회사로 진행
                             }
-                            conn.disconnect();
-                        } catch (Exception e) {
-                            log.error("DART company.json API 호출 중 예외 발생 (회사: {}, 코드: {})", corpName, corpCode, e);
+                        }
+                        if (!success) {
+                            log.error("DART company.json API 호출 {}회 재시도 실패 (회사: {}, 코드: {}).", maxRetries, corpName, corpCode);
                         }
 
                         Company existingCompany = companyByCorpCode.get(corpCode);
