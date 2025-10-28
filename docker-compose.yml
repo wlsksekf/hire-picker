@@ -11,8 +11,18 @@
 #
 services:
   # =============================================
-  #  프로필: dev (개발 환경)
+  #   프로필: dev (개발 환경)
   # =============================================
+  redis-dev:
+    container_name: local-redis
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - hirepicker-network
+    profiles: ["dev"]
+
   backend-dev:
     container_name: local-backend
     build: ./backend
@@ -27,6 +37,8 @@ services:
     networks:
       - hirepicker-network
     profiles: ["dev"]
+    depends_on:
+      - redis-dev
 
   frontend-dev:
     container_name: local-frontend
@@ -60,8 +72,16 @@ services:
     profiles: ["dev"]
 
   # =============================================
-  #  프로필: prod (프로덕션 환경)
+  #   프로필: prod (프로덕션 환경)
   # =============================================
+  redis:
+    container_name: hirepicker-redis
+    image: redis:7-alpine
+    restart: on-failure
+    networks:
+      - hirepicker-network
+    profiles: ["prod"]
+
   nginx:
     container_name: hirepicker-nginx
     image: nginx:1.23-alpine
@@ -79,7 +99,7 @@ services:
 
   frontend:
     container_name: hirepicker-frontend
-    image: ${DOCKER_USERNAME}/${FRONTEND_IMAGE}:${GITHUB_SHA}
+    image: ${DOCKER_USERNAME}/${FRONTEND_IMAGE}:latest
     restart: on-failure
     networks:
       - hirepicker-network
@@ -87,7 +107,7 @@ services:
 
   backend:
     container_name: hirepicker-backend
-    image: ${DOCKER_USERNAME}/${BACKEND_IMAGE}:${GITHUB_SHA}
+    image: ${DOCKER_USERNAME}/${BACKEND_IMAGE}:latest
     restart: on-failure
     security_opt:
       - seccomp:unconfined
@@ -95,6 +115,7 @@ services:
       - ./.env
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATA_REDIS_HOST: redis # Docker 네트워크 내에서 redis 서비스 이름으로 호스트를 찾음
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -104,6 +125,8 @@ services:
     networks:
       - hirepicker-network
     profiles: ["prod"]
+    depends_on:
+      - redis
 
 networks:
   hirepicker-network:

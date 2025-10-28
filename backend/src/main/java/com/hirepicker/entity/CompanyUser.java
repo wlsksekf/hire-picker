@@ -3,9 +3,7 @@ package com.hirepicker.entity;
 import com.hirepicker.entity.payment.CompanyUserCredit;
 import com.hirepicker.entity.payment.Payment;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -15,6 +13,8 @@ import java.util.List;
 @Table(name = "company_user")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor // 빌더 사용을 위해 추가
+@Builder // 빌더 어노테이션 추가
 public class CompanyUser {
 
     @Id

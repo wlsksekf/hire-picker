@@ -8,16 +8,26 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hirepicker.service.ManageService;
+
 
 @Tag(name = "관리", description = "관리자 기능 관련 API")
 @RestController
 @RequestMapping("/api/manage")
 @RequiredArgsConstructor
 public class ManageController {
+    
+    private final ManageService mService;
+    
 
     @Operation(summary = "학교 정보 업데이트", description = "외부 API를 통해 학교 정보를 업데이트합니다.")
     @GetMapping("/update/school")
     public ResponseEntity<String> updateSchool() {
-        return ResponseEntity.ok("School updated");
+        return mService.updateSchool();
+    }
+    
+    @GetMapping("/schools")
+    public ResponseEntity<?> getSchools() {
+        return ResponseEntity.ok(mService.fetchSchoolData());
     }
 }
