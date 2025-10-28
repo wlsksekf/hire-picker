@@ -39,21 +39,19 @@ function SettingsPage() {
   const [status, setStatus] = useState({ type: '', message: '' }); // 상태 메시지
 
   // 데이터 동기화 처리
-  function handleSync(type) {
+  function handleSync(name, path) {
     setLoading(true);
-    setStatus({ type: 'info', message: `${type} 동기화를 시작합니다...` });
+    setStatus({ type: 'info', message: `${name} 동기화를 시작합니다...` });
 
-    api.get(`/api/${type}`)
-      .then(function(response) {
     api
-      .get(`/api/work24/sync/${type}`)
+      .get(path)
       .then(function (response) {
         const resultText = response.data;
         setStatus({ type: 'success', message: resultText });
       })
       .catch(function (error) {
         const errorMessage =
-          error.response?.data || error.message || `${type} 동기화에 실패했습니다.`;
+          error.response?.data || error.message || `${name} 동기화에 실패했습니다.`;
         setStatus({ type: 'error', message: errorMessage });
       })
       .finally(function () {
@@ -176,36 +174,27 @@ function SettingsPage() {
               {loading && <CircularProgress size={24} sx={{ mr: 2 }} />}{' '}
               {/* 로딩 중일 때 로딩 스피너 표시 */}
               <Stack direction="row" spacing={1}>
-                <Button variant="contained" onClick={function() { return handleSync('work24/sync/jobs') }} disabled={loading}>
                 <Button
                   variant="contained"
-                  onClick={function () {
-                    return handleSync('jobs');
-                  }}
+                  onClick={() => handleSync('공채속보', '/api/work24/sync/jobs')}
                   disabled={loading}
                 >
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   공채속보 동기화
                 </Button>
-                <Button variant="contained" onClick={function() { return handleSync('work24/sync/events') }} disabled={loading}>
                 <Button
                   variant="contained"
-                  onClick={function () {
-                    return handleSync('events');
-                  }}
+                  onClick={() => handleSync('채용행사', '/api/work24/sync/events')}
                   disabled={loading}
                 >
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   채용행사 동기화
                 </Button>
-                <Button variant="contained" onClick={function() { return handleSync('work24/sync/companies') }} disabled={loading}>
                 <Button
                   variant="contained"
-                  onClick={function () {
-                    return handleSync('companies');
-                  }}
+                  onClick={() => handleSync('기업정보(DART)', '/api/work24/sync/companies')}
                   disabled={loading}
-                  sx={{ mr: 1 }} // 버튼 사이 간격
+                  sx={{ mr: 1 }}
                 >
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   기업정보 동기화(DART)
@@ -268,7 +257,11 @@ function SettingsPage() {
                   <FontAwesomeIcon icon={faFileUpload} style={{ marginRight: 8 }} />
                   CSV 정보 업데이트
                 </Button>
-                <Button variant="contained" onClick={function() { return handleSync('manage/update/school') }} disabled={loading}>
+                <Button
+                  variant="contained"
+                  onClick={() => handleSync('학교정보', '/api/manage/update/school')}
+                  disabled={loading}
+                >
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   학교정보 불러오기
                 </Button>

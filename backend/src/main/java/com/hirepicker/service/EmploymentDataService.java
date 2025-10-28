@@ -364,7 +364,7 @@ public class EmploymentDataService {
             return null;
         }
 
-        return apiKey;
+        return work24Key;
     }
 
     private String getDartKey() {

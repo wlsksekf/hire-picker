@@ -10,7 +10,6 @@ server:
 # [수정됨] H2 DB로 연결되는 문제를 해결하기 위해 RDS(MySQL) 설정을 명시적으로 추가
 # .env 파일의 변수(${DB_URL} 등)를 참조함
 spring:
-
   ai:
     vertex:
       ai:
@@ -111,7 +110,6 @@ logging:
     com.hirepicker.service.AuthService: DEBUG
     com.zaxxer.hikari: DEBUG
 
-
 # === 외부 API 키 ===
 # [추가됨] .env 파일의 API 키들을 Spring에서 쉽게 주입받아 사용하기 위한 설정
 api:
@@ -123,7 +121,7 @@ payment:
     widget-secret-key: ${TOSS_WIDGET_SECRET_KEY}
     api-secret-key: ${TOSS_API_SECRET_KEY}
     client-key: ${NEXT_PUBLIC_TOSS_CLIENT_KEY}
-    api-url: "https://api.tosspayments.com"
+    api-url: 'https://api.tosspayments.com'
 
 management:
   endpoints:
@@ -133,7 +131,6 @@ management:
   endpoint:
     health:
       show-details: always # /health 엔드포인트에 세부 정보 표시
-
 
 ---
 # ===================================================================
