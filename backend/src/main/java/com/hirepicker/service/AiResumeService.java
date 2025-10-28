@@ -6,7 +6,6 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.Part;
 import com.hirepicker.dto.ai.FullResumeDraftDto;
-import io.github.cdimascio.dotenv.Dotenv;
 import org.json.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,9 +19,6 @@ public class AiResumeService {
 
     // 생성자를 통해 환경변수를 로드하고 Gemini 클라이언트를 초기화
     public AiResumeService() {
-        // .env 파일의 위치를 상위 폴더로 지정하여 환경 변수를 로드
-        Dotenv dotenv = Dotenv.configure().directory("../").load();
-        // GOOGLE_API_KEY 환경변수를 사용하여 클라이언트 초기화
         this.client = new Client();
     }
 
