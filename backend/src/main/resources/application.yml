@@ -5,6 +5,8 @@
 server:
   port: 8080
   address: 0.0.0.0
+  tomcat:
+    connection-timeout: 60000 # 60초
 
 # === 데이터베이스(DB) 설정 ===
 # [수정됨] H2 DB로 연결되는 문제를 해결하기 위해 RDS(MySQL) 설정을 명시적으로 추가
@@ -122,6 +124,11 @@ payment:
     api-secret-key: ${TOSS_API_SECRET_KEY}
     client-key: ${NEXT_PUBLIC_TOSS_CLIENT_KEY}
     api-url: "https://api.tosspayments.com"
+
+# Gemini API Key
+gemini:
+  api:
+    key: ${gemini_api_key}
 
 management:
   endpoints:

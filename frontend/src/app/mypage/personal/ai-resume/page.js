@@ -19,10 +19,11 @@ import {
   TableHead,
   TableRow,
   Divider,
+  CircularProgress, // 로딩 스피너
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-// import { useAuthStore } from '@/store/authStore'; // Zustand 스토어 (로그인 정보 가져오기용)
-// import { api } from '@/api'; // API 래퍼 (데이터 로드/전송용)
+import useAuthStore from '@/store/authStore'; // Zustand 스토어 (로그인 정보 가져오기용)
+import { api } from '@/api'; // API 래퍼 (데이터 로드/전송용)
 
 // --- 스타일 컴포넌트 정의 ---
 
@@ -55,7 +56,8 @@ const FormTextField = (props) => (
 // --- AI 이력서 작성 페이지 컴포넌트 ---
 
 export default function AiResumePage() {
-  // const { user } = useAuthStore((state) => state); // Zustand에서 사용자 정보 가져오기
+  const { isAuthenticated } = useAuthStore((state) => state); // Zustand에서 사용자 정보 가져오기
+  const [isLoading, setIsLoading] = useState(false); // AI 응답 로딩 상태
 
   // 이력서 폼의 모든 데이터를 관리하는 state
   const [formData, setFormData] = useState({
@@ -161,29 +163,56 @@ export default function AiResumePage() {
     }));
   };
 
+  // AI에게 보낼 사용자 데이터를 문자열로 변환하는 헬퍼 함수
+  const serializeUserData = () => {
+    let userDataString = "";
+    userDataString += `이름: ${formData.name}, 성별: ${formData.gender}, 생년월일: ${formData.birthdate}, 연락처: ${formData.phone}, 이메일: ${formData.email}, 주소: ${formData.address}\n`;
+    userDataString += `학력1: ${formData.edu1_period}, ${formData.edu1_school}, ${formData.edu1_major}, ${formData.edu1_status}, ${formData.edu1_score}\n`;
+    userDataString += `학력2: ${formData.edu2_period}, ${formData.edu2_school}, ${formData.edu2_major}, ${formData.edu2_status}, ${formData.edu2_score}\n`;
+    userDataString += `병역: ${formData.military_status}, ${formData.military_branch}, ${formData.military_rank}, ${formData.military_period}\n`;
+    userDataString += `자격증1: ${formData.cert1_name}, ${formData.cert1_level}, ${formData.cert1_date}\n`;
+    userDataString += `자격증2: ${formData.cert2_name}, ${formData.cert2_level}, ${formData.cert2_date}\n`;
+    userDataString += `자격증3: ${formData.cert3_name}, ${formData.cert3_level}, ${formData.cert3_date}\n`;
+    userDataString += `경력1: ${formData.exp1_period}, ${formData.exp1_company}, ${formData.exp1_position}, ${formData.exp1_duties}\n`;
+    userDataString += `경력2: ${formData.exp2_period}, ${formData.exp2_company}, ${formData.exp2_position}, ${formData.exp2_duties}\n`;
+    return userDataString;
+  }
+
   // "AI로 작성하기" 버튼 클릭 시
   const handleAiGenerate = async () => {
-    // TODO: 백엔드(AiResumeController.java)에 프롬프트 전송
-    console.log("AI에게 전송할 데이터:", formData.aiPrompt);
-    // const response = await api.post('/ai/generate-resume', {
-    //   prompt: formData.aiPrompt,
-    //   userInfo: { ...formData } // 필요시 다른 정보도 같이 전송
-    // });
-    
-    // --- 아래는 가짜 AI 응답 (API 연동 시 삭제) ---
-    const fakeAiResponse = {
-      selfGrowth: "AI가 작성한 성장과정입니다. 저는 긍정적인 태도와...",
-      selfStrengths: "AI가 작성한 장/단점입니다. 저의 장점은 뛰어난...",
-      selfMotivation: "AI가 작성한 지원동기입니다. 귀사의 비전에...",
-      selfAspirations: "AI가 작성한 입사 후 포부입니다. 입사 후 저는...",
-    };
-    // --- 가짜 응답 끝 ---
+    if (!isAuthenticated) {
+      alert("AI 기능을 사용하려면 로그인이 필요합니다.");
+      return;
+    }
 
-    // AI 응답으로 자기소개서 칸 채우기
-    setFormData((prev) => ({
-      ...prev,
-      ...fakeAiResponse,
-    }));
+    setIsLoading(true); // 로딩 시작
+
+    try {
+      const userData = serializeUserData();
+      const jobPostingData = formData.aiPrompt || "(요청사항 없음)"; // 프롬프트가 없으면 기본값 전달
+
+      // 백엔드 API 호출
+      const response = await api.post('/api/ai/resume-draft', {
+        userData,
+        jobPostingData,
+      });
+
+      // AI 응답으로 자기소개서 칸 채우기 (백엔드 DTO 필드명에 맞춰 수정)
+      const { growthProcess, jobCompetencies, prosAndCons, aspirations } = response.data;
+      setFormData((prev) => ({
+        ...prev,
+        selfGrowth: growthProcess,
+        selfStrengths: prosAndCons, // prosAndCons -> selfStrengths
+        selfMotivation: jobCompetencies, // jobCompetencies -> selfMotivation
+        selfAspirations: aspirations,
+      }));
+
+    } catch (error) {
+      console.error("AI 자기소개서 생성 실패:", error);
+      alert("AI 자기소개서 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setIsLoading(false); // 로딩 종료
+    }
   };
 
   return (
@@ -199,8 +228,8 @@ export default function AiResumePage() {
           <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
             {/* 사진 영역 */}
             <Box sx={{
-              width: '160px', // 가로 크기 조정
-              // height: '200px', // 세로 크기 제거하여 flex-stretch가 적용되도록 함
+              width: '160px',
+              height: '210px',
               border: '2px dashed',
               borderColor: 'grey.400',
               display: 'flex',
@@ -488,8 +517,9 @@ export default function AiResumePage() {
               size="large"
               onClick={handleAiGenerate}
               sx={{ minWidth: '200px' }}
+              disabled={isLoading} // 로딩 중일 때 버튼 비활성화
             >
-              AI로 작성하기
+              {isLoading ? <CircularProgress size={24} /> : "AI로 작성하기"}
             </Button>
           </Box>
 
