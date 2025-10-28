@@ -10,5 +10,5 @@ import lombok.Setter;
 public class ChatMessageDTO {
     // type은 talk, enter, exit 구분위한거임
     private String type, roomId, senderName, content, timestamp;
-    
+
 }
