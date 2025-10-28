@@ -24,8 +24,15 @@ export default function Page() {
                 params:{bname:bname, cPage:cPage}
             }
         ).then(function(json){
-            setList(json.data.ar);
-            setTotalPage(json.data.totalPage);
+            setList(json.data.data);
+            
+            const totalCount = json.data.totalCount || 0;
+            const itemPerPage = 10;
+            const calculatedTotalPage = Math.ceil(totalCount / itemPerPage);
+            setTotalPage(calculatedTotalPage);
+            //에러 핸들링 추가: 통신 실패 시 오류를 확인하기 용이
+        }).catch(error => {
+            console.error("데이터 통신 중 오류 발생:", error);
         });
     }
     useEffect(function(){

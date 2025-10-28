@@ -14,7 +14,7 @@ export default function PostListItem({ post }) {
           display: 'flex', 
           py: 1.5, 
           px: 2, 
-          borderBottom: '1px solid #f0f0f0', 
+          borderBottom: '1px solid #f0f0f0',
           '&:hover': { backgroundColor: 'action.hover' },
           color: 'text.primary', // Link가 색상을 상속받도록 설정
         }}
