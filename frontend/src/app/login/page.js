@@ -29,13 +29,13 @@ function LoginPage() {
     event.preventDefault();
     setError(null);
     setIsSocialError(false);
-    console.log('로그인 시도...', { email, password });
+
 
     api.post('/api/auth/login', { email, password })
       .then(function(response) {
-        console.log('로그인 성공 응답:', response);
-        const { accessToken } = response.data;
-        login(accessToken); // Zustand 스토어에 토큰 저장
+        console.log('로그인 성공. HttpOnly 쿠키가 설정되었습니다.');
+        // 백엔드가 쿠키를 설정해주므로, 프론트에서는 상태만 변경합니다.
+        login(); 
         router.push('/'); // 로그인 성공 시 메인 페이지로 이동
       })
       .catch(function(err) {
