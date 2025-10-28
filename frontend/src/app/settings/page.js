@@ -236,12 +236,17 @@ function SettingsPage() {
                       message: 'CSV 파일에서 기업정보를 업데이트합니다...',
                     });
 
+                    console.log('Starting CSV update request...');
                     api
                       .post('/api/companies/update-from-csv')
                       .then(response => {
+                        console.log('CSV update successful:', response);
                         setStatus({ type: 'success', message: response.data });
                       })
                       .catch(error => {
+                        console.error('CSV update failed:', error);
+                        console.log('Error response:', error.response);
+                        console.log('Error message:', error.message);
                         const errorMessage =
                           error.response?.data ||
                           error.message ||
@@ -249,6 +254,7 @@ function SettingsPage() {
                         setStatus({ type: 'error', message: errorMessage });
                       })
                       .finally(() => {
+                        console.log('CSV update request completed');
                         setLoading(false);
                       });
                   }}
@@ -270,9 +276,15 @@ function SettingsPage() {
           </ListItem>
           {status.message && ( // 상태 메시지가 있을 경우 표시
             <ListItem sx={{ mt: 2 }}>
-              <Alert severity={status.type || 'info'} sx={{ width: '100%' }}>
-                {status.message}
-              </Alert>
+              {status && status.message ? (
+                <Alert severity={status.type || 'info'} sx={{ width: '100%' }}>
+                  {status.message}
+                </Alert>
+              ) : (
+                <Alert severity="info" sx={{ width: '100%' }}>
+                  기본 메시지
+                </Alert>
+              )}
             </ListItem>
           )}
         </List>
