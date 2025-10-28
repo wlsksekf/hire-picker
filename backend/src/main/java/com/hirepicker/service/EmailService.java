@@ -28,7 +28,9 @@ public class EmailService {
     // ★ 중요: 이메일 발신자 주소. SendGrid에 'Sender'로 등록/인증된 이메일이어야 함.
     private static final String FROM_EMAIL = "jinaniyagi@gmail.com";
     private static final String VERIFICATION_CODE_PREFIX = "verify:";
+    private static final String VERIFIED_STATUS_PREFIX = "verified:"; // ★ 신규: 인증 완료 상태 Prefix
     private static final long CODE_EXPIRATION_MINUTES = 5; // 5분
+    private static final long STATUS_EXPIRATION_MINUTES = 10; // ★ 신규: 인증 완료 상태 10분 유지
 
     // RedisConfig.java에 이미 빈으로 등록된 StringRedisTemplate 주입
     private final StringRedisTemplate redisTemplate;
@@ -76,39 +78,13 @@ public class EmailService {
     }
 
     /**
-     * 유저가 입력한 인증 코드 검증
+     * [수정] 유저가 입력한 인증 코드를 검증하고, 성공 시 '인증 완료' 상태를 저장
      *
      * @param email 검증할 이메일
      * @param code  유저가 입력한 6자리 코드
      * @return 검증 성공 여부
      */
-    public boolean verifyCode(String email, String code) {
-        String redisKey = VERIFICATION_CODE_PREFIX + email;
-        String storedCode = redisTemplate.opsForValue().get(redisKey);
-
-        if (storedCode == null) {
-            log.warn("인증 코드 검증 실패: 만료되었거나 존재하지 않는 키. Key: {}", redisKey);
-            return false;
-        }
-
-        if (storedCode.equals(code)) {
-            log.info("인증 코드 검증 성공. Key: {}", redisKey);
-            redisTemplate.delete(redisKey); // ★ 검증 성공 시 즉시 삭제
-            return true;
-        }
-
-        log.warn("인증 코드 검증 실패: 코드가 일치하지 않음. Key: {}", redisKey);
-        return false;
-    }
-
-    /**
-     * [신규] 유저가 입력한 인증 코드가 유효한지 확인만 함 (삭제 X)
-     *
-     * @param email 검증할 이메일
-     * @param code  유저가 입력한 6자리 코드
-     * @return 검증 성공 여부
-     */
-    public boolean checkCode(String email, String code) {
+    public boolean verifyCodeAndSetStatus(String email, String code) {
         String redisKey = VERIFICATION_CODE_PREFIX + email;
         String storedCode = redisTemplate.opsForValue().get(redisKey);
 
@@ -119,10 +95,36 @@ public class EmailService {
 
         if (storedCode.equals(code)) {
             log.info("인증 코드 확인 성공. Key: {}", redisKey);
+            redisTemplate.delete(redisKey); // 1회용 코드 삭제
+
+            // '인증 완료' 상태를 10분간 저장
+            String statusKey = VERIFIED_STATUS_PREFIX + email;
+            redisTemplate.opsForValue().set(statusKey, "true", STATUS_EXPIRATION_MINUTES, TimeUnit.MINUTES);
+            log.info("'인증 완료' 상태 저장. Key: {}, Expiry: {} 분", statusKey, STATUS_EXPIRATION_MINUTES);
             return true;
         }
 
         log.warn("인증 코드 확인 실패: 코드가 일치하지 않음. Key: {}", redisKey);
+        return false;
+    }
+    
+    /**
+     * [신규] 해당 이메일이 '인증 완료' 상태인지 확인 (1회용)
+     *
+     * @param email 확인할 이메일
+     * @return 인증 완료 상태 여부
+     */
+    public boolean isEmailVerified(String email) {
+        String statusKey = VERIFIED_STATUS_PREFIX + email;
+        Boolean isVerified = redisTemplate.hasKey(statusKey);
+
+        if (isVerified != null && isVerified) {
+            log.info("'인증 완료' 상태 확인 성공. Key: {}", statusKey);
+            redisTemplate.delete(statusKey); // 확인 후 즉시 삭제 (회원가입에 1번만 사용)
+            return true;
+        }
+        
+        log.warn("'인증 완료' 상태 확인 실패. Key: {}", statusKey);
         return false;
     }
 

@@ -48,7 +48,6 @@ bin/
 !.env.sample
 
 # 로컬 DB 설정 등 민감 정보를 담은 yml 파일
-application-local.yml
 secret*.yml
 secret*.yaml
 
@@ -120,3 +119,14 @@ hs_err_pid*
 
 # REPL 히스토리
 /frontend/.node_repl_history
+
+# Python Virtual Environment
+jaeyoonPython/venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment variables (지난번에 추가했는지 확인)
+jaeyoonPython/.env
+.env

@@ -12,4 +12,7 @@ public interface PersonalUserRepository extends JpaRepository<PersonalUser, Long
 
     // 이메일 존재 여부 확인 메서드
     boolean existsByEmail(String email);
+
+    // 닉네임 존재 여부 확인 메서드
+    boolean existsByNickname(String nickname);
 }

@@ -114,18 +114,11 @@ export const signupCompany = (signupData) => {
 export { api };
 
 /**
- * [AI 기능 추가] AI 이력서 문장 생성을 요청
- * @param {string} keywords - 사용자가 입력한 키워드
- * @returns {Promise<string>} AI가 생성한 텍스트
+ * [신규] AI 자기소개서 4종 초안 생성
+ * @param {string} prompt - AI에게 전달할 키워드
  */
-export const generateAiResume = (keywords) => {
-  return api.get('/api/ai/generate-resume', {
-    params: { keywords }, // 쿼리 파라미터로 keywords 전달
-  }).then(response => response.data)
-    .catch(error => {
-      console.error('AI 이력서 생성 실패:', error);
-      throw error;
-    });
+export const generateAiFullDraft = (prompt) => {
+    return api.post('/api/ai/generate-full-draft', { prompt });
 };
 
 /**
