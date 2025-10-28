@@ -49,7 +49,17 @@ function SettingsPage() {
         setStatus({ type: 'success', message: resultText });
       })
       .catch(function(error) {
-        const errorMessage = error.response?.data || error.message || `${type} 동기화에 실패했습니다.`;
+        let errorMessage = `${type} 동기화에 실패했습니다.`;
+        if (error.response?.data) {
+            if (typeof error.response.data === 'object') {
+                // Assuming error.response.data might have a 'message' property or can be stringified
+                errorMessage = error.response.data.message || JSON.stringify(error.response.data);
+            } else {
+                errorMessage = error.response.data;
+            }
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
         setStatus({ type: 'error', message: errorMessage });
       })
       .finally(function() {
