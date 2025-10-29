@@ -25,7 +25,7 @@ public class PostController {
 public ResultData<?> getList(@RequestParam(value = "bname", defaultValue = "BBS") String bname,
                              @RequestParam(value = "cPage", defaultValue = "1") int cPage){
     
-    // ⭐ 수정: 서비스로부터 Page 객체를 받습니다. ⭐
+    // 수정: 서비스로부터 Page 객체를 받습니다.
     Page<Posts> postPage = this.postService.getList(bname, cPage);
 
     // 1. 실제 게시글 목록 (현재 페이지 10개)
@@ -38,7 +38,7 @@ public ResultData<?> getList(@RequestParam(value = "bname", defaultValue = "BBS"
     if(list != null && !list.isEmpty())
         msg = "success";
 
-    // ⭐ 수정: 전체 개수(totalCount)와 목록(list)을 함께 반환 ⭐
+    // 수정: 전체 개수(totalCount)와 목록(list)을 함께 반환
     // ResultData의 첫 번째 인자(count)를 totalCount로 사용합니다.
     return ResultData.of((int)totalCount, msg, list);
 }
