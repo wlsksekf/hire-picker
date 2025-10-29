@@ -13,9 +13,11 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class PostService {
+
     private final PostRepository postRepository;
     
-    private static final int PAGE_SIZE = 10; // 페이지당 게시글 수 (프론트엔드와 일치해야 함)
+    private static final int PAGE_SIZE = 10;
+     // 페이지당 게시글 수 (프론트엔드와 일치해야 함)
     
     public Page<Posts> getList(String bname, int cPage){
         // 1. Pageable 객체 생성
@@ -29,5 +31,12 @@ public class PostService {
         
         // 현재는 findAll에 Pageable만 적용하여 전체 목록 중 해당 페이지만 가져옵니다.
         return postRepository.findAll(pageable);
+    }
+    public Posts getPost(Long postIdx){
+        // PostRepository가 JpaRepository를 상속받았다면, findById메서드가 있습니다.
+        // .orElse(null)을 사용하여 데이터가 없을 경우 null을 반환하도록 처리합니다.
+        return postRepository.findById(postIdx).orElse(null);
+        
+
     }
 }

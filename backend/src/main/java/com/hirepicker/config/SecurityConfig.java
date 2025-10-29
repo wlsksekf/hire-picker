@@ -51,6 +51,7 @@ public class SecurityConfig {
                 // 회원가입 엔드포인트는 무조건 허용 (가장 먼저 체크)
                 .requestMatchers(HttpMethod.POST, "/api/users/signup").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/posts").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/posts/*").permitAll()
                 .requestMatchers("/api/auth/**", "/api/users/**", "/api/work24/**", "/actuator/**", "/api/health/**", "/api/manage/**", "/confirm/**", "/confirm-billing", "/issue-billing-key", "/callback-auth", "/fail", "/swagger-ui/**", "/api-docs/**", "/error", "/api/companies/**").permitAll()
                 .requestMatchers("/api/oauth2/**").permitAll() // ★ 소셜 로그인 경로 허용
                 .requestMatchers("/api/payment/webhook").permitAll() // 웹훅 엔드포인트는 모두 허용

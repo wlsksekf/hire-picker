@@ -29,7 +29,7 @@ export const sendVerificationEmail = (email) => {
  */
 export const checkVerificationCode = (email, verificationCode) => {
     return api.post('/api/auth/check-verification', { email, verificationCode });
-}; 
+};
 
 /**
  * [수정] 개인 회원가입 (모든 데이터 전송)

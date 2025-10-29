@@ -1,6 +1,6 @@
 import { useRouter } from "next/navigation";
 import { Button, Pagination, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "node_modules/@mui/material";
-
+import Link from "next/link";
 
 export default function PostList({ar, tp, cp}){
     const router = useRouter();
@@ -25,7 +25,7 @@ export default function PostList({ar, tp, cp}){
                         <TableCell component="th" scope="row" align="center">
                             {row.post_idx}
                         </TableCell>
-                        <TableCell align="center">{row.title}</TableCell>
+                        <TableCell align="center"><Link href={`/community/${row.post_idx}`} style={{textDecoration:'none', color:'inherit'}}>{row.title}</Link></TableCell>
                         <TableCell align="center">{row.p_user_idx}</TableCell>
                         <TableCell align="center">{row.created_at}</TableCell>
                         <TableCell align="center">{row.view_count}</TableCell>
@@ -39,7 +39,7 @@ export default function PostList({ar, tp, cp}){
                         </TableCell>
                         <TableCell
                         sx={{
-                            diplay: 'flex',
+                            display: 'flex',
                             justifyContent: 'flex-end',
                             alignItems: 'left',
                             height: '100%',//높이를 부모에 맞춤(수직 정렬을 위해)

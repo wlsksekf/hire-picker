@@ -3,6 +3,7 @@ package com.hirepicker.controller;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,4 +43,16 @@ public ResultData<?> getList(@RequestParam(value = "bname", defaultValue = "BBS"
     // ResultData의 첫 번째 인자(count)를 totalCount로 사용합니다.
     return ResultData.of((int)totalCount, msg, list);
 }
+
+@GetMapping("/{post_idx}")
+public ResultData<Posts> getPost(@PathVariable("post_idx") Long postIdx) {
+
+    Posts post = this.postService.getPost(postIdx);
+    
+    String msg = (post != null) ? "success" : "fail";
+
+    // 상세 조회는 항목이 하나이므로 count를 1또는 0으로 처리합니다.
+    return ResultData.of((post != null ? 1 : 0), msg, post);
+}
+
 }
