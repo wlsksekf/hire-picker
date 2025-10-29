@@ -150,6 +150,14 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "로그아웃", description = "사용자 세션을 종료하고 JWT 토큰 쿠키를 삭제합니다.")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletResponse response) {
+        log.info("[API] /api/auth/logout 요청 수신");
+        authService.logout(response);
+        return ResponseEntity.ok().build();
+    }
+
     @Operation(summary = "토큰 갱신", description = "리프레시 토큰을 사용하여 새로운 액세스 토큰을 발급받습니다.")
     @PostMapping("/refresh")
     public ResponseEntity<Void> refreshToken(jakarta.servlet.http.HttpServletRequest request, HttpServletResponse response) {
