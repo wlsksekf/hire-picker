@@ -29,13 +29,13 @@ function LoginPage() {
     event.preventDefault();
     setError(null);
     setIsSocialError(false);
-    console.log('로그인 시도...', { email, password });
+
 
     api.post('/api/auth/login', { email, password })
       .then(function(response) {
-        console.log('로그인 성공 응답:', response);
-        const { accessToken } = response.data;
-        login(accessToken); // Zustand 스토어에 토큰 저장
+        console.log('로그인 성공. HttpOnly 쿠키가 설정되었습니다.');
+        // 백엔드가 쿠키를 설정해주므로, 프론트에서는 상태만 변경합니다.
+        login(); 
         router.push('/'); // 로그인 성공 시 메인 페이지로 이동
       })
       .catch(function(err) {
@@ -92,7 +92,7 @@ function LoginPage() {
               {error}
               {isSocialError && ( // 소셜 로그인 에러일 경우 비밀번호 설정 링크 표시
                 <Link href="/forgot-password" passHref legacyBehavior>
-                  <a style={{ color: '#1976d2', textDecoration: 'underline', marginLeft: '8px' }}>
+                  <a sx={{ color: 'primary.main', textDecoration: 'underline', ml: 1 }}>
                     비밀번호 설정하기
                   </a>
                 </Link>
