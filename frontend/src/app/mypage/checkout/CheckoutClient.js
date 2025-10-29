@@ -24,7 +24,7 @@ const ProductInfo = styled.div`
 `;
 
 const PurchaseButton = styled.button`
-  background-color: ${({ theme }) => theme?.palette?.primary?.main || '#0070f3'};
+  background-color: ${({ theme }) => theme?.palette?.primary?.main};
   color: white;
   padding: 1rem 2rem;
   border: none;
@@ -35,7 +35,7 @@ const PurchaseButton = styled.button`
   margin-top: 1.5rem;
 
   &:hover {
-    background-color: ${({ theme }) => theme?.palette?.primary?.dark || '#0050bb'};
+    background-color: ${({ theme }) => theme?.palette?.primary?.dark};
   }
 
   &:disabled {

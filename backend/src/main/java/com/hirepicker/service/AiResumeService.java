@@ -10,6 +10,9 @@ import org.json.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+import java.util.LinkedHashMap;
+
 // AI 이력서 초안 생성을 담당하는 서비스
 @Service
 @Slf4j
@@ -22,47 +25,87 @@ public class AiResumeService {
         this.client = new Client();
     }
 
-    // 사용자 데이터와 채용 공고를 기반으로 완전한 이력서 초안 생성
-    public FullResumeDraftDto generateFullResumeDraft(String userData, String jobPostingData) {
+    /**
+     * 사용자 데이터와 채용 공고를 기반으로 완전한 이력서 초안을 생성하거나 기존 초안을 수정합니다.
+     * @param userData 사용자 정보
+     * @param jobPostingData 채용 공고 정보
+     * @param resumeDraft (선택) 수정할 기존 이력서 초안
+     * @return 생성 또는 수정된 FullResumeDraftDto 객체
+     */
+    public FullResumeDraftDto generateFullResumeDraft(String userData, String jobPostingData, FullResumeDraftDto resumeDraft) {
         try {
-            // AI에게 역할을 부여하고, 원하는 결과물의 형식과 스타일을 지정하는 시스템 프롬프트
-            String systemPrompt = "당신은 대한민국 최고의 커리어 컨설턴트입니다. " +
-                    "주어진 사용자 정보와 채용 공고를 바탕으로, 각 항목에 대해 200자에서 400자 사이의 글자 수로 자기소개서 초안을 작성해 주세요. " +
-                    "결과는 반드시 다음 키를 사용하는 JSON 형식으로 반환해야 합니다: " +
-                    "growthProcess, jobCompetencies, prosAndCons, aspirations.";
+            // 1. 현재 요청의 모드를 정의
+            boolean isRefining = (resumeDraft != null);
+            boolean isSpecific = (jobPostingData != null && !jobPostingData.isBlank());
 
-            // AI에게 전달할 사용자 데이터와 채용 공고 정보
-            String jobInfo = (jobPostingData != null && !jobPostingData.isBlank())
-                    ? jobPostingData
-                    : "(특별한 채용 공고 정보나 요청사항 없음)";
-            String userPrompt = "## 사용자 정보\n" + userData + "\n\n" + "## 채용 공고/요청사항\n" + jobInfo;
+            // 2. 모드에 따라 시스템 프롬프트와 사용자 프롬프트를 동적으로 생성
+            String systemPrompt;
+            String userPrompt;
 
-            // AI 모델 설정 (시스템 프롬프트 포함)
+            String baseInstruction = "당신은 대한민국 최고의 커리어 컨설턴트입니다. 결과는 반드시 4개 항목(growthProcess, jobCompetencies, prosAndCons, aspirations)을 모두 포함한 JSON 형식으로 반환해야 하며, 각 항목은 200자에서 400자 사이로 작성해야 합니다. ";
+            String jobInfo = isSpecific ? jobPostingData : "(특별한 채용 공고 정보나 요청사항 없음)";
+
+            if (isRefining) { // 수정 모드
+                if (isSpecific) { // 특정 회사 대상 수정
+                    systemPrompt = baseInstruction + "주어진 사용자 정보, 채용 공고, 그리고 기존 초안을 바탕으로, 초안의 내용은 유지하면서 채용 공고에 맞게 내용을 더욱 프로페셔널하고 설득력 있게 다듬어 주세요. 비어있는 항목은 채용 공고와 사용자 정보를 바탕으로 새로 작성해주세요.";
+                } else { // 범용 수정
+                    systemPrompt = baseInstruction + "주어진 사용자 정보와 기존 초안을 바탕으로, 특정 회사를 언급하지 말고, 초안의 내용은 유지하면서 범용적으로 사용할 수 있도록 내용을 더욱 프로페셔널하게 다듬어 주세요. 비어있는 항목은 사용자 정보를 바탕으로 새로 작성해주세요.";
+                }
+
+                // 사용자 프롬프트 구성 (다듬을/새로 쓸 항목 구분)
+                StringBuilder toRefine = new StringBuilder();
+                StringBuilder toGenerate = new StringBuilder();
+                Map<String, String> drafts = new LinkedHashMap<>();
+                drafts.put("성장과정", resumeDraft.growthProcess());
+                drafts.put("업무 관련 역량", resumeDraft.jobCompetencies());
+                drafts.put("성격 장단점", resumeDraft.prosAndCons());
+                drafts.put("입사 후 포부", resumeDraft.aspirations());
+
+                drafts.forEach((key, value) -> {
+                    if (value != null && !value.isBlank()) {
+                        toRefine.append(String.format("- %s: %s\n", key, value));
+                    } else {
+                        toGenerate.append(String.format("- %s\n", key));
+                    }
+                });
+
+                userPrompt = "## 사용자 정보\n" + userData + "\n\n" + "## 채용 공고/요청사항\n" + jobInfo;
+                if (toRefine.length() > 0) {
+                    userPrompt += "\n\n### 다음 항목은 내용을 더 멋지게 다듬어주세요:\n" + toRefine.toString();
+                }
+                if (toGenerate.length() > 0) {
+                    userPrompt += "\n\n### 다음 항목은 새로 작성해주세요:\n" + toGenerate.toString();
+                }
+
+            } else { // 신규 생성 모드
+                if (isSpecific) { // 특정 회사 대상 신규 생성
+                    systemPrompt = baseInstruction + "주어진 사용자 정보와 채용 공고를 바탕으로, 지원자의 역량이 해당 회사와 직무에 어떻게 기여할 수 있는지 구체적으로 연결하여 자기소개서를 작성해주세요.";
+                } else { // 범용 신규 생성
+                    systemPrompt = baseInstruction + "채용 공고 정보가 없으니, 주어진 사용자 정보를 바탕으로, 특정 회사를 언급하지 않고 어떤 회사든 매력적으로 보일 수 있는 범용적인 지원동기를 포함한 자기소개서를 작성해주세요. 기술에 대한 열정, 성장 욕구, 협업 능력을 강조해주세요.";
+                }
+                userPrompt = "## 사용자 정보\n" + userData + "\n\n" + "## 채용 공고/요청사항\n" + jobInfo;
+            }
+
+            // 3. AI 모델 설정 및 호출
             GenerateContentConfig config = GenerateContentConfig.builder()
-                    .systemInstruction(
-                            Content.fromParts(Part.fromText(systemPrompt)))
+                    .systemInstruction(Content.fromParts(Part.fromText(systemPrompt)))
                     .build();
 
-            // Gemini 모델에 콘텐츠 생성 요청 (models는 필드)
             GenerateContentResponse response = client.models.generateContent("gemini-2.5-flash", userPrompt, config);
 
-            // AI의 응답 텍스트에서 JSON 부분만 추출
+            // 4. AI 응답 파싱 및 반환
             String responseText = response.text();
             int startIndex = responseText.indexOf('{');
             int endIndex = responseText.lastIndexOf('}');
 
-            // AI가 JSON이 아닌 일반 텍스트 에러 메시지를 반환하는 경우에 대한 방어 코드
             if (startIndex == -1 || endIndex == -1 || endIndex < startIndex) {
                 log.error("AI로부터 유효한 JSON 응답을 받지 못했습니다. 응답 내용: {}", responseText);
                 throw new RuntimeException("AI로부터 유효한 JSON 응답을 받지 못했습니다.");
             }
 
             String jsonString = responseText.substring(startIndex, endIndex + 1);
-
-            // 추출된 JSON 문자열을 파싱
             JSONObject jsonResponse = new JSONObject(jsonString);
 
-            // JSON 객체에서 각 항목의 값을 추출하여 DTO 객체로 변환 후 반환
             return new FullResumeDraftDto(
                     jsonResponse.getString("growthProcess"),
                     jsonResponse.getString("jobCompetencies"),

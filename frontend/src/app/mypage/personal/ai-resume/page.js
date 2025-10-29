@@ -20,10 +20,21 @@ import {
   TableRow,
   Divider,
   CircularProgress, // 로딩 스피너
+  // --- Dialog(팝업) 관련 컴포넌트 추가 ---
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import useAuthStore from '@/store/authStore'; // Zustand 스토어 (로그인 정보 가져오기용)
 import { api } from '@/api'; // API 래퍼 (데이터 로드/전송용)
+// --- PDF 관련 컴포넌트 임포트 ---
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import ResumePdfDocument from '@/components/ResumePdfDocument';
+import Loader from '@/components/Loader'; // 로더 컴포넌트 추가
+import Image from 'next/image'; // Image 컴포넌트 추가
 
 // --- 스타일 컴포넌트 정의 ---
 
@@ -58,6 +69,16 @@ const FormTextField = (props) => (
 export default function AiResumePage() {
   const { isAuthenticated } = useAuthStore((state) => state); // Zustand에서 사용자 정보 가져오기
   const [isLoading, setIsLoading] = useState(false); // AI 응답 로딩 상태
+  
+  // --- 팝업 상태 관리 state 추가 ---
+  const [dialogOpen, setDialogOpen] = useState(false); // 메인 선택 팝업
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false); // 삭제 확인 팝업
+  const [isClient, setIsClient] = useState(false); // 클라이언트 렌더링 확인용
+
+  // 페이지가 마운트된 후 isClient를 true로 설정
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // 이력서 폼의 모든 데이터를 관리하는 state
   const [formData, setFormData] = useState({
@@ -178,353 +199,504 @@ export default function AiResumePage() {
     return userDataString;
   }
 
-  // "AI로 작성하기" 버튼 클릭 시
-  const handleAiGenerate = async () => {
-    if (!isAuthenticated) {
-      alert("AI 기능을 사용하려면 로그인이 필요합니다.");
-      return;
-    }
-
-    setIsLoading(true); // 로딩 시작
+  // --- AI 호출 로직 (핵심) ---
+  const callAiApi = async (mode = 'generate') => {
+    setIsLoading(true);
+    setDialogOpen(false);
+    setConfirmDialogOpen(false);
 
     try {
       const userData = serializeUserData();
-      const jobPostingData = formData.aiPrompt || "(요청사항 없음)"; // 프롬프트가 없으면 기본값 전달
-
-      // 백엔드 API 호출
-      const response = await api.post('/api/ai/resume-draft', {
+      const jobPostingData = formData.aiPrompt || "(요청사항 없음)";
+      
+      // 백엔드로 보낼 데이터 객체
+      const requestBody = {
         userData,
         jobPostingData,
-      });
+      };
 
-      // AI 응답으로 자기소개서 칸 채우기 (백엔드 DTO 필드명에 맞춰 수정)
+      // "다듬기" 모드일 경우, 기존 자소서 내용을 추가로 전송
+      if (mode === 'refine') {
+        requestBody.resumeDraft = {
+          growthProcess: formData.selfGrowth,
+          jobCompetencies: formData.selfMotivation,
+          prosAndCons: formData.selfStrengths,
+          aspirations: formData.selfAspirations,
+        };
+      }
+
+      const response = await api.post('/api/ai/resume-draft', requestBody);
+
       const { growthProcess, jobCompetencies, prosAndCons, aspirations } = response.data;
       setFormData((prev) => ({
         ...prev,
         selfGrowth: growthProcess,
-        selfStrengths: prosAndCons, // prosAndCons -> selfStrengths
-        selfMotivation: jobCompetencies, // jobCompetencies -> selfMotivation
+        selfStrengths: prosAndCons,
+        selfMotivation: jobCompetencies,
         selfAspirations: aspirations,
       }));
 
     } catch (error) {
       console.error("AI 자기소개서 생성 실패:", error);
-      alert("AI 자기소개서 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+      alert("AI 자기소개서 생성 중 오류가 발생했습니다.");
     } finally {
-      setIsLoading(false); // 로딩 종료
+      setIsLoading(false);
     }
   };
 
-  return (
-    <Container maxWidth="md">
-      <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, my: 4 }}>
-        <Box component="form" noValidate autoComplete="off">
-          
-          <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-            입사지원서
-          </Typography>
+  // "AI로 작성하기" 버튼 클릭 핸들러 (로직 수정)
+  const handleAiGenerate = () => {
+    if (!isAuthenticated) {
+      alert("AI 기능을 사용하려면 로그인이 필요합니다.");
+      return;
+    }
 
-          {/* --- 1. 기본 인적 사항 --- */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
-            {/* 사진 영역 */}
-            <Box sx={{
-              width: '160px',
-              height: '210px',
-              border: '2px dashed',
-              borderColor: 'grey.400',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <Typography variant="caption" color="text.secondary">
-                사진
-              </Typography>
+    // 자기소개서에 이미 내용이 있는지 확인
+    const hasExistingContent =
+      formData.selfGrowth ||
+      formData.selfStrengths ||
+      formData.selfMotivation ||
+      formData.selfAspirations;
+
+    if (hasExistingContent) {
+      setDialogOpen(true); // 내용이 있으면 팝업 열기
+    } else {
+      callAiApi('generate'); // 내용이 없으면 바로 새로 생성
+    }
+  };
+
+  // --- 팝업(Dialog) 관련 핸들러 ---
+
+  // 메인 팝업 닫기
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+  };
+
+  // "기존 내용 다듬기" 선택
+  const handleRefine = () => {
+    callAiApi('refine');
+  };
+
+  // "새로 작성하기" 선택 -> 확인 팝업 열기
+  const handleStartFresh = () => {
+    setDialogOpen(false);
+    setConfirmDialogOpen(true);
+  };
+
+  // 삭제 확인 팝업 닫기
+  const handleConfirmDialogClose = () => {
+    setConfirmDialogOpen(false);
+  };
+
+  // 최종적으로 "새로 작성" 확정
+  const handleConfirmStartFresh = () => {
+    callAiApi('generate');
+  };
+
+
+  return (
+    <>
+      {isLoading && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)', // 배경을 희미하게 처리
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 9999, // 다른 요소들 위에 표시
+          }}
+        >
+          <Loader />
+        </Box>
+      )}
+      <Container maxWidth="md">
+        <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, my: 4 }}>
+          <Box component="form" noValidate autoComplete="off">
+            
+            <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
+              입사지원서
+            </Typography>
+
+            {/* --- 1. 기본 인적 사항 --- */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
+              {/* 사진 영역 */}
+              <Box sx={{
+                width: '160px',
+                height: '210px',
+                border: '2px dashed',
+                borderColor: 'grey.400',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Typography variant="caption" color="text.secondary">
+                  사진
+                </Typography>
+              </Box>
+
+              {/* 인적사항 테이블 영역 */}
+              <TableContainer sx={{ border: '1px solid #ccc', width: '100%' }}>
+                <Table sx={{ tableLayout: 'fixed' }}>
+                  <TableBody>
+                    <TableRow>
+                      <StyledLabelCell>성명</StyledLabelCell>
+                      <StyledInputCell>
+                        <FormTextField name="name" value={formData.name} onChange={handleChange} />
+                      </StyledInputCell>
+                      <StyledLabelCell>국적</StyledLabelCell>
+                      <StyledInputCell>
+                        <FormTextField name="nationality" value={formData.nationality} onChange={handleChange} />
+                      </StyledInputCell>
+                    </TableRow>
+                    <TableRow>
+                      <StyledLabelCell>성별</StyledLabelCell>
+                      <StyledInputCell>
+                        <RadioGroup row name="gender" value={formData.gender} onChange={handleChange}>
+                          <FormControlLabel value="male" control={<Radio size="small" />} label="남" />
+                          <FormControlLabel value="female" control={<Radio size="small" />} label="여" />
+                        </RadioGroup>
+                      </StyledInputCell>
+                      <StyledLabelCell>생년월일</StyledLabelCell>
+                      <StyledInputCell>
+                        <FormTextField name="birthdate" value={formData.birthdate} onChange={handleChange} placeholder="YYYY-MM-DD" />
+                      </StyledInputCell>
+                    </TableRow>
+                    <TableRow>
+                      <StyledLabelCell>휴대폰</StyledLabelCell>
+                      <StyledInputCell>
+                        <FormTextField name="phone" value={formData.phone} onChange={handleChange} />
+                      </StyledInputCell>
+                      <StyledLabelCell>E-mail</StyledLabelCell>
+                      <StyledInputCell>
+                        <FormTextField name="email" value={formData.email} onChange={handleChange} />
+                      </StyledInputCell>
+                    </TableRow>
+                    <TableRow>
+                      <StyledLabelCell>주소</StyledLabelCell>
+                      <StyledInputCell colSpan={3}>
+                        <FormTextField name="address" value={formData.address} onChange={handleChange} />
+                      </StyledInputCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Box>
 
-            {/* 인적사항 테이블 영역 */}
-            <TableContainer sx={{ border: '1px solid #ccc', width: '100%' }}>
-              <Table sx={{ tableLayout: 'fixed' }}>
+            {/* --- 2. 학력 사항 --- */}
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+              [학력사항]
+            </Typography>
+            <TableContainer sx={{ border: '1px solid #ccc', mb: 4 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <StyledLabelCell sx={{ width: '25%' }}>기간</StyledLabelCell>
+                    <StyledLabelCell sx={{ width: '15%' }}>학교명</StyledLabelCell>
+                    <StyledLabelCell sx={{ width: '20%' }}>학과</StyledLabelCell>
+                    <StyledLabelCell sx={{ width: '15%' }}>졸업구분</StyledLabelCell>
+                    <StyledLabelCell sx={{ width: '10%' }}>소재지</StyledLabelCell>
+                    <StyledLabelCell sx={{ width: '15%' }}>학점</StyledLabelCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {/* 학력 1 */}
+                  <TableRow>
+                    <StyledInputCell><FormTextField name="edu1_period" value={formData.edu1_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="edu1_school" value={formData.edu1_school} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="edu1_major" value={formData.edu1_major} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="edu1_status" value={formData.edu1_status} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="edu1_location" value={formData.edu1_location} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="edu1_score" value={formData.edu1_score} onChange={handleChange} /></StyledInputCell>
+                  </TableRow>
+                  {/* 학력 2 */}
+                  <TableRow>
+                    <StyledInputCell><FormTextField name="edu2_period" value={formData.edu2_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="edu2_school" value={formData.edu2_school} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="edu2_major" value={formData.edu2_major} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="edu2_status" value={formData.edu2_status} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="edu2_location" value={formData.edu2_location} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="edu2_score" value={formData.edu2_score} onChange={handleChange} /></StyledInputCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* --- 3. 병역 사항 --- */}
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+              [병역사항]
+            </Typography>
+            <TableContainer sx={{ border: '1px solid #ccc', mb: 4 }}>
+              <Table>
                 <TableBody>
                   <TableRow>
-                    <StyledLabelCell>성명</StyledLabelCell>
+                    <StyledLabelCell>구분</StyledLabelCell>
                     <StyledInputCell>
-                      <FormTextField name="name" value={formData.name} onChange={handleChange} />
-                    </StyledInputCell>
-                    <StyledLabelCell>국적</StyledLabelCell>
-                    <StyledInputCell>
-                      <FormTextField name="nationality" value={formData.nationality} onChange={handleChange} />
-                    </StyledInputCell>
-                  </TableRow>
-                  <TableRow>
-                    <StyledLabelCell>성별</StyledLabelCell>
-                    <StyledInputCell>
-                      <RadioGroup row name="gender" value={formData.gender} onChange={handleChange}>
-                        <FormControlLabel value="male" control={<Radio size="small" />} label="남" />
-                        <FormControlLabel value="female" control={<Radio size="small" />} label="여" />
+                      <RadioGroup row name="military_status" value={formData.military_status} onChange={handleChange}>
+                        <FormControlLabel value="필" control={<Radio />} label="병역필" />
+                        <FormControlLabel value="미필" control={<Radio />} label="미필" />
+                        <FormControlLabel value="해당없음" control={<Radio />} label="해당없음" />
                       </RadioGroup>
                     </StyledInputCell>
-                    <StyledLabelCell>생년월일</StyledLabelCell>
-                    <StyledInputCell>
-                      <FormTextField name="birthdate" value={formData.birthdate} onChange={handleChange} placeholder="YYYY-MM-DD" />
-                    </StyledInputCell>
+                    <StyledLabelCell>군별</StyledLabelCell>
+                    <StyledInputCell><FormTextField name="military_branch" value={formData.military_branch} onChange={handleChange} /></StyledInputCell>
                   </TableRow>
                   <TableRow>
-                    <StyledLabelCell>휴대폰</StyledLabelCell>
-                    <StyledInputCell>
-                      <FormTextField name="phone" value={formData.phone} onChange={handleChange} />
-                    </StyledInputCell>
-                    <StyledLabelCell>E-mail</StyledLabelCell>
-                    <StyledInputCell>
-                      <FormTextField name="email" value={formData.email} onChange={handleChange} />
-                    </StyledInputCell>
+                    <StyledLabelCell>계급</StyledLabelCell>
+                    <StyledInputCell><FormTextField name="military_rank" value={formData.military_rank} onChange={handleChange} /></StyledInputCell>
+                    <StyledLabelCell>복무기간</StyledLabelCell>
+                    <StyledInputCell><FormTextField name="military_period" value={formData.military_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
                   </TableRow>
                   <TableRow>
-                    <StyledLabelCell>주소</StyledLabelCell>
+                    <StyledLabelCell>면제사유</StyledLabelCell>
                     <StyledInputCell colSpan={3}>
-                      <FormTextField name="address" value={formData.address} onChange={handleChange} />
+                      <FormTextField name="military_reason" value={formData.military_reason} onChange={handleChange} />
                     </StyledInputCell>
                   </TableRow>
                 </TableBody>
               </Table>
             </TableContainer>
-          </Box>
 
-          {/* --- 2. 학력 사항 --- */}
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-            [학력사항]
-          </Typography>
-          <TableContainer sx={{ border: '1px solid #ccc', mb: 4 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <StyledLabelCell sx={{ width: '25%' }}>기간</StyledLabelCell>
-                  <StyledLabelCell sx={{ width: '15%' }}>학교명</StyledLabelCell>
-                  <StyledLabelCell sx={{ width: '20%' }}>학과</StyledLabelCell>
-                  <StyledLabelCell sx={{ width: '15%' }}>졸업구분</StyledLabelCell>
-                  <StyledLabelCell sx={{ width: '10%' }}>소재지</StyledLabelCell>
-                  <StyledLabelCell sx={{ width: '15%' }}>학점</StyledLabelCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {/* 학력 1 */}
-                <TableRow>
-                  <StyledInputCell><FormTextField name="edu1_period" value={formData.edu1_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="edu1_school" value={formData.edu1_school} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="edu1_major" value={formData.edu1_major} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="edu1_status" value={formData.edu1_status} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="edu1_location" value={formData.edu1_location} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="edu1_score" value={formData.edu1_score} onChange={handleChange} /></StyledInputCell>
-                </TableRow>
-                {/* 학력 2 */}
-                <TableRow>
-                  <StyledInputCell><FormTextField name="edu2_period" value={formData.edu2_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="edu2_school" value={formData.edu2_school} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="edu2_major" value={formData.edu2_major} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="edu2_status" value={formData.edu2_status} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="edu2_location" value={formData.edu2_location} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="edu2_score" value={formData.edu2_score} onChange={handleChange} /></StyledInputCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
+            {/* --- 4. 자격 및 면허 취득 사항 --- */}
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+              [자격 및 면허 취득 사항]
+            </Typography>
+            <TableContainer sx={{ border: '1px solid #ccc', mb: 4 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <StyledLabelCell sx={{ width: '35%' }}>자격증명</StyledLabelCell>
+                    <StyledLabelCell sx={{ width: '20%' }}>등급(점수)</StyledLabelCell>
+                    <StyledLabelCell sx={{ width: '20%' }}>취득년월</StyledLabelCell>
+                    <StyledLabelCell>발급기관</StyledLabelCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {/* 자격증 1 */}
+                  <TableRow>
+                    <StyledInputCell><FormTextField name="cert1_name" value={formData.cert1_name} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert1_level" value={formData.cert1_level} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert1_date" value={formData.cert1_date} onChange={handleChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert1_issuer" value={formData.cert1_issuer} onChange={handleChange} /></StyledInputCell>
+                  </TableRow>
+                  {/* 자격증 2 */}
+                  <TableRow>
+                    <StyledInputCell><FormTextField name="cert2_name" value={formData.cert2_name} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert2_level" value={formData.cert2_level} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert2_date" value={formData.cert2_date} onChange={handleChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert2_issuer" value={formData.cert2_issuer} onChange={handleChange} /></StyledInputCell>
+                  </TableRow>
+                  {/* 자격증 3 */}
+                  <TableRow>
+                    <StyledInputCell><FormTextField name="cert3_name" value={formData.cert3_name} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert3_level" value={formData.cert3_level} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert3_date" value={formData.cert3_date} onChange={handleChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert3_issuer" value={formData.cert3_issuer} onChange={handleChange} /></StyledInputCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
 
-          {/* --- 3. 병역 사항 --- */}
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-            [병역사항]
-          </Typography>
-          <TableContainer sx={{ border: '1px solid #ccc', mb: 4 }}>
-            <Table>
-              <TableBody>
-                <TableRow>
-                  <StyledLabelCell>구분</StyledLabelCell>
-                  <StyledInputCell>
-                    <RadioGroup row name="military_status" value={formData.military_status} onChange={handleChange}>
-                      <FormControlLabel value="필" control={<Radio />} label="병역필" />
-                      <FormControlLabel value="미필" control={<Radio />} label="미필" />
-                      <FormControlLabel value="해당없음" control={<Radio />} label="해당없음" />
-                    </RadioGroup>
-                  </StyledInputCell>
-                  <StyledLabelCell>군별</StyledLabelCell>
-                  <StyledInputCell><FormTextField name="military_branch" value={formData.military_branch} onChange={handleChange} /></StyledInputCell>
-                </TableRow>
-                <TableRow>
-                  <StyledLabelCell>계급</StyledLabelCell>
-                  <StyledInputCell><FormTextField name="military_rank" value={formData.military_rank} onChange={handleChange} /></StyledInputCell>
-                  <StyledLabelCell>복무기간</StyledLabelCell>
-                  <StyledInputCell><FormTextField name="military_period" value={formData.military_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
-                </TableRow>
-                <TableRow>
-                  <StyledLabelCell>면제사유</StyledLabelCell>
-                  <StyledInputCell colSpan={3}><FormTextField name="military_reason" value={formData.military_reason} onChange={handleChange} /></StyledInputCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
+            {/* --- 5. 경력사항 --- */}
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+              [경력사항]
+            </Typography>
+            <TableContainer sx={{ border: '1px solid #ccc', mb: 4 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <StyledLabelCell sx={{ width: '25%' }}>근무기간</StyledLabelCell>
+                    <StyledLabelCell sx={{ width: '20%' }}>회사명</StyledLabelCell>
+                    <StyledLabelCell sx={{ width: '15%' }}>직위</StyledLabelCell>
+                    <StyledLabelCell sx={{ width: '30%' }}>담당업무</StyledLabelCell>
+                    <StyledLabelCell sx={{ width: '10%' }}>구분</StyledLabelCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {/* 경력 1 */}
+                  <TableRow>
+                    <StyledInputCell><FormTextField name="exp1_period" value={formData.exp1_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp1_company" value={formData.exp1_company} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp1_position" value={formData.exp1_position} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp1_duties" value={formData.exp1_duties} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp1_type" value={formData.exp1_type} onChange={handleChange} /></StyledInputCell>
+                  </TableRow>
+                  {/* 경력 2 */}
+                  <TableRow>
+                    <StyledInputCell><FormTextField name="exp2_period" value={formData.exp2_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp2_company" value={formData.exp2_company} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp2_position" value={formData.exp2_position} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp2_duties" value={formData.exp2_duties} onChange={handleChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp2_type" value={formData.exp2_type} onChange={handleChange} /></StyledInputCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
 
-          {/* --- 4. 자격 및 면허 취득 사항 --- */}
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-            [자격 및 면허 취득 사항]
-          </Typography>
-          <TableContainer sx={{ border: '1px solid #ccc', mb: 4 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <StyledLabelCell sx={{ width: '35%' }}>자격증명</StyledLabelCell>
-                  <StyledLabelCell sx={{ width: '20%' }}>등급(점수)</StyledLabelCell>
-                  <StyledLabelCell sx={{ width: '20%' }}>취득년월</StyledLabelCell>
-                  <StyledLabelCell>발급기관</StyledLabelCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {/* 자격증 1 */}
-                <TableRow>
-                  <StyledInputCell><FormTextField name="cert1_name" value={formData.cert1_name} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="cert1_level" value={formData.cert1_level} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="cert1_date" value={formData.cert1_date} onChange={handleChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="cert1_issuer" value={formData.cert1_issuer} onChange={handleChange} /></StyledInputCell>
-                </TableRow>
-                {/* 자격증 2 */}
-                <TableRow>
-                  <StyledInputCell><FormTextField name="cert2_name" value={formData.cert2_name} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="cert2_level" value={formData.cert2_level} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="cert2_date" value={formData.cert2_date} onChange={handleChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="cert2_issuer" value={formData.cert2_issuer} onChange={handleChange} /></StyledInputCell>
-                </TableRow>
-                {/* 자격증 3 */}
-                <TableRow>
-                  <StyledInputCell><FormTextField name="cert3_name" value={formData.cert3_name} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="cert3_level" value={formData.cert3_level} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="cert3_date" value={formData.cert3_date} onChange={handleChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="cert3_issuer" value={formData.cert3_issuer} onChange={handleChange} /></StyledInputCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
+            {/* --- 6. 자기소개서 --- */}
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mt: 4 }}>
+              [자기소개서]
+            </Typography>
+            <Box sx={{ mb: 2 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={8}
+                label="1. 성장과정"
+                name="selfGrowth"
+                value={formData.selfGrowth}
+                onChange={handleChange}
+                variant="outlined"
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0 } }}
+              />
+            </Box>
+            <Box sx={{ mb: 2 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={8}
+                label="2. 성격의 장·단점 및 특기"
+                name="selfStrengths"
+                value={formData.selfStrengths}
+                onChange={handleChange}
+                variant="outlined"
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0 } }}
+              />
+            </Box>
+            <Box sx={{ mb: 2 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={8}
+                label="3. 지원동기"
+                name="selfMotivation"
+                value={formData.selfMotivation}
+                onChange={handleChange}
+                variant="outlined"
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0 } }}
+              />
+            </Box>
+            <Box sx={{ mb: 2 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={8}
+                label="4. 입사 후 포부"
+                name="selfAspirations"
+                value={formData.selfAspirations}
+                onChange={handleChange}
+                variant="outlined"
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0 } }}
+              />
+            </Box>
 
-          {/* --- 5. 경력사항 --- */}
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-            [경력사항]
-          </Typography>
-          <TableContainer sx={{ border: '1px solid #ccc', mb: 4 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <StyledLabelCell sx={{ width: '25%' }}>근무기간</StyledLabelCell>
-                  <StyledLabelCell sx={{ width: '20%' }}>회사명</StyledLabelCell>
-                  <StyledLabelCell sx={{ width: '15%' }}>직위</StyledLabelCell>
-                  <StyledLabelCell sx={{ width: '30%' }}>담당업무</StyledLabelCell>
-                  <StyledLabelCell sx={{ width: '10%' }}>구분</StyledLabelCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {/* 경력 1 */}
-                <TableRow>
-                  <StyledInputCell><FormTextField name="exp1_period" value={formData.exp1_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="exp1_company" value={formData.exp1_company} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="exp1_position" value={formData.exp1_position} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="exp1_duties" value={formData.exp1_duties} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="exp1_type" value={formData.exp1_type} onChange={handleChange} /></StyledInputCell>
-                </TableRow>
-                {/* 경력 2 */}
-                <TableRow>
-                  <StyledInputCell><FormTextField name="exp2_period" value={formData.exp2_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="exp2_company" value={formData.exp2_company} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="exp2_position" value={formData.exp2_position} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="exp2_duties" value={formData.exp2_duties} onChange={handleChange} /></StyledInputCell>
-                  <StyledInputCell><FormTextField name="exp2_type" value={formData.exp2_type} onChange={handleChange} /></StyledInputCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
+            <Divider sx={{ my: 4 }} />
 
-          {/* --- 6. 자기소개서 --- */}
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mt: 4 }}>
-            [자기소개서]
-          </Typography>
-          <Box sx={{ mb: 2 }}>
+            {/* --- 7. AI 프롬프트 섹션 --- */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+              <Image src="/picky.png" alt="Picky" width={24} height={24} />
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                AI로 자기소개서 채우기
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              위의 이력서 내용을 바탕으로 이력서 작성 도우미 픽키가 자기소개서를 작성해 줍니다. 픽키에게 특별히 강조하고 싶은 점이나 원하는 스타일을 자유롭게 요청해 보세요.
+            </Typography>
             <TextField
               fullWidth
               multiline
-              rows={8}
-              label="1. 성장과정"
-              name="selfGrowth"
-              value={formData.selfGrowth}
+              rows={4}
+              label="픽키에게 요청할 프롬프트를 입력하세요."
+              name="aiPrompt"
+              value={formData.aiPrompt}
               onChange={handleChange}
               variant="outlined"
+              placeholder="예: 긍정적이고 도전적인 성향을 강조해서 성장과정을 작성해 줘. React와 Next.js 경험을 장점으로 부각시켜 줘."
             />
-          </Box>
-          <Box sx={{ mb: 2 }}>
-            <TextField
-              fullWidth
-              multiline
-              rows={8}
-              label="2. 성격의 장·단점 및 특기"
-              name="selfStrengths"
-              value={formData.selfStrengths}
-              onChange={handleChange}
-              variant="outlined"
-            />
-          </Box>
-          <Box sx={{ mb: 2 }}>
-            <TextField
-              fullWidth
-              multiline
-              rows={8}
-              label="3. 지원동기"
-              name="selfMotivation"
-              value={formData.selfMotivation}
-              onChange={handleChange}
-              variant="outlined"
-            />
-          </Box>
-          <Box sx={{ mb: 2 }}>
-            <TextField
-              fullWidth
-              multiline
-              rows={8}
-              label="4. 입사 후 포부"
-              name="selfAspirations"
-              value={formData.selfAspirations}
-              onChange={handleChange}
-              variant="outlined"
-            />
-          </Box>
+            <Box textAlign="center" sx={{ mt: 2, display: 'flex', gap: 2, justifyContent: 'center' }}>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={handleAiGenerate}
+                sx={{ minWidth: '200px' }}
+                disabled={isLoading} // 로딩 중일 때 버튼 비활성화
+              >
+                {isLoading ? <CircularProgress size={24} /> : "AI로 작성하기"}
+              </Button>
 
-          <Divider sx={{ my: 4 }} />
+              {/* PDF 다운로드 버튼 추가 */}
+              <PDFDownloadLink
+                document={<ResumePdfDocument formData={formData} />}
+                fileName="이력서.pdf"
+                style={{ textDecoration: 'none' }}
+              >
+                {({ loading }) => (
+                  <Button
+                    variant="outlined"
+                    size="large"
+                    sx={{ minWidth: '200px' }}
+                    disabled={loading}
+                  >
+                    {loading ? <CircularProgress size={24} /> : "PDF로 다운로드"}
+                  </Button>
+                )}
+              </PDFDownloadLink>
+            </Box>
 
-          {/* --- 7. AI 프롬프트 섹션 --- */}
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-            ✨ AI로 자기소개서 채우기
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            위의 이력서 내용을 바탕으로 AI가 자기소개서를 작성해 줍니다. AI에게 특별히 강조하고 싶은 점이나 원하는 스타일을 자유롭게 요청해 보세요.
-          </Typography>
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            label="AI에게 요청할 프롬프트를 입력하세요."
-            name="aiPrompt"
-            value={formData.aiPrompt}
-            onChange={handleChange}
-            variant="outlined"
-            placeholder="예: 긍정적이고 도전적인 성향을 강조해서 성장과정을 작성해 줘. React와 Next.js 경험을 장점으로 부각시켜 줘."
-          />
-          <Box textAlign="center" sx={{ mt: 2 }}>
-            <Button
-              variant="contained"
-              size="large"
-              onClick={handleAiGenerate}
-              sx={{ minWidth: '200px' }}
-              disabled={isLoading} // 로딩 중일 때 버튼 비활성화
-            >
-              {isLoading ? <CircularProgress size={24} /> : "AI로 작성하기"}
+          </Box>
+        </Paper>
+
+        {/* --- 선택 팝업 (Dialog) --- */}
+        <Dialog
+          open={dialogOpen}
+          onClose={handleDialogClose}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">
+            {"이미 작성 중인 내용이 있습니다!"}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              AI가 어떻게 도와줄까요?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleDialogClose}>취소</Button>
+            <Button onClick={handleStartFresh} color="error">
+              기존 내용 지우고 새로 작성
             </Button>
-          </Box>
+            <Button onClick={handleRefine} variant="contained" autoFocus>
+              기존 내용 더 멋지게 다듬기
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-        </Box>
-      </Paper>
-    </Container>
+        {/* --- 삭제 확인 팝업 (Confirm Dialog) --- */}
+        <Dialog
+          open={confirmDialogOpen}
+          onClose={handleConfirmDialogClose}
+        >
+          <DialogTitle>정말 새로 작성할까요?</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              이 작업은 되돌릴 수 없습니다. 현재 자기소개서에 작성된 모든 내용이 삭제됩니다.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleConfirmDialogClose}>취소</Button>
+            <Button onClick={handleConfirmStartFresh} color="error">
+              삭제하고 새로 작성
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+      </Container>
+    </>
   );
 }

@@ -6,7 +6,7 @@ server:
   port: 8080
   address: 0.0.0.0
   tomcat:
-    connection-timeout: 60000 # 60초
+    connection-timeout: 90000 # 90초
 
 # === 데이터베이스(DB) 설정 ===
 # [수정됨] H2 DB로 연결되는 문제를 해결하기 위해 RDS(MySQL) 설정을 명시적으로 추가
