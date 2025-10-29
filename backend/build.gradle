@@ -60,6 +60,8 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    runtimeOnly 'io.netty:netty-resolver-dns-native-macos:4.1.66.Final'
+
     // Chat room 관련
     // Web & WebSocket
     implementation 'org.springframework.boot:spring-boot-starter-websocket'

@@ -11,6 +11,7 @@
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <Pattern>${LOG_PATTERN}</Pattern>
+            <charset>UTF-8</charset>
         </encoder>
     </appender>
 
@@ -35,6 +36,8 @@
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="FILE" />
     </root>
+
+    <logger name="com.hirepicker" level="INFO"/>
 
 
 </configuration>

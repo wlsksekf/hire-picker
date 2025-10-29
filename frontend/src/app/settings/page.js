@@ -50,8 +50,10 @@ function SettingsPage() {
         setStatus({ type: 'success', message: resultText });
       })
       .catch(function (error) {
-        const errorMessage =
+        const rawMessage =
           error.response?.data || error.message || `${name} 동기화에 실패했습니다.`;
+        const errorMessage =
+          typeof rawMessage === 'object' ? JSON.stringify(rawMessage) : rawMessage;
         setStatus({ type: 'error', message: errorMessage });
       })
       .finally(function () {
@@ -201,66 +203,21 @@ function SettingsPage() {
                 </Button>
                 <Button
                   variant="contained"
-                  onClick={() => {
-                    setLoading(true);
-                    setStatus({ type: 'info', message: '기업정보 크롤링을 시작합니다...' });
-
-                    api
-                      .post('/api/crawler/companies')
-                      .then(response => {
-                        setStatus({ type: 'success', message: response.data });
-                      })
-                      .catch(error => {
-                        const errorData = error.response?.data || error.message;
-                        const errorMessage =
-                          typeof errorData === 'object'
-                            ? JSON.stringify(errorData)
-                            : errorData || '기업정보 크롤링 시작에 실패했습니다.';
-                        setStatus({ type: 'error', message: errorMessage });
-                      })
-                      .finally(() => {
-                        setLoading(false);
-                      });
-                  }}
+                  onClick={() => handleSync('기업정보 크롤링', '/api/crawler/companies')}
                   disabled={loading}
+                  sx={{ mr: 1 }}
                 >
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   기업정보 크롤링
                 </Button>
                 <Button
                   variant="contained"
-                  onClick={() => {
-                    setLoading(true);
-                    setStatus({
-                      type: 'info',
-                      message: 'CSV 파일에서 기업정보를 업데이트합니다...',
-                    });
-
-                    console.log('Starting CSV update request...');
-                    api
-                      .post('/api/companies/update-from-csv')
-                      .then(response => {
-                        console.log('CSV update successful:', response);
-                        setStatus({ type: 'success', message: response.data });
-                      })
-                      .catch(error => {
-                        console.error('CSV update failed:', error);
-                        console.log('Error response:', error.response);
-                        console.log('Error message:', error.message);
-                        const errorMessage =
-                          error.response?.data ||
-                          error.message ||
-                          'CSV 파일 업데이트에 실패했습니다.';
-                        setStatus({ type: 'error', message: errorMessage });
-                      })
-                      .finally(() => {
-                        console.log('CSV update request completed');
-                        setLoading(false);
-                      });
-                  }}
+                  onClick={() =>
+                    handleSync('CSV 업데이트', '/api/work24/companies/update-from-csv')
+                  }
                   disabled={loading}
                 >
-                  <FontAwesomeIcon icon={faFileUpload} style={{ marginRight: 8 }} />
+                  <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   CSV 정보 업데이트
                 </Button>
                 <Button
@@ -276,15 +233,9 @@ function SettingsPage() {
           </ListItem>
           {status.message && ( // 상태 메시지가 있을 경우 표시
             <ListItem sx={{ mt: 2 }}>
-              {status && status.message ? (
-                <Alert severity={status.type || 'info'} sx={{ width: '100%' }}>
-                  {status.message}
-                </Alert>
-              ) : (
-                <Alert severity="info" sx={{ width: '100%' }}>
-                  기본 메시지
-                </Alert>
-              )}
+              <Alert severity={status.type || 'info'} sx={{ width: '100%' }}>
+                {status.message}
+              </Alert>
             </ListItem>
           )}
         </List>

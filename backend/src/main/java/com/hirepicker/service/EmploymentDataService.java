@@ -69,8 +69,8 @@ public class EmploymentDataService {
     @Value("${work24-key}")
     private String work24Key;
 
-    @Value("${dart-key2}")
-    private String dartKey;
+    // @Value("${dart-key2}")
+    // private String dartKey;
 
     @Scheduled(cron = "0 0 4 * * *")
     @Transactional
@@ -82,13 +82,6 @@ public class EmploymentDataService {
     @Transactional
     public void scheduledSyncEvents() {
         synchronizeEvents();
-    }
-
-    @Scheduled(cron = "0 0 6 * * MON")
-    @Transactional
-    public void scheduledSyncCompanies() {
-        synchronizeCompanies();
-        SyncDartInfo();
     }
 
     // Dart API 가져와서 DB에 저장
@@ -428,8 +421,8 @@ public class EmploymentDataService {
                     URL corpUrl = new URL(companyApiUrl);
                     HttpURLConnection conn = (HttpURLConnection) corpUrl.openConnection();
                     conn.setRequestMethod("GET");
-                    conn.setConnectTimeout(60000);
-                    conn.setReadTimeout(60000);
+                    conn.setConnectTimeout(120000);
+                    conn.setReadTimeout(120000);
 
                     int responseCode2 = conn.getResponseCode();
                     if (responseCode2 == 200) {
@@ -548,11 +541,21 @@ public class EmploymentDataService {
 
                 if (needsUpdate) {
                     existingCompany.setCompanyName(corpName);
-                    existingCompany.setCeoName(ceo_name);
-                    existingCompany.setBusinessNumber(business_number);
-                    existingCompany.setAddress(address);
-                    existingCompany.setWebsiteUrl(website_url);
-                    existingCompany.setEmployeeCount(employee_count);
+                    if (ceo_name != null && !ceo_name.isBlank()) {
+                        existingCompany.setCeoName(ceo_name);
+                    }
+                    if (business_number != null && !business_number.isBlank()) {
+                        existingCompany.setBusinessNumber(business_number);
+                    }
+                    if (address != null && !address.isBlank()) {
+                        existingCompany.setAddress(address);
+                    }
+                    if (website_url != null && !website_url.isBlank()) {
+                        existingCompany.setWebsiteUrl(website_url);
+                    }
+                    if (employee_count != null && !employee_count.isBlank()) {
+                        existingCompany.setEmployeeCount(employee_count);
+                    }
                     companiesToUpdate.add(existingCompany);
                 }
             } else {
@@ -560,21 +563,41 @@ public class EmploymentDataService {
                 if (matchingCompanies != null && !matchingCompanies.isEmpty()) {
                     Company companyToUpdate = matchingCompanies.remove(0);
                     companyToUpdate.setCorpCode(corpCode);
-                    companyToUpdate.setCeoName(ceo_name);
-                    companyToUpdate.setBusinessNumber(business_number);
-                    companyToUpdate.setAddress(address);
-                    companyToUpdate.setWebsiteUrl(website_url);
-                    companyToUpdate.setEmployeeCount(employee_count);
+                    if (ceo_name != null && !ceo_name.isBlank()) {
+                        companyToUpdate.setCeoName(ceo_name);
+                    }
+                    if (business_number != null && !business_number.isBlank()) {
+                        companyToUpdate.setBusinessNumber(business_number);
+                    }
+                    if (address != null && !address.isBlank()) {
+                        companyToUpdate.setAddress(address);
+                    }
+                    if (website_url != null && !website_url.isBlank()) {
+                        companyToUpdate.setWebsiteUrl(website_url);
+                    }
+                    if (employee_count != null && !employee_count.isBlank()) {
+                        companyToUpdate.setEmployeeCount(employee_count);
+                    }
                     companiesToUpdate.add(companyToUpdate);
                 } else {
                     Company newCompany = new Company();
                     newCompany.setCompanyName(corpName);
                     newCompany.setCorpCode(corpCode);
-                    newCompany.setCeoName(ceo_name);
-                    newCompany.setBusinessNumber(business_number);
-                    newCompany.setAddress(address);
-                    newCompany.setWebsiteUrl(website_url);
-                    newCompany.setEmployeeCount(employee_count);
+                    if (ceo_name != null && !ceo_name.isBlank()) {
+                        newCompany.setCeoName(ceo_name);
+                    }
+                    if (business_number != null && !business_number.isBlank()) {
+                        newCompany.setBusinessNumber(business_number);
+                    }
+                    if (address != null && !address.isBlank()) {
+                        newCompany.setAddress(address);
+                    }
+                    if (website_url != null && !website_url.isBlank()) {
+                        newCompany.setWebsiteUrl(website_url);
+                    }
+                    if (employee_count != null && !employee_count.isBlank()) {
+                        newCompany.setEmployeeCount(employee_count);
+                    }
                     companiesToInsert.add(newCompany);
                 }
             }
@@ -582,17 +605,46 @@ public class EmploymentDataService {
 
         if (!companiesToUpdate.isEmpty()) {
             log.info("[배치 {}/{}] 업데이트할 회사 수: {}", page + 1, totalPages, companiesToUpdate.size());
-            companyRepository.saveAll(companiesToUpdate);
+            try {
+                companyRepository.saveAll(companiesToUpdate);
+            } catch (Exception e) {
+                log.error("배치 업데이트 중 DB 저장 오류: {}", e.getMessage(), e);
+                // attempt individual saves to isolate bad records
+                for (Company c : companiesToUpdate) {
+                    try {
+                        companyRepository.save(c);
+                    } catch (Exception ex) {
+                        log.error("개별 업데이트 실패 (회사: {}, 코드: {}): {}", c.getCompanyName(), c.getCorpCode(),
+                                ex.getMessage());
+                    }
+                }
+            }
         }
 
         if (!companiesToInsert.isEmpty()) {
             log.info("[배치 {}/{}] 추가할 회사 수: {}", page + 1, totalPages, companiesToInsert.size());
-            companyRepository.saveAll(companiesToInsert);
+            try {
+                companyRepository.saveAll(companiesToInsert);
+            } catch (Exception e) {
+                log.error("배치 삽입 중 DB 저장 오류: {}", e.getMessage(), e);
+                for (Company c : companiesToInsert) {
+                    try {
+                        companyRepository.save(c);
+                    } catch (Exception ex) {
+                        log.error("개별 삽입 실패 (회사: {}, 코드: {}): {}", c.getCompanyName(), c.getCorpCode(),
+                                ex.getMessage());
+                    }
+                }
+            }
         }
 
         if (!companiesToUpdate.isEmpty() || !companiesToInsert.isEmpty()) {
-            companyRepository.flush();
-            log.info("[배치 {}/{}] DB 저장 완료.", page + 1, totalPages);
+            try {
+                companyRepository.flush();
+                log.info("[배치 {}/{}] DB 저장 완료.", page + 1, totalPages);
+            } catch (Exception e) {
+                log.error("flush 중 오류 발생: {}", e.getMessage(), e);
+            }
         }
     }
 

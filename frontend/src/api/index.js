@@ -11,34 +11,24 @@ const api = axios.create({
 api.interceptors.request.use(
   config => {
     console.log('Axios Request Interceptor:', config.method.toUpperCase(), config.url);
-
     // 공개 경로(회원가입 등)에는 토큰을 추가하지 않음
-    if (
-      config.url.includes('/api/auth/signup') ||
-      config.url.includes('/api/auth/send-verification') ||
-      config.url.includes('/api/auth/check-verification')
-    ) {
-      console.log('Public route, not adding token.');
-      return config;
-    }
-
+    // 토큰이 있으면 추가하고, 없으면 요청을 차단하지 않고 진행시킵니다.
     try {
       const { accessToken } = useAuthStore.getState(); // Zustand 스토어에서 토큰 가져오기
-      if (!accessToken) {
-        console.error('Authentication required but no access token found');
-        throw new Error('No access token available');
+      if (accessToken) {
+        console.log('Attaching token to request:', config.url);
+        config.headers.Authorization = `Bearer ${accessToken}`;
+      } else {
+        console.log('No access token found for request:', config.url);
       }
-
-      console.log('Attaching token to request:', config.url);
-      config.headers.Authorization = `Bearer ${accessToken}`;
       return config;
     } catch (error) {
-      console.error('Error in request interceptor:', error);
-      return Promise.reject(new Error('Authentication failed - No valid token'));
+      console.error('Error while reading access token in interceptor:', error);
+      // 토큰 읽기 실패로 요청을 차단하면 디버깅이 어려우므로 요청은 계속 진행시킵니다.
+      return config;
     }
   },
   error => {
-    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -118,7 +108,7 @@ export const signupPersonal = signupData => {
  * @param {string} query - 검색할 회사 이름
  */
 export const searchCompanies = query => {
-  return api.get('/api/companies/search', { params: { name: query } });
+  return api.get('/api/work24/companies/search', { params: { name: query } });
 };
 
 /**

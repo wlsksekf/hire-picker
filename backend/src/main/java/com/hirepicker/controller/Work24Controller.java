@@ -1,5 +1,7 @@
 package com.hirepicker.controller;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -13,8 +15,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hirepicker.dto.CompanyDto;
+import com.hirepicker.dto.CompanySearchResponseDto;
 import com.hirepicker.dto.EventDto;
 import com.hirepicker.dto.JobDto;
+import com.hirepicker.service.CompanyDataUpdateService;
+import com.hirepicker.service.CompanyService;
 import com.hirepicker.service.EmploymentData;
 import com.hirepicker.service.EmploymentDataService;
 
@@ -30,7 +35,8 @@ public class Work24Controller {
 
     private final EmploymentDataService employmentDataService;
     private final EmploymentData employmentData;
-
+    private final CompanyDataUpdateService companyDataUpdateService;
+    private final CompanyService companyService;
     // --- 데이터 조회 API (페이지네이션 적용) --- //
 
     @Operation(summary = "채용공고 목록 조회", description = "페이지네이션을 적용하여 채용공고 목록을 조회합니다.")
@@ -66,6 +72,22 @@ public class Work24Controller {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(companyDto);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<CompanySearchResponseDto>> searchCompanies(@RequestParam("name") String name) {
+        return ResponseEntity.ok(companyService.searchByName(name));
+    }
+
+    @GetMapping("/companies/update-from-csv")
+    public ResponseEntity<String> updateFromCsv() {
+        try {
+            int updated = companyDataUpdateService.updateCompanyDataFromCsv();
+            String msg = String.format("Successfully updated %d companies", updated);
+            return ResponseEntity.ok(msg);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Failed to update company data: " + e.getMessage());
+        }
     }
 
     // --- 수동 동기화 트리거 API --- //
