@@ -36,9 +36,9 @@ function getTheme(mode) {
   const oklchPalette = {
     mode,
     primary: {
-      main: 'oklch(0.70 0.30 165)',
-      light: 'oklch(0.80 0.30 165)',
-      dark: 'oklch(0.60 0.30 165)',
+      main: 'oklch(0.76 0.17 170)', // 선명한 민트 (Vivid Mint)
+      light: 'oklch(0.86 0.17 170)', // 밝은 버전
+      dark: 'oklch(0.66 0.17 170)',  // 어두운 버전
       contrastText: '#000000',
     },
     background: {

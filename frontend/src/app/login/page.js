@@ -92,7 +92,7 @@ function LoginPage() {
               {error}
               {isSocialError && ( // 소셜 로그인 에러일 경우 비밀번호 설정 링크 표시
                 <Link href="/forgot-password" passHref legacyBehavior>
-                  <a style={{ color: '#1976d2', textDecoration: 'underline', marginLeft: '8px' }}>
+                  <a sx={{ color: 'primary.main', textDecoration: 'underline', ml: 1 }}>
                     비밀번호 설정하기
                   </a>
                 </Link>

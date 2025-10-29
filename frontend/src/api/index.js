@@ -6,7 +6,10 @@ const api = axios.create({
   // baseURL을 상대경로로 설정하여 Next.js의 rewrites 프록시를 사용
   baseURL: '/',
   withCredentials: true, // 백엔드와 쿠키를 주고받기 위해 추가
+  timeout: 90000, // 90초 타임아웃 설정 (밀리초 단위)
 });
+
+
 
 
 
