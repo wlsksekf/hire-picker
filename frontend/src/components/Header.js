@@ -39,10 +39,15 @@ function Header() {
   // 모바일 화면일 경우
   if (isMobile) {
     return (
-      <AppBar position="sticky" elevation={0} sx={{ borderBottom: '1px solid', borderColor: 'divider', backgroundColor: 'background.paper' }}>
+      <AppBar position="sticky" elevation={0} sx={{ 
+        borderBottom: '1px solid', 
+        borderColor: 'divider', 
+        backgroundColor: 'background.paper',
+        zIndex: theme.zIndex.drawer + 1, // 헤더가 다른 요소 위에 오도록 z-index 설정
+      }}>
         <Toolbar>
           <Link href="/" passHref style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <Box component="img" src="/claw.png" alt="HirePicker Logo" sx={{ width: 32, height: 32, marginRight: '8px' }} />
+            <Box component="img" src="/hirepicker_logo.png" alt="HirePicker Logo" sx={{ width: 32, height: 32, marginRight: '8px' }} />
             <Typography variant="h6" component="span" fontWeight="bold">HirePicker</Typography>
           </Link>
         </Toolbar>
@@ -59,13 +64,14 @@ function Header() {
         borderBottom: '1px solid',
         borderColor: 'divider',
         backgroundColor: 'background.paper',
+        zIndex: theme.zIndex.drawer + 1, // 헤더가 다른 요소 위에 오도록 z-index 설정
       }}
     >
       <Toolbar sx={{ minHeight: '72px' }}>
         {/* 로고 */}
         <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, mr: 4 }}>
           <Link href="/" passHref style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
-            <Box component="img" src="/claw.png" alt="HirePicker Logo" sx={{ width: 40, height: 40, marginRight: '8px' }} />
+            <Box component="img" src="/hirepicker_logo.png" alt="HirePicker Logo" sx={{ width: 40, height: 40, marginRight: '8px' }} />
             <Typography variant="h6" component="span" fontWeight="bold">HirePicker</Typography>
           </Link>
         </Box>
