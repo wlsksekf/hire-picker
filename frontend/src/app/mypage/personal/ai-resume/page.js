@@ -1,5 +1,5 @@
 // 'use client'가 꼭 필요해. useState, onChange 같은 사용자 인터랙션이 있기 때문이야.
-'use client'; 
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -34,7 +34,7 @@ import { api } from '@/api'; // API 래퍼 (데이터 로드/전송용)
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import ResumePdfDocument from '@/components/ResumePdfDocument';
 import Loader from '@/components/Loader'; // 로더 컴포넌트 추가
-import Image from 'next/image'; // Image 컴포넌트 추가
+import Image from 'next/image'; // Next.js Image 컴포넌트
 
 // --- 스타일 컴포넌트 정의 ---
 
@@ -67,18 +67,41 @@ const FormTextField = (props) => (
 // --- AI 이력서 작성 페이지 컴포넌트 ---
 
 export default function AiResumePage() {
-  const { isAuthenticated } = useAuthStore((state) => state); // Zustand에서 사용자 정보 가져오기
+  const { isAuthenticated, user } = useAuthStore((state) => state); // Zustand에서 사용자 정보 가져오기
   const [isLoading, setIsLoading] = useState(false); // AI 응답 로딩 상태
-  
+  const [selectedImage, setSelectedImage] = useState(null); // 선택된 이미지 파일
+  const [previewImage, setPreviewImage] = useState(null); // 미리보기 이미지 URL
+
   // --- 팝업 상태 관리 state 추가 ---
   const [dialogOpen, setDialogOpen] = useState(false); // 메인 선택 팝업
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false); // 삭제 확인 팝업
+  
+  // ▼▼▼ [수정 1] 하이드레이션 오류 방지용 state ▼▼▼
   const [isClient, setIsClient] = useState(false); // 클라이언트 렌더링 확인용
 
   // 페이지가 마운트된 후 isClient를 true로 설정
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // 선택된 이미지가 변경될 때마다 미리보기 URL 생성 및 해제
+  useEffect(() => {
+    // 선택된 파일이 있을 때만 FileReader 실행
+    if (selectedImage) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result);
+      };
+      reader.readAsDataURL(selectedImage);
+    } else {
+      // selectedImage가 null이면 (예: 업로드 취소) 미리보기 이미지도 null로
+      setPreviewImage(null);
+    }
+    
+    // (참고) 클린업 함수는 data URL을 쓸 땐 필수는 아니지만,
+    // Object URL(URL.createObjectURL)을 쓴다면 여기서 URL.revokeObjectURL을 해줘야 해.
+  }, [selectedImage]);
+
 
   // 이력서 폼의 모든 데이터를 관리하는 state
   const [formData, setFormData] = useState({
@@ -144,36 +167,27 @@ export default function AiResumePage() {
     selfMotivation: '',
     selfAspirations: '',
 
+    // 이미지 URL
+    imageUrl: '',
+
     // AI 프롬프트
     aiPrompt: '',
   });
 
   // 페이지 로드 시 DB에서 사용자 기본 정보 불러오기
   useEffect(() => {
-    const fetchUserData = async () => {
-      // TODO: 백엔드 API 엔드포인트에서 사용자 정보 가져오기
-      // (UserController.java의 /api/user/profile 같은 거)
-      // const response = await api.get('/user/profile');
-      
-      // --- 아래는 가짜 데이터 (DB 연동 시 삭제) ---
-      const fakeUserData = {
-        name: "홍길동", // personal_user.name
-        gender: "male", // personal_user.gender
-        birthdate: "1995-01-01", // 이건 DB에 없으니 직접 입력
-        phone: "010-1234-5678", // personal_user.phone_number
-        email: "hong@example.com", // personal_user.email
-        address: "서울시 강남구", // personal_user.address
-      };
-      // --- 가짜 데이터 끝 ---
-
+    if (user) { // user 정보가 있을 때만 실행
       setFormData((prev) => ({
         ...prev,
-        ...fakeUserData, // DB에서 불러온 데이터로 폼 채우기
+        name: user.name || '',
+        gender: user.gender || 'male',
+        phone: user.phoneNumber || '',
+        email: user.email || '',
+        address: user.address || '',
+        // birthdate는 user 객체에 없을 수 있으므로 기존 formData 값을 유지하거나 별도 처리
       }));
-    };
-
-    fetchUserData();
-  }, []); // 빈 배열: 페이지가 처음 마운트될 때 1번만 실행
+    }
+  }, [user]); // user 객체가 변경될 때마다 실행
 
   // 폼 입력값을 처리하는 공통 핸들러
   const handleChange = (e) => {
@@ -182,6 +196,16 @@ export default function AiResumePage() {
       ...prev,
       [name]: value,
     }));
+  };
+
+  // 이미지 파일 선택 핸들러
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedImage(file);
+    } else {
+      setSelectedImage(null);
+    }
   };
 
   // AI에게 보낼 사용자 데이터를 문자열로 변환하는 헬퍼 함수
@@ -244,6 +268,38 @@ export default function AiResumePage() {
     }
   };
 
+  // 이미지 업로드 핸들러
+  const handleImageUpload = async () => {
+    if (!selectedImage) {
+      alert("업로드할 이미지를 선택해주세요.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedImage);
+
+      // (주의!) 이 엔드포인트는 네가 백엔드에 '/api/ai/upload-image'로 구현해 뒀어야 해!
+      // (내가 제안했던 S3 서비스의 엔드포인트는 '/api/upload/resume-image'였어)
+      const response = await api.post('/api/ai/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const imageUrl = response.data; // 백엔드에서 반환된 이미지 URL
+      setFormData((prev) => ({ ...prev, imageUrl: imageUrl }));
+      console.log("업로드된 이미지 URL:", imageUrl); // 추가
+      alert("이미지 업로드 성공!");
+    } catch (error) {
+      console.error("이미지 업로드 실패:", error);
+      alert("이미지 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // "AI로 작성하기" 버튼 클릭 핸들러 (로직 수정)
   const handleAiGenerate = () => {
     if (!isAuthenticated) {
@@ -293,9 +349,53 @@ export default function AiResumePage() {
     callAiApi('generate');
   };
 
+  // --- 이력서 저장 핸들러 ---
+  const handleSaveResume = async () => {
+    if (!isAuthenticated) {
+      alert("이력서를 저장하려면 로그인이 필요합니다.");
+      return;
+    }
+    
+    // (선택) S3에 아직 업로드 안 한 이미지가 있으면 여기서 먼저 업로드 시킬 수도 있어
+    if (selectedImage && !formData.imageUrl) {
+         alert("증명사진 '업로드' 버튼을 눌러 먼저 이미지를 저장해주세요!");
+         // 또는 여기서 handleImageUpload()를 강제 호출할 수도 있음
+         // await handleImageUpload();
+         // -> 하지만 handleImageUpload가 비동기라 state 갱신 문제가 있을 수 있으니
+         //     가급적이면 사용자가 '업로드' 버튼을 누르게 유도하는 게 좋아.
+         return;
+    }
+
+
+    setIsLoading(true);
+    try {
+      // 백엔드로 보낼 데이터 객체 (필요에 따라 formData를 가공할 수 있음)
+      const resumeData = {
+        ...formData,
+        p_user_idx: user.p_user_idx, // 로그인한 사용자의 p_user_idx 추가
+      };
+
+      const response = await api.post('/api/resume', resumeData);
+
+      if (response.status === 200 || response.status === 201) {
+        alert("이력서가 성공적으로 저장되었습니다.");
+        // 저장 후 필요한 추가 로직 (예: 페이지 이동, 폼 초기화 등)
+      } else {
+        // (참고) api 래퍼(axios)가 2xx가 아닌 응답을 에러로 처리한다면 이 코드는 실행 안 될 수도 있어
+        alert("이력서 저장에 실패했습니다. 다시 시도해주세요.");
+      }
+    } catch (error) {
+      console.error("이력서 저장 실패:", error);
+      alert("이력서 저장 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   return (
     <>
+      {/* --- 로딩 오버레이 --- */}
       {isLoading && (
         <Box
           sx={{
@@ -314,6 +414,7 @@ export default function AiResumePage() {
           <Loader />
         </Box>
       )}
+      
       <Container maxWidth="md">
         <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, my: 4 }}>
           <Box component="form" noValidate autoComplete="off">
@@ -331,13 +432,45 @@ export default function AiResumePage() {
                 border: '2px dashed',
                 borderColor: 'grey.400',
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                flexShrink: 0
+                flexShrink: 0,
+                position: 'relative',
+                overflow: 'hidden', // Image가 Box 밖으로 나가지 않게
               }}>
-                <Typography variant="caption" color="text.secondary">
-                  사진
-                </Typography>
+                {previewImage ? (
+                  // ▼▼▼ [수정 2] Next.js 13+ 최신 Image 문법 (layout, objectFit -> fill, style) ▼▼▼
+                  <Image src={previewImage} alt="미리보기" fill style={{ objectFit: 'cover' }} />
+                ) : (
+                  <Typography variant="caption" color="text.secondary">
+                    사진
+                  </Typography>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0,
+                    cursor: 'pointer',
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  component="span" // 이 버튼 자체가 input을 트리거하진 않음
+                  size="small"
+                  sx={{ position: 'absolute', bottom: 8, zIndex: 1 }}
+                  onClick={handleImageUpload} // 이 버튼은 '선택된' 이미지를 '업로드' 함
+                  disabled={!selectedImage || isLoading}
+                >
+                  업로드
+                </Button>
               </Box>
 
               {/* 인적사항 테이블 영역 */}
@@ -438,9 +571,9 @@ export default function AiResumePage() {
                     <StyledLabelCell>구분</StyledLabelCell>
                     <StyledInputCell>
                       <RadioGroup row name="military_status" value={formData.military_status} onChange={handleChange}>
-                        <FormControlLabel value="필" control={<Radio />} label="병역필" />
-                        <FormControlLabel value="미필" control={<Radio />} label="미필" />
-                        <FormControlLabel value="해당없음" control={<Radio />} label="해당없음" />
+                        <FormControlLabel value="필" control={<Radio size="small" />} label="병역필" />
+                        <FormControlLabel value="미필" control={<Radio size="small" />} label="미필" />
+                        <FormControlLabel value="해당없음" control={<Radio size="small" />} label="해당없음" />
                       </RadioGroup>
                     </StyledInputCell>
                     <StyledLabelCell>군별</StyledLabelCell>
@@ -628,24 +761,61 @@ export default function AiResumePage() {
               >
                 {isLoading ? <CircularProgress size={24} /> : "AI로 작성하기"}
               </Button>
-
-              {/* PDF 다운로드 버튼 추가 */}
-              <PDFDownloadLink
-                document={<ResumePdfDocument formData={formData} />}
-                fileName="이력서.pdf"
-                style={{ textDecoration: 'none' }}
-              >
-                {({ loading }) => (
+              
+              {/* ▼▼▼ [수정 1] 하이드레이션 오류 방지를 위해 isClient로 래핑 ▼▼▼ */}
+              {isClient ? (
+                <>
+                  <PDFDownloadLink
+                    document={<ResumePdfDocument formData={formData} imageUrl={formData.imageUrl} />}
+                    fileName="이력서.pdf"
+                    style={{ textDecoration: 'none' }}
+                  >
+                    {({ loading }) => (
+                      <Button
+                        variant="outlined"
+                        size="large"
+                        sx={{ minWidth: '200px' }}
+                        disabled={loading || isLoading} // AI 로딩 중에도 비활성화
+                      >
+                        {loading ? <CircularProgress size={24} /> : "PDF로 다운로드"}
+                      </Button>
+                    )}
+                  </PDFDownloadLink>
+                  
+                  {/* 이력서 저장 버튼 */}
+                  <Button
+                    variant="contained"
+                    size="large"
+                    sx={{ minWidth: '200px' }}
+                    onClick={handleSaveResume} // 저장 핸들러 연결
+                    disabled={isLoading} // 로딩 중일 때 버튼 비활성화
+                  >
+                    {isLoading ? <CircularProgress size={24} /> : "이력서 저장"}
+                  </Button>
+                </>
+              ) : (
+                // SSR 중에는 비활성화된 버튼을 보여줌 (자리 차지용)
+                <>
                   <Button
                     variant="outlined"
                     size="large"
                     sx={{ minWidth: '200px' }}
-                    disabled={loading}
+                    disabled={true}
                   >
-                    {loading ? <CircularProgress size={24} /> : "PDF로 다운로드"}
+                    PDF로 다운로드
                   </Button>
-                )}
-              </PDFDownloadLink>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    sx={{ minWidth: '200px' }}
+                    disabled={true}
+                  >
+                    이력서 저장
+                  </Button>
+                </>
+              )}
+              {/* ▲▲▲ 수정 끝 ▲▲▲ */}
+
             </Box>
 
           </Box>
