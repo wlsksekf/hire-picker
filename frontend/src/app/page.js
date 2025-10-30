@@ -7,7 +7,7 @@ import {
   Card,
   CardActions,
   Box,
-  Stack,
+  Grid, // Stack을 Grid로 변경
   useTheme,
   Chip,
   CircularProgress,
@@ -22,7 +22,7 @@ import ChatRoom from '@/components/ChatRoom';
 
 import { api } from '@/api'; // 공용 api 인스턴스 사용
 
-const PAGE_SIZE = 20; // 페이지 당 불러올 채용 공고 수
+const PAGE_SIZE = 18; // 페이지 당 불러올 채용 공고 수 (3의 배수로 변경)
 
 // 메인 페이지 컴포넌트
 function MainPage() {
@@ -115,60 +115,63 @@ function MainPage() {
         <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
           전체 채용공고
         </Typography>
-        <Stack spacing={3}>
+        <Grid container spacing={3} sx={{ width: '100%' }}>
           {jobs.map(function(job) {
             return (
-              <Card key={job.id} sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between', 
-                width: '100%', 
-                borderRadius: '16px', 
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                p: { xs: 2, sm: 3 }
-              }}>
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                    <Avatar 
-                        src={getLogoUrl(job.logoUrl)}
-                        alt={`${job.companyName} logo`}
-                        sx={{ width: 40, height: 40, mr: 2, border: `1px solid ${theme.palette.divider}` }}
-                    >
-                        {job.companyName ? job.companyName.charAt(0) : 'C'}
-                    </Avatar>
-                    <Typography variant="body1" color="text.secondary">{job.companyName}</Typography>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={job.id}>
+                <Card sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  justifyContent: 'space-between', 
+                  height: '100%', // 카드의 높이를 부모 Grid item에 맞춤
+                  borderRadius: '16px', 
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  p: { xs: 2, sm: 3 },
+                  overflow: 'hidden' // 내용이 넘치면 숨김
+                }}>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5, minWidth: 0 }}>
+                      <Avatar 
+                          src={getLogoUrl(job.logoUrl)}
+                          alt={`${job.companyName} logo`}
+                          sx={{ width: 40, height: 40, mr: 2, border: `1px solid ${theme.palette.divider}` }}
+                      >
+                          {job.companyName ? job.companyName.charAt(0) : 'C'}
+                      </Avatar>
+                      <Typography variant="body1" color="text.secondary" noWrap sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.companyName}</Typography>
+                    </Box>
+                    <Typography variant="h5" fontWeight="bold" noWrap sx={{ minHeight: '64px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{job.title}</Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
+                      {job.employmentType && <Chip label={job.employmentType} sx={{ backgroundColor: theme.palette.filters.employmentType, color: 'black', fontWeight: 'bold' }} />}
+                      {job.location && <Chip label={job.location} sx={{ backgroundColor: theme.palette.filters.companyType, color: 'black', fontWeight: 'bold' }} />}
+                      {job.startDate && job.endDate && <Chip icon={<FontAwesomeIcon icon={faCalendar} />} label={`${job.startDate} ~ ${job.endDate}`} />}
+                    </Box>
                   </Box>
-                  <Typography variant="h5" fontWeight="bold">{job.title}</Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-                    {job.employmentType && <Chip label={job.employmentType} sx={{ backgroundColor: theme.palette.filters.employmentType, color: 'black', fontWeight: 'bold' }} />}
-                    {job.location && <Chip label={job.location} sx={{ backgroundColor: theme.palette.filters.companyType, color: 'black', fontWeight: 'bold' }} />}
-                    {job.startDate && job.endDate && <Chip icon={<FontAwesomeIcon icon={faCalendar} />} label={`${job.startDate} ~ ${job.endDate}`} />}
-                  </Box>
-                </Box>
-                <CardActions sx={{ p: 0, mt: 2, alignSelf: 'flex-end' }}>
-                  {/* ************************* 채팅 작업중>>시작**************************************** */}
-                  <Button 
-                    variant="outlined" 
-                    onClick={function() { setSelectedPost(job); }}
-                  >
-                    실시간 채팅
-                  </Button>
-                  {/* ************************* 채팅 작업중>>끝****************************************** */}
-
-                  <Button 
-                      variant="contained"
-                      href={job.homepageUrl && (job.homepageUrl.startsWith('http') ? job.homepageUrl : `http://${job.homepageUrl}`)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      disabled={!job.homepageUrl}
+                  <CardActions sx={{ p: 0, mt: 2, alignSelf: 'flex-end' }}>
+                    {/* ************************* 채팅 작업중>>시작**************************************** */}
+                    <Button 
+                      variant="outlined" 
+                      onClick={function() { setSelectedPost(job); }}
                     >
-                      지원하기
+                      실시간 채팅
                     </Button>
-                </CardActions>
-              </Card>
+                    {/* ************************* 채팅 작업중>>끝****************************************** */}
+
+                    <Button 
+                        variant="contained"
+                        href={job.homepageUrl && (job.homepageUrl.startsWith('http') ? job.homepageUrl : `http://${job.homepageUrl}`)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        disabled={!job.homepageUrl}
+                      >
+                        지원하기
+                      </Button>
+                  </CardActions>
+                </Card>
+              </Grid>
             )
           })}
-        </Stack>
+        </Grid>
         
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
           {hasNextPage && (
@@ -182,6 +185,7 @@ function MainPage() {
         </Box>
 
         {!hasNextPage && jobs.length > 0 && <Typography textAlign="center" sx={{ mt: 4, color: 'text.secondary' }}>모든 정보를 불러왔습니다.</Typography>}
+
       </Box>
 
       {selectedPost && (
