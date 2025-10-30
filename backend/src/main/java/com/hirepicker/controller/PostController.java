@@ -15,6 +15,9 @@ import com.hirepicker.result.ResultData;
 import com.hirepicker.service.PostService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 @RequiredArgsConstructor
 @RequestMapping("/api/posts")
@@ -53,6 +56,13 @@ public ResultData<Posts> getPost(@PathVariable("post_idx") Long postIdx) {
 
     // 상세 조회는 항목이 하나이므로 count를 1또는 0으로 처리합니다.
     return ResultData.of((post != null ? 1 : 0), msg, post);
+}
+
+@PostMapping("/write")
+public int setPost(@RequestBody String entity) {
+  
+    
+return result;
 }
 
 }
