@@ -84,7 +84,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(List.of("http://localhost:3000", "https://hire-picker.com")); // ★ 수정: 프론트엔드 주소만 명시적으로 허용
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of("*")); 
+        config.setExposedHeaders(List.of("*"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config); // 모든 경로에 대해 이 설정 적용
