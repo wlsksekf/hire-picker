@@ -13,4 +13,5 @@ public class UserDto {
     private String email;
     private String name;
     private String provider;
+    private String nickname;
 }

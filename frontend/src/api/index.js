@@ -141,3 +141,45 @@ export const confirmTossPayment = (paymentData) => {
       throw error;
     });
 };
+
+/**
+ * [마이페이지] 현재 로그인한 사용자의 개인정보 조회
+ * 쿠키의 액세스 토큰을 통해 인증
+ * @returns {Promise<object>} 사용자 정보 (name, nickname, email, imageUrl 등)
+ */
+export function getUserProfile() {
+  return api.get('/api/users/me')
+    .then(function(response) {
+      return response.data;
+    })
+    .catch(function(error) {
+      console.error('사용자 정보 조회 실패:', error);
+      throw error;
+    });
+}
+
+/**
+ * [마이페이지] 사용자 정보 업데이트 (부분 수정)
+ * 
+ * HTTP PATCH 메서드 사용:
+ * - PATCH는 리소스의 일부분만 수정할 때 사용하는 HTTP 메서드입니다
+ * - PUT과 달리 모든 필드를 보낼 필요 없이, 변경할 필드만 전송합니다
+ * - 예시: { nickname: "새닉네임" } 만 보내면 닉네임만 변경됨
+ * 
+ * 쿠키의 액세스 토큰을 통해 인증
+ * 
+ * @param {object} updateData - 업데이트할 정보 (변경할 필드만 포함)
+ *   예시 1: { nickname: "새닉네임" } - 닉네임만 변경
+ *   예시 2: { nickname: "새닉네임", password: "새비밀번호" } - 닉네임과 비밀번호 변경
+ * @returns {Promise<object>} 업데이트 결과
+ */
+export function updateUserProfile(updateData) {
+  return api.patch('/api/users/my-profile', updateData)
+    .then(function(response) {
+      return response.data;
+    })
+    .catch(function(error) {
+      console.error('프로필 업데이트 실패:', error);
+      throw error;
+    });
+}
