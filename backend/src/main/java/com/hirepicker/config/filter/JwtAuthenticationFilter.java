@@ -33,6 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final List<String> EXCLUDE_URLS = Arrays.asList(
             "/api/auth/**",
             "/api/oauth2/**",
+            // "/api/users/signup", // 회원가입만 인증 제외
             "/login/oauth2/code/google",
             "/swagger-ui.html",
             "/swagger-ui/**",

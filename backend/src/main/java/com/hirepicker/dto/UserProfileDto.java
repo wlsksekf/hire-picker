@@ -10,17 +10,21 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UserProfileDto {
     private String name;
+    private String nickname;
+    private String email;
+    private String imageUrl;
     private String gender;
     private String phoneNumber;
-    private String email;
     private String address;
 
     public static UserProfileDto fromEntity(PersonalUser user) {
         return new UserProfileDto(
             user.getName(),
+            user.getNickname(),
+            user.getEmail(),
+            null, // imageUrl은 현재 DB에 없으므로 null
             user.getGender() != null ? user.getGender().name() : null, // Enum to String
             user.getPhoneNumber(),
-            user.getEmail(),
             user.getAddress()
         );
     }
