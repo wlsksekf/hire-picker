@@ -1,6 +1,8 @@
 package com.hirepicker.handler;
 
 import com.hirepicker.exception.SocialAccountNeedsPasswordException;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -8,6 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice // 모든 @RestController에서 발생하는 예외를 처리
 public class GlobalExceptionHandler {
 
@@ -24,8 +27,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleAllUncaughtException(Exception ex) {
         // 서버 로그에는 전체 에러를 기록해서 원인 파악을 쉽게 함
-        // log.error("Unhandled server error occurred: ", ex);
-        
+        log.error("Unhandled server error occurred: ", ex);
+
         // 클라이언트에게는 상세 내용을 숨기고 일반적인 에러 메시지를 반환
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR) // 500 Internal Server Error

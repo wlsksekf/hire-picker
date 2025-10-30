@@ -9,20 +9,9 @@ server:
     connection-timeout: 90000 # 90초
 
 # === 데이터베이스(DB) 설정 ===
-# [수정됨] H2 DB로 연결되는 문제를 해결하기 위해 RDS(MySQL) 설정을 명시적으로 추가
+# H2 DB로 연결되는 문제를 해결하기 위해 RDS(MySQL) 설정을 명시적으로 추가
 # .env 파일의 변수(${DB_URL} 등)를 참조함
 spring:
-
-  ai:
-    vertex:
-      ai:
-        project-id: ${SPRING_AI_VERTEX_AI_PROJECT_ID}
-        gemini:
-          location: ${SPRING_AI_VERTEX_AI_GEMINI_LOCATION}
-          chat:
-            options:
-              model: ${SPRING_AI_VERTEX_AI_GEMINI_CHAT_MODEL}
-              temperature: 0.7 # 0.0(정확) ~ 1.0(창의적)
   # 기본 프로필을 'local'으로 설정. 다른 프로필이 지정되면 무시됨.
   profiles:
     default: local
@@ -44,14 +33,14 @@ spring:
 
   # === JPA 설정 ===
   jpa:
-    # [수정됨] OSIV 경고(WARN) 해결: 성능 향상을 위해 false로 설정
+    # 성능 향상을 위해 false로 설정
     open-in-view: false
     hibernate:
       # 공통 ddl-auto는 여기서 관리 (prod에서 실수로 update/create 되는 것을 방지)
       ddl-auto: none
     properties:
       hibernate:
-        # [추가됨] MySQL 8+ 버전 호환용 Dialect(방언) 설정
+        # MySQL 8+ 버전 호환용 Dialect(방언) 설정
         dialect: org.hibernate.dialect.MySQLDialect
 
   # === Spring Security (OAuth2) ===
@@ -99,7 +88,7 @@ logging:
   level:
     root: INFO
     org.springframework.security: INFO
-    # [수정됨] CustomAuthenticationProvider 사용 시 발생하는 UserDetailsService 경고(WARN) 로그 끄기
+    # CustomAuthenticationProvider 사용 시 발생하는 UserDetailsService 경고(WARN) 로그 끄기
     'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer': ERROR
 
 # === 외부 API 키 ===

@@ -12,7 +12,7 @@ const api = axios.create({
 // 응답 인터셉터: 401 Unauthorized 에러 처리 (토큰 갱신)
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
+  (error) => {
     const originalRequest = error.config;
     console.log('Axios Interceptor: Received error', error.response.status, originalRequest.url);
     // 401 에러이고, 이미 재시도한 요청이 아니며, 로그인/회원가입/토큰 갱신 요청이 아닌 경우
@@ -20,27 +20,23 @@ api.interceptors.response.use(
       originalRequest._retry = true; // 재시도 플래그 설정
       console.log('Axios Interceptor: Attempting token refresh for', originalRequest.url);
 
-      try {
-        // 리프레시 토큰 엔드포인트 호출
-        await api.post('/api/auth/refresh');
+      // Promise 체이닝 방식으로 변경
+      return api.post('/api/auth/refresh').then(() => {
         console.log('Axios Interceptor: Token refresh successful.');
 
         // 토큰 갱신 성공 후, authStore의 인증 상태를 다시 초기화하여 user 정보를 가져옴
-        // 이렇게 하면 새로운 accessToken으로 /api/users/my-profile을 다시 호출하게 됨
         useAuthStore.getState().initializeAuth();
 
         // 원래 요청을 재시도하는 대신, initializeAuth가 처리하도록 함
         return Promise.resolve({ status: 200, data: { message: 'Token refreshed, re-initializing auth.' } }); // 임시 응답 반환
-      } catch (refreshError) {
+      }).catch((refreshError) => {
         // 리프레시 토큰 갱신 실패 시 (예: 리프레시 토큰 만료)
-        // 이 에러는 예상된 상황이므로 console.error로 찍지 않습니다.
-        // console.error('Axios Interceptor: Token refresh failed', refreshError); // 이 줄을 주석 처리 또는 제거
-        console.log('Axios Interceptor: Token refresh failed (expected in logged-out state).'); // 대신 정보성 로그 추가
+        console.log('Axios Interceptor: Token refresh failed (expected in logged-out state).');
         
         // 로그아웃 처리
         useAuthStore.getState().logout();
         return Promise.reject(refreshError);
-      }
+      });
     }
 
     return Promise.reject(error);

@@ -47,7 +47,8 @@
     "styled-components": "^6.1.19",
     "three": "^0.180.0",
     "web-vitals": "^2.1.4",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.8",
+    "js-cookie": "^3.0.5"
   },
   "devDependencies": {
     "rimraf": "^6.0.1"

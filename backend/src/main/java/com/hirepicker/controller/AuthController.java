@@ -6,6 +6,9 @@ import com.hirepicker.dto.SignupRequestDto; // ★ 새로 만든 DTO 임포트
 import com.hirepicker.service.AuthService;
 import com.hirepicker.service.EmailService; // ★ EmailService 임포트
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse; // HttpOnly 쿠키 설정을 위한 Import
 import lombok.RequiredArgsConstructor;
@@ -33,8 +36,14 @@ public class AuthController {
      * [신규] 회원가입을 위한 이메일 인증 코드 발송
      */
     @Operation(summary = "이메일 인증 코드 발송", description = "회원가입을 위해 이메일로 인증 코드를 발송합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "인증 코드가 발송되었습니다."),
+        @ApiResponse(responseCode = "400", description = "이메일을 입력해주세요."),
+        @ApiResponse(responseCode = "409", description = "이미 가입된 이메일입니다."),
+        @ApiResponse(responseCode = "500", description = "이메일 발송 중 오류 발생")
+    })
     @PostMapping("/send-verification")
-    public ResponseEntity<String> sendVerificationCode(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<String> sendVerificationCode(@Parameter(description = "인증받을 이메일", required = true) @RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         log.info("[API] /api/auth/send-verification 요청 수신. 이메일: {}", email);
         if (email == null || email.trim().isEmpty()) {
@@ -62,8 +71,12 @@ public class AuthController {
      * [신규] 이메일 인증 코드 확인
      */
     @Operation(summary = "이메일 인증 코드 확인", description = "입력된 인증 코드가 유효한지 확인하고 '인증 완료' 상태로 변경합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "이메일이 성공적으로 인증되었습니다."),
+        @ApiResponse(responseCode = "400", description = "인증 코드가 유효하지 않거나 만료되었습니다.")
+    })
     @PostMapping("/check-verification")
-    public ResponseEntity<String> checkVerificationCode(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<String> checkVerificationCode(@Parameter(description = "인증받을 이메일과 인증 코드", required = true) @RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String code = payload.get("verificationCode");
         log.info("[API] /api/auth/check-verification 요청 수신. 이메일: {}", email);
@@ -82,6 +95,12 @@ public class AuthController {
      * [수정] 개인 회원 회원가입 처리 ('인증 완료' 상태 검증)
      */
     @Operation(summary = "개인 회원가입", description = "'인증 완료' 상태 확인 후 개인 회원으로 가입합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "개인 회원가입 성공"),
+        @ApiResponse(responseCode = "400", description = "이메일 인증이 완료되지 않았거나 만료되었습니다."),
+        @ApiResponse(responseCode = "409", description = "이미 가입된 이메일 또는 사용 중인 닉네임입니다."),
+        @ApiResponse(responseCode = "500", description = "회원가입 중 오류가 발생했습니다.")
+    })
     @PostMapping("/signup/personal")
     public ResponseEntity<String> registerPersonalUser(@RequestBody SignupRequestDto signupRequest, HttpServletResponse response) {
         log.info("[API] /api/auth/signup/personal 요청 수신. 사용자: {}", signupRequest.getEmail());
@@ -114,6 +133,12 @@ public class AuthController {
      * [신규] 기업 회원 회원가입 처리
      */
     @Operation(summary = "기업 회원가입", description = "이메일 인증 후 기업 회원으로 가입합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "기업 회원가입 성공"),
+        @ApiResponse(responseCode = "400", description = "이메일 인증이 완료되지 않았거나 만료되었습니다."),
+        @ApiResponse(responseCode = "409", description = "이미 사용중인 아이디 또는 이메일입니다."),
+        @ApiResponse(responseCode = "500", description = "회원가입 중 오류가 발생했습니다.")
+    })
     @PostMapping("/signup/company")
     public ResponseEntity<String> registerCompanyUser(@RequestBody CompanySignupRequestDto signupRequest, HttpServletResponse response) {
         log.info("[API] /api/auth/signup/company 요청 수신. 사용자 ID: {}", signupRequest.getId());
@@ -143,6 +168,11 @@ public class AuthController {
      * [기존] 로그인 (개인/기업)
      */
     @Operation(summary = "로그인", description = "이메일과 비밀번호를 사용하여 로그인하고 JWT 토큰을 발급받습니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "로그인 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 실패"),
+        @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     @PostMapping("/login")
     public ResponseEntity<Void> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         log.info("[API] /api/auth/login 요청 수신. 사용자: {}", loginRequest.getEmail());
@@ -151,6 +181,9 @@ public class AuthController {
     }
 
     @Operation(summary = "로그아웃", description = "사용자 세션을 종료하고 JWT 토큰 쿠키를 삭제합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "로그아웃 성공")
+    })
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletResponse response) {
         log.info("[API] /api/auth/logout 요청 수신");
@@ -159,6 +192,10 @@ public class AuthController {
     }
 
     @Operation(summary = "토큰 갱신", description = "리프레시 토큰을 사용하여 새로운 액세스 토큰을 발급받습니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "토큰 갱신 성공"),
+        @ApiResponse(responseCode = "401", description = "토큰 갱신 실패")
+    })
     @PostMapping("/refresh")
     public ResponseEntity<Void> refreshToken(jakarta.servlet.http.HttpServletRequest request, HttpServletResponse response) {
         log.info("[API] /api/auth/refresh 요청 수신");

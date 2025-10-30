@@ -35,7 +35,7 @@ const useAuthStore = create((set, get) => ({
     set({ isLoading: true });
 
     // ★ validateStatus 옵션을 추가하여 401을 에러로 처리하지 않도록 설정
-    api.get('/api/users/my-profile', {
+    api.get('/api/users/me', {
       validateStatus: function (status) {
         return status < 500; // 500 미만의 상태 코드는 모두 정상 응답으로 간주
       },

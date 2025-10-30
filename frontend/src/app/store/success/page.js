@@ -12,7 +12,7 @@ function SuccessPageContent() {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const confirmPayment = async () => {
+        const confirmPayment = () => {
             const paymentKey = searchParams.get("paymentKey");
             const orderId = searchParams.get("orderId");
             const amount = searchParams.get("amount");
@@ -22,14 +22,13 @@ function SuccessPageContent() {
                 return;
             }
 
-            try {
-                // 1. 우리 백엔드에 결제 승인 요청
-                const response = await axios.post('/api/payment/confirm', {
-                    paymentKey,
-                    orderId,
-                    amount: Number(amount),
-                });
-                
+            // 1. 우리 백엔드에 결제 승인 요청
+            axios.post('/api/payment/confirm', {
+                paymentKey,
+                orderId,
+                amount: Number(amount),
+            })
+            .then(response => {
                 // 2. 백엔드 응답(Toss 원본 객체)에 따라 분기
                 const { status, virtualAccount } = response.data;
                 
@@ -48,13 +47,13 @@ function SuccessPageContent() {
 
                 // 5초 후 마이페이지로 이동
                 setTimeout(() => router.replace('/mypage'), 5000);
-                
-            } catch (err) {
+            })
+            .catch(err => {
                 console.error(err);
                 const errorMsg = err.response?.data?.message || err.message;
                 // 실패 페이지로 리다이렉트
                 router.replace(`/store/fail?code=${err.response?.status || '500'}&message=${encodeURIComponent(errorMsg)}`);
-            }
+            });
         };
 
         confirmPayment();
