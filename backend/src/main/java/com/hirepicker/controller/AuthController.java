@@ -2,12 +2,12 @@ package com.hirepicker.controller;
 
 import com.hirepicker.dto.CompanySignupRequestDto;
 import com.hirepicker.dto.LoginRequest;
-import com.hirepicker.dto.LoginResponse;
 import com.hirepicker.dto.SignupRequestDto; // ★ 새로 만든 DTO 임포트
 import com.hirepicker.service.AuthService;
 import com.hirepicker.service.EmailService; // ★ EmailService 임포트
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse; // HttpOnly 쿠키 설정을 위한 Import
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -83,7 +83,7 @@ public class AuthController {
      */
     @Operation(summary = "개인 회원가입", description = "'인증 완료' 상태 확인 후 개인 회원으로 가입합니다.")
     @PostMapping("/signup/personal")
-    public ResponseEntity<?> registerPersonalUser(@RequestBody SignupRequestDto signupRequest) {
+    public ResponseEntity<String> registerPersonalUser(@RequestBody SignupRequestDto signupRequest, HttpServletResponse response) {
         log.info("[API] /api/auth/signup/personal 요청 수신. 사용자: {}", signupRequest.getEmail());
 
         // 1. (★수정) '인증 완료' 상태 검증
@@ -96,10 +96,10 @@ public class AuthController {
 
         // 2. (검증 통과) 기존 회원가입 로직 수행
         try {
-            LoginResponse response = authService.registerPersonalUser(signupRequest); 
+            authService.registerPersonalUser(signupRequest, response); 
             log.info("개인 회원가입 성공. 사용자: {}", signupRequest.getEmail());
             // 3. 성공 응답 (JWT 토큰 포함)
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            return ResponseEntity.status(HttpStatus.CREATED).build();
             
         } catch (IllegalArgumentException e) {
              log.warn("회원가입 중 충돌 발생: {}", e.getMessage());
@@ -115,7 +115,7 @@ public class AuthController {
      */
     @Operation(summary = "기업 회원가입", description = "이메일 인증 후 기업 회원으로 가입합니다.")
     @PostMapping("/signup/company")
-    public ResponseEntity<?> registerCompanyUser(@RequestBody CompanySignupRequestDto signupRequest) {
+    public ResponseEntity<String> registerCompanyUser(@RequestBody CompanySignupRequestDto signupRequest, HttpServletResponse response) {
         log.info("[API] /api/auth/signup/company 요청 수신. 사용자 ID: {}", signupRequest.getId());
 
         // (★수정) '인증 완료' 상태 검증
@@ -127,9 +127,9 @@ public class AuthController {
         }
 
         try {
-            LoginResponse response = authService.registerCompanyUser(signupRequest);
+            authService.registerCompanyUser(signupRequest, response);
             log.info("기업 회원가입 성공. 사용자 ID: {}", signupRequest.getId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            return ResponseEntity.status(HttpStatus.CREATED).build();
         } catch (IllegalArgumentException e) {
             log.warn("회원가입 중 충돌 발생: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
@@ -144,9 +144,31 @@ public class AuthController {
      */
     @Operation(summary = "로그인", description = "이메일과 비밀번호를 사용하여 로그인하고 JWT 토큰을 발급받습니다.")
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<Void> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         log.info("[API] /api/auth/login 요청 수신. 사용자: {}", loginRequest.getEmail());
-        LoginResponse loginResponse = authService.login(loginRequest);
-        return ResponseEntity.ok(loginResponse);
+        authService.login(loginRequest, response);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "로그아웃", description = "사용자 세션을 종료하고 JWT 토큰 쿠키를 삭제합니다.")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletResponse response) {
+        log.info("[API] /api/auth/logout 요청 수신");
+        authService.logout(response);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "토큰 갱신", description = "리프레시 토큰을 사용하여 새로운 액세스 토큰을 발급받습니다.")
+    @PostMapping("/refresh")
+    public ResponseEntity<Void> refreshToken(jakarta.servlet.http.HttpServletRequest request, HttpServletResponse response) {
+        log.info("[API] /api/auth/refresh 요청 수신");
+        try {
+            authService.refreshToken(request, response);
+            log.info("토큰 갱신 성공");
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("토큰 갱신 실패: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 }

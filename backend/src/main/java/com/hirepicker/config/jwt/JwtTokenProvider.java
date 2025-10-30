@@ -64,11 +64,18 @@ public class JwtTokenProvider {
 
     // 리프레시 토큰 생성
     public String createRefreshToken(Authentication authentication) {
+        // CustomUserDetails에서 id와 userType을 가져와 클레임에 추가
+        com.hirepicker.config.security.CustomUserDetails userDetails = (com.hirepicker.config.security.CustomUserDetails) authentication.getPrincipal();
+        Long userId = userDetails.getId();
+        String userType = userDetails.getUserType().name();
+
         long now = (new Date()).getTime();
         Date validity = new Date(now + this.refreshTokenValidityInMilliseconds); // 만료 시간 설정
 
         return Jwts.builder()
                 .setSubject(authentication.getName()) // 주체 설정
+                .claim("id", userId) // 사용자 ID 추가
+                .claim("userType", userType) // 사용자 타입 추가
                 .signWith(key, SignatureAlgorithm.HS512) // 서명
                 .setExpiration(validity) // 만료 시간 설정
                 .compact(); // 압축하여 반환

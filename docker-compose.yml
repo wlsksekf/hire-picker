@@ -101,6 +101,11 @@ services:
     container_name: hirepicker-frontend
     image: ${DOCKER_USERNAME}/${FRONTEND_IMAGE}:latest
     restart: on-failure
+    logging: # 로그 로테이션 설정 추가
+      driver: "json-file"
+      options:
+        max-size: "1m" # 로그 파일 최대 크기: 1MB
+        max-file: "3"  # 최대 파일 개수: 3개
     networks:
       - hirepicker-network
     profiles: ["prod"]
@@ -111,6 +116,11 @@ services:
     restart: on-failure
     security_opt:
       - seccomp:unconfined
+    logging: # 로그 로테이션 설정 추가
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "3"
     env_file:
       - ./.env
     environment:

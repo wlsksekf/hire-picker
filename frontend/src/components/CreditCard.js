@@ -48,14 +48,15 @@ const StyledWrapper = styled.div.withConfig({
     overflow: visible;
     width: 190px;
     height: 254px;
-    border: 2px solid transparent;
-    border-radius: 7px; /* card border-radius + 2px */
-    transition: border-color 0.3s ease-in-out;
+    border: 3px solid transparent; // 테두리 굵기를 3px로 증가
+    border-radius: 8px; 
+    transition: all 0.3s ease-in-out; // 모든 효과에 애니메이션 적용
 
     ${({ isSelected }) =>
       isSelected &&
       css`
-        border-color: ${({ theme }) => theme.palette.primary.main}; // 테마의 기본 색상을 사용하도록 수정
+        border-color: ${({ theme }) => theme.palette.primary.main};
+        box-shadow: 0 0 12px 3px ${({ theme }) => theme.palette.primary.light}; // 빛나는 효과 추가
       `}
   }
 
@@ -94,7 +95,7 @@ const StyledWrapper = styled.div.withConfig({
     display: block;
     width: 160px;
     height: 160%;
-    background: linear-gradient(90deg, transparent, #ff9966, #ff9966, #ff9966, #ff9966, transparent);
+    background: linear-gradient(90deg, transparent, ${({ theme }) => theme.palette.primary.main}, ${({ theme }) => theme.palette.primary.main}, ${({ theme }) => theme.palette.primary.main}, ${({ theme }) => theme.palette.primary.main}, transparent);
     animation: rotation_481 5000ms infinite linear;
   }
 
@@ -185,6 +186,7 @@ const StyledWrapper = styled.div.withConfig({
   }
 
   .circle {
+    display: none; /* 흐릿한 점들 제거 */
     width: 90px;
     height: 90px;
     border-radius: 50%;

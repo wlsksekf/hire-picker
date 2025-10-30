@@ -50,11 +50,13 @@ public class SecurityConfig {
  
                 // 회원가입 엔드포인트는 무조건 허용 (가장 먼저 체크)
                 .requestMatchers(HttpMethod.POST, "/api/users/signup").permitAll()
-                .requestMatchers("/api/auth/**", "/api/users/**", "/api/work24/**", "/actuator/**", "/api/health/**", "/api/manage/**", "/confirm/**", "/confirm-billing", "/issue-billing-key", "/callback-auth", "/fail", "/swagger-ui/**", "/api-docs/**", "/error", "/api/companies/**").permitAll()
+                .requestMatchers("/api/users/my-profile").authenticated()
+                .requestMatchers("/api/auth/**", "/api/work24/**", "/actuator/**", "/api/health/**", "/api/manage/**", "/confirm/**", "/confirm-billing", "/issue-billing-key", "/callback-auth", "/fail", "/swagger-ui/**", "/api-docs/**", "/error", "/api/companies/**").permitAll()
                 .requestMatchers("/api/oauth2/**").permitAll() // ★ 소셜 로그인 경로 허용
                 .requestMatchers("/api/payment/webhook").permitAll() // 웹훅 엔드포인트는 모두 허용
                 .requestMatchers("/chat/**","/ws","/ws/**","/chat/history/**").permitAll()
                 .requestMatchers("/api/payment/**").authenticated() // 나머지 결제 관련 API는 인증 필요
+                .requestMatchers(HttpMethod.POST, "/api/ai/upload-image").permitAll() // 이미지 업로드 엔드포인트는 인증 없이 허용
                 .requestMatchers("/api/ai/**").authenticated() // [AI 기능 추가] AI 관련 API는 인증된 사용자만 접근 가능
                 .requestMatchers("/api/credits/**").authenticated() // [크레딧 기능 추가] 크레딧 관련 API는 인증된 사용자만 접근 가능
                 .anyRequest().authenticated()
@@ -76,7 +78,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
         
         config.setAllowCredentials(true);
-        config.setAllowedOriginPatterns(List.of("*")); // [중요] 모든 출처 허용
+        config.setAllowedOrigins(List.of("http://localhost:3000", "https://hire-picker.com")); // ★ 수정: 프론트엔드 주소만 명시적으로 허용
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("*")); 

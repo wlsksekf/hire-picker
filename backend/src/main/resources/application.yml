@@ -5,6 +5,8 @@
 server:
   port: 8080
   address: 0.0.0.0
+  tomcat:
+    connection-timeout: 90000 # 90초
 
 # === 데이터베이스(DB) 설정 ===
 # [수정됨] H2 DB로 연결되는 문제를 해결하기 위해 RDS(MySQL) 설정을 명시적으로 추가
@@ -14,14 +16,12 @@ spring:
   ai:
     vertex:
       ai:
+        project-id: ${SPRING_AI_VERTEX_AI_PROJECT_ID}
         gemini:
-          project-id: ${SPRING_AI_VERTEX_AI_GEMINI_PROJECT_ID} # .env 파일에서 프로젝트 ID를 읽어옴
-          location: ${SPRING_AI_VERTEX_AI_GEMINI_LOCATION} # .env 파일에서 리전 정보를 읽어옴
-          api-key: ${SPRING_AI_VERTEX_AI_GEMINI_API_KEY} # .env 파일에서 키를 읽어옴
+          location: ${SPRING_AI_VERTEX_AI_GEMINI_LOCATION}
           chat:
             options:
-              # 무료 등급에서 빠르고 성능 좋은 모델 (2025년 기준)
-              model: gemini-1.5-flash-001
+              model: ${SPRING_AI_VERTEX_AI_GEMINI_CHAT_MODEL}
               temperature: 0.7 # 0.0(정확) ~ 1.0(창의적)
   # 기본 프로필을 'local'으로 설정. 다른 프로필이 지정되면 무시됨.
   profiles:
@@ -102,16 +102,6 @@ logging:
     # [수정됨] CustomAuthenticationProvider 사용 시 발생하는 UserDetailsService 경고(WARN) 로그 끄기
     'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer': ERROR
 
-    # 디버깅을 위한 특정 패키지 로그 레벨 설정
-    com.hirepicker.config.filter.JwtAuthenticationFilter: DEBUG
-    com.hirepicker.config.security.CustomAuthenticationProvider: DEBUG
-    com.hirepicker.service.UserDetailsServiceImpl: DEBUG
-    com.hirepicker.controller.AuthController: DEBUG
-    com.hirepicker.controller.UserController: DEBUG
-    com.hirepicker.service.AuthService: DEBUG
-    com.zaxxer.hikari: DEBUG
-
-
 # === 외부 API 키 ===
 # [추가됨] .env 파일의 API 키들을 Spring에서 쉽게 주입받아 사용하기 위한 설정
 api:
@@ -124,6 +114,11 @@ payment:
     api-secret-key: ${TOSS_API_SECRET_KEY}
     client-key: ${NEXT_PUBLIC_TOSS_CLIENT_KEY}
     api-url: "https://api.tosspayments.com"
+
+# Gemini API Key
+gemini:
+  api:
+    key: ${gemini_api_key}
 
 management:
   endpoints:

@@ -5,65 +5,49 @@ import useAuthStore from '../store/authStore'; // useAuthStore 임포트 (추가
 const api = axios.create({
   // baseURL을 상대경로로 설정하여 Next.js의 rewrites 프록시를 사용
   baseURL: '/',
+  withCredentials: true, // 백엔드와 쿠키를 주고받기 위해 추가
+  timeout: 90000, // 90초 타임아웃 설정 (밀리초 단위)
 });
 
-// 요청 인터셉터: 모든 요청에 액세스 토큰 추가 (추가됨)
-api.interceptors.request.use(
-  (config) => {
-    console.log('Axios Request Interceptor:', config.method.toUpperCase(), config.url);
-    // 공개 경로(회원가입 등)에는 토큰을 추가하지 않음
-    if (config.url.includes('/api/auth/signup') || config.url.includes('/api/auth/send-verification') || config.url.includes('/api/auth/check-verification')) {
-      console.log('Public route, not adding token.');
-      return config;
-    }
-
-    const { accessToken } = useAuthStore.getState(); // Zustand 스토어에서 토큰 가져오기
-    if (accessToken) {
-      console.log('Attaching token to request.');
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    } else {
-      console.log('No access token found.');
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// 응답 인터셉터: 401 에러 발생 시 토큰 갱신 시도 (추가됨)
+// 응답 인터셉터: 401 Unauthorized 에러 처리 (토큰 갱신)
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
+  (response) => response,
+  async (error) => {
     const originalRequest = error.config;
-    // 401 에러이고, 이미 재시도한 요청이 아니라면
-    if (error.response.status === 401 && error.response.data.message !== 'Invalid Refresh Token' && !originalRequest._retry) {
+    console.log('Axios Interceptor: Received error', error.response.status, originalRequest.url);
+    // 401 에러이고, 이미 재시도한 요청이 아니며, 로그인/회원가입/토큰 갱신 요청이 아닌 경우
+    if (error.response.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/api/auth/') && !originalRequest.url.includes('/api/users/my-profile')) {
       originalRequest._retry = true; // 재시도 플래그 설정
-      const { refreshAccessToken, logout } = useAuthStore.getState();
+      console.log('Axios Interceptor: Attempting token refresh for', originalRequest.url);
 
-      return refreshAccessToken().then((refreshed) => { // 토큰 갱신 시도
-        if (refreshed) {
-          // 갱신 성공 시, 새 액세스 토큰으로 원래 요청 재시도
-          const { accessToken } = useAuthStore.getState();
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          return api(originalRequest);
-        } else {
-          // 갱신 실패 시, 로그아웃 처리
-          logout();
-          // 로그인 페이지로 리다이렉트 (필요하다면)
-          // window.location.href = '/login';
-          return Promise.reject(error); // 갱신 실패 시 원래 에러를 reject
-        }
-      }).catch(() => { // refreshAccessToken 자체에서 발생할 수 있는 에러 처리
-        logout();
-        return Promise.reject(error); // refreshAccessToken이 에러를 던지면 원래 에러를 reject
-      });
+      try {
+        // 리프레시 토큰 엔드포인트 호출
+        await api.post('/api/auth/refresh');
+        console.log('Axios Interceptor: Token refresh successful.');
+
+        // 토큰 갱신 성공 후, authStore의 인증 상태를 다시 초기화하여 user 정보를 가져옴
+        // 이렇게 하면 새로운 accessToken으로 /api/users/my-profile을 다시 호출하게 됨
+        useAuthStore.getState().initializeAuth();
+
+        // 원래 요청을 재시도하는 대신, initializeAuth가 처리하도록 함
+        return Promise.resolve({ status: 200, data: { message: 'Token refreshed, re-initializing auth.' } }); // 임시 응답 반환
+      } catch (refreshError) {
+        // 리프레시 토큰 갱신 실패 시 (예: 리프레시 토큰 만료)
+        // 이 에러는 예상된 상황이므로 console.error로 찍지 않습니다.
+        // console.error('Axios Interceptor: Token refresh failed', refreshError); // 이 줄을 주석 처리 또는 제거
+        console.log('Axios Interceptor: Token refresh failed (expected in logged-out state).'); // 대신 정보성 로그 추가
+        
+        // 로그아웃 처리
+        useAuthStore.getState().logout();
+        return Promise.reject(refreshError);
+      }
     }
+
     return Promise.reject(error);
   }
 );
+
+
 
 /**
  * [신규] 이메일 인증 코드 발송 요청
@@ -81,7 +65,7 @@ export const sendVerificationEmail = (email) => {
  */
 export const checkVerificationCode = (email, verificationCode) => {
     return api.post('/api/auth/check-verification', { email, verificationCode });
-}; 
+};
 
 /**
  * [수정] 개인 회원가입 (모든 데이터 전송)

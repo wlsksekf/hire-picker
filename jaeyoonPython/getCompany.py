@@ -52,7 +52,7 @@ def getCompanyName(conn):
             
     return company_list
 
-# ⬇️ [수정 안 됨] 이 함수는 http 이미지를 저장하기 위해 '필요합니다'.
+# ⬇️ [⭐️⭐️⭐️ 이 함수가 빠져서 오류가 났습니다 ⭐️⭐️⭐️]
 def download_image(url, filename, headers):
     """
     URL(http...)로 부터 이미지를 다운로드합니다.
@@ -71,12 +71,12 @@ def download_image(url, filename, headers):
         print(f"->이미지 다운 실패 {e}")
         return None
 
-# ⬇️ [최종 수정] 고해상도 선택자를 'img.sFlh5c'로 되돌리기
+# ⬇️ [최종 수정] 'gstatic' 대기 시간을 10초로 늘림
 def find_logo_from_google(driver, companyName):
     
     print(f"\n[{companyName}] Selenium으로 이미지 검색 시작")
     
-    search_query = f"{companyName} 회사 로고" 
+    search_query = f"{companyName} 본사 건물" 
     search_url = f"https://www.google.com/search?q={search_query}&tbm=isch"
     
     headers = {
@@ -85,9 +85,9 @@ def find_logo_from_google(driver, companyName):
 
     try:
         driver.get(search_url)
-        wait = WebDriverWait(driver, 10) 
+        wait = WebDriverWait(driver, 10) # (페이지 로딩 10초 대기)
         
-        # 1. 썸네일 클릭 (⭐️ 이 로직은 완벽하므로 수정 안 함 ⭐️)
+        # 1. 썸네일 클릭 (크기 비교 로직)
         try:
             print(f"[{companyName}] 모든 썸네일(img.YQ4gaf)이 로드되기를 대기 중...")
             thumbnails = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "img.YQ4gaf")))
@@ -122,31 +122,50 @@ def find_logo_from_google(driver, companyName):
             return None
 
 
-        # 2. 고해상도 이미지 URL 가져오기 (⭐️ pT0Scc -> sFlh5c 로 수정 ⭐️)
+        # 2. 고해상도 이미지 URL 가져오기 ('gstatic' 10초 대기)
+        img_url = "" 
         try:
             print(f"[{companyName}] 고해상도 이미지(img.sFlh5c) 로딩 대기 중...")
             
-            # ⬇️ [⭐️⭐️⭐️ 여기만 수정 ⭐️⭐️⭐️]
-            large_image = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "img.sFlh5c")))
+            large_image_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "img.sFlh5c")))
             
-            img_url = large_image.get_attribute('src')
-            print(f"[{companyName}] 고해상도 이미지 URL 확보")
+            print(f"[{companyName}] ...'src'가 'gstatic'이 아닌 http URL이 될 때까지 10초간 대기...")
             
+            real_url_found = False
+            start_time = time.time()
+
+            while time.time() - start_time < 10: # (10초 대기)
+                img_url = large_image_element.get_attribute('src')
+                
+                if img_url and img_url.startswith('http') and 'gstatic.com' not in img_url:
+                    print(f"[{companyName}] 고해상도 'http' (non-gstatic) URL 확보!")
+                    real_url_found = True
+                    break
+                
+                time.sleep(0.2) 
+            
+            if not real_url_found:
+                print(f"[{companyName}] 10초 내 'non-gstatic' URL을 못찾음.")
+                if img_url and img_url.startswith('http'):
+                    print(f"[{companyName}] ...차선책으로 현재 'gstatic' 썸네일 URL을 사용합니다.")
+                else:
+                    print(f"[{companyName}] 10초 후에도 유효한 http URL을 찾지 못했습니다.")
+                    return None 
+
         except TimeoutException:
-            print(f"[{companyName}] 고해상도 미리보기 이미지를 로드하지 못했습니다 (Timeout).")
-            print(f"[{companyName}] -> (img.sFlh5c) 선택자가 또 변경되었을 수 있습니다.")
+            print(f"[{companyName}] 고해상도 이미지(img.sFlh5c) 자체를 찾지 못했습니다 (Timeout).")
             return None 
 
-        # 3. URL 유효성 검사 (이하 동일)
+        # 3. URL 유효성 검사
         if not img_url:
             print(f"[{companyName}] 이미지의 src 속성을 찾지 못했습니다.")
             return None
 
-        # 4. 파일명 처리 (이하 동일)
+        # 4. 파일명 처리
         safe_fileName = "".join([c for c in companyName if c.isalnum() or c in (' ', '_')]).rstrip()
         fileName = f"company_images/{safe_fileName}.png"
 
-        # 5. http만 저장 (이하 동일)
+        # 5. http만 저장
         if img_url.startswith('http'):
             print(f"[{companyName}] 고해상도 URL 찾음: {img_url[:50]}...")
             return download_image(img_url, fileName, headers)
@@ -159,7 +178,7 @@ def find_logo_from_google(driver, companyName):
         return None
 
 
-# --- [수정됨] '테스트 모드'로 1건만 실행 ---
+# --- [수정됨] '전체 실행 모드' + 'headless' 활성화 ---
 if __name__ == "__main__":
     
     # Selenium 로그 숨기기
@@ -173,12 +192,12 @@ if __name__ == "__main__":
     
     try:
         # 1. Selenium 드라이버 설정 (봇 탐지 우회 옵션 포함)
-        print("--- Selenium Chrome 드라이버를 시작합니다... (창 보이기 모드) ---")
+        print("--- Selenium Chrome 드라이버를 시작합니다... (headless) ---")
         service = Service(ChromeDriverManager().install())
         options = webdriver.ChromeOptions()
         
-        # ⭐️ 테스트를 위해 headless 모드를 주석 처리 (창이 보임)
-        # options.add_argument("--headless") 
+        # ⭐️ 창이 뜨지 않도록 'headless' 옵션을 다시 켰습니다.
+        options.add_argument("--headless") 
         
         options.add_argument("--log-level=3") 
         options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
@@ -209,29 +228,7 @@ if __name__ == "__main__":
             
             cursor = conn.cursor() # 업데이트용 커서 준비
 
-            # 4. [⭐️ 테스트 모드]
-            # 목록의 첫 번째 회사(companies[0]) 1건만 실행합니다.
-            # test_company = companies[0]
-            # print(f"--- [테스트 모드] 첫 번째 회사 '{test_company}' 1건만 실행합니다. ---")
-            
-            # saved_path = find_logo_from_google(driver, test_company) 
-                
-            # if saved_path:
-            #     print(f"[{test_company}] 이미지 저장 성공: {saved_path}")
-            #     try:
-            #         # ⚠️ 'image_path'는 실제 DB의 컬럼 이름이어야 합니다.
-            #         update_query = "UPDATE company SET image_path = %s WHERE company_name = %s"
-            #         cursor.execute(update_query, (saved_path, test_company))
-            #         print(f"[{test_company}] DB 업데이트 쿼리 실행")
-            #     except Exception as db_err:
-            #         print(f"[{test_company}] DB 업데이트 실패: {db_err}")
-            
-            # # 5. [⭐️ 테스트 모드] 1건 실행 후 즉시 커밋
-            # conn.commit()
-            # print("\n--- [테스트 모드] 1건의 변경사항이 커밋되었습니다. ---")
-
-            # --- ⬇️ 나중에 '전체 실행'으로 바꾸려면 아래 주석을 해제하세요 ---
-            # (위의 '4. 테스트 모드' 블록을 주석 처리하고 아래를 활성화)
+            # --- ⬇️ '전체 실행' 모드 ---
             
             print("\n--- [전체 실행 모드] 모든 회사 크롤링을 시작합니다. ---")
             for company in companies:
