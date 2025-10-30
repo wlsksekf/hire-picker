@@ -25,7 +25,7 @@ public class Posts {
     private Long post_idx;
 
     // --- 숫자형 필드 (Long) ---
-    private Long view_count; // 조회수는 Long 또는 Integer가 적절
+    private Integer view_count; // 조회수는 Long 또는 Integer가 적절
     
     // board_idx, p_user_idx는 Long 타입으로 수정
     @Column(nullable = false) // DB에서 Not Null 제약 조건 적용

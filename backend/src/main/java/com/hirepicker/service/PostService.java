@@ -55,17 +55,17 @@ public class PostService {
         Posts post = new Posts();
         
         // 필수 필드 설정
-        post.setBoardIdx(DEFAULT_BOARD_ID); // 기본 게시판 ID (1L) 설정
-        post.setPUserIdx(pUserIdx);         // 인증된 사용자 ID 설정
+        post.setBoard_idx(DEFAULT_BOARD_ID); // 기본 게시판 ID (1L) 설정
+        post.setP_user_idx(pUserIdx);         // 인증된 사용자 ID 설정
         post.setTitle(title);
         post.setContent(content);
         
         // 이미지 관련 필드 설정 (파일이 없으면 null)
-        post.setFileName(fileName);         // 원본 파일명
-        post.setImgName(imgName);           // 서버 파일 경로/URL
+        post.setFile_name(fileName);         // 원본 파일명
+        post.setImg_name(imgName);           // 서버 파일 경로/URL
         
         // 기본값 설정
-        post.setViewCount(0);
+        post.setView_count(0);
         // created_at, updated_at은 JPA의 @CreatedDate, @LastModifiedDate에 의존하거나 DB에서 자동 설정될 것으로 가정합니다.
 
         // 3. Repository를 통해 DB에 저장

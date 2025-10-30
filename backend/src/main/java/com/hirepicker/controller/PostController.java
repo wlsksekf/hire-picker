@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.http.ResponseEntity; // ResponseEntity 사용을 위한 import (선택적이지만 일반적으로 사용)
 
 // @RequestBody는 FormData 처리 시 사용하지 않으므로 제거하거나 주석 처리합니다.
-// import org.springframework.web.bind.annotation.RequestBody; 
+// import org.springframework.web.bind.annotation.RequestBody;
 
 
 @RequiredArgsConstructor
