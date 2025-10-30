@@ -27,7 +27,8 @@ import {
   faGear,
   faCreditCard,
   faCookieBite,
-  faSync
+  faSync,
+  faBell
 } from '@fortawesome/free-solid-svg-icons';
 import DarkModeSwitch from '../../components/DarkModeSwitch'; // 커스텀 스위치 import
 import { api } from '@/api'; // 공용 api 인스턴스 사용
@@ -92,23 +93,6 @@ function SettingsPage() {
         backgroundColor: function(theme) { return theme.palette.background.paper }
       }}>
         <List>
-          {/* 계정 그룹 */}
-          <ListSubheader sx={subheaderStyle}>계정</ListSubheader>
-          <ListItemButton>
-            <ListItemIcon sx={iconStyle}>
-              <FontAwesomeIcon icon={faFileLines} size="lg" />
-            </ListItemIcon>
-            <ListItemText primary="이력서 관리" secondary="내 이력서를 관리합니다." />
-          </ListItemButton>
-          <ListItemButton>
-            <ListItemIcon sx={iconStyle}>
-              <FontAwesomeIcon icon={faKey} size="lg" />
-            </ListItemIcon>
-            <ListItemText primary="비밀번호 변경" secondary="계정 비밀번호를 변경합니다." />
-          </ListItemButton>
-
-          <Divider sx={{ my: 1 }} />
-
           {/* 앱 설정 그룹 */}
           <ListSubheader sx={subheaderStyle}>앱 설정</ListSubheader>
           <ListItem>
@@ -120,7 +104,7 @@ function SettingsPage() {
           </ListItem>
           <ListItemButton>
             <ListItemIcon sx={iconStyle}>
-              <FontAwesomeIcon icon={faGear} size="lg" />
+              <FontAwesomeIcon icon={faBell} size="lg" />
             </ListItemIcon>
             <ListItemText primary="알림 설정" secondary="앱의 푸시 알림을 설정합니다." />
           </ListItemButton>
@@ -129,12 +113,6 @@ function SettingsPage() {
 
           {/* 정보 그룹 */}
           <ListSubheader sx={subheaderStyle}>정보</ListSubheader>
-          <ListItemButton>
-            <ListItemIcon sx={iconStyle}>
-              <FontAwesomeIcon icon={faCreditCard} size="lg" />
-            </ListItemIcon>
-            <ListItemText primary="크레딧 관리" secondary="보유 크레딧을 확인하고 구매합니다." />
-          </ListItemButton>
           <ListItemButton>
             <ListItemIcon sx={iconStyle}>
               <FontAwesomeIcon icon={faCookieBite} size="lg" />
@@ -186,6 +164,8 @@ function SettingsPage() {
           )}
         </List>
       </Paper>
+
+
     </Container>
   );
 }

@@ -1,7 +1,5 @@
 package com.hirepicker.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.payment.*;
 import com.hirepicker.entity.CompanyUser;
@@ -20,6 +18,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -28,7 +27,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
@@ -43,7 +41,6 @@ public class TossPaymentServiceImpl implements TossPaymentService {
     private final PersonalUserCreditRepository personalUserCreditRepository;
     private final CompanyUserCreditRepository companyUserCreditRepository;
     private final WebClient tossWebClient;
-    private final ObjectMapper objectMapper; // JSON 처리를 위해 추가
 
     @Value("${payment.toss.client-key}")
     private String clientKey;
@@ -132,13 +129,13 @@ public class TossPaymentServiceImpl implements TossPaymentService {
                 ))
                 .retrieve()
                 .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
-                        clientResponse -> clientResponse.bodyToMono(Map.class)
+                        clientResponse -> clientResponse.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
                                 .flatMap(errorBody -> {
                                     log.error("Toss API Error: {}", errorBody);
                                     return Mono.error(new RuntimeException((String) errorBody.getOrDefault("message", "Toss API Error")));
                                 })
                 )
-                .bodyToMono(Map.class)
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
                 .block();
         log.info("[TossPaymentService] 토스 API 응답 수신: {}", responseMap);
 
@@ -224,7 +221,7 @@ public class TossPaymentServiceImpl implements TossPaymentService {
                 .uri("/v1/payments/orders/" + orderId)
                 .header(HttpHeaders.AUTHORIZATION, "Basic " + encodedSecretKey)
                 .retrieve()
-                .bodyToMono(Map.class)
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
                 .block();
 
         if (responseMap != null && "DONE".equals(responseMap.get("status"))){

@@ -224,80 +224,81 @@ export default function AiResumePage() {
   }
 
   // --- AI 호출 로직 (핵심) ---
-  const callAiApi = async (mode = 'generate') => {
+  const callAiApi = (mode = 'generate') => {
     setIsLoading(true);
     setDialogOpen(false);
     setConfirmDialogOpen(false);
 
-    try {
-      const userData = serializeUserData();
-      const jobPostingData = formData.aiPrompt || "(요청사항 없음)";
-      
-      // 백엔드로 보낼 데이터 객체
-      const requestBody = {
-        userData,
-        jobPostingData,
+    const userData = serializeUserData();
+    const jobPostingData = formData.aiPrompt || "(요청사항 없음)";
+    
+    // 백엔드로 보낼 데이터 객체
+    const requestBody = {
+      userData,
+      jobPostingData,
+    };
+
+    // "다듬기" 모드일 경우, 기존 자소서 내용을 추가로 전송
+    if (mode === 'refine') {
+      requestBody.resumeDraft = {
+        growthProcess: formData.selfGrowth,
+        jobCompetencies: formData.selfMotivation,
+        prosAndCons: formData.selfStrengths,
+        aspirations: formData.selfAspirations,
       };
-
-      // "다듬기" 모드일 경우, 기존 자소서 내용을 추가로 전송
-      if (mode === 'refine') {
-        requestBody.resumeDraft = {
-          growthProcess: formData.selfGrowth,
-          jobCompetencies: formData.selfMotivation,
-          prosAndCons: formData.selfStrengths,
-          aspirations: formData.selfAspirations,
-        };
-      }
-
-      const response = await api.post('/api/ai/resume-draft', requestBody);
-
-      const { growthProcess, jobCompetencies, prosAndCons, aspirations } = response.data;
-      setFormData((prev) => ({
-        ...prev,
-        selfGrowth: growthProcess,
-        selfStrengths: prosAndCons,
-        selfMotivation: jobCompetencies,
-        selfAspirations: aspirations,
-      }));
-
-    } catch (error) {
-      console.error("AI 자기소개서 생성 실패:", error);
-      alert("AI 자기소개서 생성 중 오류가 발생했습니다.");
-    } finally {
-      setIsLoading(false);
     }
+
+    api.post('/api/ai/resume-draft', requestBody)
+      .then(response => {
+        const { growthProcess, jobCompetencies, prosAndCons, aspirations } = response.data;
+        setFormData((prev) => ({
+          ...prev,
+          selfGrowth: growthProcess,
+          selfStrengths: prosAndCons,
+          selfMotivation: jobCompetencies,
+          selfAspirations: aspirations,
+        }));
+      })
+      .catch(error => {
+        console.error("AI 자기소개서 생성 실패:", error);
+        alert("AI 자기소개서 생성 중 오류가 발생했습니다.");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   // 이미지 업로드 핸들러
-  const handleImageUpload = async () => {
+  const handleImageUpload = () => {
     if (!selectedImage) {
       alert("업로드할 이미지를 선택해주세요.");
       return;
     }
 
     setIsLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", selectedImage);
+    const formData = new FormData();
+    formData.append("file", selectedImage);
 
-      // (주의!) 이 엔드포인트는 네가 백엔드에 '/api/ai/upload-image'로 구현해 뒀어야 해!
-      // (내가 제안했던 S3 서비스의 엔드포인트는 '/api/upload/resume-image'였어)
-      const response = await api.post('/api/ai/upload-image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+    // (주의!) 이 엔드포인트는 네가 백엔드에 '/api/ai/upload-image'로 구현해 뒀어야 해!
+    // (내가 제안했던 S3 서비스의 엔드포인트는 '/api/upload/resume-image'였어)
+    api.post('/api/ai/upload-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+      .then(response => {
+        const imageUrl = response.data; // 백엔드에서 반환된 이미지 URL
+        setFormData((prev) => ({ ...prev, imageUrl: imageUrl }));
+        console.log("업로드된 이미지 URL:", imageUrl); // 추가
+        alert("이미지 업로드 성공!");
+      })
+      .catch(error => {
+        console.error("이미지 업로드 실패:", error);
+        alert("이미지 업로드 중 오류가 발생했습니다.");
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
-
-      const imageUrl = response.data; // 백엔드에서 반환된 이미지 URL
-      setFormData((prev) => ({ ...prev, imageUrl: imageUrl }));
-      console.log("업로드된 이미지 URL:", imageUrl); // 추가
-      alert("이미지 업로드 성공!");
-    } catch (error) {
-      console.error("이미지 업로드 실패:", error);
-      alert("이미지 업로드 중 오류가 발생했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   // "AI로 작성하기" 버튼 클릭 핸들러 (로직 수정)
@@ -350,7 +351,7 @@ export default function AiResumePage() {
   };
 
   // --- 이력서 저장 핸들러 ---
-  const handleSaveResume = async () => {
+  const handleSaveResume = () => {
     if (!isAuthenticated) {
       alert("이력서를 저장하려면 로그인이 필요합니다.");
       return;
@@ -368,28 +369,29 @@ export default function AiResumePage() {
 
 
     setIsLoading(true);
-    try {
-      // 백엔드로 보낼 데이터 객체 (필요에 따라 formData를 가공할 수 있음)
-      const resumeData = {
-        ...formData,
-        p_user_idx: user.p_user_idx, // 로그인한 사용자의 p_user_idx 추가
-      };
+    // 백엔드로 보낼 데이터 객체 (필요에 따라 formData를 가공할 수 있음)
+    const resumeData = {
+      ...formData,
+      p_user_idx: user.p_user_idx, // 로그인한 사용자의 p_user_idx 추가
+    };
 
-      const response = await api.post('/api/resume', resumeData);
-
-      if (response.status === 200 || response.status === 201) {
-        alert("이력서가 성공적으로 저장되었습니다.");
-        // 저장 후 필요한 추가 로직 (예: 페이지 이동, 폼 초기화 등)
-      } else {
-        // (참고) api 래퍼(axios)가 2xx가 아닌 응답을 에러로 처리한다면 이 코드는 실행 안 될 수도 있어
-        alert("이력서 저장에 실패했습니다. 다시 시도해주세요.");
-      }
-    } catch (error) {
-      console.error("이력서 저장 실패:", error);
-      alert("이력서 저장 중 오류가 발생했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
+    api.post('/api/resume', resumeData)
+      .then(response => {
+        if (response.status === 200 || response.status === 201) {
+          alert("이력서가 성공적으로 저장되었습니다.");
+          // 저장 후 필요한 추가 로직 (예: 페이지 이동, 폼 초기화 등)
+        } else {
+          // (참고) api 래퍼(axios)가 2xx가 아닌 응답을 에러로 처리한다면 이 코드는 실행 안 될 수도 있어
+          alert("이력서 저장에 실패했습니다. 다시 시도해주세요.");
+        }
+      })
+      .catch(error => {
+        console.error("이력서 저장 실패:", error);
+        alert("이력서 저장 중 오류가 발생했습니다.");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
 

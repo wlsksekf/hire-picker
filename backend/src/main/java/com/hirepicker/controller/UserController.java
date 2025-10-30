@@ -1,100 +1,62 @@
 package com.hirepicker.controller;
 
-
 import com.hirepicker.config.security.CustomUserDetails;
-import com.hirepicker.dto.UserProfileDto;
-import com.hirepicker.entity.Gender;
+import com.hirepicker.dto.UserDto;
 import com.hirepicker.entity.PersonalUser;
-import com.hirepicker.entity.payment.PersonalUserCredit;
 import com.hirepicker.repository.PersonalUserRepository;
-import com.hirepicker.repository.payment.PersonalUserCreditRepository;
-
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
+import lombok.extern.slf4j.Slf4j; // Slf4j 임포트 추가
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
-@Tag(name = "사용자", description = "사용자 정보 및 회원가입 관련 API")
+@Tag(name = "사용자", description = "사용자 정보 관련 API")
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@Slf4j
+@Slf4j // Slf4j 어노테이션 추가
 public class UserController {
 
     private final PersonalUserRepository personalUserRepository;
-    private final PersonalUserCreditRepository personalUserCreditRepository; // 크레딧 리포지토리 주입
-    private final PasswordEncoder passwordEncoder;
 
-    @Operation(summary = "내 프로필 정보 조회", description = "현재 로그인된 개인 회원의 프로필 정보를 조회합니다.")
-    @GetMapping("/my-profile")
-    public ResponseEntity<UserProfileDto> getMyProfile(@AuthenticationPrincipal CustomUserDetails userDetails) {
+    @Operation(summary = "현재 로그인 사용자 정보 조회", description = "현재 로그인한 사용자의 상세 정보를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "사용자 정보 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> getCurrentUser(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        log.info("Attempting to get current user info.");
         if (userDetails == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            log.warn("AuthenticationPrincipal CustomUserDetails is null. User not authenticated.");
+            return ResponseEntity.status(401).build(); // 인증되지 않은 사용자
         }
 
-        return personalUserRepository.findById(userDetails.getId())
-                .map(user -> ResponseEntity.ok(UserProfileDto.fromEntity(user)))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
-    }
-
-
-    @Operation(summary = "회원가입", description = "새로운 개인 회원을 등록합니다.")
-    @PostMapping("/signup")
-    @Transactional // 사용자 생성과 크레딧 생성을 하나의 트랜잭션으로 묶음
-    public ResponseEntity<Map<String, String>> signup(@RequestBody Map<String, String> signupRequest) {
-        log.info("[API] /api/users/signup 요청 수신. 사용자: {}", signupRequest.get("email"));
-        String email = signupRequest.get("email");
-        String password = signupRequest.get("password");
-        String nickname = signupRequest.get("nickname"); // 닉네임 추가
-        String name = signupRequest.get("name");         // 이름 추가
-        String genderString = signupRequest.get("gender");     // 성별 String 값으로 받음
-
-        if (email == null || password == null || nickname == null || name == null || genderString == null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "이메일, 비밀번호, 닉네임, 이름, 성별은 필수입니다."));
-        }
-
-        Gender gender;
         try {
-            gender = Gender.valueOf(genderString.toUpperCase()); // String을 Gender enum으로 변환
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("message", "유효하지 않은 성별 값입니다."));
+            String userEmail = userDetails.getUsername();
+            log.info("Fetching user with email: {}", userEmail);
+            PersonalUser personalUser = personalUserRepository.findByEmail(userEmail)
+                    .orElse(null);
+
+            if (personalUser == null) {
+                log.warn("PersonalUser not found in DB for email: {}", userEmail);
+                return ResponseEntity.status(404).build(); // 사용자를 찾을 수 없음
+            }
+
+            log.info("PersonalUser found: {}", personalUser.getEmail());
+            // UserDto로 변환하여 반환합니다.
+            UserDto userDto = new UserDto(personalUser.getEmail(), personalUser.getName(), personalUser.getPlatform());
+            log.info("Returning UserDto for user: {}", userDto.getEmail());
+            return ResponseEntity.ok(userDto);
+        } catch (Exception e) {
+            log.error("Error while fetching or processing user info: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).build(); // 서버 내부 오류
         }
-
-        if (personalUserRepository.findByEmail(email).isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", "이미 존재하는 이메일입니다."));
-        }
-
-        PersonalUser newUser = PersonalUser.builder()
-                .email(email)
-                .password(passwordEncoder.encode(password))
-                .nickname(nickname) // 닉네임 설정
-                .name(name)         // 이름 설정
-                .gender(gender)     // 성별 enum 값 설정
-                // .isCancel(false)    // 기본값: 탈퇴 안 함 (PersonalUser 생성자에서 처리)
-                .platform("LOCAL")  // 기본값: 로컬 가입 (String으로 설정)
-                .build();
-
-        personalUserRepository.save(newUser);
-
-        // [수정] 회원가입 시 크레딧 정보 생성
-        PersonalUserCredit newUserCredit = PersonalUserCredit.builder()
-                .personalUser(newUser)
-                .balance(0L) // 초기 크레딧 0으로 설정
-                .build();
-        personalUserCreditRepository.save(newUserCredit);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "회원가입 성공!"));
     }
 }
