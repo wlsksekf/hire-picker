@@ -1,8 +1,7 @@
 // frontend/src/components/ResumePdfDocument.js (수정됨)
 'use client';
 
-import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Font, Image } from '@react-pdf/renderer';
 
 // 한글 폰트 등록
 try {
@@ -53,7 +52,7 @@ const styles = StyleSheet.create({
 });
 
 // PDF 문서 컴포넌트
-export default function ResumePdfDocument({ formData }) {
+export default function ResumePdfDocument({ formData, imageUrl }) {
   if (!formData) {
     return (
       <Document>
@@ -72,28 +71,41 @@ export default function ResumePdfDocument({ formData }) {
 
         {/* 인적사항 */}
         <Text style={styles.h2}>[인적사항]</Text>
-        <View style={styles.table}>
-          <View style={styles.tableRow}>
-            <Text style={{...styles.tableColHeader}}>성명</Text>
-            <Text style={{...styles.tableCol, width: '35%'}}>{formData.name}</Text>
-            <Text style={{...styles.tableColHeader}}>성별</Text>
-            <Text style={{...styles.tableCol, width: '35%', borderRight: 0}}>{formData.gender}</Text>
+        <View style={{ flexDirection: 'row', marginBottom: 15 }}>
+          {/* 사진 영역 */}
+          <View style={styles.photoBox}>
+            {imageUrl ? (
+              <Image src={imageUrl} style={styles.profileImage} />
+            ) : (
+              <Text style={styles.photoPlaceholder}>사진</Text>
+            )}
           </View>
-          <View style={styles.tableRow}>
-            <Text style={{...styles.tableColHeader}}>생년월일</Text>
-            <Text style={{...styles.tableCol, width: '35%'}}>{formData.birthdate}</Text>
-            <Text style={{...styles.tableColHeader}}>국적</Text>
-            <Text style={{...styles.tableCol, width: '35%', borderRight: 0}}>{formData.nationality}</Text>
-          </View>
-           <View style={styles.tableRow}>
-            <Text style={{...styles.tableColHeader}}>휴대폰</Text>
-            <Text style={{...styles.tableCol, width: '35%'}}>{formData.phone}</Text>
-            <Text style={{...styles.tableColHeader}}>E-mail</Text>
-            <Text style={{...styles.tableCol, width: '35%', borderRight: 0}}>{formData.email}</Text>
-          </View>
-          <View style={{...styles.tableRow, borderBottom: 0}}>
-            <Text style={{...styles.tableColHeader}}>주소</Text>
-            <Text style={{...styles.tableCol, width: '85%', borderRight: 0}}>{formData.address}</Text>
+          {/* 인적사항 테이블 */}
+          <View style={{ flexGrow: 1 }}>
+            <View style={styles.table}>
+              <View style={styles.tableRow}>
+                <Text style={{...styles.tableColHeader}}>성명</Text>
+                <Text style={{...styles.tableCol, width: '35%'}}>{formData.name}</Text>
+                <Text style={{...styles.tableColHeader}}>성별</Text>
+                <Text style={{...styles.tableCol, width: '35%', borderRight: 0}}>{formData.gender}</Text>
+              </View>
+              <View style={styles.tableRow}>
+                <Text style={{...styles.tableColHeader}}>생년월일</Text>
+                <Text style={{...styles.tableCol, width: '35%'}}>{formData.birthdate}</Text>
+                <Text style={{...styles.tableColHeader}}>국적</Text>
+                <Text style={{...styles.tableCol, width: '35%', borderRight: 0}}>{formData.nationality}</Text>
+              </View>
+              <View style={styles.tableRow}>
+                <Text style={{...styles.tableColHeader}}>휴대폰</Text>
+                <Text style={{...styles.tableCol, width: '35%'}}>{formData.phone}</Text>
+                <Text style={{...styles.tableColHeader}}>E-mail</Text>
+                <Text style={{...styles.tableCol, width: '35%', borderRight: 0}}>{formData.email}</Text>
+              </View>
+              <View style={{...styles.tableRow, borderBottom: 0}}>
+                <Text style={{...styles.tableColHeader}}>주소</Text>
+                <Text style={{...styles.tableCol, width: '85%', borderRight: 0}}>{formData.address}</Text>
+              </View>
+            </View>
           </View>
         </View>
         

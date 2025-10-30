@@ -32,8 +32,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // JWT 필터가 적용되지 않을 경로 목록
     private static final List<String> EXCLUDE_URLS = Arrays.asList(
             "/api/auth/**",
-            "/api/users/signup", // 회원가입만 인증 제외
             "/api/oauth2/**",
+            "/api/users/signup", // 회원가입만 인증 제외
             "/login/oauth2/code/google",
             "/swagger-ui.html",
             "/swagger-ui/**",
@@ -71,6 +71,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
             log.info("[Filter] Valid JWT token found. Setting authentication in context.");
             Authentication authentication = jwtTokenProvider.getAuthentication(jwt); // 인증 정보 조회
+
+            // ★ [디버깅용] 토큰 클레임 정보 로그 출력
+            log.info("[Filter] Authenticated user: Principal: {}, Authorities: {}", authentication.getPrincipal(), authentication.getAuthorities());
+
             SecurityContextHolder.getContext().setAuthentication(authentication); // SecurityContext에 인증 정보 저장
         } else {
             log.info("[Filter] No valid JWT token found.");

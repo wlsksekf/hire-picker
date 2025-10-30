@@ -3,12 +3,17 @@ package com.hirepicker.controller;
 import com.hirepicker.dto.ai.FullResumeDraftDto;
 import com.hirepicker.dto.ai.ResumeDraftRequestDto;
 import com.hirepicker.service.AiResumeService;
+import com.hirepicker.service.S3UploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 // AI 관련 API 요청을 처리하는 컨트롤러
 @RestController
@@ -17,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiController {
 
     private final AiResumeService aiResumeService;
+    private final S3UploadService s3UploadService;
 
     /**
      * AI를 사용하여 이력서 초안 전체를 생성하거나 기존 초안을 수정합니다.
@@ -34,5 +40,17 @@ public class AiController {
         );
         // 생성된 초안을 OK 상태와 함께 반환
         return ResponseEntity.ok(resumeDraft);
+    }
+
+    /**
+     * 이미지를 S3에 업로드하고 업로드된 이미지의 URL을 반환합니다.
+     * @param file 업로드할 이미지 파일
+     * @return 업로드된 이미지의 URL을 포함하는 ResponseEntity
+     * @throws IOException 파일 처리 중 발생할 수 있는 예외
+     */
+    @PostMapping("/upload-image")
+    public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) throws IOException {
+        String imageUrl = s3UploadService.uploadFile(file, "profile-images"); // "profile-images" 디렉토리에 저장
+        return ResponseEntity.ok(imageUrl);
     }
 }

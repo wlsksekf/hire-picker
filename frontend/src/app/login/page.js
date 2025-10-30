@@ -35,7 +35,8 @@ function LoginPage() {
       .then(function(response) {
         console.log('로그인 성공. HttpOnly 쿠키가 설정되었습니다.');
         // 백엔드가 쿠키를 설정해주므로, 프론트에서는 상태만 변경합니다.
-        login(); 
+        // 로그인 성공 후, initializeAuth를 호출하여 사용자 정보를 가져옵니다.
+        useAuthStore.getState().initializeAuth(); // initializeAuth 호출
         router.push('/'); // 로그인 성공 시 메인 페이지로 이동
       })
       .catch(function(err) {

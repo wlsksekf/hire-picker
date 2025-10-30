@@ -20,6 +20,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest; // HttpServletRequest 임포트 추가
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment; // ★ Environment 임포트
+import org.springframework.http.ResponseCookie; // ★ ResponseCookie 임포트
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -27,6 +29,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Arrays; // ★ Arrays 임포트
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +44,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder; // ★ 비밀번호 암호화기 주입
+    private final Environment environment; // ★ Environment 주입
 
     @Transactional
     public void login(LoginRequest request, HttpServletResponse response) {
@@ -232,21 +237,28 @@ public class AuthService {
         }
     }
 
-    // HttpOnly 쿠키에 토큰을 추가하는 헬퍼 메서드
+    // ★ [보안 강화] HttpOnly, SameSite, Secure 속성을 적용하여 쿠키를 추가하는 헬퍼 메서드
     private void addTokensToCookie(HttpServletResponse response, String accessToken, String refreshToken) {
-        Cookie accessTokenCookie = new Cookie("accessToken", accessToken);
-        accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setSecure(false); // 개발 환경을 위해 false로 변경
-        accessTokenCookie.setPath("/");
-        accessTokenCookie.setMaxAge((int) (jwtTokenProvider.getAccessTokenValidityInMilliseconds() / 1000));
-        response.addCookie(accessTokenCookie);
+        // ★ 현재 활성 프로필을 확인하여 secure 속성 동적 설정
+        boolean isProduction = Arrays.asList(environment.getActiveProfiles()).contains("prod");
 
-        Cookie refreshTokenCookie = new Cookie("refreshToken", refreshToken);
-        refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setSecure(false); // 개발 환경을 위해 false로 변경
-        refreshTokenCookie.setPath("/");
-        refreshTokenCookie.setMaxAge((int) (jwtTokenProvider.getRefreshTokenValidityInMilliseconds() / 1000));
-        response.addCookie(refreshTokenCookie);
+        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
+                .httpOnly(true)
+                .secure(isProduction) // ★ 환경에 따라 동적으로 설정
+                .path("/")
+                .maxAge(jwtTokenProvider.getAccessTokenValidityInMilliseconds() / 1000)
+                .sameSite("Strict") // CSRF 방어를 위해 Strict 설정
+                .build();
+        response.addHeader("Set-Cookie", accessTokenCookie.toString());
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(isProduction) // ★ 환경에 따라 동적으로 설정
+                .path("/")
+                .maxAge(jwtTokenProvider.getRefreshTokenValidityInMilliseconds() / 1000)
+                .sameSite("Strict") // CSRF 방어를 위해 Strict 설정
+                .build();
+        response.addHeader("Set-Cookie", refreshTokenCookie.toString());
     }
 
     /**
@@ -297,5 +309,38 @@ public class AuthService {
 
         // 5. 새로운 토큰들을 쿠키에 추가
         addTokensToCookie(response, newAccessToken, newRefreshTokenValue);
+    }
+
+    /**
+     * [수정] 로그아웃 처리: JWT 토큰 쿠키 삭제 및 SecurityContext 초기화
+     * @param response HttpServletResponse (쿠키 삭제)
+     */
+    public void logout(HttpServletResponse response) {
+        // 1. SecurityContextHolder 초기화
+        SecurityContextHolder.clearContext();
+        log.info("SecurityContextHolder가 초기화되었습니다.");
+
+        // 2. ★ [보안 강화] ResponseCookie를 사용하여 쿠키 삭제
+        boolean isProduction = Arrays.asList(environment.getActiveProfiles()).contains("prod");
+
+        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", "")
+                .httpOnly(true)
+                .secure(isProduction) // ★ 환경에 따라 동적으로 설정
+                .path("/")
+                .maxAge(0) // 쿠키 즉시 만료
+                .sameSite("Strict")
+                .build();
+        response.addHeader("Set-Cookie", accessTokenCookie.toString());
+        log.info("Access Token 쿠키가 삭제되었습니다.");
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(isProduction) // ★ 환경에 따라 동적으로 설정
+                .path("/")
+                .maxAge(0) // 쿠키 즉시 만료
+                .sameSite("Strict")
+                .build();
+        response.addHeader("Set-Cookie", refreshTokenCookie.toString());
+        log.info("Refresh Token 쿠키가 삭제되었습니다.");
     }
 }
