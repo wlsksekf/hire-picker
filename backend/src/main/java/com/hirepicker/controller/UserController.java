@@ -8,26 +8,31 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j; // Slf4j 임포트 추가
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 import java.util.Optional;
 
-@Tag(name = "사용자", description = "사용자 정보 및 회원가입 관련 API")
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@Tag(name = "사용자", description = "사용자 정보 관련 API")
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @Slf4j // Slf4j 어노테이션 추가
 public class UserController {
+
+    private final PasswordEncoder passwordEncoder;
 
     private final PersonalUserRepository personalUserRepository;
 
@@ -44,12 +49,29 @@ public class UserController {
             return ResponseEntity.status(401).build(); // 인증되지 않은 사용자
         }
 
-        return personalUserRepository.findById(userDetails.getId())
-                .map(user -> ResponseEntity.ok(UserProfileDto.fromEntity(user)))
-                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        try {
+            String userEmail = userDetails.getUsername();
+            log.info("Fetching user with email: {}", userEmail);
+            PersonalUser personalUser = personalUserRepository.findByEmail(userEmail)
+                    .orElse(null);
+
+            if (personalUser == null) {
+                log.warn("PersonalUser not found in DB for email: {}", userEmail);
+                return ResponseEntity.status(404).build(); // 사용자를 찾을 수 없음
+            }
+
+            log.info("PersonalUser found: {}", personalUser.getEmail());
+            // UserDto로 변환하여 반환합니다.
+            UserDto userDto = new UserDto(personalUser.getEmail(), personalUser.getName(), personalUser.getPlatform(), personalUser.getNickname());
+            log.info("Returning UserDto for user: {}", userDto.getEmail());
+            return ResponseEntity.ok(userDto);
+        } catch (Exception e) {
+            log.error("Error while fetching or processing user info: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).build(); // 서버 내부 오류
+        }
     }
 
-    /**
+     /**
      * 내 프로필 정보 수정 (부분 수정)
      * 
      * HTTP PATCH 메서드:
@@ -116,42 +138,4 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "프로필이 성공적으로 업데이트되었습니다."));
     }
 
-
-    @Operation(summary = "회원가입", description = "새로운 개인 회원을 등록합니다.")
-    @PostMapping("/signup")
-    @Transactional // 사용자 생성과 크레딧 생성을 하나의 트랜잭션으로 묶음
-    public ResponseEntity<Map<String, String>> signup(@RequestBody Map<String, String> signupRequest) {
-        log.info("[API] /api/users/signup 요청 수신. 사용자: {}", signupRequest.get("email"));
-        String email = signupRequest.get("email");
-        String password = signupRequest.get("password");
-        String nickname = signupRequest.get("nickname"); // 닉네임 추가
-        String name = signupRequest.get("name");         // 이름 추가
-        String genderString = signupRequest.get("gender");     // 성별 String 값으로 받음
-
-        if (email == null || password == null || nickname == null || name == null || genderString == null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "이메일, 비밀번호, 닉네임, 이름, 성별은 필수입니다."));
-        }
-
-        Gender gender;
-        try {
-            String userEmail = userDetails.getUsername();
-            log.info("Fetching user with email: {}", userEmail);
-            PersonalUser personalUser = personalUserRepository.findByEmail(userEmail)
-                    .orElse(null);
-
-            if (personalUser == null) {
-                log.warn("PersonalUser not found in DB for email: {}", userEmail);
-                return ResponseEntity.status(404).build(); // 사용자를 찾을 수 없음
-            }
-
-            log.info("PersonalUser found: {}", personalUser.getEmail());
-            // UserDto로 변환하여 반환합니다.
-            UserDto userDto = new UserDto(personalUser.getEmail(), personalUser.getName(), personalUser.getPlatform());
-            log.info("Returning UserDto for user: {}", userDto.getEmail());
-            return ResponseEntity.ok(userDto);
-        } catch (Exception e) {
-            log.error("Error while fetching or processing user info: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).build(); // 서버 내부 오류
-        }
-    }
 }

@@ -148,7 +148,7 @@ export const confirmTossPayment = (paymentData) => {
  * @returns {Promise<object>} 사용자 정보 (name, nickname, email, imageUrl 등)
  */
 export function getUserProfile() {
-  return api.get('/api/users/my-profile')
+  return api.get('/api/users/me')
     .then(function(response) {
       return response.data;
     })
