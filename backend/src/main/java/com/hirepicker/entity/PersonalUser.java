@@ -90,6 +90,11 @@ public class PersonalUser {
         this.password = password;
     }
 
+    // 닉네임 변경 시 사용
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
     // 로그인 로직에서 사용할 setter
     public void setRefreshToken(RefreshToken refreshToken) {
         this.refreshToken = refreshToken;
