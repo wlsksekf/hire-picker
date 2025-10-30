@@ -48,7 +48,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/events/**",
             "/api/companies/**",
             "/api/postings/**",
-            "/api/work24/**"
+            "/api/work24/**",
+            "/favicon.ico",
+            "/.well-known/**"
     );
 
     @Override

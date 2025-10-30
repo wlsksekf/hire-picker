@@ -49,7 +49,7 @@ public class EmploymentDataService {
     private final CompanyRepository companyRepository;
     private final EmploymentDataProcessorService DataProcessorService;
 
-    @Value("${work24-key}")
+    @Value("${api.work24.key}")
     private String work24Key;
 
     @Value("${dart-key2}")
@@ -358,7 +358,11 @@ public class EmploymentDataService {
         }
 
         for (JobDto dto : allJobs) {
-            DataProcessorService.processJobDto(dto);
+            try {
+                DataProcessorService.processJobDto(dto);
+            } catch (Exception e) {
+                log.error("Error processing JobDto: {}", dto, e);
+            }
         }
         log.info("Finished: Job Synchronization. Total items processed: {}", allJobs.size());
     }

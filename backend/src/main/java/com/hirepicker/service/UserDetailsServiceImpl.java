@@ -1,8 +1,6 @@
 package com.hirepicker.service;
 
 import com.hirepicker.config.security.CustomUserDetails;
-import com.hirepicker.entity.CompanyUser;
-import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.repository.CompanyUserRepository;
 import com.hirepicker.repository.PersonalUserRepository;
 import lombok.RequiredArgsConstructor;
