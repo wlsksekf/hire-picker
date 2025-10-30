@@ -32,7 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // JWT 필터가 적용되지 않을 경로 목록
     private static final List<String> EXCLUDE_URLS = Arrays.asList(
             "/api/auth/**",
-            "/api/users/**",
+            "/api/users/signup", // 회원가입만 인증 제외
             "/api/oauth2/**",
             "/login/oauth2/code/google",
             "/swagger-ui.html",

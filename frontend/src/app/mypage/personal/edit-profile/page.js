@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -9,16 +9,41 @@ import {
   Paper,
   Grid,
   Avatar,
-  Container
+  Container,
+  CircularProgress,
+  Alert
 } from '@mui/material';
+import { getUserProfile } from '@/api';
 
 // 개인 마이페이지 - 내 정보 수정 컴포넌트
 function EditProfile() {
   const [profile, setProfile] = useState({
     imageUrl: 'https://via.placeholder.com/150', // 기본 이미지
-    name: '홍길동',
-    nickname: '의적'
+    name: '',
+    nickname: '',
+    email: ''
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // 페이지 로드 시 사용자 정보 가져오기
+  useEffect(function() {
+    getUserProfile()
+      .then(function(userData) {
+        setProfile({
+          imageUrl: userData.imageUrl || 'https://via.placeholder.com/150',
+          name: userData.name || '',
+          nickname: userData.nickname || '',
+          email: userData.email || ''
+        });
+        setLoading(false);
+      })
+      .catch(function(err) {
+        console.error('사용자 정보 조회 실패:', err);
+        setError('사용자 정보를 불러오는데 실패했습니다. 다시 로그인해주세요.');
+        setLoading(false);
+      });
+  }, []);
 
   const handleFileChange = (event) => {
     if (event.target.files && event.target.files[0]) {
@@ -26,6 +51,24 @@ function EditProfile() {
       setProfile(prev => ({ ...prev, imageUrl }));
     }
   };
+
+  // 로딩 중일 때
+  if (loading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
+
+  // 에러가 있을 때
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="error">{error}</Alert>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -85,7 +128,7 @@ function EditProfile() {
                 id="email"
                 label="이메일 주소"
                 name="email"
-                defaultValue="honggildong@example.com"
+                value={profile.email}
                 disabled
                 margin="normal"
               />

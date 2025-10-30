@@ -109,3 +109,19 @@ export const confirmTossPayment = (paymentData) => {
       throw error;
     });
 };
+
+/**
+ * [마이페이지] 현재 로그인한 사용자의 개인정보 조회
+ * 쿠키의 액세스 토큰을 통해 인증
+ * @returns {Promise<object>} 사용자 정보 (name, nickname, email, imageUrl 등)
+ */
+export function getUserProfile() {
+  return api.get('/api/users/my-profile')
+    .then(function(response) {
+      return response.data;
+    })
+    .catch(function(error) {
+      console.error('사용자 정보 조회 실패:', error);
+      throw error;
+    });
+}
