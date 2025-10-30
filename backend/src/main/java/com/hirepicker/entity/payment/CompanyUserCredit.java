@@ -28,9 +28,11 @@ public class CompanyUserCredit {
     private CompanyUser companyUser;
 
     @Column(name = "balance", nullable = false)
+    @Builder.Default
     private Long balance = 0L;
 
     @Column(name = "updated_at", nullable = false)
+    @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     public CompanyUserCredit(CompanyUser companyUser, Long balance) {

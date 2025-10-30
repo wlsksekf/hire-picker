@@ -26,8 +26,8 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
         // 어떤 예외 때문에 401이 발생했는지 로그로 기록
         log.error("[AuthEntryPoint] Unauthorized error triggered for path: {}. Exception type: {}, Message: {}", 
-                request.getRequestURI(), 
-                authException.getClass().getName(), 
+                request.getRequestURI(),
+                authException.getClass().getName(),
                 authException.getMessage());
 
         // 401 Unauthorized 에러를 반환

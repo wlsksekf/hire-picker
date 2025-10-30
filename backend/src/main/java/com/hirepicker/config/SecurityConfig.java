@@ -47,12 +47,11 @@ public class SecurityConfig {
             .formLogin(form -> form.disable()) // 폼 로그인 비활성화
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션을 사용하지 않음 (상태 없음)
             .authorizeHttpRequests(authorize -> authorize
- 
-                // 회원가입 엔드포인트는 무조건 허용 (가장 먼저 체크)
+
                 .requestMatchers(HttpMethod.POST, "/api/users/signup").permitAll()
-                .requestMatchers("/api/users/my-profile").authenticated()
+                .requestMatchers("/api/oauth2/**", "/login/oauth2/code/**").permitAll()
+                .requestMatchers("/api/users/me").authenticated()
                 .requestMatchers("/api/auth/**", "/api/work24/**", "/actuator/**", "/api/health/**", "/api/manage/**", "/confirm/**", "/confirm-billing", "/issue-billing-key", "/callback-auth", "/fail", "/swagger-ui/**", "/api-docs/**", "/error", "/api/companies/**").permitAll()
-                .requestMatchers("/api/oauth2/**").permitAll() // ★ 소셜 로그인 경로 허용
                 .requestMatchers("/api/payment/webhook").permitAll() // 웹훅 엔드포인트는 모두 허용
                 .requestMatchers("/chat/**","/ws","/ws/**","/chat/history/**").permitAll()
                 .requestMatchers("/api/payment/**").authenticated() // 나머지 결제 관련 API는 인증 필요
@@ -67,6 +66,7 @@ public class SecurityConfig {
                 .authorizationEndpoint(auth -> auth.baseUri("/api/oauth2/authorization"))
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                 .successHandler(oAuth2LoginSuccessHandler)
+                .failureUrl("http://localhost:3000/oauth/fail")
             )
             .exceptionHandling(e -> e.authenticationEntryPoint(customAuthenticationEntryPoint));
 
@@ -76,12 +76,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        
+
         config.setAllowCredentials(true);
         config.setAllowedOrigins(List.of("http://localhost:3000", "https://hire-picker.com")); // ★ 수정: 프론트엔드 주소만 명시적으로 허용
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of("*")); 
+        config.setExposedHeaders(List.of("*"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config); // 모든 경로에 대해 이 설정 적용
