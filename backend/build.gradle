@@ -64,6 +64,9 @@ dependencies {
 
     // ★ 이메일 인증용 SendGrid 라이브러리 추가
     implementation 'com.sendgrid:sendgrid-java:4.10.0'
+
+    // AWS S3 SDK
+    implementation 'com.amazonaws:aws-java-sdk-s3:1.12.700'
 }
 
 tasks.named('test') {

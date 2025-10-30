@@ -7,6 +7,7 @@ import {
   useTheme,
   useMediaQuery,
   Button,
+  CircularProgress, // 로딩 스피너 추가
 } from '@mui/material';
 import Link from 'next/link';
 import useAuthStore from '@/store/authStore';
@@ -16,7 +17,7 @@ import { useRouter } from 'next/navigation';
 function Header() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // 모바일 화면 여부 확인
-  const { isAuthenticated, logout } = useAuthStore();
+  const { isAuthenticated, isLoading, logout } = useAuthStore(); // isLoading 추가
   const router = useRouter();
 
   const handleLogout = () => {
@@ -105,7 +106,9 @@ function Header() {
 
         {/* 로그인/회원가입 메뉴 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {isAuthenticated ? (
+          {isLoading ? ( // 로딩 중일 때
+            <CircularProgress size={24} color="inherit" /> // 로딩 스피너 표시
+          ) : isAuthenticated ? ( // 로딩 완료 후 인증된 상태
             <>
               <Button
                 variant="text"
@@ -158,7 +161,7 @@ function Header() {
                 </Button>
               </Link>
             </>
-          ) : (
+          ) : ( // 로딩 완료 후 인증되지 않은 상태
             <>
               <Link href="/login" passHref style={{ textDecoration: 'none' }}>
                 <Button
