@@ -49,6 +49,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authorize -> authorize
 
                 .requestMatchers(HttpMethod.POST, "/api/users/signup").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/posts").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/posts/*").permitAll()
                 .requestMatchers("/api/oauth2/**", "/login/oauth2/code/**").permitAll()
                 .requestMatchers("/api/users/me").authenticated()
                 .requestMatchers("/api/auth/**", "/api/work24/**", "/actuator/**", "/api/health/**", "/api/manage/**", "/confirm/**", "/confirm-billing", "/issue-billing-key", "/callback-auth", "/fail", "/swagger-ui/**", "/api-docs/**", "/error", "/api/companies/**").permitAll()

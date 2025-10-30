@@ -4,11 +4,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hirepicker.entity.Posts;
 import com.hirepicker.repository.PostRepository;
 
 import lombok.RequiredArgsConstructor;
+import java.io.IOException;
+import java.util.UUID; // 고유 파일명 생성을 위해 사용
 
 @Service
 @RequiredArgsConstructor
@@ -17,26 +21,67 @@ public class PostService {
     private final PostRepository postRepository;
     
     private static final int PAGE_SIZE = 10;
-     // 페이지당 게시글 수 (프론트엔드와 일치해야 함)
-    
+    private static final Long DEFAULT_BOARD_ID = 1L; // 기본 게시판 ID 가정
+
+    // ==========================================================
+    // ⭐ 게시글 작성 (CREATE) 메서드: 컬럼 매핑 로직 포함
+    // ==========================================================
+    @Transactional
+    public Posts create(String pUserIdx, String title, String content, MultipartFile imageFile) throws IOException {
+        
+        String imgName = null; // 서버에 저장될 고유 파일명 또는 경로
+        String fileName = null; // 사용자가 업로드한 원본 파일명
+
+        // 1. 파일 처리 로직
+        if (imageFile != null && !imageFile.isEmpty()) {
+            
+            // 1-1. 원본 파일명 설정 (file_name 컬럼)
+            fileName = imageFile.getOriginalFilename();
+            
+            // 1-2. 고유 파일명 생성 및 경로 설정 (img_name 컬럼)
+            // 실제 환경에서는 이 고유명을 사용하여 S3 등에 파일을 저장합니다.
+            String fileExtension = fileName.substring(fileName.lastIndexOf("."));
+            String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
+            
+            // 임시 URL/경로 설정 (실제 저장 경로로 대체해야 합니다.)
+            imgName = "/uploads/images/" + uniqueFileName; 
+            
+            // TODO: 여기에 실제 파일 저장 (예: S3 또는 로컬 파일 시스템) 로직을 구현해야 합니다.
+            // if (imageFile.getSize() > MAX_SIZE) throw new IOException("File size exceeds limit.");
+            // imageFile.transferTo(new File(ACTUAL_SAVE_PATH + uniqueFileName));
+        }
+
+        // 2. Posts 엔티티 생성 및 필수 컬럼 값 설정
+        Posts post = new Posts();
+        
+        // 필수 필드 설정
+        post.setBoardIdx(DEFAULT_BOARD_ID); // 기본 게시판 ID (1L) 설정
+        post.setPUserIdx(pUserIdx);         // 인증된 사용자 ID 설정
+        post.setTitle(title);
+        post.setContent(content);
+        
+        // 이미지 관련 필드 설정 (파일이 없으면 null)
+        post.setFileName(fileName);         // 원본 파일명
+        post.setImgName(imgName);           // 서버 파일 경로/URL
+        
+        // 기본값 설정
+        post.setViewCount(0);
+        // created_at, updated_at은 JPA의 @CreatedDate, @LastModifiedDate에 의존하거나 DB에서 자동 설정될 것으로 가정합니다.
+
+        // 3. Repository를 통해 DB에 저장
+        return postRepository.save(post);
+    }
+
+
+    // ==========================================================
+    // 기존 메서드 (유지)
+    // ==========================================================
     public Page<Posts> getList(String bname, int cPage){
-        // 1. Pageable 객체 생성
-        // cPage는 사용자에게는 1부터 시작하지만, PageRequest는 0부터 시작하므로 cPage - 1을 사용합니다.
         Pageable pageable = PageRequest.of(cPage - 1, PAGE_SIZE);
-        
-        // 2. Repository 메서드 호출 (board_idx로 필터링하는 메서드가 필요)
-        // bname을 사용하려면 게시판 이름(bname)으로 게시판 ID(board_idx)를 찾는 로직이 선행되어야 합니다.
-        // 여기서는 board_idx=1로 가정하고 findAll 메서드에 Pageable만 넘깁니다.
-        // 실제로는 postRepository.findByBoardIdx(1, pageable) 와 같이 구현됩니다.
-        
-        // 현재는 findAll에 Pageable만 적용하여 전체 목록 중 해당 페이지만 가져옵니다.
         return postRepository.findAll(pageable);
     }
+    
     public Posts getPost(Long postIdx){
-        // PostRepository가 JpaRepository를 상속받았다면, findById메서드가 있습니다.
-        // .orElse(null)을 사용하여 데이터가 없을 경우 null을 반환하도록 처리합니다.
         return postRepository.findById(postIdx).orElse(null);
-        
-
     }
 }

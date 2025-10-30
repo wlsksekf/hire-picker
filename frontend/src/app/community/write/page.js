@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 
 
 export default function PostWritePage() {
+    // 고객님의 환경이 완벽하므로, Next.js의 useRouter를 그대로 사용합니다.
     const router = useRouter(); 
     
     // 폼 데이터 상태 (제목, 내용)
@@ -48,7 +49,7 @@ export default function PostWritePage() {
         setMessage('파일 첨부가 취소되었습니다.');
     };
 
-    // 4. 게시글 제출(작성) 핸들러 (인증 및 파일 업로드 로직 포함)
+    // 4. 게시글 제출(작성) 핸들러 (HttpOnly Cookie 기반 로직 적용)
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage('');
@@ -58,14 +59,8 @@ export default function PostWritePage() {
             return;
         }
 
-        // ⭐ 1. 인증 토큰 검사 및 가져오기 (필수)
-        const userToken = localStorage.getItem('accessToken'); 
-        if (!userToken) {
-            setMessage('로그인 세션이 만료되었거나 토큰이 없습니다. 로그인 페이지로 이동합니다.');
-            setIsSubmitting(false);
-            setTimeout(() => router.push('/login'), 2000);
-            return;
-        }
+        // ⭐ HttpOnly 방식에서는 클라이언트에서 토큰을 읽을 수 없으므로, 
+        // 로컬 토큰 검사 없이 바로 요청을 보냅니다. 서버가 401로 응답할 때까지 기다립니다.
 
         setIsSubmitting(true);
 
@@ -74,16 +69,16 @@ export default function PostWritePage() {
         postData.append('title', formData.title);
         postData.append('content', formData.content);
         if (fileState.selectedFile) {
-            // ⭐ 백엔드에서 파일을 받는 필드명과 일치시켜야 합니다.
+            // 백엔드에서 파일을 받는 필드명과 일치시켜야 합니다.
             postData.append('image', fileState.selectedFile); 
         }
 
         try {
-            // ⭐ 2. Authorization 헤더에 Bearer 토큰을 포함하여 요청
+            // ⭐ 1. withCredentials: true를 설정하여 브라우저가 HttpOnly 쿠키를 자동으로 첨부하도록 합니다.
+            // ⭐ 2. Authorization 헤더 설정은 제거합니다.
             const response = await axios.post(write_api_url, postData, {
-                headers: {
-                    'Authorization': `Bearer ${userToken}`,
-                },
+                withCredentials: true, 
+                // headers: { 'Authorization': ... } 제거됨
             });
 
             // 성공 처리: 백엔드 응답에서 게시글 ID 추출
@@ -106,7 +101,10 @@ export default function PostWritePage() {
             
             // 401 Unauthorized 에러 특별 처리 (인증 실패)
             if (error.response?.status === 401) {
-                errorMessage = '🚫 인증 실패! 토큰이 유효하지 않습니다. 다시 로그인해 주세요.';
+                // HttpOnly 쿠키가 유효하지 않거나 없는 경우
+                errorMessage = '🚫 인증 실패! 로그인 세션이 만료되었습니다. 다시 로그인해 주세요.';
+                // 로그인 페이지로 리다이렉트
+                setTimeout(() => router.push('/login'), 1500); 
             } else {
                  errorMessage = error.response?.data?.message || errorMessage;
             }
