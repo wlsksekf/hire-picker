@@ -1,6 +1,5 @@
 package com.hirepicker.config.security;
 
-import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.exception.SocialAccountNeedsPasswordException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

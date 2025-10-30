@@ -19,10 +19,13 @@ import com.hirepicker.service.EmploymentData;
 import com.hirepicker.service.EmploymentDataService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
-@Tag(name = "Work24", description = "Work24 관련 API")
+@Tag(name = "데이터 동기화", description = "외부 API 데이터 동기화 관련 API")
 @RestController
 @RequestMapping("/api/work24")
 @RequiredArgsConstructor // final 필드에 대한 생성자 자동 생성
@@ -34,6 +37,9 @@ public class Work24Controller {
     // --- 데이터 조회 API (페이지네이션 적용) --- //
 
     @Operation(summary = "채용공고 목록 조회", description = "페이지네이션을 적용하여 채용공고 목록을 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "채용공고 목록 조회 성공")
+    })
     @GetMapping("/jobs")
     public ResponseEntity<PagedModel<EntityModel<JobDto>>> getJobs(Pageable pageable,
             PagedResourcesAssembler<JobDto> assembler) {
@@ -42,6 +48,9 @@ public class Work24Controller {
     }
 
     @Operation(summary = "채용박람회 목록 조회", description = "페이지네이션을 적용하여 채용박람회 목록을 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "채용박람회 목록 조회 성공")
+    })
     @GetMapping("/events")
     public ResponseEntity<PagedModel<EntityModel<EventDto>>> getEvents(Pageable pageable,
             PagedResourcesAssembler<EventDto> assembler) {
@@ -50,17 +59,23 @@ public class Work24Controller {
     }
 
     @Operation(summary = "기업 목록 조회", description = "페이지네이션과 검색 기능을 적용하여 기업 목록을 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "기업 목록 조회 성공")
+    })
     @GetMapping("/companies")
     public ResponseEntity<PagedModel<EntityModel<CompanyDto>>> getCompanies(
-            @RequestParam(value = "query", required = false, defaultValue = "") String query,
+            @Parameter(description = "검색어") @RequestParam(value = "query", required = false, defaultValue = "") String query,
             Pageable pageable, PagedResourcesAssembler<CompanyDto> assembler) {
         Page<CompanyDto> companies = employmentData.getCompanies(query, pageable);
         return ResponseEntity.ok(assembler.toModel(companies));
     }
 
     @Operation(summary = "기업 상세 정보 조회", description = "ID를 이용하여 특정 기업의 상세 정보를 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "기업 상세 정보 조회 성공")
+    })
     @GetMapping("/companies/{id}")
-    public ResponseEntity<CompanyDto> getCompany(@PathVariable("id") String id) {
+    public ResponseEntity<CompanyDto> getCompany(@Parameter(description = "기업 ID") @PathVariable("id") String id) {
         CompanyDto companyDto = employmentData.getCompany(id);
         return ResponseEntity.ok(companyDto);
     }
@@ -68,20 +83,33 @@ public class Work24Controller {
     // --- 수동 동기화 트리거 API --- //
 
     @Operation(summary = "채용공고 데이터 동기화", description = "Work24 API를 통해 채용공고 데이터를 수동으로 동기화합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "채용공고 동기화 시작")
+    })
     @GetMapping("/sync/jobs")
     public ResponseEntity<String> syncJobs() {
-        employmentDataService.synchronizePublicJobs();
-        return ResponseEntity.ok("채용공고 동기화가 시작되었습니다!");
+        try {
+            employmentDataService.synchronizePublicJobs();
+            return ResponseEntity.ok("채용공고 동기화가 시작되었습니다!");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("채용공고 동기화 중 오류가 발생했습니다: " + e.getMessage());
+        }
     }
 
     @Operation(summary = "채용박람회 데이터 동기화", description = "Work24 API를 통해 채용박람회 데이터를 수동으로 동기화합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "채용박람회 동기화 시작")
+    })
     @GetMapping("/sync/events")
     public ResponseEntity<String> syncEvents() {
         employmentDataService.synchronizeEvents();
         return ResponseEntity.ok("채용박람회 동기화가 시작되었습니다!");
     }
 
-    @Operation(summary = "기업 데이터 동기화", description = "Work24 API를 통해 기업 데이터를 수동으로 동기화합니다.")
+    @Operation(summary = "기업 데이터 동기화", description = "Work24 API와 DART API를 통해 기업 데이터를 수동으로 동기화합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "기업 데이터 동기화 시작")
+    })
     @GetMapping("/sync/companies")
     public ResponseEntity<String> syncCompanies() {
         employmentDataService.synchronizeCompanies();

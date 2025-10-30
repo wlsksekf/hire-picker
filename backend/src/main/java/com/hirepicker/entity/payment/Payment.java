@@ -4,8 +4,6 @@ import com.hirepicker.entity.CompanyUser;
 import com.hirepicker.entity.PersonalUser;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import java.time.LocalDateTime;
 
 // 결제 정보를 저장하는 엔티티
 @Entity @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder @Table(name = "payment")

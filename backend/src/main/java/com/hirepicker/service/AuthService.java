@@ -4,7 +4,6 @@ import com.hirepicker.config.jwt.JwtTokenProvider;
 import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.CompanySignupRequestDto;
 import com.hirepicker.dto.LoginRequest;
-import com.hirepicker.dto.LoginResponse;
 import com.hirepicker.dto.SignupRequestDto;
 import com.hirepicker.entity.Company;
 import com.hirepicker.entity.CompanyUser;
@@ -17,11 +16,10 @@ import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.repository.RefreshTokenRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest; // HttpServletRequest 임포트 추가
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment; // ★ Environment 임포트
-import org.springframework.http.ResponseCookie; // ★ ResponseCookie 임포트
+import org.springframework.core.env.Environment;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -30,7 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays; // ★ Arrays 임포트
+import java.util.Arrays;
 
 @Service
 @RequiredArgsConstructor
@@ -40,11 +38,11 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final PersonalUserRepository personalUserRepository;
     private final CompanyUserRepository companyUserRepository;
-    private final CompanyRepository companyRepository; // ★ 회사 리포지토리 주입
+    private final CompanyRepository companyRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
-    private final PasswordEncoder passwordEncoder; // ★ 비밀번호 암호화기 주입
-    private final Environment environment; // ★ Environment 주입
+    private final PasswordEncoder passwordEncoder;
+    private final Environment environment;
 
     @Transactional
     public void login(LoginRequest request, HttpServletResponse response) {
@@ -132,7 +130,7 @@ public class AuthService {
                 .gender(signupRequest.getGender())
                 .phoneNumber(signupRequest.getPhone_number())
                 .address(signupRequest.getAddress())
-                .platform(signupRequest.getPlatform().name()) // ★ .name()으로 enum을 String으로 변환
+                .platform(signupRequest.getPlatform().name())
                 .build();
         
         PersonalUser savedUser = personalUserRepository.save(newUser);
@@ -156,7 +154,7 @@ public class AuthService {
     }
 
     /**
-     * [신규] 기업 회원 가입 처리
+     * 기업 회원 가입 처리
      * @param request 회원가입 요청 DTO
      * @return 로그인 응답 (JWT 토큰 포함)
      */
@@ -237,9 +235,9 @@ public class AuthService {
         }
     }
 
-    // ★ [보안 강화] HttpOnly, SameSite, Secure 속성을 적용하여 쿠키를 추가하는 헬퍼 메서드
-    private void addTokensToCookie(HttpServletResponse response, String accessToken, String refreshToken) {
-        // ★ 현재 활성 프로필을 확인하여 secure 속성 동적 설정
+    // HttpOnly, SameSite, Secure 속성을 적용하여 쿠키를 추가하는 헬퍼 메서드
+    public void addTokensToCookie(HttpServletResponse response, String accessToken, String refreshToken) {
+        // 현재 활성 프로필을 확인하여 secure 속성 동적 설정
         boolean isProduction = Arrays.asList(environment.getActiveProfiles()).contains("prod");
 
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
@@ -253,7 +251,7 @@ public class AuthService {
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
-                .secure(isProduction) // ★ 환경에 따라 동적으로 설정
+                .secure(isProduction) // 환경에 따라 동적으로 설정
                 .path("/")
                 .maxAge(jwtTokenProvider.getRefreshTokenValidityInMilliseconds() / 1000)
                 .sameSite("Strict") // CSRF 방어를 위해 Strict 설정
@@ -262,7 +260,7 @@ public class AuthService {
     }
 
     /**
-     * [신규] 리프레시 토큰을 이용한 액세스 토큰 갱신
+     * 리프레시 토큰을 이용한 액세스 토큰 갱신
      * @param request HttpServletRequest (리프레시 토큰 쿠키 추출)
      * @param response HttpServletResponse (새로운 토큰 쿠키 설정)
      */
@@ -292,10 +290,6 @@ public class AuthService {
         Authentication authentication = jwtTokenProvider.getAuthentication(refreshToken);
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        UserType userType = userDetails.getUserType();
-        Long userId = userDetails.getId();
-
         // 3. 새로운 액세스 토큰 및 리프레시 토큰 생성
         String newAccessToken = jwtTokenProvider.createAccessToken(authentication);
         String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(authentication);
@@ -312,7 +306,7 @@ public class AuthService {
     }
 
     /**
-     * [수정] 로그아웃 처리: JWT 토큰 쿠키 삭제 및 SecurityContext 초기화
+     * 로그아웃 처리: JWT 토큰 쿠키 삭제 및 SecurityContext 초기화
      * @param response HttpServletResponse (쿠키 삭제)
      */
     public void logout(HttpServletResponse response) {
@@ -320,12 +314,12 @@ public class AuthService {
         SecurityContextHolder.clearContext();
         log.info("SecurityContextHolder가 초기화되었습니다.");
 
-        // 2. ★ [보안 강화] ResponseCookie를 사용하여 쿠키 삭제
+        // 2. ResponseCookie를 사용하여 쿠키 삭제
         boolean isProduction = Arrays.asList(environment.getActiveProfiles()).contains("prod");
 
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", "")
                 .httpOnly(true)
-                .secure(isProduction) // ★ 환경에 따라 동적으로 설정
+                .secure(isProduction) // 환경에 따라 동적으로 설정
                 .path("/")
                 .maxAge(0) // 쿠키 즉시 만료
                 .sameSite("Strict")
@@ -335,7 +329,7 @@ public class AuthService {
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
-                .secure(isProduction) // ★ 환경에 따라 동적으로 설정
+                .secure(isProduction) // 환경에 따라 동적으로 설정
                 .path("/")
                 .maxAge(0) // 쿠키 즉시 만료
                 .sameSite("Strict")

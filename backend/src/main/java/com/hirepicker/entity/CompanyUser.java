@@ -60,6 +60,7 @@ public class CompanyUser {
 
     // 회사 결제 내역과 1:N 매핑
     @OneToMany(mappedBy = "companyUser")
+    @Builder.Default
     private List<Payment> payments = new ArrayList<>();
 
     public void setRefreshToken(RefreshToken refreshToken) {

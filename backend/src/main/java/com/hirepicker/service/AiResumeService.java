@@ -46,6 +46,10 @@ public class AiResumeService {
             String jobInfo = isSpecific ? jobPostingData : "(특별한 채용 공고 정보나 요청사항 없음)";
 
             if (isRefining) { // 수정 모드
+                if (resumeDraft == null) {
+                    // This should not happen due to the isRefining check, but as a safeguard
+                    throw new IllegalStateException("resumeDraft cannot be null in refining mode.");
+                }
                 if (isSpecific) { // 특정 회사 대상 수정
                     systemPrompt = baseInstruction + "주어진 사용자 정보, 채용 공고, 그리고 기존 초안을 바탕으로, 초안의 내용은 유지하면서 채용 공고에 맞게 내용을 더욱 프로페셔널하고 설득력 있게 다듬어 주세요. 비어있는 항목은 채용 공고와 사용자 정보를 바탕으로 새로 작성해주세요.";
                 } else { // 범용 수정

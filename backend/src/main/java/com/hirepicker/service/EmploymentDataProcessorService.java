@@ -12,6 +12,7 @@ import com.hirepicker.repository.JobPostingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j; // Slf4j 임포트 추가
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.orm.jpa.JpaObjectRetrievalFailureException; // JpaObjectRetrievalFailureException 임포트 추가
 
@@ -25,7 +26,7 @@ public class EmploymentDataProcessorService {
     private final EmpEventRepository empEventRepository; // 채용 행사 리포지토리
 
     // JobDto를 처리하여 DB에 저장/업데이트
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processJobDto(JobDto dto) {
         Company company = companyRepository.findTopByCompanyName(dto.companyName())
                 .orElseGet(() -> companyRepository.save(Company.builder().companyName(dto.companyName()).build()));
@@ -57,7 +58,7 @@ public class EmploymentDataProcessorService {
     }
 
     // EventDto를 처리하여 DB에 저장/업데이트
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processEventDto(EventDto dto) {
         empEventRepository.findByEventCode(dto.id()).ifPresentOrElse(
             e -> { // 이미 존재하는 행사이면 업데이트
@@ -71,7 +72,7 @@ public class EmploymentDataProcessorService {
     }
 
     // CompanyDto를 처리하여 DB에 저장/업데이트
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processCompanyDto(CompanyDto dto) {
         companyRepository.findByCompanyId(dto.id()).ifPresentOrElse(
             c -> { // 이미 존재하는 기업이면 업데이트
