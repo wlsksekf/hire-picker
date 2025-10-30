@@ -209,31 +209,31 @@ function CompanyDetailPage() {
         <Paper elevation={1} sx={styles.paper}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
             {getLogoUrl(company.logoUrl) ? (
-            <Box
-              component="img"
-              src={getLogoUrl(company.logoUrl)}
-              alt={`${company.companyName || company.name} logo`}
-              sx={{
+              <Box
+                component="img"
+                src={getLogoUrl(company.logoUrl)}
+                alt={`${company.companyName || company.name} logo`}
+                sx={{
                   width: 80,
                   height: 80,
                   mr: 3,
                   objectFit: 'contain',
                   border: '1px solid #e9ecef',
-                  borderRadius: '8px'
-              }}
-            />
-          ) : (
-            <Box
-              sx={{
+                  borderRadius: '8px',
+                }}
+              />
+            ) : (
+              <Box
+                sx={{
                   width: 80,
                   height: 80,
                   mr: 3,
                   backgroundColor: '#fff',
                   border: '1px solid #e9ecef',
-                  borderRadius: '8px'
-              }}
-            />
-          )}
+                  borderRadius: '8px',
+                }}
+              />
+            )}
             <Box>
               <Typography variant="h4" component="h1" sx={styles.title}>
                 {company.companyName || company.name}

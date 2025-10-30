@@ -203,15 +203,6 @@ public class EmploymentDataService {
                     log.error("진행상황 파일 저장 오류 (페이지 {}): {}", page + 1, e.getMessage(), e);
                 }
 
-                // 배치 간 대기 (API 부하 방지)
-                // if (page < totalPages - 1) {
-                // try {
-                // Thread.sleep(2000);
-                // } catch (InterruptedException e) {
-                // Thread.currentThread().interrupt();
-                // log.error("⏸ 배치 대기 중 인터럽트 발생", e);
-                // }
-                // }
             }
 
             // --- 모든 작업 완료 시 진행상황 파일 삭제 ---
@@ -226,6 +217,19 @@ public class EmploymentDataService {
             log.error("DART 동기화 중 오류 발생: {}", e.getMessage(), e);
             throw new RuntimeException(e);
         }
+    }
+
+    private String cleanCompanyName(String rawName) {
+        if (rawName == null)
+            return null;
+
+        String cleaned = rawName
+                .replaceAll("-", "")
+                .replaceAll(" ", "")
+                .trim();
+
+        // 결과가 비어 있으면 null 반환
+        return cleaned.isEmpty() ? null : cleaned;
     }
 
     @Transactional
@@ -540,12 +544,15 @@ public class EmploymentDataService {
                 ;
 
                 if (needsUpdate) {
+                    existingCompany.setStatus("approved"); // status를 approved로 설정
+                    existingCompany.setRegDate(new java.util.Date()); // regDate를 현재 날짜로 설정
                     existingCompany.setCompanyName(corpName);
                     if (ceo_name != null && !ceo_name.isBlank()) {
                         existingCompany.setCeoName(ceo_name);
                     }
-                    if (business_number != null && !business_number.isBlank()) {
-                        existingCompany.setBusinessNumber(business_number);
+                    if (business_number != null && !business_number.isBlank() && business_number.length() == 10
+                            && !(existingCompany.getBusinessNumber() == business_number)) {
+                        existingCompany.setBusinessNumber(cleanCompanyName(business_number));
                     }
                     if (address != null && !address.isBlank()) {
                         existingCompany.setAddress(address);
@@ -562,12 +569,14 @@ public class EmploymentDataService {
                 List<Company> matchingCompanies = companiesByName.get(corpName);
                 if (matchingCompanies != null && !matchingCompanies.isEmpty()) {
                     Company companyToUpdate = matchingCompanies.remove(0);
+                    companyToUpdate.setStatus("approved"); // status를 approved로 설정
+                    companyToUpdate.setRegDate(new java.util.Date()); // regDate를 현재 날짜로 설정
                     companyToUpdate.setCorpCode(corpCode);
                     if (ceo_name != null && !ceo_name.isBlank()) {
                         companyToUpdate.setCeoName(ceo_name);
                     }
-                    if (business_number != null && !business_number.isBlank()) {
-                        companyToUpdate.setBusinessNumber(business_number);
+                    if (business_number != null && !business_number.isBlank() && business_number.length() == 10) {
+                        companyToUpdate.setBusinessNumber(cleanCompanyName(business_number));
                     }
                     if (address != null && !address.isBlank()) {
                         companyToUpdate.setAddress(address);
@@ -581,13 +590,15 @@ public class EmploymentDataService {
                     companiesToUpdate.add(companyToUpdate);
                 } else {
                     Company newCompany = new Company();
+                    newCompany.setStatus("approved"); // status를 approved로 설정
+                    newCompany.setRegDate(new java.util.Date()); // regDate를 현재 날짜로 설정
                     newCompany.setCompanyName(corpName);
                     newCompany.setCorpCode(corpCode);
                     if (ceo_name != null && !ceo_name.isBlank()) {
                         newCompany.setCeoName(ceo_name);
                     }
-                    if (business_number != null && !business_number.isBlank()) {
-                        newCompany.setBusinessNumber(business_number);
+                    if (business_number != null && !business_number.isBlank() && business_number.length() == 10) {
+                        newCompany.setBusinessNumber(cleanCompanyName(business_number));
                     }
                     if (address != null && !address.isBlank()) {
                         newCompany.setAddress(address);
@@ -613,7 +624,8 @@ public class EmploymentDataService {
                 for (Company c : companiesToUpdate) {
                     try {
                         companyRepository.save(c);
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex) {
                         log.error("개별 업데이트 실패 (회사: {}, 코드: {}): {}", c.getCompanyName(), c.getCorpCode(),
                                 ex.getMessage());
                     }
@@ -625,12 +637,14 @@ public class EmploymentDataService {
             log.info("[배치 {}/{}] 추가할 회사 수: {}", page + 1, totalPages, companiesToInsert.size());
             try {
                 companyRepository.saveAll(companiesToInsert);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 log.error("배치 삽입 중 DB 저장 오류: {}", e.getMessage(), e);
                 for (Company c : companiesToInsert) {
                     try {
                         companyRepository.save(c);
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex) {
                         log.error("개별 삽입 실패 (회사: {}, 코드: {}): {}", c.getCompanyName(), c.getCorpCode(),
                                 ex.getMessage());
                     }
@@ -642,7 +656,8 @@ public class EmploymentDataService {
             try {
                 companyRepository.flush();
                 log.info("[배치 {}/{}] DB 저장 완료.", page + 1, totalPages);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 log.error("flush 중 오류 발생: {}", e.getMessage(), e);
             }
         }

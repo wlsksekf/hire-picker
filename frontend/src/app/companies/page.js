@@ -145,7 +145,7 @@ function CompaniesPage() {
         {companies.map(function (company, index) {
           return (
             <Link
-              href={`/api/work24/companies/${company.companyIdx}`}
+              href={`/companies/${company.companyIdx}`}
               key={company.companyIdx || index}
               style={{ textDecoration: 'none', color: 'inherit' }}
             >

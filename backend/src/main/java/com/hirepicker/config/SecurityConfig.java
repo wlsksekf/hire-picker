@@ -58,7 +58,8 @@ public class SecurityConfig {
                                                                 "/confirm/**", "/confirm-billing", "/issue-billing-key",
                                                                 "/callback-auth", "/fail", "/swagger-ui/**",
                                                                 "/api-docs/**", "/error", "/api/companies/**",
-                                                                "/api/crawler/**")
+                                                                "/api/crawler/**", "/api/national-pension/**",
+                                                                "/api/dart/**")
                                                 .permitAll()
                                                 .requestMatchers("/api/payment/webhook").permitAll() // 웹훅 엔드포인트는 모두 허용
                                                 .requestMatchers("/chat/**").permitAll()

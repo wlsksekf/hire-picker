@@ -126,14 +126,8 @@ public class EmploymentDataImpl implements EmploymentData {
                 company.getAddress(),
                 company.getEmployeeCount(),
                 company.getCorpCode(),
-                company.getCompanyHistory(),
-                company.getBusinessAreas(),
-                company.getMainProducts(),
-                company.getCompanyCulture(),
-                company.getWorkEnvironment(),
-                company.getSalaryRange(),
-                company.getIndustryCategory(),
-                company.getLastUpdated() != null ? company.getLastUpdated().toString() : null);
+                company.getStatus(),
+                company.getRegDate());
     }
 
 }

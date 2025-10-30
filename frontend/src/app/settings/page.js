@@ -194,26 +194,26 @@ function SettingsPage() {
                 </Button>
                 <Button
                   variant="contained"
-                  onClick={() => handleSync('기업정보(DART)', '/api/work24/sync/companies')}
+                  onClick={() => handleSync('기업정보', '/api/work24/sync/companies')}
                   disabled={loading}
                   sx={{ mr: 1 }}
                 >
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
-                  기업정보 동기화(DART)
+                  기업정보 동기화
                 </Button>
                 <Button
                   variant="contained"
-                  onClick={() => handleSync('기업정보 크롤링', '/api/crawler/companies')}
+                  onClick={() => handleSync('기업정보', '/api/dart/sync/companies')}
                   disabled={loading}
                   sx={{ mr: 1 }}
                 >
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
-                  기업정보 크롤링
+                  DART 기업정보 동기화
                 </Button>
                 <Button
                   variant="contained"
                   onClick={() =>
-                    handleSync('CSV 업데이트', '/api/work24/companies/update-from-csv')
+                    handleSync('CSV 업데이트', '/api/national-pension/sync/update-from-csv')
                   }
                   disabled={loading}
                 >

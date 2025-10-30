@@ -83,6 +83,8 @@ public class EmploymentDataProcessorService {
             // Only update fields when incoming values are non-null/non-empty to avoid
             // overwriting existing DB values with empty strings (which may cause
             // SQL errors for numeric columns).
+            c.setStatus("approved"); // status를 approved로 설정
+            c.setRegDate(new java.util.Date()); // regDate를 현재 날짜로 설정
             if (dto.summary() != null && !dto.summary().isBlank()) {
                 c.setDescription(dto.summary());
             }
@@ -114,6 +116,8 @@ public class EmploymentDataProcessorService {
         } else {
             companyRepository.save(Company.builder()
                     .companyName(dto.name())
+                    .status("approved") // status를 approved로 설정
+                    .regDate(new java.util.Date()) // regDate를 현재 날짜로 설정
                     // When creating new entity, only set optional fields if present
                     .description(dto.summary() != null && !dto.summary().isBlank() ? dto.summary() : null)
                     .websiteUrl(dto.homepage() != null && !dto.homepage().isBlank() ? dto.homepage() : null)

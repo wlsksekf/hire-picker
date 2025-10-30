@@ -158,20 +158,18 @@ public class CompanyDataUpdateService {
             company.setAddress(jibunAddress);
         }
 
-        // 산업분류가 비어있지 않으면 업데이트
-        if (industryCategory != null && !industryCategory.trim().isEmpty()) {
-            company.setIndustryCategory(industryCategory);
-        }
     }
 
     private String cleanCompanyName(String rawName) {
         if (rawName == null)
-            return "";
-        return rawName
+            return null;
+        String cleaned = rawName
                 .replaceAll("\\(주\\)", "") // (주)
                 .replaceAll("㈜", "") // ㈜
                 .replaceAll("주식회사", "") // 주식회사
                 .replaceAll("\\s+", "") // 모든 공백 제거 (선택사항)
                 .trim();
+        // 결과가 비어 있으면 null 반환
+        return cleaned.isEmpty() ? null : cleaned;
     }
 }

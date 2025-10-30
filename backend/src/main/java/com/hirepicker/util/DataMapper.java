@@ -41,15 +41,8 @@ public class DataMapper {
                 XmlParser.getTagValue(e, "adres"), // adres
                 XmlParser.getTagValue(e, "empCnt"), // employeeCount
                 XmlParser.getTagValue(e, "corpCode"), // corpCode
-                null, // companyHistory
-                null, // businessAreas
-                null, // mainProducts
-                null, // companyCulture
-                null, // workEnvironment
-                null, // salaryRange
-                null, // industryCategory
-                null // lastUpdated
-        );
+                null,
+                null);
     }
 
     public static CompanyDto mapToDartCorp(Element e) {
@@ -69,14 +62,7 @@ public class DataMapper {
                 null, // adres
                 null, // employeeCount
                 XmlParser.getTagValue(e, "CorpCode"), // corpCode
-                null, // companyHistory
-                null, // businessAreas
-                null, // mainProducts
-                null, // companyCulture
-                null, // workEnvironment
-                null, // salaryRange
-                null, // industryCategory
-                null // lastUpdated
-        );
+                null,
+                null);
     }
 }

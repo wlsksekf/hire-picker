@@ -1,6 +1,6 @@
 package com.hirepicker.entity;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -62,34 +62,10 @@ public class Company {
     @Column(name = "corp_code") // 기업 코드 컬럼
     private String corpCode;
 
-    // 크롤링을 통해 수집하는 추가 정보들
-    @Lob // Large Object: 대용량 텍스트 데이터를 저장하기 위한 어노테이션
-    @Column(name = "company_history", columnDefinition = "TEXT")
-    private String companyHistory; // 회사 연혁: 웹사이트의 history, company-history 섹션에서 추출
+    @Column(name = "status")
+    private String status;
 
-    @Lob
-    @Column(name = "business_areas", columnDefinition = "TEXT")
-    private String businessAreas; // 사업 영역: 웹사이트의 business-area, services 섹션에서 추출
-
-    @Lob
-    @Column(name = "main_products", columnDefinition = "TEXT")
-    private String mainProducts; // 주요 제품: 웹사이트의 products, main-products 섹션에서 추출
-
-    @Lob
-    @Column(name = "company_culture", columnDefinition = "TEXT")
-    private String companyCulture; // 기업 문화: 웹사이트의 meta description 또는 about 섹션에서 추출
-
-    @Lob
-    @Column(name = "work_environment", columnDefinition = "TEXT")
-    private String workEnvironment; // 근무 환경: 웹사이트의 career, recruitment 섹션에서 '근무환경' 관련 내용 추출
-
-    @Column(name = "salary_range")
-    private String salaryRange; // 급여 범위: 웹사이트에서 '연봉', '급여' 관련 정보 추출
-
-    @Column(name = "industry_category")
-    private String industryCategory; // 산업 분류: meta keywords 또는 페이지 텍스트에서 업종 관련 단어 추출
-
-    @Column(name = "last_updated")
-    private LocalDateTime lastUpdated; // 마지막 업데이트 시간: 크롤링 완료 시점 기록
+    @Column(name = "reg_date")
+    private Date regDate;
 
 }
