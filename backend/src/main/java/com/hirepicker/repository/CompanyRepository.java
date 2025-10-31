@@ -26,4 +26,5 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
     Page<Company> findByCompanyNameContainingIgnoreCase(String companyName, Pageable pageable);
 
     Optional<Company> findByCorpCode(String corpCode);
+
 }

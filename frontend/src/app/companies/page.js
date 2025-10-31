@@ -38,9 +38,7 @@ function CompaniesPage() {
   useEffect(
     function () {
       setLoading(true);
-      const apiUrl = `/api/work24/companies?page=0&size=${PAGE_SIZE}${
-        query ? `&query=${query}` : ''
-      }`;
+      const apiUrl = `/api/companies?page=0&size=${PAGE_SIZE}${query ? `&query=${query}` : ''}`;
 
       api
         .get(apiUrl)
@@ -67,7 +65,7 @@ function CompaniesPage() {
   function handleLoadMore() {
     const nextPage = page + 1;
     setLoading(true);
-    const apiUrl = `/api/work24/companies?page=${nextPage}&size=${PAGE_SIZE}${
+    const apiUrl = `/api/companies?page=${nextPage}&size=${PAGE_SIZE}${
       query ? `&query=${query}` : ''
     }`;
 
@@ -143,7 +141,7 @@ function CompaniesPage() {
 
       <Stack spacing={3}>
         {companies.map(function (company, index) {
-          return (
+          return company.status == 'APPROVED' ? (
             <Link
               href={`/companies/${company.companyIdx}`}
               key={company.companyIdx || index}
@@ -230,7 +228,7 @@ function CompaniesPage() {
                 </Box>
               </Card>
             </Link>
-          );
+          ) : null;
         })}
       </Stack>
 

@@ -68,4 +68,10 @@ public class Company {
     @Column(name = "reg_date")
     private Date regDate;
 
+    @Column(name = "sales_amount")
+    private Long salesAmount;
+
+    @Column(name = "welfare_benefits")
+    private String welfareBenefits;
+
 }

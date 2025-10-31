@@ -112,22 +112,24 @@ public class EmploymentDataImpl implements EmploymentData {
     }
 
     // Company 엔티티를 CompanyDto로 변환
-    private static CompanyDto convertToCompanyDto(Company company) {
+    public static CompanyDto convertToCompanyDto(Company company) {
         return new CompanyDto(
                 company.getCompanyIdx(),
                 company.getCompanyId(),
-                company.getCompanyName(),
-                company.getDescription(),
-                company.getWebsiteUrl(),
+                company.getCompanyName(),      // name
+                company.getDescription(),      // summary
+                company.getWebsiteUrl(),       // homepage
                 company.getBusinessNumber(),
                 company.getLogoUrl(),
                 company.getCompanyType(),
-                company.getCeoName(),
-                company.getAddress(),
+                company.getCeoName(),          // ceoNm
+                company.getAddress(),          // adres
                 company.getEmployeeCount(),
                 company.getCorpCode(),
                 company.getStatus(),
-                company.getRegDate());
+                company.getRegDate(),
+                company.getSalesAmount(),      // sales_amount
+                company.getWelfareBenefits()); // welfare_benefits
     }
 
 }

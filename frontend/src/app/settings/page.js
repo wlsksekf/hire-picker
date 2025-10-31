@@ -28,7 +28,7 @@ import {
   faCreditCard,
   faCookieBite,
   faSync,
-  faFileUpload,
+  faBell,
 } from '@fortawesome/free-solid-svg-icons';
 import DarkModeSwitch from '../../components/DarkModeSwitch'; // 커스텀 스위치 import
 import { api } from '@/api'; // 공용 api 인스턴스 사용

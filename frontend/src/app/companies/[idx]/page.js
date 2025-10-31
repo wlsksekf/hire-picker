@@ -12,99 +12,81 @@ import {
   Chip,
   Link as MuiLink,
   Grid,
-  Card,
-  CardContent,
+  Divider,
+  useTheme,
   Stack,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faLink,
-  faIdBadge,
   faBuilding,
   faUser,
   faMapMarkerAlt,
   faUsers,
-  faFileAlt,
   faGlobe,
+  faFileInvoiceDollar,
+  faGift,
+  faInfoCircle,
+  faAddressCard,
 } from '@fortawesome/free-solid-svg-icons';
 import { api } from '@/api';
 
-const styles = {
-  container: {
-    minHeight: '100vh',
-    py: 3,
-  },
-  paper: {
-    p: 3,
-    borderRadius: '8px',
-    mb: 3,
-    background: '#fff',
-    border: '1px solid #e9ecef',
-  },
-  title: {
-    color: '#333',
-    fontWeight: 600,
-    mb: 1,
-    fontSize: '1.75rem',
-  },
-  chip: {
-    backgroundColor: '#f8f9fa',
-    color: '#495057',
-    fontWeight: 500,
-    fontSize: '0.875rem',
-    border: '1px solid #e9ecef',
-  },
-  sectionTitle: {
-    color: '#333',
-    fontWeight: 600,
-    mb: 1.5,
-    fontSize: '1rem',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  card: {
-    height: '100%',
-    borderRadius: '8px',
-    border: '1px solid #e9ecef',
-  },
-  infoBox: {
-    display: 'flex',
-    alignItems: 'center',
-    p: 2,
-    backgroundColor: '#f8f9fa',
-    borderRadius: '4px',
-  },
-  infoLabel: {
-    display: 'block',
-    mb: 0.5,
-    color: 'text.secondary',
-    fontSize: '0.875rem',
-  },
-  infoValue: {
-    color: '#495057',
-    fontSize: '0.95rem',
-  },
-  link: {
-    color: '#1e88e5',
-    textDecoration: 'none',
-    fontSize: '0.875rem',
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-  },
+// Helper component for rendering Welfare & Benefits with relevant emojis
+const WelfareList = ({ text }) => {
+  const keywordMap = {
+    '🍔': ['식사', '점심', '저녁', '식대', '푸드', '스낵'],
+    '🚗': ['교통', '주차', '셔틀', '유류비'],
+    '❤️': ['건강', '검진', '보험', '의료'],
+    '🌴': ['휴가', '연차', '휴양', '리프레시'],
+    '📚': ['교육', '성장', '세미나', '스터디', '도서'],
+    '💪': ['운동', '피트니스', '헬스'],
+    '💰': ['보너스', '인센티브', '상여', '스톡옵션'],
+    '🏠': ['주택', '대출', '거주'],
+    '💻': ['장비', '맥북', '모니터'],
+  };
+
+  const getEmojiForLine = line => {
+    for (const emoji in keywordMap) {
+      for (const keyword of keywordMap[emoji]) {
+        if (line.includes(keyword)) {
+          return emoji;
+        }
+      }
+    }
+    return '✅'; // Default emoji
+  };
+
+  const benefits = text.split('\n').filter(line => line.trim() !== '');
+
+  return (
+    <Stack spacing={1.5}>
+      {benefits.map((line, index) => (
+        <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Typography component="span" sx={{ fontSize: '1.2rem' }}>
+            {getEmojiForLine(line)}
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ flex: 1 }}>
+            {line}
+          </Typography>
+        </Box>
+      ))}
+    </Stack>
+  );
 };
 
 function CompanyDetailPage() {
   const { idx } = useParams();
+  const theme = useTheme();
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
     if (idx) {
       setLoading(true);
+      setLogoError(false);
       api
-        .get(`/api/work24/companies/${idx}`)
+        .get(`/api/companies/${idx}`)
         .then(response => {
           setCompany(response.data);
           setLoading(false);
@@ -123,189 +105,167 @@ function CompanyDetailPage() {
 
   if (loading) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
-        <CircularProgress size={32} sx={{ color: '#1e88e5' }} />
-        <Typography sx={{ mt: 2, color: '#666' }}>기업 정보를 불러오는 중...</Typography>
+      <Container maxWidth="lg" sx={{ py: 5, textAlign: 'center' }}>
+        <CircularProgress />
       </Container>
     );
   }
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error">기업 정보를 가져오는 데 실패했습니다: {error.message}</Alert>
+      <Container maxWidth="lg" sx={{ py: 5 }}>
+        <Alert severity="error">{error.message}</Alert>
       </Container>
     );
   }
 
   if (!company) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
-        <Typography color="text.secondary">기업 정보를 찾을 수 없습니다.</Typography>
+      <Container maxWidth="lg" sx={{ py: 5, textAlign: 'center' }}>
+        <Typography>기업 정보를 찾을 수 없습니다.</Typography>
       </Container>
     );
   }
 
-  // entity 필드 매핑
-  const infoList = [
+  const keyInfoItems = [
+    { label: '대표자', value: company.ceoNm, icon: faUser },
+    { label: '직원 수', value: company.employeeCount, icon: faUsers },
+    { label: '주소', value: company.adres, icon: faMapMarkerAlt },
     {
-      label: '대표자',
-      value: company.ceoName || company.ceoNm,
-      icon: faUser,
+      label: '매출액',
+      value: company.sales_amount
+        ? `${(company.sales_amount / 100000000).toLocaleString()} 억원`
+        : null,
+      icon: faFileInvoiceDollar,
     },
-    {
-      label: '직원 수',
-      value: company.employeeCount,
-      icon: faUsers,
-    },
-    {
-      label: '주소',
-      value: company.address || company.adres,
-      icon: faMapMarkerAlt,
-    },
-    {
-      label: '업종',
-      value: company.industryCategory,
-      icon: faFileAlt,
-    },
-    {
-      label: '웹사이트',
-      value: company.websiteUrl || company.homepage,
-      icon: faLink,
-      isLink: true,
-    },
+    { label: '웹사이트', value: company.homepage, icon: faGlobe, isLink: true },
   ];
 
-  const reviewList = [
-    {
-      label: '회사 연혁',
-      value: company.companyHistory,
-    },
-    {
-      label: '사업 영역',
-      value: company.businessAreas,
-    },
-    {
-      label: '주요 제품',
-      value: company.mainProducts,
-    },
-    {
-      label: '기업 문화',
-      value: company.companyCulture,
-    },
-    {
-      label: '근무 환경',
-      value: company.workEnvironment,
-    },
-    {
-      label: '연봉대',
-      value: company.salaryRange,
-    },
-  ];
+  const logoUrl = getLogoUrl(company.logoUrl);
 
   return (
-    <Box sx={styles.container}>
+    <Box sx={{ display: 'flex', py: 5 }}>
       <Container maxWidth="lg">
-        <Paper elevation={1} sx={styles.paper}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            {getLogoUrl(company.logoUrl) ? (
-              <Box
-                component="img"
-                src={getLogoUrl(company.logoUrl)}
-                alt={`${company.companyName || company.name} logo`}
-                sx={{
-                  width: 80,
-                  height: 80,
-                  mr: 3,
-                  objectFit: 'contain',
-                  border: '1px solid #e9ecef',
-                  borderRadius: '8px',
-                }}
-              />
-            ) : (
-              <Box
-                sx={{
-                  width: 80,
-                  height: 80,
-                  mr: 3,
-                  backgroundColor: '#fff',
-                  border: '1px solid #e9ecef',
-                  borderRadius: '8px',
-                }}
-              />
-            )}
-            <Box>
-              <Typography variant="h4" component="h1" sx={styles.title}>
-                {company.companyName || company.name}
-              </Typography>
-              {company.companyType && (
-                <Chip
-                  icon={<FontAwesomeIcon icon={faBuilding} />}
-                  label={company.companyType}
-                  sx={styles.chip}
-                />
-              )}
-            </Box>
-          </Box>
-
-          {/* 기업 주요 정보 가로 나열 */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-            {infoList
-              .filter(item => item.value)
-              .map(item => (
-                <Box key={item.label} sx={styles.infoBox}>
-                  <FontAwesomeIcon
-                    icon={item.icon}
-                    style={{ color: '#666', width: '16px', marginRight: '12px' }}
+        <Grid container spacing={4}>
+          {/* Left Column */}
+          <Grid item xs={12} md={4}>
+            <Paper
+              elevation={0}
+              sx={{ p: 3, borderRadius: 3, border: `1px solid ${theme.palette.divider}` }}
+            >
+              <Stack spacing={2}>
+                {logoError || !logoUrl ? (
+                  <Box sx={{ width: 80, height: 80, bgcolor: 'grey.100', borderRadius: 2 }} />
+                ) : (
+                  <Box
+                    component="img"
+                    src={logoUrl}
+                    alt={`${company.name} logo`}
+                    onError={() => setLogoError(true)}
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      objectFit: 'contain',
+                      border: `1px solid ${theme.palette.divider}`,
+                      borderRadius: 2,
+                      p: 1,
+                    }}
                   />
-                  <Box>
-                    <Typography variant="caption" sx={styles.infoLabel}>
-                      {item.label}
-                    </Typography>
-                    {item.isLink ? (
-                      <MuiLink
-                        href={item.value.startsWith('http') ? item.value : `http://${item.value}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={styles.link}
-                      >
-                        {item.value}
-                      </MuiLink>
-                    ) : (
-                      <Typography variant="body2" sx={styles.infoValue}>
-                        {item.value}
-                      </Typography>
-                    )}
-                  </Box>
+                )}
+                <Box>
+                  <Typography variant="h5" component="h1" fontWeight="bold">
+                    {company.name}
+                  </Typography>
+                  {company.companyType && (
+                    <Chip
+                      label={company.companyType}
+                      size="small"
+                      sx={{ mt: 1, fontWeight: 500 }}
+                    />
+                  )}
                 </Box>
-              ))}
-          </Box>
+              </Stack>
+            </Paper>
+          </Grid>
 
-          {/* 리뷰 스타일: 기업 상세 정보 */}
-          <Box sx={{ mt: 2 }}>
-            <Grid container spacing={2}>
-              {reviewList
-                .filter(item => item.value)
-                .map(item => (
-                  <Grid item xs={12} md={6} key={item.label}>
-                    <Card elevation={0} sx={{ ...styles.card, background: 'none', border: 'none' }}>
-                      <CardContent sx={{ p: 2 }}>
-                        <Typography variant="subtitle2" sx={styles.sectionTitle}>
-                          {item.label}
-                        </Typography>
-                        <Typography variant="body2" sx={styles.infoValue}>
-                          {item.value}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-            </Grid>
-          </Box>
-        </Paper>
+          {/* Right Column */}
+          <Grid item xs={12} md={8}>
+            <Stack spacing={3}>
+              {company.summary && (
+                <Paper elevation={0} variant="outlined" sx={{ p: 4, borderRadius: 3 }}>
+                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                    기업 소개
+                  </Typography>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+                    {company.summary}
+                  </Typography>
+                </Paper>
+              )}
+
+              <Paper elevation={0} variant="outlined" sx={{ p: 4, borderRadius: 3 }}>
+                <Typography variant="h6" fontWeight={600} gutterBottom>
+                  주요 정보
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+                <Grid container spacing={3}>
+                  {keyInfoItems
+                    .filter(item => item.value)
+                    .map(item => (
+                      <Grid item xs={12} sm={6} key={item.label}>
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                          <FontAwesomeIcon
+                            icon={item.icon}
+                            style={{
+                              color: theme.palette.text.secondary,
+                              width: '18px',
+                              marginTop: '4px',
+                            }}
+                          />
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">
+                              {item.label}
+                            </Typography>
+                            {item.isLink ? (
+                              <MuiLink
+                                href={
+                                  item.value.startsWith('http')
+                                    ? item.value
+                                    : `http://${item.value}`
+                                }
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                variant="body1"
+                                sx={{ fontWeight: 500 }}
+                              >
+                                {item.value}
+                              </MuiLink>
+                            ) : (
+                              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                {item.value}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      </Grid>
+                    ))}
+                </Grid>
+              </Paper>
+
+              {company.welfare_benefits && (
+                <Paper elevation={0} variant="outlined" sx={{ p: 4, borderRadius: 3 }}>
+                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                    복지 및 혜택
+                  </Typography>
+                  <Divider sx={{ my: 2 }} />
+                  <WelfareList text={company.welfare_benefits} />
+                </Paper>
+              )}
+            </Stack>
+          </Grid>
+        </Grid>
       </Container>
     </Box>
   );
 }
-
 export default CompanyDetailPage;
