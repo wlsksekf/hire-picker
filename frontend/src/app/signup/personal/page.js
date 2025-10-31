@@ -8,9 +8,9 @@ import { sendVerificationEmail, checkVerificationCode, signupPersonal } from '@/
 import { StyledFormWrapper } from '@/components/StyledForm';
 
 const genders = [
+    { value: '', label: '선택 안함' },
     { value: 'MALE', label: '남성' },
     { value: 'FEMALE', label: '여성' },
-    { value: 'OTHER', label: '선택 안함' },
 ];
 
 export default function SignupPage() {
@@ -23,7 +23,7 @@ export default function SignupPage() {
         passwordConfirm: '',
         nickname: '',
         name: '',
-        gender: 'OTHER',
+        gender: '', // 기본값을 빈 문자열로 변경
         phone_number: '',
         address: '',
         verificationCode: '',
@@ -132,7 +132,13 @@ export default function SignupPage() {
             return;
         }
 
-        signupPersonal(formData)
+        // gender가 빈 문자열일 경우 null로 변환하여 전송
+        const dataToSend = {
+            ...formData,
+            gender: formData.gender === '' ? null : formData.gender,
+        };
+
+        signupPersonal(dataToSend)
             .then(() => {
                 alert("회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.");
                 router.push('/login');
