@@ -55,6 +55,8 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    runtimeOnly 'io.netty:netty-resolver-dns-native-macos:4.1.66.Final'
+
     // Chat room 관련
     // Web & WebSocket
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
@@ -70,6 +72,14 @@ dependencies {
 
     // AWS S3 SDK
     implementation 'com.amazonaws:aws-java-sdk-s3:1.12.700'
+    // JPA (Database) - (첫 번째 파일에서 중복 선언되어 제거)
+    // H2 (Database) - (첫 번째 파일에서 중복 선언되어 제거)
+    // HTML parsing for lightweight crawling
+    implementation 'org.jsoup:jsoup:1.15.3'
+
+    // Excel file processing
+    implementation 'org.apache.poi:poi:5.2.5'
+    implementation 'org.apache.poi:poi-ooxml:5.2.5'
 }
 
 tasks.named('test') {
