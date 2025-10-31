@@ -39,4 +39,13 @@ public class ManageController {
     public ResponseEntity<?> getSchools() {
         return ResponseEntity.ok(mService.fetchSchoolData());
     }
+    
+    @Operation(summary = "자격증 정보 업데이트", description = "Q-Net API를 통해 자격증 정보를 업데이트합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "자격증 정보 업데이트 성공")
+    })
+    @GetMapping("/update/certification")
+    public ResponseEntity<String> updateCertification() {
+        return mService.updateCertification();
+    }
 }

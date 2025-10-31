@@ -97,6 +97,12 @@ api:
   work24:
     key: ${work24_key}
 
+# 학교 정보 API 키 (커리어넷)
+school-key: ${school_key}
+
+# 자격증 정보 API 키 (Q-Net)
+certification-key: ${certification_key}
+
 payment:
   toss:
     widget-secret-key: ${TOSS_WIDGET_SECRET_KEY}
