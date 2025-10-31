@@ -88,7 +88,10 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         // 토큰을 쿠키에 저장
         addTokensToCookie(response, accessToken, newRefreshTokenValue);
 
-        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/oauth2/redirect")
+        // 환경에 따라 리디렉션 URL 결정
+        boolean isProduction = Arrays.asList(env.getActiveProfiles()).contains("prod");
+        String baseUrl = isProduction ? "https://hirepicker.duckdns.org" : "http://localhost:3000";
+        String targetUrl = UriComponentsBuilder.fromUriString(baseUrl + "/oauth2/redirect")
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
