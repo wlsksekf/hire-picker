@@ -4,7 +4,10 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Column; // 컬럼 설정을 위해 추가
+import jakarta.persistence.Column; 
+import jakarta.persistence.GeneratedValue; // PK 자동 증가를 위해 필요 (선택)
+import jakarta.persistence.GenerationType; // PK 자동 증가 전략을 위해 필요 (선택)
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,32 +24,43 @@ import lombok.experimental.SuperBuilder;
 @ToString(callSuper = true)
 public class Posts {
 
+    // PK 설정: DB 컬럼 이름 명시 및 자동 증가 설정 추가
     @Id
-    private Long post_idx;
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // DB의 자동 증가 기능을 사용
+    @Column(name = "post_idx") // ⭐ DB 컬럼: post_idx
+    private Long postIdx; // ⭐ Java 필드: postIdx (카멜 케이스)
 
-    // --- 숫자형 필드 (Long) ---
-    private Integer view_count; // 조회수는 Long 또는 Integer가 적절
+    // --- 숫자형 필드 ---
+    @Column(name = "view_count") // ⭐ DB 컬럼: view_count
+    private Integer viewCount; // ⭐ Java 필드: viewCount
     
-    // board_idx, p_user_idx는 Long 타입으로 수정
-    @Column(nullable = false) // DB에서 Not Null 제약 조건 적용
-    private Long board_idx; 
+    // 게시판 ID (가장 먼저 수정했던 필드)
+    @Column(name = "board_idx", nullable = false) // ⭐ DB 컬럼: board_idx
+    private Long boardIdx; // ⭐ Java 필드: boardIdx
     
-    @Column(nullable = false) // DB에서 Not Null 제약 조건 적용
-    private String p_user_idx; // 사용자 ID는 문자열(String)인 경우가 많아 String으로 유지합니다. (ID가 숫자라면 Long으로 수정)
+    // 사용자 ID
+    @Column(name = "p_user_idx", nullable = false) // ⭐ DB 컬럼: p_user_idx
+    private String pUserIdx; // ⭐ Java 필드: pUserIdx
 
-    // --- 문자열 필드 (String) ---
-    // 게시글 제목과 내용은 반드시 String 타입이어야 합니다.
+    // --- 문자열 필드 (제목, 내용) ---
     @Column(nullable = false, length = 255)
-    private String title;
+    private String title; // (Snake Case와 동일하므로 @Column 생략 가능하나, 일관성을 위해 유지 가능)
     
-    @Column(nullable = false, columnDefinition = "TEXT") // TEXT 타입으로 설정하여 긴 내용 저장
-    private String content;
+    @Column(nullable = false, columnDefinition = "TEXT") 
+    private String content; // (Snake Case와 동일하므로 @Column 생략 가능하나, 일관성을 위해 유지 가능)
 
-    // 파일명과 이미지 경로도 반드시 String 타입이어야 합니다.
-    private String file_name; // 원본 파일명
-    private String img_name;  // 서버 저장 경로/URL
+    // 파일 관련 필드
+    @Column(name = "file_name") // ⭐ DB 컬럼: file_name
+    private String fileName; // ⭐ Java 필드: fileName
+    
+    @Column(name = "img_name") // ⭐ DB 컬럼: img_name
+    private String imgName;  // ⭐ Java 필드: imgName
 
-    // --- 날짜/시간 필드 (LocalDateTime) ---
-    private LocalDateTime created_at;
-    private LocalDateTime updated_at;
+    // --- 날짜/시간 필드 ---
+    // @CreatedDate/@LastModifiedDate 어노테이션을 사용하는 것이 이상적이나, 명시적 매핑을 위해 @Column 사용
+    @Column(name = "created_at") // ⭐ DB 컬럼: created_at
+    private LocalDateTime createdAt; // ⭐ Java 필드: createdAt
+    
+    @Column(name = "updated_at") // ⭐ DB 컬럼: updated_at
+    private LocalDateTime updatedAt; // ⭐ Java 필드: updatedAt
 }
