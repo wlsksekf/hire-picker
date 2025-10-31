@@ -5,10 +5,6 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import styled from 'styled-components';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { initiateTossPayment } from '@/api';
-import useAuthStore from '@/store/authStore';
-
-const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
-const customerKey = process.env.NEXT_PUBLIC_TOSS_CUSTOMER_KEY;
 
 const CheckoutContainer = styled.div`
   display: flex;
@@ -51,23 +47,15 @@ const creditOptions = [
 ];
 
 const CheckoutClient = () => {
-  const [mounted, setMounted] = useState(false); // [추가] 마운트 상태
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { user } = useAuthStore();
 
   const [widgets, setWidgets] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [paymentDetails, setPaymentDetails] = useState(null); // 백엔드로부터 받은 결제 정보
 
-  // [추가] 컴포넌트 마운트 시 mounted 상태를 true로 설정
+  // 1. URL에서 상품 정보 파싱
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // URL 파라미터에서 상품 ID 가져오기 (mounted 상태일 때만 실행)
-  useEffect(() => {
-    if (!mounted) return; // 마운트되지 않았다면 실행하지 않음
-
     const productId = searchParams.get('productId');
     if (productId) {
       const product = creditOptions.find(o => o.id === productId);
@@ -81,57 +69,59 @@ const CheckoutClient = () => {
       alert('상품 정보가 없습니다.');
       router.push('/store');
     }
-  }, [mounted, searchParams, router]); // mounted를 의존성 배열에 추가
+  }, [searchParams, router]);
 
-  // 1. 위젯 인스턴스 생성
+  // 2. 상품 정보가 있으면, 백엔드에 결제 정보 요청
   useEffect(() => {
-    if (selectedProduct == null) return; // 상품 정보가 없으면 위젯 생성 안 함
+    if (!selectedProduct) return;
 
-    loadTossPayments(clientKey)
+    initiateTossPayment(selectedProduct.id)
+      .then(details => {
+        setPaymentDetails(details);
+      })
+      .catch(error => {
+        console.error('결제 정보 생성 중 오류 발생:', error);
+        alert('결제 정보를 가져오는 중 오류가 발생했습니다.');
+      });
+  }, [selectedProduct]);
+
+  // 3. 백엔드에서 결제 정보를 받아오면, 토스 위젯 생성
+  useEffect(() => {
+    if (!paymentDetails) return;
+
+    loadTossPayments(paymentDetails.clientKey)
       .then(tossPayments => {
-        const widgetInstance = tossPayments.widgets({ customerKey });
+        const widgetInstance = tossPayments.widgets({
+          customerKey: paymentDetails.customerKey, // 백엔드에서 받은 동적 customerKey 사용
+        });
         setWidgets(widgetInstance);
       });
-  }, [selectedProduct]); // selectedProduct가 있을 때 위젯 생성
+  }, [paymentDetails]);
 
-  // 2. 위젯 UI 렌더링 및 금액 설정
+  // 4. 위젯 UI 렌더링 및 금액 설정
   useEffect(() => {
     if (widgets == null || selectedProduct == null) return;
 
-    // 금액 설정
     widgets.setAmount({ currency: 'KRW', value: selectedProduct.price });
 
-    // UI 렌더링
-    widgets.renderPaymentMethods({
-      selector: "#payment-methods",
-      variantKey: "DEFAULT",
-    });
-    widgets.renderAgreement({
-      selector: "#agreement",
-      variantKey: "AGREEMENT",
-    });
-  }, [widgets, selectedProduct]); // widgets와 selectedProduct가 변경될 때마다 실행
+    widgets.renderPaymentMethods({ selector: "#payment-methods", variantKey: "DEFAULT" });
+    widgets.renderAgreement({ selector: "#agreement", variantKey: "AGREEMENT" });
+  }, [widgets, selectedProduct]);
 
+  // 5. 결제하기 버튼 클릭
   const handlePayment = () => {
-    if (!widgets || !selectedProduct) return;
+    if (!widgets || !paymentDetails) return;
 
-    initiateTossPayment(selectedProduct.id)
-      .then(paymentDetails => {
-        widgets.requestPayment({
-          orderId: paymentDetails.orderId,
-          orderName: paymentDetails.orderName,
-          customerName: paymentDetails.customerName,
-          successUrl: `${window.location.origin}/mypage/payment-success`,
-          failUrl: `${window.location.origin}/mypage/payment-fail`,
-        });
-      })
-      .catch(error => {
-        console.error('결제 시작 중 오류 발생:', error);
-        alert('결제 시작 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-      });
+    widgets.requestPayment({
+      orderId: paymentDetails.orderId,
+      orderName: paymentDetails.orderName,
+      customerName: paymentDetails.customerName, // 이 값도 백엔드에서 오는 것을 사용
+      successUrl: `${window.location.origin}/mypage/payment-success`,
+      failUrl: `${window.location.origin}/mypage/payment-fail`,
+    });
   };
 
-  if (!mounted || !selectedProduct) {
+  if (!selectedProduct) {
     return <CheckoutContainer><p>상품 정보를 불러오는 중...</p></CheckoutContainer>;
   }
 
@@ -144,7 +134,6 @@ const CheckoutClient = () => {
         <p>결제 금액: {selectedProduct.price.toLocaleString()} 원</p>
       </ProductInfo>
 
-      {/* 위젯 UI가 렌더링될 영역 */}
       <div id="payment-methods" style={{ width: '100%', maxWidth: '600px' }} />
       <div id="agreement" style={{ width: '100%', maxWidth: '600px' }} />
 
