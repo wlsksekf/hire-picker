@@ -13,5 +13,7 @@ public record JobDto(
     String companyName, // 회사명
     String title, // 공고 제목
     String employmentType, // 고용 형태
-    String location // 근무 지역
+    String location, // 근무 지역
+    String imgUrl 
+
 ) {}

@@ -10,7 +10,7 @@ public class DataMapper {
     public static JobDto mapToJobDto(Element e) {
         String id = XmlParser.getTagValue(e, "empSeqno");
         if (id == null || id.isBlank()) return null; // Or throw an exception
-        return new JobDto(id, XmlParser.getTagValue(e, "empBusiNm"), XmlParser.getTagValue(e, "empWantedTitle"), XmlParser.getTagValue(e, "empWantedTypeNm"), XmlParser.getTagValue(e, "coClcdNm"));
+        return new JobDto(id, XmlParser.getTagValue(e, "empBusiNm"), XmlParser.getTagValue(e, "empWantedTitle"), XmlParser.getTagValue(e, "empWantedTypeNm"), XmlParser.getTagValue(e, "coClcdNm"),null);
     }
 
 
