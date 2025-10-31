@@ -205,6 +205,10 @@ function SettingsPage() {
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   학교정보 불러오기
                 </Button>
+                <Button variant="contained" onClick={function() { return handleSync('manage/update/certification') }} disabled={loading}>
+                  <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
+                  자격증 불러오기
+                </Button>
               </Stack>
             </Box>
           </ListItem>

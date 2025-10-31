@@ -116,19 +116,19 @@ public class EmploymentDataImpl implements EmploymentData {
         return new CompanyDto(
                 company.getCompanyIdx(),
                 company.getCompanyId(),
-                company.getCompanyName(),      // name
-                company.getDescription(),      // summary
-                company.getWebsiteUrl(),       // homepage
+                company.getCompanyName(), // name
+                company.getDescription(), // summary
+                company.getWebsiteUrl(), // homepage
                 company.getBusinessNumber(),
                 company.getLogoUrl(),
                 company.getCompanyType(),
-                company.getCeoName(),          // ceoNm
-                company.getAddress(),          // adres
+                company.getCeoName(), // ceoNm
+                company.getAddress(), // adres
                 company.getEmployeeCount(),
                 company.getCorpCode(),
                 company.getStatus(),
                 company.getRegDate(),
-                company.getSalesAmount(),      // sales_amount
+                company.getSalesAmount(), // sales_amount
                 company.getWelfareBenefits()); // welfare_benefits
     }
 

@@ -1,9 +1,11 @@
 package com.hirepicker.config;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -32,6 +34,7 @@ public class SecurityConfig {
         private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler; // OAuth2 로그인 성공 핸들러
         private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint; // 커스텀 인증 진입점
         private final JwtAuthenticationFilter jwtAuthenticationFilter; // JWT 인증 필터
+        private final Environment env; // 환경 변수 접근을 위한 Environment 객체
 
         // AuthenticationManager를 Bean으로 등록
         @Bean
@@ -42,6 +45,10 @@ public class SecurityConfig {
 
         @Bean // Spring의 빈으로 등록
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+                boolean isProduction = Arrays.asList(env.getActiveProfiles()).contains("prod");
+                String failureUrl = isProduction ? "https://hirepicker.duckdns.org/oauth/fail"
+                                : "http://localhost:3000/oauth/fail";
+
                 http
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .csrf(csrf -> csrf.disable()) // CSRF 보호 비활성화
@@ -96,7 +103,7 @@ public class SecurityConfig {
                                                 .userInfoEndpoint(userInfo -> userInfo
                                                                 .userService(customOAuth2UserService))
                                                 .successHandler(oAuth2LoginSuccessHandler)
-                                                .failureUrl("http://localhost:3000/oauth/fail"))
+                                                .failureUrl(failureUrl))
                                 .exceptionHandling(e -> e.authenticationEntryPoint(customAuthenticationEntryPoint));
 
                 return http.build();
@@ -107,8 +114,7 @@ public class SecurityConfig {
                 CorsConfiguration config = new CorsConfiguration();
 
                 config.setAllowCredentials(true);
-                config.setAllowedOrigins(List.of("http://localhost:3000", "https://hire-picker.com")); // ★ 수정: 프론트엔드
-                                                                                                       // 주소만 명시적으로 허용
+                config.setAllowedOrigins(List.of("http://localhost:3000", "https://hirepicker.duckdns.org"));
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
                 config.setAllowedHeaders(List.of("*"));
                 config.setExposedHeaders(List.of("*"));

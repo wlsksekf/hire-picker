@@ -1,22 +1,20 @@
 package com.hirepicker.config.filter;
 
-import com.hirepicker.config.jwt.JwtTokenProvider; // Added import
+import com.hirepicker.config.jwt.JwtTokenProvider;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.lang.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 @Component // Spring Bean으로 등록
@@ -29,38 +27,51 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider; // JWT 토큰 제공자
 
-    // JWT 필터가 적용되지 않을 경로 목록
-    private static final List<String> EXCLUDE_URLS = Arrays.asList(
-            "/api/auth/**",
-            "/api/oauth2/**",
-            // "/api/users/signup", // 회원가입만 인증 제외
-            "/login/oauth2/code/google",
-            "/swagger-ui.html",
-            "/swagger-ui/**",
-            "/api-docs/**",
-            "/actuator/**",
-            "/api/health/**",
-            "/api/manage/**",
-            "/confirm/**",
-            "/confirm-billing",
-            "/issue-billing-key",
-            "/callback-auth",
-            "/fail",
-            "/api/events/**",
-            "/api/companies/**",
-            "/api/postings/**",
-            "/api/work24/**",
-            "/favicon.ico",
-            "/.well-known/**"
-    );
-
     @Override
-    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) throws ServletException {
-        String requestUri = request.getRequestURI();
-        AntPathMatcher pathMatcher = new AntPathMatcher();
-        boolean shouldNotFilter = EXCLUDE_URLS.stream().anyMatch(uri -> pathMatcher.match(uri, requestUri));
-        log.info("[Filter] Request URI: {} -> shouldNotFilter: {}", requestUri, shouldNotFilter);
-        return shouldNotFilter;
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+
+        // 1. permitAll()로 설정된 경로 리스트
+        //    주의: "/api/auth/**"는 "/api/auth/"로 시작하는지 검사해야 함
+        List<String> permitAllPaths = List.of(
+                "/api/users/signup",
+                "/api/oauth2/", // /api/oauth2/**
+                "/login/oauth2/code/", // /login/oauth2/code/**
+                "/api/auth/", // /api/auth/**
+                "/api/work24/", // /api/work24/**
+                "/actuator/", // /actuator/**
+                "/api/health/", // /api/health/**
+                "/api/manage/", // /api/manage/**
+                "/confirm/", // /confirm/**
+                "/confirm-billing",
+                "/issue-billing-key",
+                "/callback-auth",
+                "/fail",
+                "/swagger-ui/", // /swagger-ui/**
+                "/api-docs/", // /api-docs/**
+                "/error",
+                "/api/companies/", // /api/companies/**
+                "/api/payment/webhook",
+                "/chat/", // /chat/**
+                "/ws", // /ws, /ws/**
+                "/api/ai/upload-image"
+        );
+
+        // 2. GET /api/posts 와 GET /api/posts/* 처리
+        if (method.equals("GET") && (path.equals("/api/posts") || path.startsWith("/api/posts/"))) {
+            return true; // 필터 실행 안 함 (통과)
+        }
+
+        // 3. 나머지 permitAll 경로들 확인
+        for (String permitPath : permitAllPaths) {
+            if (path.startsWith(permitPath)) {
+                return true; // 필터 실행 안 함 (통과)
+            }
+        }
+
+        // 4. 여기에 해당 안 되면 필터 실행
+        return false;
     }
 
     // 실제 필터링 로직

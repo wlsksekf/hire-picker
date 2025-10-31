@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse; // HttpOnly 쿠키 설정을 위한 Import
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -102,7 +103,7 @@ public class AuthController {
         @ApiResponse(responseCode = "500", description = "회원가입 중 오류가 발생했습니다.")
     })
     @PostMapping("/signup/personal")
-    public ResponseEntity<String> registerPersonalUser(@RequestBody SignupRequestDto signupRequest, HttpServletResponse response) {
+    public ResponseEntity<String> registerPersonalUser(@Valid @RequestBody SignupRequestDto signupRequest, HttpServletResponse response) {
         log.info("[API] /api/auth/signup/personal 요청 수신. 사용자: {}", signupRequest.getEmail());
 
         // 1. (★수정) '인증 완료' 상태 검증
@@ -140,7 +141,7 @@ public class AuthController {
         @ApiResponse(responseCode = "500", description = "회원가입 중 오류가 발생했습니다.")
     })
     @PostMapping("/signup/company")
-    public ResponseEntity<String> registerCompanyUser(@RequestBody CompanySignupRequestDto signupRequest, HttpServletResponse response) {
+    public ResponseEntity<String> registerCompanyUser(@Valid @RequestBody CompanySignupRequestDto signupRequest, HttpServletResponse response) {
         log.info("[API] /api/auth/signup/company 요청 수신. 사용자 ID: {}", signupRequest.getId());
 
         // (★수정) '인증 완료' 상태 검증
@@ -174,7 +175,7 @@ public class AuthController {
         @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @PostMapping("/login")
-    public ResponseEntity<Void> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
+    public ResponseEntity<Void> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         log.info("[API] /api/auth/login 요청 수신. 사용자: {}", loginRequest.getEmail());
         authService.login(loginRequest, response);
         return ResponseEntity.ok().build();

@@ -39,11 +39,11 @@
 //         // 프론트에서 보낸 FormData의 필드명('title', 'content')과 일치해야 합니다.
 //         @RequestParam("title") String title,
 //         @RequestParam("content") String content,
-        
+
 //         // 프론트에서 보낸 파일 필드명('image')과 일치해야 합니다.
 //         // 파일은 RequestPart로 받으며, 파일이 없을 수도 있으므로 required = false 설정
 //         @RequestPart(value = "image", required = false) MultipartFile imageFile,
-        
+
 //         // HttpOnly 쿠키로 인증된 사용자 정보를 가져옵니다. (사용자 ID 추출에 사용)
 //         Principal principal
 //     ) {
@@ -55,13 +55,13 @@
 //             return ResultData.of(0, "Authentication required", null);
 //         }
 //         String username = principal.getName();
-        
+
 //         // 2. 서비스 호출 및 Posts 객체 저장
 //         Posts newPost;
 //         try {
 //             // Service 계층으로 데이터를 전달하여 저장 로직을 수행합니다.
 //             newPost = this.postService.create(username, title, content, imageFile);
-            
+
 //         } catch (Exception e) {
 //             // 파일을 저장하거나 DB에 저장하는 중 오류 발생 시 500 에러를 반환합니다.
 //             e.printStackTrace(); // 서버 로그에 스택 트레이스 출력
@@ -71,7 +71,7 @@
 //         // 3. 성공 응답
 //         return ResultData.of(1, "Post created successfully", newPost);
 //     }
-    
+
 //     // ==========================================================
 //     // 기존 GET 메서드
 //     // ==========================================================
@@ -79,13 +79,13 @@
 //     @GetMapping("")
 //     public ResultData<?> getList(@RequestParam(value = "bname", defaultValue = "BBS") String bname,
 //                                  @RequestParam(value = "cPage", defaultValue = "1") int cPage){
-        
+
 //         // 수정: 서비스로부터 Page 객체를 받습니다.
 //         Page<Posts> postPage = this.postService.getList(bname, cPage);
 
 //         // 1. 실제 게시글 목록 (현재 페이지 10개)
 //         List<Posts> list = postPage.getContent();
-        
+
 //         // 2. 전체 게시글 수 (프론트엔드에서 totalPage 계산에 사용)
 //         long totalCount = postPage.getTotalElements(); // Long 타입입니다.
 
@@ -102,7 +102,7 @@
 //     public ResultData<Posts> getPost(@PathVariable("post_idx") Long postIdx) {
 
 //         Posts post = this.postService.getPost(postIdx);
-        
+
 //         String msg = (post != null) ? "success" : "fail";
 
 //         // 상세 조회는 항목이 하나이므로 count를 1또는 0으로 처리합니다.
