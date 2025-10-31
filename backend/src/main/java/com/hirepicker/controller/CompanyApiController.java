@@ -24,10 +24,13 @@ import com.hirepicker.service.EmploymentData;
 import com.hirepicker.service.EmploymentDataService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
-@Tag(name = "Work24", description = "Work24 관련 API")
+@Tag(name = "데이터 동기화", description = "외부 API 데이터 동기화 관련 API")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor // final 필드에 대한 생성자 자동 생성
@@ -58,7 +61,7 @@ public class CompanyApiController {
     @Operation(summary = "기업 목록 조회", description = "페이지네이션과 검색 기능을 적용하여 기업 목록을 조회합니다.")
     @GetMapping("/work24/companies")
     public ResponseEntity<PagedModel<EntityModel<CompanyDto>>> getCompanies(
-            @RequestParam(value = "query", required = false, defaultValue = "") String query,
+            @Parameter(description = "검색어") @RequestParam(value = "query", required = false, defaultValue = "") String query,
             Pageable pageable, PagedResourcesAssembler<CompanyDto> assembler) {
         Page<CompanyDto> companies = employmentData.getCompanies(query, pageable);
         return ResponseEntity.ok(assembler.toModel(companies));
@@ -83,9 +86,12 @@ public class CompanyApiController {
 
     @Operation(summary = "채용공고 데이터 동기화", description = "Work24 API를 통해 채용공고 데이터를 수동으로 동기화합니다.")
     @GetMapping("/work24/sync/jobs")
-    public ResponseEntity<String> syncJobs() {
-        employmentDataService.synchronizePublicJobs();
-        return ResponseEntity.ok("채용공고 동기화가 시작되었습니다!");
+    p
+
+               employmentDataService.synchronizePublicJobs();         return ResoseEntity.ok("채공고 동기화가 시작되습다!");    } catch (Exception e) {
+
+            return ResponseEntity.status(500).body("채용공고 동기화 중 오류가 발생했습니다: " + e.getMessage());
+        }
     }
 
     @Operation(summary = "채용박람회 데이터 동기화", description = "Work24 API를 통해 채용박람회 데이터를 수동으로 동기화합니다.")
@@ -125,3 +131,7 @@ public class CompanyApiController {
         }
     }
 }
+
+     
+
+    

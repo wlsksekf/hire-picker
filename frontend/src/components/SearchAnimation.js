@@ -105,7 +105,7 @@ const SearchAnimation = ({ onFilterClick, isFilterOpen }) => {
         {/* 집게 이미지 */}
         <Box
           component="img"
-          src="/claw.png"
+          src="/hirepicker_logo.png"
           alt="Claw"
           sx={{
             position: 'absolute',

@@ -14,7 +14,9 @@ import com.hirepicker.repository.EmpEventRepository;
 import com.hirepicker.repository.JobPostingRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j // Slf4j 어노테이션 추가
 @Service // Spring의 서비스 빈으로 등록
 @RequiredArgsConstructor // final 필드에 대한 생성자 자동 생성
 public class EmploymentDataProcessorService {
@@ -24,7 +26,7 @@ public class EmploymentDataProcessorService {
     private final EmpEventRepository empEventRepository; // 채용 행사 리포지토리
 
     // JobDto를 처리하여 DB에 저장/업데이트
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processJobDto(JobDto dto) {
         // 회사명이 중복되어 있을 수 있으므로 findAllByCompanyName 사용
         java.util.List<Company> matchedCompanies = companyRepository.findAllByCompanyName(dto.companyName());
@@ -55,7 +57,7 @@ public class EmploymentDataProcessorService {
     }
 
     // EventDto를 처리하여 DB에 저장/업데이트
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processEventDto(EventDto dto) {
         empEventRepository.findByEventCode(dto.id()).ifPresentOrElse(
                 e -> { // 이미 존재하는 행사이면 업데이트
@@ -70,7 +72,7 @@ public class EmploymentDataProcessorService {
     }
 
     // CompanyDto를 처리하여 DB에 저장/업데이트
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processCompanyDto(CompanyDto dto) {
         java.util.List<Company> matches = companyRepository.findAllByCompanyName(dto.name());
         if (!matches.isEmpty()) {

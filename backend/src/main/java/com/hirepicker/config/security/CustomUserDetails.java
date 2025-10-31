@@ -39,7 +39,7 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
         this.isEnabled = !companyUser.isCancel();
         this.userType = UserType.COMPANY;
     }
-    
+
     // OAuth2 로그인용 생성자 (PersonalUser만 해당)
     public CustomUserDetails(PersonalUser personalUser, Map<String, Object> attributes) {
         this.id = personalUser.getId();
@@ -109,4 +109,5 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
         // OAuth2에서는 보통 고유 식별자를 반환
         return String.valueOf(id);
     }
+
 }

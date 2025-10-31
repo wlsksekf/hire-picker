@@ -7,11 +7,11 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { filterColors } from '../theme/filterPalette';
 import Header from './Header';
 import Footer from './Footer';
-import { Box, Container } from '@mui/material';
+import { Box, Container, CircularProgress } from '@mui/material'; // CircularProgress 임포트 추가
 import { oklch2rgb } from 'colorizr';
 import { ThemeModeContext } from '../theme/ThemeModeContext';
 import useAuthStore from '@/store/authStore'; // useAuthStore 임포트 (추가됨)
-import { LoadScript } from '@react-google-maps/api'; // ★ 1. 임포트
+import { LoadScript } from '@react-google-maps/api';
 
 // ★ 2. 'places' 라이브러리만 로드
 const libraries = ['places'];
@@ -36,9 +36,9 @@ function getTheme(mode) {
   const oklchPalette = {
     mode,
     primary: {
-      main: 'oklch(0.70 0.30 165)',
-      light: 'oklch(0.80 0.30 165)',
-      dark: 'oklch(0.60 0.30 165)',
+      main: 'oklch(0.76 0.17 170)', // 선명한 민트 (Vivid Mint)
+      light: 'oklch(0.86 0.17 170)', // 밝은 버전
+      dark: 'oklch(0.66 0.17 170)',  // 어두운 버전
       contrastText: '#000000',
     },
     background: {
@@ -103,12 +103,12 @@ function getTheme(mode) {
 // 앱 전체에 테마와 레이아웃을 제공하는 컴포넌트
 export default function AppProviders({ children }) {
   const [mode, setMode] = useState('light'); // 테마 모드 상태 (light/dark)
-  const { initializeAuth } = useAuthStore(); // useAuthStore에서 initializeAuth 함수 가져오기 (추가됨)
+  const { initializeAuth, isLoading } = useAuthStore(); // isLoading 가져오기
 
-  // 컴포넌트 마운트 시 인증 상태 초기화 (추가됨)
+  // 컴포넌트 마운트 시 인증 상태 초기화
   useEffect(() => {
     initializeAuth();
-  }, [initializeAuth]); // initializeAuth는 변경되지 않으므로 한 번만 실행
+  }, [initializeAuth]);
 
   // 테마 모드가 변경될 때만 테마를 다시 생성
   const theme = useMemo(function() { return getTheme(mode) }, [mode]);
@@ -122,13 +122,19 @@ export default function AppProviders({ children }) {
                   googleMapsApiKey={googleMapsApiKey}
                   libraries={libraries}
               >
-                <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-                  <Header />
-                  <Container component="main" sx={{ flexGrow: 1, py: 4 }}>
-                    {children}
-                  </Container>
-                  <Footer />
-                </Box>
+                {isLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                    <CircularProgress />
+                  </Box>
+                ) : (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+                    <Header />
+                    <Container component="main" sx={{ flexGrow: 1, py: 4 }}>
+                      {children}
+                    </Container>
+                    <Footer />
+                  </Box>
+                )}
               </LoadScript>
             </StyledThemeProvider>
           </MuiThemeProvider>

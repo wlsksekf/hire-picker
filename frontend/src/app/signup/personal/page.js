@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, TextField, Container, Typography, Box, Alert, CircularProgress, MenuItem } from '@mui/material';
-import { Autocomplete, useLoadScript } from '@react-google-maps/api';
+import { Autocomplete } from '@react-google-maps/api';
 import { sendVerificationEmail, checkVerificationCode, signupPersonal } from '@/api'; // checkVerificationCode 임포트
 import { StyledFormWrapper } from '@/components/StyledForm';
 
@@ -16,10 +16,6 @@ const genders = [
 export default function SignupPage() {
     const router = useRouter();
 
-    const { isLoaded } = useLoadScript({
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-        libraries: ['places'],
-    });
 
     const [formData, setFormData] = useState({
         email: '',
@@ -149,10 +145,6 @@ export default function SignupPage() {
             });
     };
 
-    if (!isLoaded && !(global.google && global.google.maps)) {
-        return <Container><CircularProgress /></Container>;
-    }
-
     return (
         <StyledFormWrapper>
             <div className="form-container">
@@ -237,7 +229,7 @@ export default function SignupPage() {
                     <div className="input-group">
                         <label htmlFor="phone_number">전화번호</label>
                         <input type="tel" name="phone_number" id="phone_number" value={formData.phone_number} onChange={handleChange} disabled={loading} required />
-                        <div style={{ fontSize: '0.75rem', color: 'grey', marginTop: '4px' }}>'-' 없이 숫자만 입력해주세요.</div>
+                        <div style={{ fontSize: '0.75rem', color: 'grey', marginTop: '4px' }}>'- ' 없이 숫자만 입력해주세요.</div>
                     </div>
 
                     <div className="input-group">

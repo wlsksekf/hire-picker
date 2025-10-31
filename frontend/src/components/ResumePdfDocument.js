@@ -1,140 +1,205 @@
-// frontend/src/components/ResumePdfDocument.js (예시)
-'use client'; // 만약 Next.js App Router에서 사용한다면
+// frontend/src/components/ResumePdfDocument.js (수정됨)
+'use client';
 
-import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Font, Image } from '@react-pdf/renderer';
 
-// 1. (★필수★) 한글 폰트 등록 (Next.js public 폴더 기준)
-// 이 코드는 클라이언트 사이드에서 한 번만 실행되어야 함
+// 한글 폰트 등록
 try {
   Font.register({ 
-    family: 'NanumGothic', 
-    src: '/fonts/NanumGothic-Regular.ttf' // public/fonts/NanumGothic-Regular.ttf
-  });
-  Font.register({ 
-    family: 'NanumGothicBold', 
-    src: '/fonts/NanumGothic-Bold.ttf' // public/fonts/NanumGothic-Bold.ttf
+    family: 'Pretendard', 
+    src: '/fonts/Pretendard-Medium.ttf'
   });
 } catch (e) {
-  console.warn("폰트 등록 중 문제 발생 (서버 사이드 렌더링 시도 등):", e);
+  console.warn("PDF 폰트 등록 중 문제 발생:", e);
 }
 
-
-// 2. PDF 전용 스타일시트 (CSS가 아님!)
+// PDF 전용 스타일
 const styles = StyleSheet.create({
   page: {
     padding: 30,
-    fontFamily: 'NanumGothic', // 1번에서 등록한 폰트 이름
+    fontFamily: 'Pretendard',
     fontSize: 10,
     color: '#333',
   },
-  h1: { 
-    fontSize: 20, 
-    textAlign: 'center', 
-    marginBottom: 20, 
-    fontFamily: 'NanumGothicBold' 
-  },
-  h2: { 
-    fontSize: 14, 
-    fontFamily: 'NanumGothicBold', 
-    marginVertical: 10, 
-    paddingBottom: 3,
-    borderBottomWidth: 2,
-    borderBottomColor: '#333',
-  },
-  sectionTitle: { 
-    fontSize: 11, 
-    fontFamily: 'NanumGothicBold', 
-    marginTop: 10, 
-    marginBottom: 5,
-    color: '#000',
-  },
+  h1: { fontSize: 20, textAlign: 'center', marginBottom: 20, fontFamily: 'Pretendard' },
+  h2: { fontSize: 14, fontFamily: 'Pretendard', marginVertical: 10, paddingBottom: 3, borderBottomWidth: 2, borderBottomColor: '#333' },
+  sectionTitle: { fontSize: 12, fontFamily: 'Pretendard', marginTop: 12, marginBottom: 8, color: '#000' },
   // --- 테이블 스타일 ---
-  table: { 
-    display: 'table', 
-    width: 'auto', 
-    borderStyle: 'solid', 
-    borderWidth: 1, 
-    borderColor: '#bfbfbf',
-    marginBottom: 15,
+  table: { display: 'table', width: 'auto', borderStyle: 'solid', borderWidth: 1, borderColor: '#bfbfbf', marginBottom: 15 },
+  tableRow: { flexDirection: 'row' },
+  tableColHeader: { width: '15%', borderRight: '1px solid #bfbfbf', backgroundColor: '#f2f2f2', padding: 5, fontFamily: 'Pretendard', textAlign: 'center' },
+  tableCol: { padding: 5, borderRight: '1px solid #bfbfbf' },
+  photoBox: {
+    width: 120,
+    height: 160,
+    border: '1px solid #bfbfbf',
+    marginRight: 10,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  tableRow: { 
-    flexDirection: 'row', 
-    borderBottomWidth: 1,
-    borderBottomColor: '#bfbfbf',
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
   },
-  tableColHeader: { 
-    width: '20%', 
-    borderRightWidth: 1,
-    borderRightColor: '#bfbfbf',
-    backgroundColor: '#f2f2f2',
-    padding: 6,
-    fontFamily: 'NanumGothicBold',
-  },
-  tableCol: { 
-    width: '80%', 
-    padding: 6,
-  },
-  tableColSpan: {
-    width: '80%',
-    padding: 6,
+  photoPlaceholder: {
+    fontSize: 10,
+    color: '#888',
   },
   // 자기소개서용 텍스트
-  bodyText: {
-    fontSize: 10,
-    lineHeight: 1.4,
-    textAlign: 'justify', // 양쪽 정렬
-  }
+  bodyText: { fontSize: 10, lineHeight: 1.5, textAlign: 'justify' },
 });
 
-// 3. PDF 문서 컴포넌트
-// 폼 state인 resumeData를 props로 받아서 PDF를 그림
-export default function ResumePdfDocument({ resumeData }) {
+// PDF 문서 컴포넌트
+export default function ResumePdfDocument({ formData, imageUrl }) {
+  if (!formData) {
+    return (
+      <Document>
+        <Page size="A4" style={styles.page}>
+          <Text>이력서 데이터를 불러오는 중입니다...</Text>
+        </Page>
+      </Document>
+    );
+  }
+
   return (
     <Document>
+      {/* --- 1 페이지: 인적사항, 학력, 경력 등 --- */}
       <Page size="A4" style={styles.page}>
-        
         <Text style={styles.h1}>입 사 지 원 서</Text>
 
+        {/* 인적사항 */}
         <Text style={styles.h2}>[인적사항]</Text>
+        <View style={{ flexDirection: 'row', marginBottom: 15 }}>
+          {/* 사진 영역 */}
+          <View style={styles.photoBox}>
+            {imageUrl ? (
+              <Image src={imageUrl} style={styles.profileImage} />
+            ) : (
+              <Text style={styles.photoPlaceholder}>사진</Text>
+            )}
+          </View>
+          {/* 인적사항 테이블 */}
+          <View style={{ flexGrow: 1 }}>
+            <View style={styles.table}>
+              <View style={styles.tableRow}>
+                <Text style={{...styles.tableColHeader}}>성명</Text>
+                <Text style={{...styles.tableCol, width: '35%'}}>{formData.name}</Text>
+                <Text style={{...styles.tableColHeader}}>성별</Text>
+                <Text style={{...styles.tableCol, width: '35%', borderRight: 0}}>{formData.gender}</Text>
+              </View>
+              <View style={styles.tableRow}>
+                <Text style={{...styles.tableColHeader}}>생년월일</Text>
+                <Text style={{...styles.tableCol, width: '35%'}}>{formData.birthdate}</Text>
+                <Text style={{...styles.tableColHeader}}>국적</Text>
+                <Text style={{...styles.tableCol, width: '35%', borderRight: 0}}>{formData.nationality}</Text>
+              </View>
+              <View style={styles.tableRow}>
+                <Text style={{...styles.tableColHeader}}>휴대폰</Text>
+                <Text style={{...styles.tableCol, width: '35%'}}>{formData.phone}</Text>
+                <Text style={{...styles.tableColHeader}}>E-mail</Text>
+                <Text style={{...styles.tableCol, width: '35%', borderRight: 0}}>{formData.email}</Text>
+              </View>
+              <View style={{...styles.tableRow, borderBottom: 0}}>
+                <Text style={{...styles.tableColHeader}}>주소</Text>
+                <Text style={{...styles.tableCol, width: '85%', borderRight: 0}}>{formData.address}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+        
+        {/* 학력사항 */}
+        <Text style={styles.h2}>[학력사항]</Text>
         <View style={styles.table}>
-          {/* 성명/성별 Row */}
           <View style={styles.tableRow}>
-            <Text style={{...styles.tableColHeader, width: '20%'}}>성명</Text>
-            <Text style={{...styles.tableCol, width: '30%'}}>{resumeData.name}</Text>
-            <Text style={{...styles.tableColHeader, width: '20%'}}>성별</Text>
-            <Text style={{...styles.tableCol, width: '30%', borderRightWidth: 0}}>{resumeData.gender}</Text>
+              <Text style={{...styles.tableColHeader, width: '25%'}}>기간</Text>
+              <Text style={{...styles.tableColHeader, width: '20%'}}>학교명</Text>
+              <Text style={{...styles.tableColHeader, width: '20%'}}>학과</Text>
+              <Text style={{...styles.tableColHeader, width: '15%'}}>졸업구분</Text>
+              <Text style={{...styles.tableColHeader, width: '20%', borderRight: 0}}>학점</Text>
           </View>
-          {/* 휴대폰/Email Row */}
-          <View style={styles.tableRow}>
-            <Text style={{...styles.tableColHeader, width: '20%'}}>휴 대 폰</Text>
-            <Text style={{...styles.tableCol, width: '30%'}}>{resumeData.phone}</Text>
-            <Text style={{...styles.tableColHeader, width: '20%'}}>E-mail</Text>
-            <Text style={{...styles.tableCol, width: '30%', borderRightWidth: 0}}>{resumeData.email}</Text>
+          <View style={{...styles.tableRow}}>
+              <Text style={{...styles.tableCol, width: '25%'}}>{formData.edu1_period}</Text>
+              <Text style={{...styles.tableCol, width: '20%'}}>{formData.edu1_school}</Text>
+              <Text style={{...styles.tableCol, width: '20%'}}>{formData.edu1_major}</Text>
+              <Text style={{...styles.tableCol, width: '15%'}}>{formData.edu1_status}</Text>
+              <Text style={{...styles.tableCol, width: '20%', borderRight: 0}}>{formData.edu1_score}</Text>
           </View>
-          {/* 주소 Row */}
-          <View style={{...styles.tableRow, borderBottomWidth: 0}}>
-            <Text style={{...styles.tableColHeader, width: '20%'}}>주 소</Text>
-            <Text style={{...styles.tableCol, width: '80%', borderRightWidth: 0}}>{resumeData.address}</Text>
+          <View style={{...styles.tableRow, borderBottom: 0}}>
+              <Text style={{...styles.tableCol, width: '25%'}}>{formData.edu2_period}</Text>
+              <Text style={{...styles.tableCol, width: '20%'}}>{formData.edu2_school}</Text>
+              <Text style={{...styles.tableCol, width: '20%'}}>{formData.edu2_major}</Text>
+              <Text style={{...styles.tableCol, width: '15%'}}>{formData.edu2_status}</Text>
+              <Text style={{...styles.tableCol, width: '20%', borderRight: 0}}>{formData.edu2_score}</Text>
           </View>
         </View>
 
-        {/* ... (학력사항, 자격증 등도 위와 같이 <View>로 테이블을 그려줌) ... */}
+        {/* 경력사항 */}
+        <Text style={styles.h2}>[경력사항]</Text>
+        <View style={styles.table}>
+          <View style={styles.tableRow}>
+              <Text style={{...styles.tableColHeader, width: '25%'}}>근무기간</Text>
+              <Text style={{...styles.tableColHeader, width: '20%'}}>회사명</Text>
+              <Text style={{...styles.tableColHeader, width: '15%'}}>직위</Text>
+              <Text style={{...styles.tableColHeader, width: '40%', borderRight: 0}}>담당업무</Text>
+          </View>
+          <View style={{...styles.tableRow}}>
+              <Text style={{...styles.tableCol, width: '25%'}}>{formData.exp1_period}</Text>
+              <Text style={{...styles.tableCol, width: '20%'}}>{formData.exp1_company}</Text>
+              <Text style={{...styles.tableCol, width: '15%'}}>{formData.exp1_position}</Text>
+              <Text style={{...styles.tableCol, width: '40%', borderRight: 0}}>{formData.exp1_duties}</Text>
+          </View>
+           <View style={{...styles.tableRow, borderBottom: 0}}>
+              <Text style={{...styles.tableCol, width: '25%'}}>{formData.exp2_period}</Text>
+              <Text style={{...styles.tableCol, width: '20%'}}>{formData.exp2_company}</Text>
+              <Text style={{...styles.tableCol, width: '15%'}}>{formData.exp2_position}</Text>
+              <Text style={{...styles.tableCol, width: '40%', borderRight: 0}}>{formData.exp2_duties}</Text>
+          </View>
+        </View>
 
+        {/* 자격증 */}
+        <Text style={styles.h2}>[자격/면허]</Text>
+        <View style={styles.table}>
+          <View style={styles.tableRow}>
+              <Text style={{...styles.tableColHeader, width: '35%'}}>자격증명</Text>
+              <Text style={{...styles.tableColHeader, width: '25%'}}>등급/점수</Text>
+              <Text style={{...styles.tableColHeader, width: '40%', borderRight: 0}}>발급기관</Text>
+          </View>
+          <View style={{...styles.tableRow}}>
+              <Text style={{...styles.tableCol, width: '35%'}}>{formData.cert1_name}</Text>
+              <Text style={{...styles.tableCol, width: '25%'}}>{formData.cert1_level}</Text>
+              <Text style={{...styles.tableCol, width: '40%', borderRight: 0}}>{formData.cert1_issuer}</Text>
+          </View>
+          <View style={{...styles.tableRow}}>
+              <Text style={{...styles.tableCol, width: '35%'}}>{formData.cert2_name}</Text>
+              <Text style={{...styles.tableCol, width: '25%'}}>{formData.cert2_level}</Text>
+              <Text style={{...styles.tableCol, width: '40%', borderRight: 0}}>{formData.cert2_issuer}</Text>
+          </View>
+          <View style={{...styles.tableRow, borderBottom: 0}}>
+              <Text style={{...styles.tableCol, width: '35%'}}>{formData.cert3_name}</Text>
+              <Text style={{...styles.tableCol, width: '25%'}}>{formData.cert3_level}</Text>
+              <Text style={{...styles.tableCol, width: '40%', borderRight: 0}}>{formData.cert3_issuer}</Text>
+          </View>
+        </View>
+
+      </Page>
+
+      {/* --- 2 페이지: 자기소개서 --- */}
+      <Page size="A4" style={styles.page}>
         <Text style={styles.h2}>[자기소개서]</Text>
         
         <Text style={styles.sectionTitle}>■ 성장과정</Text>
-        <Text style={styles.bodyText}>{resumeData.growthProcess}</Text>
+        <Text style={styles.bodyText}>{formData.selfGrowth}</Text>
 
-        <Text style={styles.sectionTitle}>■ 업무 관련 역량</Text>
-        <Text style={styles.bodyText}>{resumeData.jobCompetencies}</Text>
+        <Text style={styles.sectionTitle}>■ 성격의 장·단점 및 특기</Text>
+        <Text style={styles.bodyText}>{formData.selfStrengths}</Text>
 
-        <Text style={styles.sectionTitle}>■ 성격 장단점</Text>
-        <Text style={styles.bodyText}>{resumeData.prosAndCons}</Text>
+        <Text style={styles.sectionTitle}>■ 지원동기</Text>
+        <Text style={styles.bodyText}>{formData.selfMotivation}</Text>
 
         <Text style={styles.sectionTitle}>■ 입사 후 포부</Text>
-        <Text style={styles.bodyText}>{resumeData.aspirations}</Text>
-
+        <Text style={styles.bodyText}>{formData.selfAspirations}</Text>
       </Page>
     </Document>
   );

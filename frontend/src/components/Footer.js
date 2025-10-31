@@ -22,7 +22,7 @@ function Footer() {
           {'.'}
         </Typography>
         <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1 }}>
-          (주)하이어피커 | 서울특별시 강남구 | 대표: 홍길동
+          (주)하이어피커 | 서울특별시 강남구 | 대표: 김진환
         </Typography>
       </Container>
     </Box>

@@ -7,6 +7,7 @@ import {
   useTheme,
   useMediaQuery,
   Button,
+  CircularProgress, // 로딩 스피너 추가
 } from '@mui/material';
 import Link from 'next/link';
 import useAuthStore from '@/store/authStore';
@@ -16,7 +17,7 @@ import { useRouter } from 'next/navigation';
 function Header() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // 모바일 화면 여부 확인
-  const { isAuthenticated, logout } = useAuthStore();
+  const { isAuthenticated, isLoading, logout } = useAuthStore(); // isLoading 추가
   const router = useRouter();
 
   const handleLogout = () => {
@@ -39,10 +40,15 @@ function Header() {
   // 모바일 화면일 경우
   if (isMobile) {
     return (
-      <AppBar position="sticky" elevation={0} sx={{ borderBottom: '1px solid', borderColor: 'divider', backgroundColor: 'background.paper' }}>
+      <AppBar position="sticky" elevation={0} sx={{ 
+        borderBottom: '1px solid', 
+        borderColor: 'divider', 
+        backgroundColor: 'background.paper',
+        zIndex: theme.zIndex.drawer + 1, // 헤더가 다른 요소 위에 오도록 z-index 설정
+      }}>
         <Toolbar>
           <Link href="/" passHref style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <Box component="img" src="/claw.png" alt="HirePicker Logo" sx={{ width: 32, height: 32, marginRight: '8px' }} />
+            <Box component="img" src="/hirepicker_logo.png" alt="HirePicker Logo" sx={{ width: 32, height: 32, marginRight: '8px' }} />
             <Typography variant="h6" component="span" fontWeight="bold">HirePicker</Typography>
           </Link>
         </Toolbar>
@@ -59,13 +65,14 @@ function Header() {
         borderBottom: '1px solid',
         borderColor: 'divider',
         backgroundColor: 'background.paper',
+        zIndex: theme.zIndex.drawer + 1, // 헤더가 다른 요소 위에 오도록 z-index 설정
       }}
     >
       <Toolbar sx={{ minHeight: '72px' }}>
         {/* 로고 */}
         <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, mr: 4 }}>
           <Link href="/" passHref style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
-            <Box component="img" src="/claw.png" alt="HirePicker Logo" sx={{ width: 40, height: 40, marginRight: '8px' }} />
+            <Box component="img" src="/hirepicker_logo.png" alt="HirePicker Logo" sx={{ width: 40, height: 40, marginRight: '8px' }} />
             <Typography variant="h6" component="span" fontWeight="bold">HirePicker</Typography>
           </Link>
         </Box>
@@ -99,7 +106,9 @@ function Header() {
 
         {/* 로그인/회원가입 메뉴 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {isAuthenticated ? (
+          {isLoading ? ( // 로딩 중일 때
+            <CircularProgress size={24} color="inherit" /> // 로딩 스피너 표시
+          ) : isAuthenticated ? ( // 로딩 완료 후 인증된 상태
             <>
               <Button
                 variant="text"
@@ -152,7 +161,7 @@ function Header() {
                 </Button>
               </Link>
             </>
-          ) : (
+          ) : ( // 로딩 완료 후 인증되지 않은 상태
             <>
               <Link href="/login" passHref style={{ textDecoration: 'none' }}>
                 <Button

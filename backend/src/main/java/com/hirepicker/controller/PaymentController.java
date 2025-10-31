@@ -3,6 +3,11 @@ package com.hirepicker.controller;
 import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.payment.*;
 import com.hirepicker.service.TossPaymentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+@Tag(name = "결제", description = "토스 페이먼츠 결제 관련 API")
 @RestController @RequestMapping("/api/payment")
 @RequiredArgsConstructor
 @Slf4j
@@ -18,11 +24,14 @@ public class PaymentController {
 
     private final TossPaymentService tossPaymentService;
 
-    // 1. 결제 정보 생성 (주문서 생성)
+    @Operation(summary = "결제 정보 생성 (주문서 생성)", description = "결제를 시작하기 위해 주문 정보를 생성합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "주문 정보 생성 성공")
+    })
     @PostMapping("/initiate")
     public ResponseEntity<PaymentInitiateResponseDto> initiatePayment(
             @RequestBody PaymentInitiateRequestDto requestDto,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
         
         log.info("[API] /api/payment/initiate - 요청 수신");
         PaymentInitiateResponseDto response = tossPaymentService.initiatePayment(requestDto, userDetails);
@@ -30,11 +39,15 @@ public class PaymentController {
         return ResponseEntity.ok(response);
     }
 
-    // 2. 결제 승인
+    @Operation(summary = "결제 승인", description = "생성된 주문에 대해 결제를 승인합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "결제 승인 성공"),
+        @ApiResponse(responseCode = "400", description = "결제 승인 실패")
+    })
     @PostMapping("/confirm")
     public ResponseEntity<?> confirmPayment(
             @RequestBody PaymentConfirmRequestDto confirmDto,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
         
         try {
             Object tossPaymentResult = tossPaymentService.confirmPayment(confirmDto, userDetails);
@@ -44,10 +57,20 @@ public class PaymentController {
         }
     }
     
-    // 3. 가상계좌 웹훅 (Toss 서버가 호출)
+    @Operation(summary = "가상계좌 웹훅", description = "토스 페이먼츠로부터 가상계좌 입금 완료 웹훅을 수신합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "웹훅 수신 성공")
+    })
     @PostMapping("/webhook")
     public ResponseEntity<Void> tossWebhook(@RequestBody TossWebhookDto webhookDto) {
         tossPaymentService.handleWebhook(webhookDto);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/fail")
+    public ResponseEntity<String> failPayment(@RequestParam(required = false) String code,
+                                              @RequestParam(required = false) String message) {
+        log.error("Payment failed. Code: {}, Message: {}", code, message);
+        return ResponseEntity.status(500).body("결제 실패: " + (message != null ? message : "알 수 없는 오류"));
     }
 }

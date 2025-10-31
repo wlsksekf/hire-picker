@@ -1,114 +1,124 @@
 package com.hirepicker.service;
 
+import com.google.genai.Client;
+import com.google.genai.types.Content;
+import com.google.genai.types.GenerateContentConfig;
+import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.Part;
 import com.hirepicker.dto.ai.FullResumeDraftDto;
-import lombok.RequiredArgsConstructor;
+import org.json.JSONObject;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.SystemPromptTemplate;
-import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 
-/**
- * AI 기반 자기소개서 초안 생성 서비스
- * - Spring AI (Vertex AI Gemini) 기반
- * - 사용자가 제공한 키워드로 전문적인 자기소개서 초안을 생성
- */
-@Slf4j
+// AI 이력서 초안 생성을 담당하는 서비스
 @Service
-@RequiredArgsConstructor
+@Slf4j
 public class AiResumeService {
 
-    private final VertexAiGeminiChatModel chatModel;
-    // private final CreditService creditService; // 결제/크레딧 연동 시 주입
+    private final Client client;
+
+    // 생성자를 통해 환경변수를 로드하고 Gemini 클라이언트를 초기화
+    public AiResumeService() {
+        this.client = new Client();
+    }
 
     /**
-     * 사용자 키워드를 기반으로 AI 자기소개서 초안 생성
-     * @param userKeywords 사용자 제공 키워드 (예: "성실함, 리더십, 협업능력, 개발자")
-     * @param userId 사용자 ID (추후 크레딧 차감용)
-     * @return 생성된 자기소개서 초안 DTO
+     * 사용자 데이터와 채용 공고를 기반으로 완전한 이력서 초안을 생성하거나 기존 초안을 수정합니다.
+     * @param userData 사용자 정보
+     * @param jobPostingData 채용 공고 정보
+     * @param resumeDraft (선택) 수정할 기존 이력서 초안
+     * @return 생성 또는 수정된 FullResumeDraftDto 객체
      */
-    public FullResumeDraftDto generateFullDraft(String userKeywords, Long userId) {
-
-        // (선택) 크레딧 차감 로직 예시
-        // creditService.useCredits(userId, 10, "AI 자기소개서 초안 생성");
-
-        var outputConverter = new BeanOutputConverter<>(FullResumeDraftDto.class);
-
-        // 🧠 시스템 프롬프트
-        String systemMessageTemplate = """
-            당신은 취업 플랫폼 'hirepicker'의 전문 이력서 코치입니다.
-            사용자가 제공한 핵심 키워드를 바탕으로 다음 네 가지 항목을
-            전문적이고 설득력 있게 한국어로 작성하세요.
-
-            [작성 항목]
-            1. 성장과정 (growthProcess)
-            2. 업무 관련 역량 (jobCompetencies)
-            3. 성격 장단점 (prosAndCons)
-            4. 입사 후 포부 (aspirations)
-
-            각 항목은 300~500자 내외로 작성해야 합니다.
-            반드시 아래 JSON 형식으로만 응답하세요:
-            {format}
-            """;
-
-        var systemPrompt = new SystemPromptTemplate(systemMessageTemplate)
-                .createMessage(Map.of("format", outputConverter.getFormat()));
-
-        var userMessage = new UserMessage("다음은 사용자의 핵심 키워드입니다: " + userKeywords);
-
-        // 🧩 최종 프롬프트 구성
-        Prompt finalPrompt = new Prompt(List.of(systemPrompt, userMessage));
-
+    public FullResumeDraftDto generateFullResumeDraft(String userData, String jobPostingData, FullResumeDraftDto resumeDraft) {
         try {
-            // 🤖 Gemini 모델 호출
-            ChatResponse chatResponse = chatModel.call(finalPrompt);
+            // 1. 현재 요청의 모드를 정의
+            boolean isRefining = (resumeDraft != null);
+            boolean isSpecific = (jobPostingData != null && !jobPostingData.isBlank());
 
-            Generation generation = chatResponse.getResult();
-            if (generation == null || generation.getOutput() == null) {
-                log.error("Gemini 응답 결과 또는 내용이 비어 있습니다. (userId: {})", userId);
-                throw new IllegalStateException("AI 응답 결과 또는 내용이 비어 있습니다.");
+            // 2. 모드에 따라 시스템 프롬프트와 사용자 프롬프트를 동적으로 생성
+            String systemPrompt;
+            String userPrompt;
+
+            String baseInstruction = "당신은 대한민국 최고의 커리어 컨설턴트입니다. 결과는 반드시 4개 항목(growthProcess, jobCompetencies, prosAndCons, aspirations)을 모두 포함한 JSON 형식으로 반환해야 하며, 각 항목은 200자에서 400자 사이로 작성해야 합니다. ";
+            String jobInfo = isSpecific ? jobPostingData : "(특별한 채용 공고 정보나 요청사항 없음)";
+
+            if (isRefining) { // 수정 모드
+                if (resumeDraft == null) {
+                    // This should not happen due to the isRefining check, but as a safeguard
+                    throw new IllegalStateException("resumeDraft cannot be null in refining mode.");
+                }
+                if (isSpecific) { // 특정 회사 대상 수정
+                    systemPrompt = baseInstruction + "주어진 사용자 정보, 채용 공고, 그리고 기존 초안을 바탕으로, 초안의 내용은 유지하면서 채용 공고에 맞게 내용을 더욱 프로페셔널하고 설득력 있게 다듬어 주세요. 비어있는 항목은 채용 공고와 사용자 정보를 바탕으로 새로 작성해주세요.";
+                } else { // 범용 수정
+                    systemPrompt = baseInstruction + "주어진 사용자 정보와 기존 초안을 바탕으로, 특정 회사를 언급하지 말고, 초안의 내용은 유지하면서 범용적으로 사용할 수 있도록 내용을 더욱 프로페셔널하게 다듬어 주세요. 비어있는 항목은 사용자 정보를 바탕으로 새로 작성해주세요.";
+                }
+
+                // 사용자 프롬프트 구성 (다듬을/새로 쓸 항목 구분)
+                StringBuilder toRefine = new StringBuilder();
+                StringBuilder toGenerate = new StringBuilder();
+                Map<String, String> drafts = new LinkedHashMap<>();
+                drafts.put("성장과정", resumeDraft.growthProcess());
+                drafts.put("업무 관련 역량", resumeDraft.jobCompetencies());
+                drafts.put("성격 장단점", resumeDraft.prosAndCons());
+                drafts.put("입사 후 포부", resumeDraft.aspirations());
+
+                drafts.forEach((key, value) -> {
+                    if (value != null && !value.isBlank()) {
+                        toRefine.append(String.format("- %s: %s\n", key, value));
+                    } else {
+                        toGenerate.append(String.format("- %s\n", key));
+                    }
+                });
+
+                userPrompt = "## 사용자 정보\n" + userData + "\n\n" + "## 채용 공고/요청사항\n" + jobInfo;
+                if (toRefine.length() > 0) {
+                    userPrompt += "\n\n### 다음 항목은 내용을 더 멋지게 다듬어주세요:\n" + toRefine.toString();
+                }
+                if (toGenerate.length() > 0) {
+                    userPrompt += "\n\n### 다음 항목은 새로 작성해주세요:\n" + toGenerate.toString();
+                }
+
+            } else { // 신규 생성 모드
+                if (isSpecific) { // 특정 회사 대상 신규 생성
+                    systemPrompt = baseInstruction + "주어진 사용자 정보와 채용 공고를 바탕으로, 지원자의 역량이 해당 회사와 직무에 어떻게 기여할 수 있는지 구체적으로 연결하여 자기소개서를 작성해주세요.";
+                } else { // 범용 신규 생성
+                    systemPrompt = baseInstruction + "채용 공고 정보가 없으니, 주어진 사용자 정보를 바탕으로, 특정 회사를 언급하지 않고 어떤 회사든 매력적으로 보일 수 있는 범용적인 지원동기를 포함한 자기소개서를 작성해주세요. 기술에 대한 열정, 성장 욕구, 협업 능력을 강조해주세요.";
+                }
+                userPrompt = "## 사용자 정보\n" + userData + "\n\n" + "## 채용 공고/요청사항\n" + jobInfo;
             }
 
-            // [WORKAROUND] IDE 컴파일 오류 우회를 위해 Reflection 사용
-            String aiOutput;
-            try {
-                Object assistantMessage = generation.getOutput();
-                java.lang.reflect.Method getContentMethod = assistantMessage.getClass().getMethod("getContent");
-                aiOutput = (String) getContentMethod.invoke(assistantMessage);
-            } catch (Exception e) {
-                log.error("AI 응답 내용을 Reflection으로 가져오는 중 오류 발생: {}", e.getMessage(), e);
-                throw new RuntimeException("AI 응답 내용을 가져오는 중 오류가 발생했습니다. IDE의 Gradle 프로젝트 새로고침을 권장합니다.", e);
+            // 3. AI 모델 설정 및 호출
+            GenerateContentConfig config = GenerateContentConfig.builder()
+                    .systemInstruction(Content.fromParts(Part.fromText(systemPrompt)))
+                    .build();
+
+            GenerateContentResponse response = client.models.generateContent("gemini-2.5-flash", userPrompt, config);
+
+            // 4. AI 응답 파싱 및 반환
+            String responseText = response.text();
+            int startIndex = responseText.indexOf('{');
+            int endIndex = responseText.lastIndexOf('}');
+
+            if (startIndex == -1 || endIndex == -1 || endIndex < startIndex) {
+                log.error("AI로부터 유효한 JSON 응답을 받지 못했습니다. 응답 내용: {}", responseText);
+                throw new RuntimeException("AI로부터 유효한 JSON 응답을 받지 못했습니다.");
             }
 
-            if (aiOutput == null || aiOutput.isBlank()) {
-                log.error("Gemini 응답 내용이 비어 있습니다. (userId: {})", userId);
-                throw new IllegalStateException("AI 응답 내용은 비어 있습니다.");
-            }
-            
-            log.info("AI raw output: {}", aiOutput);
+            String jsonString = responseText.substring(startIndex, endIndex + 1);
+            JSONObject jsonResponse = new JSONObject(jsonString);
 
-            // [WORKAROUND] IDE 컴파일 오류 우회를 위해 ObjectMapper 직접 사용
-            try {
-                // AI가 생성한 JSON 앞뒤의 ```json ... ``` 마크다운을 제거합니다.
-                String jsonContent = aiOutput.trim().replace("```json", "").replace("```", "").trim();
-                
-                com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                return objectMapper.readValue(jsonContent, FullResumeDraftDto.class);
-            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-                log.error("AI 응답 JSON 파싱 중 오류 발생: {}", e.getMessage(), e);
-                throw new RuntimeException("AI 응답을 파싱하는 중 오류가 발생했습니다.", e);
-            }
-
-        } catch (Exception e) {
-            log.error("AI 자기소개서 생성 중 오류 발생: {}", e.getMessage(), e);
-            throw new RuntimeException("AI 자기소개서 생성 중 오류가 발생했습니다.", e);
+            return new FullResumeDraftDto(
+                    jsonResponse.getString("growthProcess"),
+                    jsonResponse.getString("jobCompetencies"),
+                    jsonResponse.getString("prosAndCons"),
+                    jsonResponse.getString("aspirations")
+            );
+        } catch (Throwable t) {
+            log.error("!!! AiResumeService에서 예측하지 못한 에러 발생 !!!", t);
+            throw new RuntimeException("AI 이력서 생성 중 예측하지 못한 에러가 발생했습니다.", t);
         }
     }
 }

@@ -12,12 +12,18 @@ import com.hirepicker.dto.ChatMessageDTO;
 import com.hirepicker.entity.ChatMessage;
 import com.hirepicker.repository.ChatMessageRepository;
 import com.hirepicker.service.RedisPublisher;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import lombok.RequiredArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Tag(name = "채팅", description = "채팅 관련 API")
 @RestController
 @RequiredArgsConstructor // [핵심] 그냥 Lombok으로 주입받으면 끝! Configurator 불필요.
 public class ChatController {
@@ -59,8 +65,12 @@ public class ChatController {
         redisPublisher.publish(receivedDto);
     }
     
+    @Operation(summary = "채팅 내역 조회", description = "특정 채팅방의 이전 대화 내역을 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "채팅 내역 조회 성공")
+    })
     @GetMapping("/chat/history/{roomId}")
-    public ResponseEntity<List<ChatMessageDTO>> getChatHistory(@PathVariable("roomId") String roomId) {
+    public ResponseEntity<List<ChatMessageDTO>> getChatHistory(@Parameter(description = "채팅방 ID", required = true) @PathVariable("roomId") String roomId) {
         
         // (경고: 이 코드는 '모든' 대화를 불러와서 느립니다. 
         //  이전에 논의했던 '페이징'을 적용해야 합니다.)

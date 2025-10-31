@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter; // Setter 임포트 추가
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.List;
 @Entity // JPA 엔티티임을 선언
 @Table(name = "personal_user") // "personal_user" 테이블과 매핑
 @Getter // 모든 필드에 대한 Getter 자동 생성
+@Setter // 모든 필드에 대한 Setter 자동 생성 (추가)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // 기본 생성자 자동 생성 (접근 수준: protected)
 public class PersonalUser {
 
@@ -36,7 +38,7 @@ public class PersonalUser {
     private String name;
 
     @Enumerated(EnumType.STRING) // Enum 타입을 문자열로 저장
-    @Column(nullable = false) // null이 될 수 없는 컬럼
+    @Column(nullable = true) // null이 될 수 있는 컬럼으로 변경
     private Gender gender;
 
     @Column(name = "phone_number") // "phone_number" 컬럼과 매핑
@@ -86,6 +88,11 @@ public class PersonalUser {
     // 비밀번호 설정/변경 시 사용
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    // 닉네임 변경 시 사용
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 
     // 로그인 로직에서 사용할 setter

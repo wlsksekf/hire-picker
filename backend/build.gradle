@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.6'
+    id 'org.springframework.boot' version '3.5.7'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -25,13 +25,8 @@ repositories {
 }
 
 dependencies {
-    // Spring AI BOM 추가 (안정화 버전 사용)
-    implementation(enforcedPlatform("org.springframework.ai:spring-ai-bom:1.0.3"))
-    implementation "org.springframework.ai:spring-ai-starter-model-vertex-ai-gemini"
-
-    // .env 파일 로딩을 위한 dotenv-java 라이브러리 추가
+    implementation 'com.google.genai:google-genai:1.0.0'
     implementation 'io.github.cdimascio:dotenv-java:3.0.0'
-
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
@@ -69,8 +64,14 @@ dependencies {
     // Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
+    // JPA (Database) - (첫 번째 파일에서 중복 선언되어 제거)
+    // H2 (Database) - (첫 번째 파일에서 중복 선언되어 제거)
+
     // ★ 이메일 인증용 SendGrid 라이브러리 추가
     implementation 'com.sendgrid:sendgrid-java:4.10.0'
+
+    // AWS S3 SDK
+    implementation 'com.amazonaws:aws-java-sdk-s3:1.12.700'
     // JPA (Database) - (첫 번째 파일에서 중복 선언되어 제거)
     // H2 (Database) - (첫 번째 파일에서 중복 선언되어 제거)
     // HTML parsing for lightweight crawling

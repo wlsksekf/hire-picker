@@ -4,14 +4,11 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -39,6 +36,30 @@ public class SecurityConfig {
                         throws Exception {
                 return authenticationConfiguration.getAuthenticationManager();
         }
+
+    @Bean // Spring의 빈으로 등록
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable()) // CSRF 보호 비활성화
+            .httpBasic(basic -> basic.disable()) // HTTP Basic 인증 비활성화
+            .formLogin(form -> form.disable()) // 폼 로그인 비활성화
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션을 사용하지 않음 (상태 없음)
+            .authorizeHttpRequests(authorize -> authorize
+
+                .requestMatchers(HttpMethod.POST, "/api/users/signup").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/posts").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/posts/*").permitAll()
+                .requestMatchers("/api/oauth2/**", "/login/oauth2/code/**").permitAll()
+                .requestMatchers("/api/users/me").authenticated()
+                .requestMatchers("/api/auth/**", "/api/work24/**", "/actuator/**", "/api/health/**", "/api/manage/**", "/confirm/**", "/confirm-billing", "/issue-billing-key", "/callback-auth", "/fail", "/swagger-ui/**", "/api-docs/**", "/error", "/api/companies/**").permitAll()
+                .requestMatchers("/api/payment/webhook").permitAll() // 웹훅 엔드포인트는 모두 허용
+                .requestMatchers("/chat/**","/ws","/ws/**","/chat/history/**").permitAll()
+                .requestMatchers("/api/payment/**").authenticated() // 나머지 결제 관련 API는 인증 필요
+                .requestMatchers(HttpMethod.POST, "/api/ai/upload-image").permitAll() // 이미지 업로드 엔드포인트는 인증 없이 허용
+                .requestMatchers("/api/ai/**").authenticated() // [AI 기능 추가] AI 관련 API는 인증된 사용자만 접근 가능
+                .requestMatchers("/api/credits/**").authenticated() // [크레딧 기능 추가] 크레딧 관련 API는 인증된 사용자만 접근 가능
+                .anyRequest().authenticated()
 
         @Bean // Spring의 빈으로 등록
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -72,6 +93,15 @@ public class SecurityConfig {
                                                                                                     // 접근 가능
                                                 .anyRequest().authenticated()
 
+            )
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 추가
+            .oauth2Login(oauth2 -> oauth2 // OAuth2 로그인 설정
+                .authorizationEndpoint(auth -> auth.baseUri("/api/oauth2/authorization"))
+                .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+                .successHandler(oAuth2LoginSuccessHandler)
+                .failureUrl("http://localhost:3000/oauth/fail")
+            )
+            .exceptionHandling(e -> e.authenticationEntryPoint(customAuthenticationEntryPoint));
                                 )
                                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // JWT
                                                                                                                       // 인증
@@ -89,6 +119,16 @@ public class SecurityConfig {
 
                 return http.build();
         }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+
+        config.setAllowCredentials(true);
+        config.setAllowedOrigins(List.of("http://localhost:3000", "https://hire-picker.com")); // ★ 수정: 프론트엔드 주소만 명시적으로 허용
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("*"));
 
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
