@@ -122,38 +122,68 @@ def find_logo_from_google(driver, companyName):
             return None
 
 
-        # 2. 고해상도 이미지 URL 가져오기 ('gstatic' 10초 대기)
+     # 2. 고해상도 이미지 URL 가져오기 (⭐️ 최종 로직 ⭐️)
         img_url = "" 
         try:
             print(f"[{companyName}] 고해상도 이미지(img.sFlh5c) 로딩 대기 중...")
             
-            large_image_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "img.sFlh5c")))
+            # 1. <img> 태그 자체를 찾음
+            large_image_element = wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "img.sFlh5c"))
+            )
             
-            print(f"[{companyName}] ...'src'가 'gstatic'이 아닌 http URL이 될 때까지 10초간 대기...")
-            
-            real_url_found = False
-            start_time = time.time()
+            # 2. [⭐️핵심⭐️] 'src'를 즉시 확인
+            img_url = large_image_element.get_attribute('src')
+            if not img_url or not img_url.startswith('http'):
+                print(f"[{companyName}] <img> 태그는 찾았으나 'src' 속성이 유효하지 않습니다.")
+                return None
 
-            while time.time() - start_time < 10: # (10초 대기)
-                img_url = large_image_element.get_attribute('src')
-                
-                if img_url and img_url.startswith('http') and 'gstatic.com' not in img_url:
-                    print(f"[{companyName}] 고해상도 'http' (non-gstatic) URL 확보!")
-                    real_url_found = True
-                    break
-                
-                time.sleep(0.2) 
+            # 3. 'src'가 'gstatic'이 아닌지 확인 (고해상도 URL이 즉시 로드된 경우)
+            if 'gstatic.com' not in img_url:
+                print(f"[{companyName}] ...'non-gstatic' (고해상도) URL이 즉시 로드되었습니다!")
+                # (이 경우 Aju IB, Namu Wiki가 해당됨)
+                # img_url은 이미 설정되어 있으므로 통과
+                pass
             
-            if not real_url_found:
-                print(f"[{companyName}] 10초 내 'non-gstatic' URL을 못찾음.")
-                if img_url and img_url.startswith('http'):
-                    print(f"[{companyName}] ...차선책으로 현재 'gstatic' 썸네일 URL을 사용합니다.")
-                else:
-                    print(f"[{companyName}] 10초 후에도 유효한 http URL을 찾지 못했습니다.")
-                    return None 
+            # 4. 'src'가 'gstatic'인 경우 (저해상도 썸네일), 5초간 변경을 기다림
+            else:
+                print(f"[{companyName}] ...'gstatic' (저해상도) 썸네일 감지. 5초간 'non-gstatic' URL로 변경되길 대기...")
+                # (이 경우 넥슨스페이스가 해당됨)
+                initial_src = img_url # gstatic URL
+                start_time = time.time()
+                
+                new_url_found = False
+                while time.time() - start_time < 5: # (5초 대기)
+                    current_src = large_image_element.get_attribute('src')
+                    
+                    # 'src'가 바뀌었고, 'gstatic'이 아니어야 함
+                    if current_src and current_src != initial_src and 'gstatic.com' not in current_src:
+                        print(f"[{companyName}] ...'src'가 'non-gstatic' (고해상도) URL로 변경되었습니다!")
+                        img_url = current_src # 새 URL로 업데이트
+                        new_url_found = True
+                        break 
+                    
+                    time.sleep(0.2) 
+                
+                # 5. 5초 후에도 'gstatic'인 경우 (변경 실패)
+                if not new_url_found:
+                    print(f"[{companyName}] ...5초 내 'non-gstatic' URL로 변경 실패. 'gstatic' 썸네일을 사용합니다.")
+                    # img_url은 'initial_src' (gstatic)로 유지됨
+        
+        except Exception as e:
+            print(f"[{companyName}] 고해상도 <img> src 찾는 중 오류: {e}")
+            return None
 
-        except TimeoutException:
-            print(f"[{companyName}] 고해상도 이미지(img.sFlh5c) 자체를 찾지 못했습니다 (Timeout).")
+        # 3. URL 유효성 검사 (이하 로직은 기존과 동일)
+        # ... (이 부분부터는 기존 코드를 그대로 사용하시면 됩니다) ...
+        if not img_url:
+            print(f"[{companyName}] 이미지의 src 속성을 찾지 못했습니다.")
+            return None
+
+        # 3. URL 유효성 검사 (이하 로직은 기존과 동일)
+        # ... (이 부분부터는 기존 코드를 그대로 사용하시면 됩니다) ...
+        if not img_url:
+            print(f"[{companyName}] 이미지의 src 속성을 찾지 못했습니다.")
             return None 
 
         # 3. URL 유효성 검사

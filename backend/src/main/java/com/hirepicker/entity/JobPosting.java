@@ -38,4 +38,6 @@ public class JobPosting {
 
     @Column(name = "location") // "location" 컬럼과 매핑
     private String location;
+
+
 }

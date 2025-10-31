@@ -53,4 +53,6 @@ public class Company {
     @Column(name = "corp_code") // 기업 코드 컬럼
     private String corpCode;
 
+    @Column(name ="imagePath")
+    private String imgPath;
 }
