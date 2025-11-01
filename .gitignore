@@ -57,6 +57,7 @@ secret*.yaml
 # 경로를 명시하여 프론트엔드와 겹치지 않도록 함
 
 ### Gradle ###
+/backend/.gradle/
 /backend/build/
 /backend/.gradletasknamecache
 /backend/.build-extension-cache/
