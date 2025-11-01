@@ -34,6 +34,7 @@ services:
       - DB_URL=${DB_URL}
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
+      - JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8
     networks:
       - hirepicker-network
     profiles: ["dev"]
@@ -132,6 +133,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATA_REDIS_HOST: redis # Docker 네트워크 내에서 redis 서비스 이름으로 호스트를 찾음
+      JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF-8
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s

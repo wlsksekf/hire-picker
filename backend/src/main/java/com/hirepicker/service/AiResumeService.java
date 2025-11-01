@@ -121,4 +121,9 @@ public class AiResumeService {
             throw new RuntimeException("AI 이력서 생성 중 예측하지 못한 에러가 발생했습니다.", t);
         }
     }
+
+    public FullResumeDraftDto generateFullDraft(String keywords, Long userId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'generateFullDraft'");
+    }
 }
