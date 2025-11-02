@@ -18,18 +18,20 @@ export default function PostList({ar, tp, cp}){
                 </TableHead>
                 <TableBody>
                     {ar.map((row, i) => (
-                        <TableRow
-                        key={i}
-                        sx={{'&:last-child td, &:last-child th': {border: 0}}}
-                        >
-                        <TableCell component="th" scope="row" align="center">
-                            {row.post_idx}
-                        </TableCell>
-                        <TableCell align="center"><Link href={`/community/${row.post_idx}`} style={{textDecoration:'none', color:'inherit'}}>{row.title}</Link></TableCell>
-                        <TableCell align="center">{row.p_user_idx}</TableCell>
-                        <TableCell align="center">{row.created_at}</TableCell>
-                        <TableCell align="center">{row.view_count}</TableCell>
+                        <TableRow key={i} sx={{'&:last-child td, &:last-child th': {border: 0}}}>
+                            <TableCell component="th" scope="row" align="center">
+                                {row.postIdx}
+                            </TableCell>
+                            <TableCell align="center">
+                                <Link href={`/community/${row.postIdx}`} style={{textDecoration:'none', color:'inherit'}}>
+                                    {row.title}
+                                </Link>
+                            </TableCell>
+                            <TableCell align="center">{row.pUserIdx}</TableCell>
+                            <TableCell align="center">{row.createdAt}</TableCell>
+                            <TableCell align="center">{row.viewCount}</TableCell>
                         </TableRow>
+
                     ))}
                     {/* 다음은 페이징 기법을 위한 행이 하나 추가되어야 한다.*/}
                     <TableRow>
