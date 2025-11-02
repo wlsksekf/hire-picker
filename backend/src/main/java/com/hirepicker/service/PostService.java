@@ -8,12 +8,14 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Sort;
 
+import com.hirepicker.dto.PostListDto;
 import com.hirepicker.entity.Posts;
 import com.hirepicker.repository.PostRepository;
 
 import lombok.RequiredArgsConstructor;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -56,20 +58,16 @@ public class PostService {
     }
 
     // 게시글 목록 조회
-    public Page<Posts> getList(String bname, int cPage){
-        Long boardIdx = DEFAULT_BOARD_ID;
-        if("BBS".equalsIgnoreCase(bname)){
-            boardIdx = 1L;
-        } else if("NOTICE".equalsIgnoreCase(bname)){
-            // boardIdx = 2L; // 다른 게시판 처리 가능
-        }
-        Sort sort = Sort.by(Sort.Direction.DESC, "postIdx"); // 필드명 카멜케이스
-        Pageable pageable = PageRequest.of(cPage - 1, PAGE_SIZE, sort);
-
-        return postRepository.findByBoardIdx(boardIdx, pageable); // 메서드명 카멜케이스
+   // 게시글 + 닉네임 DTO 반환용 서비스 메서드 신규 추가!
+    public Page<PostListDto> getPostListWithNickname(String bname, int cPage) {
+        Long boardIdx = DEFAULT_BOARD_ID; // bname->boardIdx 변환 코드(기존처럼)
+        Pageable pageable = PageRequest.of(cPage - 1, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "postIdx"));
+        return postRepository.findPostListWithNickname(boardIdx, pageable); // 변경된 Repository 쿼리!
     }
 
-    public Posts getPost(Long postIdx){
-        return postRepository.findById(postIdx).orElse(null);
-    }
+public PostListDto getPostDetailWithNickname(Long postIdx) {
+    return postRepository.findPostDetailWithNickname(postIdx)
+        .orElse(null);
+}
+
 }

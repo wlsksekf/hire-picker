@@ -2,9 +2,13 @@ package com.hirepicker.controller;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.data.domain.Page;
+
+import com.hirepicker.dto.PostListDto;
 import com.hirepicker.entity.Posts;
 import com.hirepicker.result.ResultData;
 import com.hirepicker.service.PostService;
@@ -42,27 +46,36 @@ public class PostController {
     }
 
     // 게시글 목록 조회
-    @GetMapping("")
-    public ResultData<?> getList(
-            @RequestParam(value = "bname", defaultValue = "BBS") String bname,
-            @RequestParam(value = "cPage", defaultValue = "1") int cPage){
-        Page<Posts> postPage = this.postService.getList(bname, cPage);
+@GetMapping("")
+public ResultData<?> getList(
+    @RequestParam(value = "bname", defaultValue = "BBS") String bname,
+    @RequestParam(value = "cPage", defaultValue = "1") int cPage
+) {
+    Page<PostListDto> postPage = postService.getPostListWithNickname(bname, cPage);
+    List<PostListDto> list = postPage.getContent();
+    long totalCount = postPage.getTotalElements();
+    int totalPages = postPage.getTotalPages();
 
-        List<Posts> list = postPage.getContent();
-        long totalCount = postPage.getTotalElements();
+    String msg = (list != null && !list.isEmpty()) ? "success" : "fail";
 
-        String msg = "fail";
-        if(list != null && !list.isEmpty())
-            msg = "success";
+    // Null 체크해서 넣기 (HashMap 사용!)
+    Map<String, Object> data = new java.util.HashMap<>();
+    data.put("list", list != null ? list : new java.util.ArrayList<>());    // null 방지
+    data.put("totalCount", totalCount);
+    data.put("totalPages", totalPages);
+    data.put("cPage", cPage);
 
-        return ResultData.of((int)totalCount, msg, list);
-    }
+    return ResultData.of(1, msg, data);
+}
+
+
 
     // 게시글 상세 조회
     @GetMapping("/{postIdx}") // URL Path도 카멜케이스로 변경 가능
-    public ResultData<Posts> getPost(@PathVariable("postIdx") Long postIdx) {
-        Posts post = this.postService.getPost(postIdx);
-        String msg = (post != null) ? "success" : "fail";
-        return ResultData.of((post != null ? 1 : 0), msg, post);
-    }
+public ResultData<PostListDto> getPost(@PathVariable("postIdx") Long postIdx) {
+    PostListDto post = this.postService.getPostDetailWithNickname(postIdx);
+    String msg = (post != null) ? "success" : "fail";
+    return ResultData.of((post != null ? 1 : 0), msg, post);
+}
+
 }

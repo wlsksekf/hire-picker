@@ -106,7 +106,7 @@ export default function PostDetailPage({ params }) {
             
             {/* 메타 정보 영역 */}
             <p style={{fontSize: '0.9em', color: '#666', marginBottom: '30px', borderBottom: '1px dashed #eee', paddingBottom: '10px'}}>
-                번호: {post.postIdx} | 작성자: {post.pUserIdx} | 등록일: {post.createdAt} | 조회수: {post.viewCount}
+                번호: {post.postIdx} | 작성자: {post.nickname} | 등록일: {post.createdAt} | 조회수: {post.viewCount}
             </p>
             
             {/* 본문 내용 영역 */}

@@ -27,7 +27,7 @@ export default function PostList({ar, tp, cp}){
                                     {row.title}
                                 </Link>
                             </TableCell>
-                            <TableCell align="center">{row.pUserIdx}</TableCell>
+                            <TableCell align="center">{row.nickname}</TableCell>
                             <TableCell align="center">{row.createdAt}</TableCell>
                             <TableCell align="center">{row.viewCount}</TableCell>
                         </TableRow>
