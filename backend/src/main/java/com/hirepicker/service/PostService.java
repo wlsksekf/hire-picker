@@ -15,7 +15,6 @@ import com.hirepicker.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import java.io.IOException;
 import java.util.UUID;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
