@@ -46,7 +46,5 @@ public class Posts {
     private String file_name; // 원본 파일명
     private String img_name;  // 서버 저장 경로/URL
 
-    // --- 날짜/시간 필드 (LocalDateTime) ---
-    private LocalDateTime created_at;
-    private LocalDateTime updated_at;
+
 }
