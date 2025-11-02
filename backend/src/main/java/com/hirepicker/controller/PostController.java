@@ -9,7 +9,7 @@ import com.hirepicker.entity.Posts;
 import com.hirepicker.result.ResultData;
 import com.hirepicker.service.PostService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+
 
 @RequiredArgsConstructor
 @RequestMapping("/api/posts")
@@ -24,7 +24,7 @@ public class PostController {
         @RequestParam("content") String content,
         @RequestParam("pUserIdx") Long pUserIdx, // 카멜케이스로 변경
         @RequestPart(value = "image", required = false) MultipartFile imageFile,
-        Principal principal 
+        Principal principal
     ) {
         if (principal == null) {
             return ResultData.of(0, "Authentication required", null);
