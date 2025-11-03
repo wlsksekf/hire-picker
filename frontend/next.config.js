@@ -23,6 +23,12 @@ const nextConfig = {
           ? 'http://backend:8080/api/:path*'
           : 'http://localhost:8080/api/:path*',
       },
+      {
+        source: '/signup/company/:path*', // /signup/company로 시작하는 모든 요청
+        destination: isProduction
+          ? 'http://backend:8080/signup/company/:path*'
+          : 'http://localhost:8080/signup/company/:path*',
+      },
     ];
   },
   reactStrictMode: false,
