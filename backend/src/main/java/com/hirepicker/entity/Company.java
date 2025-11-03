@@ -74,7 +74,7 @@ public class Company {
     @Column(name = "welfare_benefits")
     private String welfareBenefits;
 
-    @Column(name = "imgPath")
+    @Column(name = "image_path")
     private String imgPath;
 
 }
