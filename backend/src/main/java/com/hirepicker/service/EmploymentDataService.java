@@ -28,8 +28,9 @@ import java.util.zip.ZipInputStream;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Value; // Ensure this is present
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -437,8 +438,9 @@ public class EmploymentDataService {
                         try (BufferedReader br = new BufferedReader(
                                 new InputStreamReader(conn.getInputStream(), "UTF-8"))) {
                             String jsonText = br.lines().collect(java.util.stream.Collectors.joining());
-                            JSONObject json = new JSONObject(jsonText);
-                            String status = json.optString("status");
+                            ObjectMapper mapper = new ObjectMapper(); // JSON 파싱용 매퍼
+                            JsonNode json = mapper.readTree(jsonText); // 문자열 -> JsonNode
+                            String status = json.path("status").asText(); // 상태 코드 안전 추출
 
                             // 1. 한도 초과 시 다음 키로 전환
                             if ("020".equals(status)) {
@@ -456,11 +458,11 @@ public class EmploymentDataService {
                             // 2. 정상 응답
                             else if ("000".equals(status)) {
                                 success = true;
-                                ceo_name = json.optString("ceo_nm");
-                                business_number = json.optString("bizr_no");
-                                address = json.optString("adres");
-                                website_url = json.optString("hm_url");
-                                corp_cls = json.optString("corp_cls");
+                                ceo_name = json.path("ceo_nm").asText(null); // 없으면 null 유지
+                                business_number = json.path("bizr_no").asText(null);
+                                address = json.path("adres").asText(null);
+                                website_url = json.path("hm_url").asText(null);
+                                corp_cls = json.path("corp_cls").asText(null);
 
                                 // 상장회사면 종업원 수 API 추가 호출
                                 if ("Y".equalsIgnoreCase(corp_cls) || "K".equalsIgnoreCase(corp_cls)
@@ -483,11 +485,12 @@ public class EmploymentDataService {
                                                     new InputStreamReader(outlineConn.getInputStream(), "UTF-8"))) {
                                                 String jsonText2 = br2.lines()
                                                         .collect(java.util.stream.Collectors.joining());
-                                                JSONObject json2 = new JSONObject(jsonText2);
-                                                String status2 = json2.optString("status");
+                                                ObjectMapper mapper2 = new ObjectMapper(); // 서브 JSON 파싱용
+                                                JsonNode json2 = mapper2.readTree(jsonText2);
+                                                String status2 = json2.path("status").asText();
 
                                                 if ("000".equals(status2)) {
-                                                    String empCountStr = json2.optString("account_nm", null);
+                                                    String empCountStr = json2.path("account_nm").asText(null);
                                                     if (empCountStr != null && !empCountStr.isBlank()) {
                                                         try {
                                                             employee_count = empCountStr.replaceAll("[^0-9]", "");
@@ -499,7 +502,7 @@ public class EmploymentDataService {
                                                     log.warn("종업원 수 데이터 없음: corpCode={} ({})", corpCode, corpName);
                                                 } else {
                                                     log.warn("종업원 수 API 호출 실패: corpCode={}, status={}, message={}",
-                                                            corpCode, status2, json2.optString("message"));
+                                                            corpCode, status2, json2.path("message").asText());
                                                 }
                                             }
                                         }
@@ -519,7 +522,7 @@ public class EmploymentDataService {
                             // 그 외는 진짜 오류
                             else {
                                 log.error("DART API 오류 (회사: {}, 코드: {}): status={}, message={}",
-                                        corpName, corpCode, status, json.optString("message"));
+                                        corpName, corpCode, status, json.path("message").asText());
                                 success = true;
                             }
                         }

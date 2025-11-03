@@ -33,8 +33,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-hateoas'
-    implementation 'org.springframework.boot:spring-boot-starter-webflux' // WebClient 사용을 위해 추가
-    implementation 'org.json:json:20240303'
+    // WebClient만 사용: 리액티브 서버 자동 구성 방지를 위해 코어 라이브러리만 추가
+    implementation 'org.springframework:spring-webflux'
+    // JSON 파싱은 Jackson으로 통일 (org.json 제거)
 
     // 최신 Spring Boot 3.5.x와 호환 springdoc-openapi 버전
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
@@ -70,8 +71,8 @@ dependencies {
     // ★ 이메일 인증용 SendGrid 라이브러리 추가
     implementation 'com.sendgrid:sendgrid-java:4.10.0'
 
-    // AWS S3 SDK
-    implementation 'com.amazonaws:aws-java-sdk-s3:1.12.700'
+    // AWS S3 SDK v2 사용으로 경량화 및 최신 API 사용
+    implementation 'software.amazon.awssdk:s3:2.25.66'
     // JPA (Database) - (첫 번째 파일에서 중복 선언되어 제거)
     // H2 (Database) - (첫 번째 파일에서 중복 선언되어 제거)
     // HTML parsing for lightweight crawling
@@ -84,4 +85,9 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// 컴파일 시 파일 인코딩 고정(한글 주석/문자 깨짐 방지)
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
 }
