@@ -17,6 +17,7 @@ export default function CustomCalendar() {
   const calendarRef = useRef();
   const [events] = useState([
     { title: "공고 마감", date: "2025-11-10" },
+    { title: "공고2 마감", date: "2025-11-10" },
     { title: "면접 일정", date: "2025-11-15" },
   ]);
 
