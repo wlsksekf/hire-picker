@@ -1,0 +1,135 @@
+# =========================================================================
+# 통합 .gitignore 파일 (HIREPICKER 프로젝트)
+# =========================================================================
+# 이 파일은 프로젝트 전체에 적용되는 모든 무시 규칙을 포함합니다.
+# -------------------------------------------------------------------------
+
+
+# =======================================
+# 1. 공통 규칙 (OS, IDE, Logs, Secrets)
+# =======================================
+
+### 운영체제 (Operating System Files) ###
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+### IDE ###
+# JetBrains 계열 (IntelliJ, WebStorm 등)
+.idea/
+*.iml
+*.iws
+
+# VSCode
+.vscode/
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+### 로그 및 임시 파일 (Logs & Temp Files) ###
+*.log
+*.tmp
+*.temp
+
+### 민감 정보 (Secrets & Environment Variables) ###
+# 환경 변수 파일 (단, 예제 파일은 제외)
+# .env.* 와일드카드로 .env.local, .env.development 등을 모두 포함
+# 단, !.env.example 로 예제 파일은 git 에서 제외하지 않도록 설정
+.env
+.env.*
+!.env.example
+!.env.sample
+.bin.*
+.lock.*
+
+# 로컬 DB 설정 등 민감 정보를 담은 yml 파일
+secret*.yml
+secret*.yaml
+
+# =======================================
+# 2. 백엔드 규칙 (Backend - Java/Gradle)
+# =======================================
+# 경로를 명시하여 프론트엔드와 겹치지 않도록 함
+
+### Gradle ###
+/backend/.gradle/
+/backend/build/
+/backend/.gradletasknamecache
+/backend/.build-extension-cache/
+
+# Gradle GUI config
+/backend/gradle-app.setting
+
+### Java ###
+# 컴파일된 클래스 파일
+/backend/**/*.class
+
+# 패키지 파일
+/backend/*.jar
+/backend/*.war
+/backend/*.ear
+
+# VM 크래시 로그
+hs_err_pid*
+
+### Annotation Processing Cache ###
+/backend/.apt_generated/
+/backend/.apt_core/
+/backend/.apt_generated_tests/
+/backend/.apt_core_tests/
+
+# ==========================================
+# 3. 프론트엔드 규칙 (Frontend - Node/Next.js)
+# ==========================================
+# 경로를 명시하여 백엔드와 겹치지 않도록 함
+
+### 의존성 디렉터리 (Dependency Directories) ###
+/frontend/node_modules/
+/frontend/bower_components/
+/frontend/jspm_packages/
+
+### 빌드 결과물 및 캐시 (Build & Cache) ###
+/frontend/.next/
+/frontend/build/
+/frontend/coverage/
+/frontend/.cache/
+/frontend/.parcel-cache/
+/frontend/*.tsbuildinfo
+/frontend/.npm
+/frontend/.eslintcache
+
+### 로그 및 리포트 (Logs & Reports) ###
+/frontend/logs/
+/frontend/npm-debug.log*
+/frontend/yarn-debug.log*
+/frontend/yarn-error.log*
+/frontend/lerna-debug.log*
+/frontend/report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+### 기타 (Misc) ###
+# npm pack 결과물
+/frontend/*.tgz
+
+# Yarn 무결성 파일
+/frontend/.yarn-integrity
+
+# REPL 히스토리
+/frontend/.node_repl_history
+
+# Python Virtual Environment
+jaeyoonPython/venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment variables (지난번에 추가했는지 확인)
+jaeyoonPython/.env
+.env

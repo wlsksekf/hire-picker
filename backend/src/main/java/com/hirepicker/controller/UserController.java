@@ -1,0 +1,141 @@
+package com.hirepicker.controller;
+
+import com.hirepicker.config.security.CustomUserDetails;
+import com.hirepicker.dto.UserDto;
+import com.hirepicker.entity.PersonalUser;
+import com.hirepicker.repository.PersonalUserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j; // Slf4j 임포트 추가
+
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@Tag(name = "사용자", description = "사용자 정보 관련 API")
+@RestController
+@RequestMapping("/api/users")
+@RequiredArgsConstructor
+@Slf4j // Slf4j 어노테이션 추가
+public class UserController {
+
+    private final PasswordEncoder passwordEncoder;
+
+    private final PersonalUserRepository personalUserRepository;
+
+    @Operation(summary = "현재 로그인 사용자 정보 조회", description = "현재 로그인한 사용자의 상세 정보를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "사용자 정보 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
+    })
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> getCurrentUser(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        log.info("Attempting to get current user info.");
+        if (userDetails == null) {
+            log.warn("AuthenticationPrincipal CustomUserDetails is null. User not authenticated.");
+            return ResponseEntity.status(401).build(); // 인증되지 않은 사용자
+        }
+
+        try {
+            String userEmail = userDetails.getUsername();
+            log.info("Fetching user with email: {}", userEmail);
+            PersonalUser personalUser = personalUserRepository.findByEmail(userEmail)
+                    .orElse(null);
+
+            if (personalUser == null) {
+                log.warn("PersonalUser not found in DB for email: {}", userEmail);
+                return ResponseEntity.status(404).build(); // 사용자를 찾을 수 없음
+            }
+
+            log.info("PersonalUser found: {}", personalUser.getEmail());
+            // UserDto로 변환하여 반환합니다.
+            UserDto userDto = new UserDto(personalUser.getEmail(), personalUser.getName(), personalUser.getPlatform(), personalUser.getNickname());
+            log.info("Returning UserDto for user: {}", userDto.getEmail());
+            return ResponseEntity.ok(userDto);
+        } catch (Exception e) {
+            log.error("Error while fetching or processing user info: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).build(); // 서버 내부 오류
+        }
+    }
+
+     /**
+     * 내 프로필 정보 수정 (부분 수정)
+     * 
+     * HTTP PATCH 메서드:
+     * - PATCH는 리소스의 일부만 수정할 때 사용하는 HTTP 메서드입니다
+     * - PUT과 달리 변경할 필드만 요청 본문에 포함하면 됩니다
+     * - 예: { "nickname": "새닉네임" } 만 보내면 닉네임만 변경됩니다
+     */
+    @Operation(summary = "내 프로필 정보 수정", description = "현재 로그인된 개인 회원의 프로필 정보를 부분 수정합니다.")
+    @PatchMapping("/my-profile")
+    @Transactional
+    public ResponseEntity<Map<String, String>> updateMyProfile(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody Map<String, String> updateRequest) {
+        
+        // ===== 1단계: 인증 확인 =====
+        // JWT 필터에서 자동으로 인증된 사용자 정보가 userDetails에 담겨 있음
+        // 만약 null이면 인증 실패
+        if (userDetails == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        log.info("[API] PATCH /api/users/my-profile 요청 수신. 사용자 ID: {}", userDetails.getId());
+
+        // ===== 2단계: 사용자 정보 조회 =====
+        // 토큰에서 추출한 사용자 ID로 DB에서 실제 사용자 정보를 가져옴
+        PersonalUser user = personalUserRepository.findById(userDetails.getId())
+                .orElse(null);
+        
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", "사용자를 찾을 수 없습니다."));
+        }
+
+        // ===== 3단계: 닉네임 업데이트 (선택적) =====
+        // 프론트엔드에서 nickname을 보낸 경우에만 업데이트
+        String nickname = updateRequest.get("nickname");
+        if (nickname != null && !nickname.trim().isEmpty()) {
+            // 3-1. 닉네임 중복 체크: 다른 사람이 이미 사용 중인지 확인
+            Optional<PersonalUser> existingUser = personalUserRepository.findByNickname(nickname);
+            if (existingUser.isPresent() && !user.getNickname().equals(nickname)) {
+                // 이미 누군가 사용 중이고, 그게 본인이 아니면 중복 에러
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("message", "이미 사용 중인 닉네임입니다."));
+            }
+            // 3-2. 중복이 아니면 닉네임 변경
+            user.setNickname(nickname);
+            log.info("[API] 닉네임 업데이트: {} -> {}", user.getNickname(), nickname);
+        }
+
+        // ===== 4단계: 비밀번호 업데이트 (선택적) =====
+        // 프론트엔드에서 password를 보낸 경우에만 업데이트
+        String password = updateRequest.get("password");
+        if (password != null && !password.trim().isEmpty()) {
+            // 비밀번호는 평문으로 저장하면 안 되므로 암호화 필수!
+            user.setPassword(passwordEncoder.encode(password));
+            log.info("[API] 비밀번호 업데이트 완료");
+        }
+
+        // ===== 5단계: 변경사항 DB에 저장 =====
+        // @Transactional 어노테이션 덕분에 자동으로 커밋됨
+        personalUserRepository.save(user);
+
+        // ===== 6단계: 성공 응답 반환 =====
+        return ResponseEntity.ok(Map.of("message", "프로필이 성공적으로 업데이트되었습니다."));
+    }
+
+}
