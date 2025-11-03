@@ -30,6 +30,10 @@ spring:
     hikari:
       # DB 연결의 최대 수명 시간을 설정합니다. (단위: 밀리초, ms)
       max-lifetime: 20000000
+      # RDS 프리티어 커넥션 문제 해결을 위해 서버가 점유하는 풀 크기 제한
+      maximum-pool-size: 5
+      # 최소한으로 유지할 커넥션 수 (기본값은 maximum-pool-size와 동일)
+      minimum-idle: 2
 
   # === JPA 설정 ===
   jpa:
