@@ -27,7 +27,7 @@ public class ResumeDto {
     private Long pUserIdx;
 
     // DTO를 엔티티로 변환하는 메소드
-    public Resume toEntity(PersonalUser personalUser) {
+    public Resume toEntity(PersonalUser personalUser, String imageUrl) {
         return Resume.builder()
                 .personalUser(personalUser)
                 .title(title != null ? title : personalUser.getName() + "님의 이력서") // title이 없으면 기본값 설정
@@ -35,7 +35,7 @@ public class ResumeDto {
                 .selfStrengths(selfStrengths)
                 .selfMotivation(selfMotivation)
                 .selfAspirations(selfAspirations)
-                .imageUrl(imageUrl)
+                .imageUrl(imageUrl) // S3에서 받은 URL 사용
                 .build();
     }
 }
