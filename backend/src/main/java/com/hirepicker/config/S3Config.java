@@ -1,36 +1,42 @@
 package com.hirepicker.config;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+// S3 클라이언트 빈 구성 (AWS SDK v2)
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration // 스프링 설정 클래스임을 나타냅니다.
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+
+@Configuration
 public class S3Config {
 
-    @Value("${S3_ACCESS_KEY}") // .env 파일에서 S3_ACCESS_KEY 값을 주입받습니다.
+    @Value("${S3_ACCESS_KEY}")
     private String accessKey;
 
-    @Value("${S3_SECRET_KEY}") // .env 파일에서 S3_SECRET_KEY 값을 주입받습니다.
+    @Value("${S3_SECRET_KEY}")
     private String secretKey;
 
-    @Value("${S3_BUCKET_NAME}") // .env 파일에서 S3_BUCKET_NAME 값을 주입받습니다.
+    @Value("${S3_BUCKET_NAME}")
     private String bucketName;
 
-    @Bean // AmazonS3 클라이언트를 스프링 빈으로 등록합니다.
-    public AmazonS3 amazonS3Client() {
-        AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
-        return AmazonS3ClientBuilder.standard()
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withRegion("ap-northeast-2") // S3 버킷이 위치한 리전을 설정합니다.
+    // S3 클라이언트 빈 등록 (서울 리전)
+    @Bean
+    public S3Client s3Client() {
+        return S3Client.builder()
+                .region(Region.AP_NORTHEAST_2)
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create(accessKey, secretKey)
+                ))
                 .build();
     }
 
+    // 버킷명 조회용
     public String getBucketName() {
         return bucketName;
     }
 }
+
