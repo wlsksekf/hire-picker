@@ -71,6 +71,11 @@ dependencies {
     // ★ 이메일 인증용 SendGrid 라이브러리 추가
     implementation 'com.sendgrid:sendgrid-java:4.10.0'
 
+    // AWS S3 SDK
+    implementation 'com.amazonaws:aws-java-sdk-s3:1.12.700'
+
+    // Java 8 날짜/시간 API 지원을 위한 Jackson 모듈
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     // AWS S3 SDK v2 사용으로 경량화 및 최신 API 사용
     implementation 'software.amazon.awssdk:s3:2.25.66'
     // JPA (Database) - (첫 번째 파일에서 중복 선언되어 제거)
