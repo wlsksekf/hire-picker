@@ -49,7 +49,7 @@ public class EmploymentDataImpl implements EmploymentData {
                     .title(job.getTitle())
                     .employmentType(job.getEmploymentType())
                     .location(job.getLocation())
-                    .imgUrl(job.getCompany().getImagePath())
+                    .imgUrl(job.getCompany().getImgPath())
                     .build();
 
             jobDtos.add(jobDto);

@@ -28,8 +28,9 @@ import java.util.zip.ZipInputStream;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Value; // Ensure this is present
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +47,6 @@ import com.hirepicker.util.DartCorpCodeSaxHandler;
 import com.hirepicker.util.DataMapper;
 import com.hirepicker.util.XmlParser;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,15 +62,28 @@ public class EmploymentDataService {
     private int currentDartKeyIndex = 1;
     private Set<String> exhaustedKeys = new HashSet<>();
 
-    private final Dotenv dotenv;
     private final CompanyRepository companyRepository;
     private final EmploymentDataProcessorService DataProcessorService;
 
-    @Value("${api.work24.key}")
+    @Value("${work24_key}")
     private String work24Key;
 
-    // @Value("${dart-key2}")
-    // private String dartKey;
+    // --- [수정됨] ---
+    // 1. 5개의 DART 키를 환경 변수에서 직접 주입받도록 설정
+    @Value("${dart_key1}")
+    private String dartKey1;
+    @Value("${dart_key2}")
+    private String dartKey2;
+    @Value("${dart_key3}")
+    private String dartKey3;
+    @Value("${dart_key4}")
+    private String dartKey4;
+    @Value("${dart_key5}")
+    private String dartKey5;
+
+    // 2. 주입받은 키를 관리할 리스트
+    private List<String> dartApiKeys;
+    // --- [수정 끝] ---
 
     @Scheduled(cron = "0 0 4 * * *")
     @Transactional
@@ -108,7 +121,7 @@ public class EmploymentDataService {
 
         // --- 여러 DART API 키를 순차적으로 시도 ---
         while (currentDartKeyIndex <= 5 && !downloadAndVerificationSuccess) {
-            String apiKey = getDartKey();
+            String apiKey = getDartKey(); // [수정된] getDartKey() 호출
             if (apiKey == null) {
                 log.error("더 이상 유효한 DART API 키가 없습니다. 동기화를 중단합니다.");
                 return;
@@ -368,10 +381,28 @@ public class EmploymentDataService {
         return work24Key;
     }
 
+    // --- [수정됨] ---
     private String getDartKey() {
+        // 3. 리스트가 초기화되었는지 확인
+        if (dartApiKeys == null || dartApiKeys.isEmpty()) {
+            log.error("DART API 키가 application.yml 또는 환경변수에 설정되지 않았습니다.");
+            // init() 메서드가 아직 실행되기 전일 수 있으므로, 여기서 한 번 더 시도
+            if (dartKey1 != null) {
+                dartApiKeys = List.of(dartKey1, dartKey2, dartKey3, dartKey4, dartKey5);
+            } else {
+                log.error("DART API 키가 @Value로 주입되지 않았습니다. 환경 변수 설정을 확인하세요.");
+                return null;
+            }
+        }
+
+        // 4. 네가 만든 기존 키 순환 로직은 그대로 사용
         for (int i = 0; i < 5; i++) {
+            // currentDartKeyIndex는 1-based, 리스트는 0-based
+            int listIndex = currentDartKeyIndex - 1;
             String keyName = "dart_key" + currentDartKeyIndex;
-            String apiKey = dotenv.get(keyName);
+
+            // 5. dotenv.get() 대신 리스트에서 키를 가져옴
+            String apiKey = dartApiKeys.get(listIndex);
 
             if (apiKey != null && !apiKey.isBlank() && !isKeyExhausted(keyName)) {
                 log.info("Using DART API Key: {}", keyName);
@@ -385,6 +416,7 @@ public class EmploymentDataService {
         log.error("모든 DART API Key가 사용 불가합니다. DART 동기화를 중단합니다.");
         return null;
     }
+    // --- [수정 끝] ---
 
     // 사용량 초과 체크용 예시
     private boolean isKeyExhausted(String keyName) {
@@ -401,7 +433,7 @@ public class EmploymentDataService {
         List<Company> companiesToUpdate = new ArrayList<>();
         List<Company> companiesToInsert = new ArrayList<>();
 
-        String apiKey = getDartKey();
+        String apiKey = getDartKey(); // [수정된] getDartKey() 호출
         if (apiKey == null) {
             log.error("No DART API key available for batch processing. Aborting.");
             return;
@@ -437,15 +469,23 @@ public class EmploymentDataService {
                         try (BufferedReader br = new BufferedReader(
                                 new InputStreamReader(conn.getInputStream(), "UTF-8"))) {
                             String jsonText = br.lines().collect(java.util.stream.Collectors.joining());
-                            JSONObject json = new JSONObject(jsonText);
-                            String status = json.optString("status");
+                            ObjectMapper mapper = new ObjectMapper(); // JSON 파싱용 매퍼
+                            JsonNode json = mapper.readTree(jsonText); // 문자열 -> JsonNode
+                            String status = json.path("status").asText(); // 상태 코드 안전 추출
 
                             // 1. 한도 초과 시 다음 키로 전환
                             if ("020".equals(status)) {
                                 log.warn(
                                         "⚠️ DART API request limit exceeded for current key. Switching to next key...");
-                                currentDartKeyIndex++;
-                                apiKey = getDartKey();
+
+                                // --- [수정] ---
+                                // 현재 키를 소진 목록에 추가
+                                exhaustedKeys.add("dart_key" + currentDartKeyIndex);
+                                // 다음 키로 인덱스 변경
+                                currentDartKeyIndex = (currentDartKeyIndex % 5) + 1;
+                                // --- [수정 끝] ---
+
+                                apiKey = getDartKey(); // 새 키 가져오기
                                 if (apiKey == null) {
                                     log.error("❌ All DART API keys have exceeded their limits. Aborting batch.");
                                     return;
@@ -456,11 +496,11 @@ public class EmploymentDataService {
                             // 2. 정상 응답
                             else if ("000".equals(status)) {
                                 success = true;
-                                ceo_name = json.optString("ceo_nm");
-                                business_number = json.optString("bizr_no");
-                                address = json.optString("adres");
-                                website_url = json.optString("hm_url");
-                                corp_cls = json.optString("corp_cls");
+                                ceo_name = json.path("ceo_nm").asText(null); // 없으면 null 유지
+                                business_number = json.path("bizr_no").asText(null);
+                                address = json.path("adres").asText(null);
+                                website_url = json.path("hm_url").asText(null);
+                                corp_cls = json.path("corp_cls").asText(null);
 
                                 // 상장회사면 종업원 수 API 추가 호출
                                 if ("Y".equalsIgnoreCase(corp_cls) || "K".equalsIgnoreCase(corp_cls)
@@ -483,11 +523,12 @@ public class EmploymentDataService {
                                                     new InputStreamReader(outlineConn.getInputStream(), "UTF-8"))) {
                                                 String jsonText2 = br2.lines()
                                                         .collect(java.util.stream.Collectors.joining());
-                                                JSONObject json2 = new JSONObject(jsonText2);
-                                                String status2 = json2.optString("status");
+                                                ObjectMapper mapper2 = new ObjectMapper(); // 서브 JSON 파싱용
+                                                JsonNode json2 = mapper2.readTree(jsonText2);
+                                                String status2 = json2.path("status").asText();
 
                                                 if ("000".equals(status2)) {
-                                                    String empCountStr = json2.optString("account_nm", null);
+                                                    String empCountStr = json2.path("account_nm").asText(null);
                                                     if (empCountStr != null && !empCountStr.isBlank()) {
                                                         try {
                                                             employee_count = empCountStr.replaceAll("[^0-9]", "");
@@ -499,7 +540,7 @@ public class EmploymentDataService {
                                                     log.warn("종업원 수 데이터 없음: corpCode={} ({})", corpCode, corpName);
                                                 } else {
                                                     log.warn("종업원 수 API 호출 실패: corpCode={}, status={}, message={}",
-                                                            corpCode, status2, json2.optString("message"));
+                                                            corpCode, status2, json2.path("message").asText());
                                                 }
                                             }
                                         }
@@ -519,7 +560,7 @@ public class EmploymentDataService {
                             // 그 외는 진짜 오류
                             else {
                                 log.error("DART API 오류 (회사: {}, 코드: {}): status={}, message={}",
-                                        corpName, corpCode, status, json.optString("message"));
+                                        corpName, corpCode, status, json.path("message").asText());
                                 success = true;
                             }
                         }
@@ -766,6 +807,12 @@ public class EmploymentDataService {
 
     @PostConstruct
     public void init() {
+        // --- [추가됨] ---
+        // 6. @Value로 주입받은 키들을 리스트로 만듦
+        //    (init()은 생성자 호출 후, @Value 주입이 완료된 후에 실행됨)
+        dartApiKeys = List.of(dartKey1, dartKey2, dartKey3, dartKey4, dartKey5);
+        // --- [추가 끝] ---
+
         currentDartKeyIndex = readKeyIndex(); // 파일에서 오늘 날짜와 함께 읽어서 초기화
     }
 
