@@ -159,7 +159,7 @@ function EditProfile() {
       <Grid container spacing={3}>
         
         {/* 1. 왼쪽 사진 란 */}
-        <Grid item xs={12} md={4}>
+        {/* <Grid item xs={12} md={4}>
           <Paper 
             sx={{ 
               p: 2, 
@@ -179,7 +179,7 @@ function EditProfile() {
               JPG, PNG, GIF - 5MB 이하
             </Typography>
           </Paper>
-        </Grid>
+        </Grid> */}
 
         {/* 2. 오른쪽 정보 표 */}
         <Grid item xs={12} md={8}>
