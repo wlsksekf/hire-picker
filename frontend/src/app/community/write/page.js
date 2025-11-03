@@ -6,12 +6,23 @@ import { Button } from '@mui/material';
 import { useRouter } from 'next/navigation'; 
 
 
+// ✅ 카테고리 목록 정의
+const BOARD_CATEGORIES = [
+    { value: '', label: '카테고리 선택' }, // 기본값
+    { value: '1', label: '취준/이직' },
+    { value: '2', label: '회사생활/커리어' },
+    { value: '3', label: '자유주제' },
+    { value: '4', label: '아티클' },
+];
+
 export default function PostWritePage() {
     // 고객님의 환경이 완벽하므로, Next.js의 useRouter를 그대로 사용합니다.
     const router = useRouter(); 
     
     // 폼 데이터 상태 (제목, 내용)
-    const [formData, setFormData] = useState({ title: '', content: '' });
+    // ✅ board_idx 상태 추가 및 기본값 설정
+    const [formData, setFormData] = useState({ title: '', content: '', board_idx: '' }); 
+    
     // 파일 첨부 상태 (파일 객체와 미리보기 URL)
     const [fileState, setFileState] = useState({ 
         selectedFile: null, 
@@ -30,7 +41,7 @@ export default function PostWritePage() {
         setFormData(prevData => ({ ...prevData, [name]: value }));
     };
 
-    // 2. 파일 입력 변경 및 미리보기 핸들러
+    // 2. 파일 입력 변경 및 미리보기 핸들러 (기존과 동일)
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (fileState.previewUrl) URL.revokeObjectURL(fileState.previewUrl);
@@ -42,25 +53,23 @@ export default function PostWritePage() {
         }
     };
     
-    // 3. 파일 삭제 핸들러
+    // 3. 파일 삭제 핸들러 (기존과 동일)
     const handleRemoveFile = () => {
         if (fileState.previewUrl) URL.revokeObjectURL(fileState.previewUrl);
         setFileState({ selectedFile: null, previewUrl: null });
         setMessage('파일 첨부가 취소되었습니다.');
     };
 
-    // 4. 게시글 제출(작성) 핸들러 (HttpOnly Cookie 기반 로직 적용)
+    // 4. 게시글 제출(작성) 핸들러
     const handleSubmit = async (e) => {
         e.preventDefault();
         setMessage('');
         
-        if (!formData.title || !formData.content) {
-            setMessage('제목과 내용을 모두 입력해주세요.');
+        // ✅ 카테고리 입력 유효성 검사 추가
+        if (!formData.title || !formData.content || !formData.board_idx) {
+            setMessage('⚠️ 제목, 내용, 그리고 카테고리를 모두 선택해주세요.');
             return;
         }
-
-        // ⭐ HttpOnly 방식에서는 클라이언트에서 토큰을 읽을 수 없으므로, 
-        // 로컬 토큰 검사 없이 바로 요청을 보냅니다. 서버가 401로 응답할 때까지 기다립니다.
 
         setIsSubmitting(true);
 
@@ -68,17 +77,18 @@ export default function PostWritePage() {
         const postData = new FormData();
         postData.append('title', formData.title);
         postData.append('content', formData.content);
+        // ✅ board_idx 데이터 추가
+        postData.append('board_idx', formData.board_idx); 
+        
         if (fileState.selectedFile) {
             // 백엔드에서 파일을 받는 필드명과 일치시켜야 합니다.
             postData.append('image', fileState.selectedFile); 
         }
 
         try {
-            // ⭐ 1. withCredentials: true를 설정하여 브라우저가 HttpOnly 쿠키를 자동으로 첨부하도록 합니다.
-            // ⭐ 2. Authorization 헤더 설정은 제거합니다.
+            // withCredentials: true를 설정하여 브라우저가 HttpOnly 쿠키를 자동으로 첨부하도록 합니다.
             const response = await axios.post(write_api_url, postData, {
                 withCredentials: true, 
-                // headers: { 'Authorization': ... } 제거됨
             });
 
             // 성공 처리: 백엔드 응답에서 게시글 ID 추출
@@ -86,7 +96,8 @@ export default function PostWritePage() {
             
             setMessage(`✅ 게시글 작성이 완료되었습니다. ID: ${postId}`);
             
-            setFormData({ title: '', content: '' }); 
+            // 폼 초기화 (board_idx도 초기화)
+            setFormData({ title: '', content: '', board_idx: '' }); 
             handleRemoveFile(); 
             
             // 성공 후 상세 페이지로 이동
@@ -115,12 +126,12 @@ export default function PostWritePage() {
         }
     };
 
-    // 5. 취소 버튼 핸들러: 목록 페이지로 돌아가기
+    // 5. 취소 버튼 핸들러: 목록 페이지로 돌아가기 (기존과 동일)
     const handleCancel = () => {
         router.push('/community');
     };
 
-    // 6. 컴포넌트 unmount 시 메모리 해제
+    // 6. 컴포넌트 unmount 시 메모리 해제 (기존과 동일)
     useEffect(() => {
         return () => {
             if (fileState.previewUrl) {
@@ -140,6 +151,18 @@ export default function PostWritePage() {
         boxSizing: 'border-box',
         marginBottom: '20px'
     };
+    
+    // ✅ Select 박스 스타일 추가
+    const selectStyle = {
+        ...inputStyle,
+        appearance: 'none', // 기본 브라우저 스타일 제거
+        backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 20 20\' fill=\'none\' stroke=\'currentColor\'%3e%3cpath d=\'M6 9l4 4 4-4\'/%3e%3c/svg%3e")',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 0.7em top 50%',
+        backgroundSize: '1.2em',
+        paddingRight: '2.5em',
+        cursor: 'pointer'
+    };
 
     return (
         <div style={{width: '80%', margin: '40px auto', padding: '30px', border: '1px solid #ddd', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', backgroundColor: '#fff'}}>
@@ -148,7 +171,29 @@ export default function PostWritePage() {
             </h1>
             
             <form onSubmit={handleSubmit}>
-                {/* 제목 입력 필드 */}
+                
+                {/* ✅ 카테고리 선택 필드 추가 */}
+                <div>
+                    <label htmlFor="board_idx" style={{display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#555'}}>
+                        카테고리 선택
+                    </label>
+                    <select
+                        id="board_idx"
+                        name="board_idx"
+                        value={formData.board_idx}
+                        onChange={handleChange}
+                        style={selectStyle}
+                        disabled={isSubmitting}
+                    >
+                        {BOARD_CATEGORIES.map(cat => (
+                            <option key={cat.value} value={cat.value} disabled={cat.value === ''}>
+                                {cat.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* 제목 입력 필드 (기존과 동일) */}
                 <div>
                     <label htmlFor="title" style={{display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#555'}}>
                         제목
@@ -165,7 +210,7 @@ export default function PostWritePage() {
                     />
                 </div>
 
-                {/* 내용 입력 필드 (Textarea) */}
+                {/* 내용 입력 필드 (Textarea) (기존과 동일) */}
                 <div>
                     <label htmlFor="content" style={{display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#555'}}>
                         내용
@@ -182,7 +227,7 @@ export default function PostWritePage() {
                     />
                 </div>
 
-                {/* --- 파일 첨부 영역 --- */}
+                {/* --- 파일 첨부 영역 --- (기존과 동일) */}
                 <div style={{ marginBottom: '30px', border: '1px dashed #ccc', padding: '20px', borderRadius: '8px' }}>
                     <label style={{ display: 'block', marginBottom: '15px', fontWeight: 'bold', color: '#555' }}>
                         이미지 파일 첨부 (선택 사항)
@@ -246,7 +291,7 @@ export default function PostWritePage() {
                 {/* --- 파일 첨부 영역 끝 --- */}
 
 
-                {/* 에러/메시지 표시 영역 */}
+                {/* 에러/메시지 표시 영역 (기존과 동일) */}
                 {message && (
                     <div style={{ 
                         marginTop: '15px', 
@@ -264,7 +309,7 @@ export default function PostWritePage() {
                     </div>
                 )}
 
-                {/* 버튼 그룹 */}
+                {/* 버튼 그룹 (기존과 동일) */}
                 <div style={{display: 'flex', justifyContent: 'flex-end', gap: '10px'}}>
                     <Button 
                         type="button" 
