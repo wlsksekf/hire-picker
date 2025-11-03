@@ -57,6 +57,7 @@ secret*.yaml
 # 경로를 명시하여 프론트엔드와 겹치지 않도록 함
 
 ### Gradle ###
+/backend/.gradle/
 /backend/build/
 /backend/.gradletasknamecache
 /backend/.build-extension-cache/
@@ -119,3 +120,14 @@ hs_err_pid*
 
 # REPL 히스토리
 /frontend/.node_repl_history
+
+# Python Virtual Environment
+jaeyoonPython/venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment variables (지난번에 추가했는지 확인)
+jaeyoonPython/.env
+.env

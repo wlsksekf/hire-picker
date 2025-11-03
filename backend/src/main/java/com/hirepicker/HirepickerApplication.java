@@ -1,10 +1,11 @@
 package com.hirepicker;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
+
+import io.github.cdimascio.dotenv.Dotenv;
 
 @SpringBootApplication // Spring Boot 애플리케이션임을 선언
 @EnableScheduling // 스케줄링 기능 활성화

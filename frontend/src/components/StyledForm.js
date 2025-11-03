@@ -38,32 +38,54 @@ export const StyledFormWrapper = styled.div`
     margin-bottom: 4px;
   }
 
-  .input-group input,
-  .input-group .MuiInputBase-root // MUI TextField 루트 요소 타겟
-  {
-    width: 100%;
-    border-radius: 0.375rem !important;
-    border: 1px solid ${props => props.theme.palette.divider};
-    outline: 0;
-    background-color: ${props => props.theme.palette.background.paper};
-    padding: 0.75rem 1rem;
-    color: ${props => props.theme.palette.text.primary};
-    -webkit-text-fill-color: ${props => props.theme.palette.text.primary}; // 자동완성 시 글자색 강제
-  }
+    .input-group input,
+
+    .input-group .MuiInputBase-root // MUI TextField 루트 요소 타겟
+
+    {
+
+      width: 100%;
+
+      border-radius: 0.375rem !important;
+
+      border: 1px solid ${props => props.theme.palette.divider};
+
+      outline: 0;
+
+      background-color: ${props => props.theme.palette.background.paper};
+
+      padding: 0.75rem 1rem;
+
+      color: ${props => props.theme.palette.text.primary};
+
+      -webkit-text-fill-color: ${props => props.theme.palette.text.primary}; // 자동완성 시 글자색 강제
+
   
+
+      &::placeholder {
+
+        color: ${props => props.theme.palette.text.secondary}; /* 플레이스홀더 색상 연하게 */
+
+        opacity: 1; /* Firefox에서 기본 opacity를 재정의 */
+
+      }
+
+    }
+
   // MUI TextField 내부의 input 스타일 조정
+
   .input-group .MuiInputBase-input {
-      padding: 0;
-      background-color: transparent; // 내부 input 배경 투명하게
+    padding: 0;
+
+    background-color: transparent; // 내부 input 배경 투명하게
   }
 
   .input-group .MuiOutlinedInput-notchedOutline {
-      border: none !important; // MUI 기본 테두리 제거
+    border: none !important; // MUI 기본 테두리 제거
   }
 
   .input-group input:focus,
-  .input-group .MuiInputBase-root:focus-within
-  {
+  .input-group .MuiInputBase-root:focus-within {
     border-color: ${props => props.theme.palette.primary.main};
   }
 
@@ -83,8 +105,8 @@ export const StyledFormWrapper = styled.div`
   }
 
   .sign:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .social-message {
@@ -127,7 +149,7 @@ export const StyledFormWrapper = styled.div`
   }
 
   .social-icons .icon:hover {
-      background-color: ${props => props.theme.palette.action.hover};
+    background-color: ${props => props.theme.palette.action.hover};
   }
 
   .social-icons .icon svg {

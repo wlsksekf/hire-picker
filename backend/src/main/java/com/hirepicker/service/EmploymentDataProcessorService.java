@@ -1,5 +1,9 @@
 package com.hirepicker.service;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.hirepicker.dto.CompanyDto;
 import com.hirepicker.dto.EventDto;
 import com.hirepicker.dto.JobDto;
@@ -9,12 +13,9 @@ import com.hirepicker.entity.JobPosting;
 import com.hirepicker.repository.CompanyRepository;
 import com.hirepicker.repository.EmpEventRepository;
 import com.hirepicker.repository.JobPostingRepository;
+
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // Slf4j 임포트 추가
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.orm.jpa.JpaObjectRetrievalFailureException; // JpaObjectRetrievalFailureException 임포트 추가
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j // Slf4j 어노테이션 추가
 @Service // Spring의 서비스 빈으로 등록
@@ -28,32 +29,31 @@ public class EmploymentDataProcessorService {
     // JobDto를 처리하여 DB에 저장/업데이트
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processJobDto(JobDto dto) {
-        Company company = companyRepository.findTopByCompanyName(dto.companyName())
-                .orElseGet(() -> companyRepository.save(Company.builder().companyName(dto.companyName()).build()));
+        // 회사명이 중복되어 있을 수 있으므로 findAllByCompanyName 사용
+        java.util.List<Company> matchedCompanies = companyRepository.findAllByCompanyName(dto.companyName());
+        Company company;
+        if (matchedCompanies.isEmpty()) {
+            company = companyRepository.save(Company.builder().companyName(dto.companyName()).build());
+        } else {
+            if (matchedCompanies.size() > 1) {
+                // 중복 레코드가 있는 경우 경고 로그를 남기고 첫 번째 레코드를 사용
+                System.err.println("Warning: multiple companies found with name='" + dto.companyName()
+                        + "'. Using the first match.");
+            }
+            company = matchedCompanies.get(0);
+        }
 
         jobPostingRepository.findByPostingId(dto.id()).ifPresentOrElse(
-            p -> { // 이미 존재하는 공고이면 업데이트
-                // 기존 JobPosting의 Company 참조가 유효한지 확인
-                try {
-                    // Company 객체에 접근하여 JpaObjectRetrievalFailureException 발생 여부 확인
-                    // 실제 DB 접근이 일어나는 시점은 getCompany() 호출 시점일 수 있음
-                    // 또는 p.getCompany().getCompanyIdx() 등으로 접근하여 강제 로딩
-                    p.getCompany().getCompanyIdx(); // 강제로 Company 로딩 시도
-                } catch (JpaObjectRetrievalFailureException e) {
-                    log.warn("기존 JobPosting {} (ID: {})의 Company 참조가 유효하지 않습니다. 새로운 Company ({})로 재설정합니다.",
-                            p.getPostingId(), p.getPostingIdx(), company.getCompanyName());
-                    p.setCompany(company); // 유효하지 않은 경우 새로운 Company로 재설정
-                } catch (Exception e) {
-                    log.error("JobPosting {}의 Company 참조 확인 중 예외 발생: {}", p.getPostingId(), e.getMessage());
-                    p.setCompany(company); // 다른 예외 발생 시에도 새로운 Company로 재설정
-                }
-
-                p.setTitle(dto.title());
-                p.setEmploymentType(dto.employmentType());
-                p.setLocation(dto.location());
-                jobPostingRepository.save(p);
-            },
-            () -> jobPostingRepository.save(JobPosting.builder().postingId(dto.id()).company(company).title(dto.title()).employmentType(dto.employmentType()).location(dto.location()).build()) // 새로운 공고이면 저장
+                p -> { // 이미 존재하는 공고이면 업데이트
+                    p.setTitle(dto.title());
+                    p.setEmploymentType(dto.employmentType());
+                    p.setLocation(dto.location());
+                    jobPostingRepository.save(p);
+                },
+                () -> jobPostingRepository.save(JobPosting.builder().postingId(dto.id()).company(company)
+                        .title(dto.title()).employmentType(dto.employmentType()).location(dto.location()).build()) // 새로운
+                                                                                                                   // 공고이면
+                                                                                                                   // 저장
         );
     }
 
@@ -61,46 +61,83 @@ public class EmploymentDataProcessorService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processEventDto(EventDto dto) {
         empEventRepository.findByEventCode(dto.id()).ifPresentOrElse(
-            e -> { // 이미 존재하는 행사이면 업데이트
-                e.setEventName(dto.title());
-                e.setEventDuration(dto.period());
-                e.setArea(dto.location());
-                empEventRepository.save(e);
-            },
-            () -> empEventRepository.save(EmpEvent.builder().eventCode(dto.id()).eventName(dto.title()).eventDuration(dto.period()).area(dto.location()).build()) // 새로운 행사이면 저장
+                e -> { // 이미 존재하는 행사이면 업데이트
+                    e.setEventName(dto.title());
+                    e.setEventDuration(dto.period());
+                    e.setArea(dto.location());
+                    empEventRepository.save(e);
+                },
+                () -> empEventRepository.save(EmpEvent.builder().eventCode(dto.id()).eventName(dto.title())
+                        .eventDuration(dto.period()).area(dto.location()).build()) // 새로운 행사이면 저장
         );
     }
 
     // CompanyDto를 처리하여 DB에 저장/업데이트
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processCompanyDto(CompanyDto dto) {
-        companyRepository.findByCompanyId(dto.id()).ifPresentOrElse(
-            c -> { // 이미 존재하는 기업이면 업데이트
-                c.setCompanyName(dto.name());
+        java.util.List<Company> matches = companyRepository.findAllByCompanyName(dto.name());
+        if (!matches.isEmpty()) {
+            Company c = matches.get(0);
+            if (matches.size() > 1) {
+                System.err.println(
+                        "Warning: multiple companies found for name='" + dto.name() + "'. Updating first match.");
+            }
+            // 이미 존재하는 기업이면 업데이트
+            // Only update fields when incoming values are non-null/non-empty to avoid
+            // overwriting existing DB values with empty strings (which may cause
+            // SQL errors for numeric columns).
+            c.setStatus("approved"); // status를 approved로 설정
+            c.setRegDate(new java.util.Date()); // regDate를 현재 날짜로 설정
+            if (dto.summary() != null && !dto.summary().isBlank()) {
                 c.setDescription(dto.summary());
+            }
+            if (dto.homepage() != null && !dto.homepage().isBlank()) {
                 c.setWebsiteUrl(dto.homepage());
+            }
+            if (dto.businessNumber() != null && !dto.businessNumber().isBlank()) {
                 c.setBusinessNumber(dto.businessNumber());
+            }
+            if (dto.logoUrl() != null && !dto.logoUrl().isBlank()) {
                 c.setLogoUrl(dto.logoUrl());
+            }
+            if (dto.companyType() != null && !dto.companyType().isBlank()) {
                 c.setCompanyType(dto.companyType());
-                c.setAddress(dto.adres()); // New field
-                c.setCeoName(dto.ceoNm()); // New field
-                c.setEmployeeCount(dto.employeeCount()); // New field
-                c.setCorpCode(dto.corpCode()); // New field
-                companyRepository.save(c);
-            },
-            () -> companyRepository.save(Company.builder()
-                    .companyId(dto.id())
+            }
+            if (dto.adres() != null && !dto.adres().isBlank()) {
+                c.setAddress(dto.adres());
+            }
+            if (dto.ceoNm() != null && !dto.ceoNm().isBlank()) {
+                c.setCeoName(dto.ceoNm());
+            }
+            if (dto.employeeCount() != null && !dto.employeeCount().isBlank()) {
+                c.setEmployeeCount(dto.employeeCount());
+            }
+            if (dto.corpCode() != null && !dto.corpCode().isBlank()) {
+                c.setCorpCode(dto.corpCode());
+            }
+            companyRepository.save(c);
+        } else {
+            companyRepository.save(Company.builder()
                     .companyName(dto.name())
-                    .description(dto.summary())
-                    .websiteUrl(dto.homepage())
-                    .businessNumber(dto.businessNumber())
-                    .logoUrl(dto.logoUrl())
-                    .companyType(dto.companyType())
-                    .address(dto.adres())
-                    .ceoName(dto.ceoNm())
-                    .employeeCount(dto.employeeCount())
-                    .corpCode(dto.corpCode())
-                    .build()) // 새로운 기업이면 저장
-        );
+                    .status("approved") // status를 approved로 설정
+                    .regDate(new java.util.Date()) // regDate를 현재 날짜로 설정
+                    // When creating new entity, only set optional fields if present
+                    .description(dto.summary() != null && !dto.summary().isBlank() ? dto.summary() : null)
+                    .websiteUrl(dto.homepage() != null && !dto.homepage().isBlank() ? dto.homepage() : null)
+                    .businessNumber(
+                            dto.businessNumber() != null && !dto.businessNumber().isBlank() ? dto.businessNumber()
+                                    : null)
+                    .logoUrl(dto.logoUrl() != null && !dto.logoUrl().isBlank() ? dto.logoUrl() : null)
+                    .companyType(
+                            dto.companyType() != null && !dto.companyType().isBlank() ? dto.companyType() : null)
+                    .address(dto.adres() != null && !dto.adres().isBlank() ? dto.adres() : null)
+                    .ceoName(dto.ceoNm() != null && !dto.ceoNm().isBlank() ? dto.ceoNm() : null)
+                    .employeeCount(
+                            dto.employeeCount() != null && !dto.employeeCount().isBlank() ? dto.employeeCount()
+                                    : null)
+                    .corpCode(dto.corpCode() != null && !dto.corpCode().isBlank() ? dto.corpCode() : null)
+                    .build()); // 새로운 기업이면 저장
+        }
+
     }
 }
