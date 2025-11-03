@@ -31,8 +31,9 @@ public class S3UploadService {
      * @throws IOException 파일 처리 중 발생 예외
      */
     public String uploadFile(MultipartFile multipartFile, String dirName) throws IOException {
-        // 고유 파일명 생성 (한글 주석: 파일명 충돌 방지)
+        log.info("S3 파일 업로드 시작. 파일명: {}, 디렉토리: {}", multipartFile.getOriginalFilename(), dirName);
         String fileName = dirName + "/" + UUID.randomUUID() + "_" + multipartFile.getOriginalFilename();
+        log.info("S3에 저장될 최종 파일명: {}", fileName);
 
         try {
             PutObjectRequest putReq = PutObjectRequest.builder()
@@ -41,19 +42,27 @@ public class S3UploadService {
                     .contentType(multipartFile.getContentType())
                     .build();
 
+            log.info("S3 버킷명: {}", s3Config.getBucketName());
+            log.info("파일 Content-Type: {}", multipartFile.getContentType());
+
             s3Client.putObject(
                     putReq,
                     RequestBody.fromInputStream(multipartFile.getInputStream(), multipartFile.getSize())
             );
+            log.info("S3 파일 업로드 성공. 파일명: {}", fileName);
+
         } catch (IOException e) {
-            log.error("S3 파일 업로드 중 오류 발생: {}", e.getMessage());
+            log.error("S3 파일 업로드 중 IO 오류 발생: {}", e.getMessage(), e);
             throw new IOException("S3 파일 업로드에 실패했습니다.", e);
+        } catch (Exception e) { // 기타 예외 처리 추가
+            log.error("S3 파일 업로드 중 알 수 없는 오류 발생: {}", e.getMessage(), e);
+            throw new IOException("S3 파일 업로드 중 알 수 없는 오류가 발생했습니다.", e);
         }
 
-        // 업로드된 객체의 URL 생성 (한글 주석: SDK 유틸리티 사용)
         String url = s3Client.utilities()
                 .getUrl(b -> b.bucket(s3Config.getBucketName()).key(fileName))
                 .toExternalForm();
+        log.info("업로드된 파일 URL: {}", url);
         return url;
     }
 }

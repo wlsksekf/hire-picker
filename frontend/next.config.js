@@ -32,6 +32,9 @@ const nextConfig = {
     ];
   },
   reactStrictMode: false,
+
+  // ESM 패키지 트랜스파일 설정 추가
+  transpilePackages: ['@react-pdf/renderer'],
 };
 
 module.exports = nextConfig;
