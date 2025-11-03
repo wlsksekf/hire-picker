@@ -7,7 +7,7 @@ import {
   Card,
   CardActions,
   Box,
-  Stack,
+  Grid, // Stack을 Grid로 변경
   useTheme,
   Chip,
   CircularProgress,
@@ -22,7 +22,7 @@ import ChatRoom from '@/components/ChatRoom';
 
 import { api } from '@/api'; // 공용 api 인스턴스 사용
 
-const PAGE_SIZE = 20; // 페이지 당 불러올 채용 공고 수
+const PAGE_SIZE = 18; // 페이지 당 불러올 채용 공고 수 (3의 배수로 변경)
 
 // 메인 페이지 컴포넌트
 function MainPage() {
@@ -112,7 +112,7 @@ function MainPage() {
         <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
           전체 채용공고
         </Typography>
-        <Stack spacing={3}>
+        <Grid container spacing={3} sx={{ width: '100%' }}>
           {jobs.map(function(job) {
             
             // ⭐️ 3. 백엔드에서 받은 imgUrl로 public 경로 생성
@@ -216,7 +216,7 @@ function MainPage() {
               </Grid>
             )
           })}
-        </Stack>
+        </Grid>
         
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
           {hasNextPage && (
@@ -230,6 +230,7 @@ function MainPage() {
         </Box>
 
         {!hasNextPage && jobs.length > 0 && <Typography textAlign="center" sx={{ mt: 4, color: 'text.secondary' }}>모든 정보를 불러왔습니다.</Typography>}
+
       </Box>
 
       {selectedPost && (
