@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Button,
@@ -15,6 +15,21 @@ import {
 import { StyledFormWrapper } from '@/components/StyledForm';
 import styled from 'styled-components';
 import { useTheme } from '@mui/material/styles';
+import axios from 'axios';
+
+// Debounce hook
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 // 복지 혜택 옵션 (예시)
 const welfareOptions = [
@@ -46,6 +61,19 @@ const welfareOptions = [
 
 // 기업 형태 옵션
 const companyTypeOptions = ['대기업', '중견기업', '중소기업', '스타트업'];
+
+// 필수 필드 목록 (컴포넌트 밖에 선언하여 불필요한 재생성 방지)
+const requiredFields = [
+  'name',
+  'businessNumber',
+  'companyType',
+  'ceoNm',
+  'adres',
+  'employeeCount',
+  'logoUrl',
+  'sales_amount',
+  'welfare_benefits',
+];
 
 const CompanyTypeSelection = styled.div`
   display: flex;
@@ -95,95 +123,128 @@ export default function CreateCompanyPage() {
     sales_amount: '',
     welfare_benefits: [],
   });
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
+
+  // Validation errors
+  const [nameError, setNameError] = useState('');
   const [businessNumberError, setBusinessNumberError] = useState('');
+
   const [formValid, setFormValid] = useState(false);
 
-  // 필수 필드 목록
-  const requiredFields = [
-    'name',
-    'businessNumber',
-    'companyType',
-    'ceoNm',
-    'adres',
-    'employeeCount',
-  ];
+  const debouncedName = useDebounce(formData.name, 500);
+  const debouncedBusinessNumber = useDebounce(formData.businessNumber, 500);
 
   // 폼 유효성 검사 함수
-  const validateForm = () => {
-    const isValid =
-      requiredFields.every(field => {
-        const value = formData[field];
-        if (Array.isArray(value)) {
-          return value.length > 0; // 배열인 경우 비어있지 않아야 함
-        }
-        return value && value.toString().trim() !== '';
-      }) && !businessNumberError;
-    setFormValid(isValid);
-  };
+  const isFormValid = useCallback(() => {
+    const isRequiredFieldsFilled = requiredFields.every(field => {
+      const value = formData[field];
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      }
+      return value && value.toString().trim() !== '';
+    });
+    return isRequiredFieldsFilled && !nameError && !businessNumberError;
+  }, [formData, nameError, businessNumberError]);
 
-  // formData 변경 시마다 유효성 검사 실행
+  // 폼 데이터나 에러 상태가 변경될 때마다 버튼 활성화 상태 업데이트
   useEffect(() => {
-    validateForm();
-  }, [formData, businessNumberError]);
+    setFormValid(isFormValid());
+  }, [formData, nameError, businessNumberError, isFormValid]);
+
+  // --- 중복 및 유효성 검사 로직 ---
+  useEffect(() => {
+    if (debouncedName.trim()) {
+      const checkName = async () => {
+        try {
+          const response = await axios.get('/signup/company/check-duplicate', {
+            params: { fieldName: 'name', value: debouncedName },
+          });
+          if (response.data === true) {
+            setNameError('이미 등록된 회사명입니다.');
+          } else {
+            setNameError('');
+          }
+        } catch (err) {
+          console.error('회사명 중복 확인 오류:', err);
+        }
+      };
+      checkName();
+    } else {
+      setNameError('');
+    }
+  }, [debouncedName]);
+
+  useEffect(() => {
+    if (debouncedBusinessNumber) {
+      // 1. 형식 검사
+      if (debouncedBusinessNumber.length !== 10) {
+        setBusinessNumberError('사업자 등록번호는 10자리 숫자여야 합니다.');
+      } else {
+        // 2. 형식이 맞으면 중복 검사
+        const checkBusinessNumber = async () => {
+          try {
+            const response = await axios.get('/signup/company/check-duplicate', {
+              params: { fieldName: 'businessNumber', value: debouncedBusinessNumber },
+            });
+            if (response.data === true) {
+              setBusinessNumberError('이미 등록된 사업자등록번호입니다.');
+            } else {
+              setBusinessNumberError(''); // 형식도 맞고, 중복도 아니면 에러 없음
+            }
+          } catch (err) {
+            console.error('사업자등록번호 중복 확인 오류:', err);
+          }
+        };
+        checkBusinessNumber();
+      }
+    } else {
+      // 필드가 비어있으면 에러 없음
+      setBusinessNumberError('');
+    }
+  }, [debouncedBusinessNumber]);
 
   const handleChange = e => {
     const { name, value } = e.target;
     let cleanedValue = value;
 
-    if (name === 'businessNumber') {
+    // 숫자 필드는 숫자만 입력되도록 정리
+    if (name === 'businessNumber' || name === 'sales_amount' || name === 'employeeCount') {
       cleanedValue = value.replace(/[^0-9]/g, '');
-      setFormData(prevData => ({
-        ...prevData,
-        [name]: cleanedValue,
-      }));
-      if (cleanedValue.length !== 10) {
-        setBusinessNumberError('사업자 등록번호는 10자리 숫자여야 합니다.');
-      } else {
-        setBusinessNumberError('');
-      }
-    } else if (name === 'sales_amount' || name === 'employeeCount') {
-      cleanedValue = value.replace(/[^0-9]/g, '');
+    }
+
+    // 숫자 타입으로 변환해야 할 필드 처리
+    if (name === 'sales_amount' || name === 'employeeCount') {
       setFormData(prevData => ({
         ...prevData,
         [name]: cleanedValue === '' ? '' : Number(cleanedValue),
       }));
     } else {
-      setFormData(prevData => ({
-        ...prevData,
-        [name]: value,
-      }));
+      setFormData(prevData => ({ ...prevData, [name]: cleanedValue }));
     }
   };
 
   const handleWelfareChange = (event, newValue) => {
-    setFormData(prevData => ({
-      ...prevData,
-      welfare_benefits: newValue,
-    }));
+    setFormData(prevData => ({ ...prevData, welfare_benefits: newValue }));
   };
 
   const handleCompanyTypeChange = type => {
-    setFormData(prevData => ({
-      ...prevData,
-      companyType: type,
-    }));
+    setFormData(prevData => ({ ...prevData, companyType: type }));
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
-    setMessage('');
-    setIsError(false);
-
-    if (!formValid) {
+    if (!isFormValid()) {
       setMessage('모든 필수 항목을 올바르게 작성해주세요.');
       setIsError(true);
       return;
     }
 
     setLoading(true);
+    setMessage('');
+    setIsError(false);
 
     const dataToSend = {
       ...formData,
@@ -191,24 +252,31 @@ export default function CreateCompanyPage() {
     };
 
     try {
-      const response = await fetch('/api/companies', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend),
+      const response = await axios.post('/signup/company/create-company', dataToSend, {
+        headers: { 'Content-Type': 'application/json' },
       });
 
-      if (response.ok) {
-        setMessage('기업 등록이 성공적으로 완료되었습니다!');
-        router.push('/companies');
+      if (response.status === 201) {
+        const savedCompany = response.data;
+        setMessage(`'${savedCompany.name}' 기업 등록이 성공적으로 완료되었습니다!`);
+        setIsError(false);
+        // router.push('/'); // 성공 후 바로 이동하지 않고 메시지를 보여주기 위해 주석 처리
       } else {
-        const errorData = await response.json();
-        setMessage(`기업 등록 실패: ${errorData.message || response.statusText}`);
+        setMessage(`기업 등록 실패: ${response.statusText}`);
         setIsError(true);
       }
     } catch (error) {
-      setMessage(`네트워크 오류: ${error.message}`);
+      if (error.response) {
+        setMessage(
+          `기업 등록 실패: ${
+            error.response.data.message || error.response.data || error.response.statusText
+          }`
+        );
+      } else if (error.request) {
+        setMessage('서버 응답이 없습니다. 네트워크를 확인해주세요.');
+      } else {
+        setMessage(`요청 중 오류 발생: ${error.message}`);
+      }
       setIsError(true);
     } finally {
       setLoading(false);
@@ -239,6 +307,11 @@ export default function CreateCompanyPage() {
               onChange={handleChange}
               required
             />
+            {nameError && (
+              <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+                {nameError}
+              </Typography>
+            )}
           </div>
           <div className="input-group">
             <label htmlFor="summary">기업 소개 요약</label>
@@ -261,6 +334,17 @@ export default function CreateCompanyPage() {
             />
           </div>
           <div className="input-group">
+            <label htmlFor="logoUrl">로고 URL</label>
+            <input
+              type="url"
+              id="logoUrl"
+              name="logoUrl"
+              value={formData.logoUrl}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="input-group">
             <label htmlFor="businessNumber">사업자 등록번호</label>
             <input
               type="text"
@@ -277,16 +361,7 @@ export default function CreateCompanyPage() {
               </Typography>
             )}
           </div>
-          <div className="input-group">
-            <label htmlFor="logoUrl">로고 URL</label>
-            <input
-              type="url"
-              id="logoUrl"
-              name="logoUrl"
-              value={formData.logoUrl}
-              onChange={handleChange}
-            />
-          </div>
+          {/* ... a lot of form fields ... */}
           <div className="input-group">
             <label>기업 형태</label>
             <CompanyTypeSelection>
@@ -358,19 +433,16 @@ export default function CreateCompanyPage() {
               value={formData.welfare_benefits}
               onChange={handleWelfareChange}
               disableCloseOnSelect
-              // renderTags prop을 제거하여 Autocomplete가 칩을 내부적으로 렌더링하지 않도록 함
               renderInput={params => (
                 <TextField
                   {...params}
                   variant="outlined"
                   placeholder={formData.welfare_benefits.length === 0 ? '복지 혜택 선택' : ''}
-                  // InputProps를 명시적으로 설정하여 Autocomplete가 칩을 내부에 렌더링하지 못하게 함
                   InputProps={{ ...params.InputProps, startAdornment: null }}
                   sx={{ mt: 1, mb: 1 }}
                 />
               )}
             />
-            {/* 선택된 칩들을 Autocomplete 아래에 별도로 렌더링 */}
             {formData.welfare_benefits.length > 0 && (
               <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
                 {formData.welfare_benefits.map((option, index) => (

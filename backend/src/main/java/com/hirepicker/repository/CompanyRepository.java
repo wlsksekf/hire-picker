@@ -27,4 +27,10 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
 
     Optional<Company> findByCorpCode(String corpCode);
 
+    // 회사명으로 존재 여부 확인
+    boolean existsByCompanyName(String companyName);
+
+    // 사업자등록번호로 존재 여부 확인
+    boolean existsByBusinessNumber(String businessNumber);
+
 }

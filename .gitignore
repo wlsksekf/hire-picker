@@ -131,3 +131,4 @@ __pycache__/
 # Environment variables (지난번에 추가했는지 확인)
 jaeyoonPython/.env
 .env
+*.bin
