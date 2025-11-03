@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Button } from '@mui/material';
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
 
 
 // ✅ 카테고리 목록 정의
