@@ -35,6 +35,14 @@ public class CompanyService {
 
     @Transactional
     public CompanyDto createCompany(CompanyDto dto) {
+        // 중복 검사
+        if (companyRepository.existsByCompanyName(dto.name())) {
+            throw new IllegalStateException("이미 등록된 회사명입니다.");
+        }
+        if (companyRepository.existsByBusinessNumber(dto.businessNumber())) {
+            throw new IllegalStateException("이미 등록된 사업자등록번호입니다.");
+        }
+
         Company company = Company.builder()
                 .companyName(dto.name())
                 .businessNumber(dto.businessNumber())
@@ -48,11 +56,19 @@ public class CompanyService {
                 .corpCode(dto.corpCode())
                 .salesAmount(dto.sales_amount())
                 .welfareBenefits(dto.welfare_benefits())
-                .status(dto.status() != null ? dto.status() : "active") // DTO에 상태가 있으면 사용, 없으면 active
-                .regDate(dto.regDate() != null ? dto.regDate() : new Date()) // DTO에 등록일이 있으면 사용, 없으면 현재 날짜
+                .status("PENDING") // 상태를 'PENDING'으로 고정
+                .regDate(new Date()) // 등록일을 현재 날짜로 설정
                 .build();
 
-        Company savedCompany = companyRepository.save(company);
+        Company savedCompany = companyRepository.saveAndFlush(company);
         return EmploymentDataImpl.convertToCompanyDto(savedCompany);
+    }
+
+    public boolean isCompanyNameDuplicate(String companyName) {
+        return companyRepository.existsByCompanyName(companyName);
+    }
+
+    public boolean isBusinessNumberDuplicate(String businessNumber) {
+        return companyRepository.existsByBusinessNumber(businessNumber);
     }
 }

@@ -131,5 +131,7 @@ __pycache__/
 # Environment variables (지난번에 추가했는지 확인)
 jaeyoonPython/.env
 .env
-backend/.gradle/buildOutputCleanup/outputFiles.bin
 *.bin
+backend/.gradle/8.14.3/checksums/md5-checksums.bin
+backend/.gradle/8.14.3/fileHashes/fileHashes.bin
+backend/.gradle/buildOutputCleanup/buildOutputCleanup.lock
