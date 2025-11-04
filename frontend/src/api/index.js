@@ -143,6 +143,19 @@ export const confirmTossPayment = (paymentData) => {
 };
 
 /**
+ * [결제 내역] 현재 로그인한 사용자의 결제 내역을 조회
+ * @returns {Promise<Array>} 결제 내역 목록
+ */
+export const getPaymentHistory = () => {
+  return api.get('/api/payment/history')
+    .then(response => response.data)
+    .catch(error => {
+      console.error('결제 내역 조회 실패:', error);
+      throw error;
+    });
+};
+
+/**
  * [마이페이지] 현재 로그인한 사용자의 개인정보 조회
  * 쿠키의 액세스 토큰을 통해 인증
  * @returns {Promise<object>} 사용자 정보 (name, nickname, email, imageUrl 등)

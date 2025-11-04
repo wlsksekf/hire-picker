@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import CreditCard from '../../components/CreditCard';
-import CreditHistory from '../../components/CreditHistory';
+
 import { getCreditBalance } from '@/api';
 import useAuthStore from '@/store/authStore';
 import { useRouter } from 'next/navigation'; // useRouter 임포트
@@ -109,7 +109,7 @@ const StorePage = () => {
         {isAuthenticated ? '결제하기' : '로그인이 필요합니다'}
       </PurchaseButton>
 
-      {isAuthenticated && <CreditHistory />}
+
     </StoreContainer>
   );
 };

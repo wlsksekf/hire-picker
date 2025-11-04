@@ -2,6 +2,8 @@ package com.hirepicker.service;
 
 import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.payment.*;
+import com.hirepicker.entity.payment.Payment;
+import java.util.List;
 
 // 토스페이먼츠 결제 로직을 처리하는 서비스 인터페이스
 public interface TossPaymentService {
@@ -14,4 +16,7 @@ public interface TossPaymentService {
     
     // 가상계좌 입금 처리 웹훅
     void handleWebhook(TossWebhookDto webhookDto);
+
+    // 결제 내역 조회
+    List<PaymentHistoryResponseDto> getPaymentHistory(CustomUserDetails userDetails);
 }
