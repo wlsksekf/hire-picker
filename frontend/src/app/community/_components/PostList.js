@@ -38,7 +38,9 @@ export default function PostList({ ar, tp, cp, isLoggedIn, loading }) {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        marginTop: "16px"
+        marginTop: "16px",
+        padding: "0 10px",
+        marginBottom: "10px"
       }}>
         {/* 왼쪽: 페이징 */}
         <div>
