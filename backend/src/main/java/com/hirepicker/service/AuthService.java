@@ -44,47 +44,95 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final Environment environment;
 
+    /**
+     * 로그인 처리 (개인회원/기업회원 통합)
+     *
+     * 전체 흐름:
+     * 0. UserType을 ThreadLocal에 설정
+     * 1. 사용자 인증 (Spring Security)
+     * 2. JWT 토큰 생성 (Access Token, Refresh Token)
+     * 3. Refresh Token DB 저장
+     * 4. HttpOnly 쿠키에 토큰 설정
+     * 5. ThreadLocal 정리
+     *
+     * @param request 로그인 요청 정보 (email/아이디, password, userType)
+     * @param response HTTP 응답 (쿠키 설정용)
+     */
     @Transactional
     public void login(LoginRequest request, HttpServletResponse response) {
-        log.info("Login attempt for user: {}", request.getEmail());
+        log.info("Login attempt for user: {}, type: {}", request.getEmail(), request.getUserType());
         try {
-            // 1. 사용자 인증
-            log.info("Step 1: Authenticating user...");
-            UsernamePasswordAuthenticationToken authenticationToken =
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
-            Authentication authentication = authenticationManager.authenticate(authenticationToken);
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.info("Step 1: Authentication successful.");
+            // ========== STEP 0: UserType 설정 ==========
+            // UserDetailsService가 userType에 따라 효율적으로 검색할 수 있도록
+            // ThreadLocal을 통해 userType 전달
+            UserDetailsServiceImpl.setUserType(request.getUserType());
 
-            // 인증된 사용자 정보 가져오기
-            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            UserType userType = userDetails.getUserType();
-            Long userId = userDetails.getId();
+            try {
+                // ========== STEP 1: 사용자 인증 ==========
+                log.info("Step 1: Authenticating user...");
 
-            // 2. 토큰 생성
-            log.info("Step 2: Creating tokens for user ID: {}, type: {}", userId, userType);
-            String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(authentication);
-            String accessToken = jwtTokenProvider.createAccessToken(authentication);
-            log.info("Step 2: Tokens created successfully.");
+                // 1-1. 인증 토큰 생성 (username, password)
+                UsernamePasswordAuthenticationToken authenticationToken =
+                        new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
 
-            // 3. 리프레시 토큰 처리
-            log.info("Step 3: Processing refresh token...");
-            if (userType == UserType.PERSONAL) {
-                PersonalUser user = personalUserRepository.findById(userId)
-                        .orElseThrow(() -> new IllegalArgumentException("Personal user not found with ID: " + userId));
-                handleRefreshToken(user, newRefreshTokenValue, userType);
-            } else {
-                CompanyUser user = companyUserRepository.findById(userId)
-                        .orElseThrow(() -> new IllegalArgumentException("Company user not found with ID: " + userId));
-                handleRefreshToken(user, newRefreshTokenValue, userType);
+                // 1-2. AuthenticationManager를 통한 인증 실행
+                // 내부적으로 UserDetailsService.loadUserByUsername() 호출
+                // → CustomAuthenticationProvider에서 비밀번호 검증
+                Authentication authentication = authenticationManager.authenticate(authenticationToken);
+
+                // 1-3. SecurityContext에 인증 정보 저장
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                log.info("Step 1: Authentication successful.");
+
+                // ========== 인증된 사용자 정보 추출 ==========
+                CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+                UserType userType = userDetails.getUserType();  // PERSONAL 또는 COMPANY
+                Long userId = userDetails.getId();              // 사용자 PK
+
+                // ========== STEP 2: JWT 토큰 생성 ==========
+                log.info("Step 2: Creating tokens for user ID: {}, type: {}", userId, userType);
+
+                // 2-1. Refresh Token 생성 (만료 기간: 7일)
+                String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(authentication);
+
+                // 2-2. Access Token 생성 (만료 기간: 30분)
+                String accessToken = jwtTokenProvider.createAccessToken(authentication);
+                log.info("Step 2: Tokens created successfully.");
+
+                // ========== STEP 3: Refresh Token DB 저장 ==========
+                log.info("Step 3: Processing refresh token...");
+
+                // userType에 따라 해당 사용자 엔티티를 가져와서 Refresh Token 저장
+                if (userType == UserType.PERSONAL) {
+                    // 개인회원의 경우
+                    PersonalUser user = personalUserRepository.findById(userId)
+                            .orElseThrow(() -> new IllegalArgumentException("Personal user not found with ID: " + userId));
+                    handleRefreshToken(user, newRefreshTokenValue, userType);
+                } else {
+                    // 기업회원의 경우
+                    CompanyUser user = companyUserRepository.findById(userId)
+                            .orElseThrow(() -> new IllegalArgumentException("Company user not found with ID: " + userId));
+                    handleRefreshToken(user, newRefreshTokenValue, userType);
+                }
+
+                // ========== STEP 4: 토큰을 HttpOnly 쿠키에 저장 ==========
+                log.info("Step 4: Adding tokens to cookie.");
+                // XSS 공격 방지를 위해 HttpOnly 쿠키로 전송
+                // - access_token: 30분 만료
+                // - refresh_token: 7일 만료
+                addTokensToCookie(response, accessToken, newRefreshTokenValue);
+
+            } finally {
+                // ========== STEP 5: ThreadLocal 정리 (필수) ==========
+                // 메모리 누수 방지를 위해 반드시 정리
+                // ThreadPool 환경에서 스레드 재사용 시 이전 값이 남아있을 수 있음
+                UserDetailsServiceImpl.clearUserType();
             }
-
-            // 5. 액세스 토큰과 리프레시 토큰을 쿠키에 저장
-            log.info("Step 5: Adding tokens to cookie.");
-            addTokensToCookie(response, accessToken, newRefreshTokenValue);
 
         } catch (Throwable t) {
             log.error("!!! UNCAUGHT EXCEPTION IN LOGIN SERVICE !!!", t);
+            // 예외 발생 시에도 ThreadLocal 정리 (메모리 누수 방지)
+            UserDetailsServiceImpl.clearUserType();
             throw t;
         }
     }
@@ -132,7 +180,7 @@ public class AuthService {
                 .address(signupRequest.getAddress())
                 .platform(signupRequest.getPlatform().name())
                 .build();
-        
+
         PersonalUser savedUser = personalUserRepository.save(newUser);
         log.info("새로운 개인 회원이 등록되었습니다. ID: {}, Email: {}", savedUser.getId(), savedUser.getEmail());
 

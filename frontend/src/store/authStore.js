@@ -30,32 +30,39 @@ const useAuthStore = create((set, get) => ({
   },
 
   // 앱 초기 로드 시, 보호된 API 호출을 통해 로그인 상태 확인
+  // Promise를 반환하여 호출자가 완료를 기다릴 수 있도록 함
   initializeAuth: () => {
     console.log('AuthStore: initializeAuth called. Current state:', get());
     set({ isLoading: true });
 
     // ★ validateStatus 옵션을 추가하여 401을 에러로 처리하지 않도록 설정
-    api.get('/api/users/me', {
+    return api.get('/api/users/me', {
       validateStatus: function (status) {
         return status < 500; // 500 미만의 상태 코드는 모두 정상 응답으로 간주
       },
     })
     .then((response) => {
       // ★ 응답 상태 코드에 따라 분기
+      console.log('AuthStore: /api/users/me 응답 상태:', response.status);
+      console.log('AuthStore: /api/users/me 응답 데이터:', response.data);
+
       if (response.status === 200) {
         // 200 OK: 로그인 성공
         console.log('AuthStore: initializeAuth success', response.data);
         set({ isAuthenticated: true, user: response.data, isLoading: false });
+        return response.data; // 사용자 정보 반환
       } else {
         // 401 또는 다른 4xx: 로그아웃 상태
         console.log('AuthStore: User not authenticated (status: ' + response.status + ').');
         set({ isAuthenticated: false, user: null, isLoading: false });
+        return null;
       }
     })
     .catch((error) => {
       // 5xx 에러 등 예외적인 실제 서버 오류만 여기로 들어옴
       console.error('AuthStore: initializeAuth failed with a server error', error);
       set({ isAuthenticated: false, user: null, isLoading: false });
+      return null;
     });
   },
 }));
