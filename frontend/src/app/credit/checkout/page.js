@@ -1,3 +1,4 @@
+// frontend/src/app/credit/checkout/page.js
 'use client';
 
 import dynamic from 'next/dynamic';

@@ -1,3 +1,4 @@
+// frontend/src/app/credit/page.js
 'use client';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
@@ -83,7 +84,7 @@ const StorePage = () => {
       return;
     }
     // 선택된 상품 ID를 가지고 Checkout 페이지로 이동
-    router.push(`/mypage/checkout?productId=${selectedCard}`);
+    router.push(`/credit/checkout?productId=${selectedCard}`);
   };
 
   return (
