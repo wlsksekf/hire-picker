@@ -5,8 +5,8 @@ import { Page, Text, View, Document, StyleSheet, Font, Image } from '@react-pdf/
 
 // 한글 폰트 등록
 try {
-  Font.register({ 
-    family: 'Pretendard', 
+  Font.register({
+    family: 'Pretendard',
     src: '/fonts/Pretendard-Medium.ttf'
   });
 } catch (e) {
@@ -36,12 +36,13 @@ const styles = StyleSheet.create({
     marginRight: 10,
     display: 'flex',
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center'
+
   },
   profileImage: {
     width: '100%',
     height: '100%',
-    objectFit: 'cover',
+    objectFit: 'contain'
   },
   photoPlaceholder: {
     fontSize: 10,
@@ -108,7 +109,7 @@ export default function ResumePdfDocument({ formData, imageUrl }) {
             </View>
           </View>
         </View>
-        
+
         {/* 학력사항 */}
         <Text style={styles.h2}>[학력사항]</Text>
         <View style={styles.table}>
@@ -188,7 +189,7 @@ export default function ResumePdfDocument({ formData, imageUrl }) {
       {/* --- 2 페이지: 자기소개서 --- */}
       <Page size="A4" style={styles.page}>
         <Text style={styles.h2}>[자기소개서]</Text>
-        
+
         <Text style={styles.sectionTitle}>■ 성장과정</Text>
         <Text style={styles.bodyText}>{formData.selfGrowth}</Text>
 

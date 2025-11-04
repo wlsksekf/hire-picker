@@ -1,4 +1,3 @@
-// 'use client'가 꼭 필요해. useState, onChange 같은 사용자 인터랙션이 있기 때문이야.
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -35,15 +34,7 @@ import dynamic from 'next/dynamic'; // next/dynamic 임포트
 import ResumePdfDocument from '@/components/ResumePdfDocument';
 import Loader from '@/components/Loader'; // 로더 컴포넌트 추가
 import Image from 'next/image'; // Next.js Image 컴포넌트
-
-// ssr: false가 핵심이야. 서버에서는 이 컴포넌트를 절대 불러오지 않아.
-const PDFDownloadLink = dynamic(
-  () => import('@react-pdf/renderer').then((mod) => mod.PDFDownloadLink),
-  { 
-    ssr: false,
-    loading: () => <p>PDF 생성 중...</p> // 로딩 상태 UI 추가
-  }
-);
+import { pdf } from '@react-pdf/renderer'; // pdf 함수 임포트
 
 // --- 스타일 컴포넌트 정의 ---
 
@@ -84,8 +75,6 @@ export default function AiResumePage() {
   // --- 팝업 상태 관리 state 추가 ---
   const [dialogOpen, setDialogOpen] = useState(false); // 메인 선택 팝업
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false); // 삭제 확인 팝업
-  
-  // ▼▼▼ [수정 1] 하이드레이션 오류 방지용 state ▼▼▼
   const [isClient, setIsClient] = useState(false); // 클라이언트 렌더링 확인용
 
   // 페이지가 마운트된 후 isClient를 true로 설정
@@ -106,7 +95,7 @@ export default function AiResumePage() {
       // selectedImage가 null이면 (예: 업로드 취소) 미리보기 이미지도 null로
       setPreviewImage(null);
     }
-    
+
     // (참고) 클린업 함수는 data URL을 쓸 땐 필수는 아니지만,
     // Object URL(URL.createObjectURL)을 쓴다면 여기서 URL.revokeObjectURL을 해줘야 해.
   }, [selectedImage]);
@@ -176,8 +165,7 @@ export default function AiResumePage() {
     selfMotivation: '',
     selfAspirations: '',
 
-    // 이미지 URL
-    imageUrl: '',
+
 
     // AI 프롬프트
     aiPrompt: '',
@@ -240,7 +228,7 @@ export default function AiResumePage() {
 
     const userData = serializeUserData();
     const jobPostingData = formData.aiPrompt || "(요청사항 없음)";
-    
+
     // 백엔드로 보낼 데이터 객체
     const requestBody = {
       userData,
@@ -277,38 +265,7 @@ export default function AiResumePage() {
       });
   };
 
-  // 이미지 업로드 핸들러
-  const handleImageUpload = () => {
-    if (!selectedImage) {
-      alert("업로드할 이미지를 선택해주세요.");
-      return;
-    }
 
-    setIsLoading(true);
-    const formData = new FormData();
-    formData.append("file", selectedImage);
-
-    // (주의!) 이 엔드포인트는 네가 백엔드에 '/api/ai/upload-image'로 구현해 뒀어야 해!
-    // (내가 제안했던 S3 서비스의 엔드포인트는 '/api/upload/resume-image'였어)
-    api.post('/api/ai/upload-image', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
-      .then(response => {
-        const imageUrl = response.data; // 백엔드에서 반환된 이미지 URL
-        setFormData((prev) => ({ ...prev, imageUrl: imageUrl }));
-        console.log("업로드된 이미지 URL:", imageUrl); // 추가
-        alert("이미지 업로드 성공!");
-      })
-      .catch(error => {
-        console.error("이미지 업로드 실패:", error);
-        alert("이미지 업로드 중 오류가 발생했습니다.");
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  };
 
   // "AI로 작성하기" 버튼 클릭 핸들러 (로직 수정)
   const handleAiGenerate = () => {
@@ -367,7 +324,7 @@ export default function AiResumePage() {
     }
 
     // selectedImage는 파일 선택 input에서 가져온 File 객체
-    if (selectedImage && !formData.imageUrl) {
+    if (selectedImage) { // formData.imageUrl이 제거되므로 이 조건은 selectedImage만 확인하게 됨
       console.log("S3에 업로드되지 않은 로컬 이미지가 있습니다. 함께 전송합니다.");
     }
 
@@ -385,7 +342,7 @@ export default function AiResumePage() {
     // 3. FormData에 데이터 추가
     // DTO는 'resumeDto'라는 이름의 파트로, Blob 객체로 감싸서 전송
     submissionData.append('resumeDto', new Blob([JSON.stringify(resumeDto)], { type: "application/json" }));
-    
+
     // 이미지 파일은 'imageFile'이라는 이름의 파트로 추가
     if (selectedImage) {
       submissionData.append('imageFile', selectedImage);
@@ -411,6 +368,21 @@ export default function AiResumePage() {
       });
   };
 
+  // PDF 다운로드 핸들러 (Blob URL 방식)
+  const handleDownload = async () => {
+    try {
+      const blob = await pdf(<ResumePdfDocument formData={formData} imageUrl={previewImage} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = '이력서.pdf';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('PDF 다운로드 중 오류:', error);
+    }
+  };
+
 
   return (
     <>
@@ -433,11 +405,11 @@ export default function AiResumePage() {
           <Loader />
         </Box>
       )}
-      
+
       <Container maxWidth="md">
         <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, my: 4 }}>
           <Box component="form" noValidate autoComplete="off">
-            
+
             <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
               입사지원서
             </Typography>
@@ -446,8 +418,8 @@ export default function AiResumePage() {
             <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
               {/* 사진 영역 */}
               <Box sx={{
-                width: '160px',
-                height: '210px',
+                width: '120px',
+                height: '160px',
                 border: '2px dashed',
                 borderColor: 'grey.400',
                 display: 'flex',
@@ -459,17 +431,17 @@ export default function AiResumePage() {
                 overflow: 'hidden', // Image가 Box 밖으로 나가지 않게
               }}>
                 {previewImage ? (
-                  // ▼▼▼ [수정 2] Next.js 13+ 최신 Image 문법 (layout, objectFit -> fill, style) ▼▼▼
                   <Image src={previewImage} alt="미리보기" fill style={{ objectFit: 'cover' }} />
                 ) : (
-                  <Typography variant="caption" color="text.secondary">
-                    사진
+                  <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+                    사진을 드래그하거나 클릭해 업로드
                   </Typography>
                 )}
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleImageChange}
+                  id="profile-image-upload" // id 추가
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -478,18 +450,10 @@ export default function AiResumePage() {
                     height: '100%',
                     opacity: 0,
                     cursor: 'pointer',
+                    zIndex: 1, // input이 위에 오도록 zIndex 설정
                   }}
                 />
-                <Button
-                  variant="contained"
-                  component="span" // 이 버튼 자체가 input을 트리거하진 않음
-                  size="small"
-                  sx={{ position: 'absolute', bottom: 8, zIndex: 1 }}
-                  onClick={handleImageUpload} // 이 버튼은 '선택된' 이미지를 '업로드' 함
-                  disabled={!selectedImage || isLoading}
-                >
-                  업로드
-                </Button>
+
               </Box>
 
               {/* 인적사항 테이블 영역 */}
@@ -757,7 +721,7 @@ export default function AiResumePage() {
               </Typography>
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              위의 이력서 내용을 바탕으로 이력서 작성 도우미 픽키가 자기소개서를 작성해 줍니다. 픽키에게 특별히 강조하고 싶은 점이나 원하는 스타일을 자유롭게 요청해 보세요.
+              위의 이력서 내용을 바탕으로 이력서 작성 비서 ai 픽키가 자기소개서를 작성해 줍니다. 픽키에게 특별히 강조하고 싶은 점이나 원하는 스타일을 자유롭게 요청해 보세요.
             </Typography>
             <TextField
               fullWidth
@@ -768,9 +732,20 @@ export default function AiResumePage() {
               value={formData.aiPrompt}
               onChange={handleChange}
               variant="outlined"
-              placeholder="예: 긍정적이고 도전적인 성향을 강조해서 성장과정을 작성해 줘. React와 Next.js 경험을 장점으로 부각시켜 줘."
+              placeholder="예: 긍정적이고 도전적인 성향을 강조해서 성장과정을 작성해 줘. java와 python을 사용한 실무 경험을 장점으로 부각시켜 줘."
             />
-            <Box textAlign="center" sx={{ mt: 2, display: 'flex', gap: 2, justifyContent: 'center' }}>
+
+            {/* ▼▼▼ [수정 2] 버튼 영역 가독성 수정 + flexWrap: 'wrap' 추가 ▼▼▼ */}
+            <Box
+              textAlign="center"
+              sx={{
+                mt: 2,
+                display: 'flex',
+                gap: 2,
+                justifyContent: 'center',
+                flexWrap: 'wrap' // 버튼이 많아지면 줄바꿈 처리
+              }}
+            >
               <Button
                 variant="contained"
                 size="large"
@@ -780,71 +755,30 @@ export default function AiResumePage() {
               >
                 {isLoading ? <CircularProgress size={24} /> : "AI로 작성하기"}
               </Button>
-              
-                            {/* ▼▼▼ [수정 1] 하이드레이션 오류 방지를 위해 isClient로 래핑 ▼▼▼ */}
-              
-                            
-              
-                                <PDFDownloadLink
-              
-                                  document={<ResumePdfDocument formData={formData} imageUrl={formData.imageUrl} />}
-              
-                                  fileName="이력서.pdf"
-              
-                                  style={{ textDecoration: 'none' }}
-              
-                                >
-              
-                                  {({ loading }) => (
-              
-                                    <Button
-              
-                                      variant="outlined"
-              
-                                      size="large"
-              
-                                      sx={{ minWidth: '200px' }}
-              
-                                      disabled={loading || isLoading} // AI 로딩 중에도 비활성화
-              
-                                    >
-              
-                                      {loading ? <CircularProgress size={24} /> : "PDF로 다운로드"}
-              
-                                    </Button>
-              
-                                  )}
-              
-                                </PDFDownloadLink>
-              
-                                
-              
-                                {/* 이력서 저장 버튼 */}
-              
-                                <Button
-              
-                                  variant="contained"
-              
-                                  size="large"
-              
-                                  sx={{ minWidth: '200px' }}
-              
-                                  onClick={handleSaveResume} // 저장 핸들러 연결
-              
-                                  disabled={isLoading} // 로딩 중일 때 버튼 비활성화
-              
-                                >
-              
-                                  {isLoading ? <CircularProgress size={24} /> : "이력서 저장"}
-              
-                                </Button>
-              
-                              
-              
-                            {/* ▲▲▲ 수정 끝 ▲▲▲ */}
-              
-              
 
+              {/* ▼▼▼ [수정 3] 하이드레이션 오류 방지를 위해 isClient로 래핑 (PDFDownloadLink) ▼▼▼ */}
+              {isClient && (
+                <Button
+                  variant="outlined"
+                  size="large"
+                  sx={{ minWidth: '200px' }}
+                  onClick={handleDownload} // 새로운 다운로드 핸들러 연결
+                  disabled={isLoading} // 로딩 중일 때 비활성화
+                >
+                  {isLoading ? <CircularProgress size={24} /> : "PDF로 다운로드"}
+                </Button>
+              )}
+
+              {/* 이력서 저장 버튼 */}
+              <Button
+                variant="contained"
+                size="large"
+                sx={{ minWidth: '200px' }}
+                onClick={handleSaveResume} // 저장 핸들러 연결
+                disabled={isLoading} // 로딩 중일 때 버튼 비활성화
+              >
+                {isLoading ? <CircularProgress size={24} /> : "이력서 저장"}
+              </Button>
             </Box>
 
           </Box>
@@ -862,16 +796,16 @@ export default function AiResumePage() {
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
-              AI가 어떻게 도와줄까요?
+              AI가 어떻게 도와드릴까요?
             </DialogContentText>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleDialogClose}>취소</Button>
             <Button onClick={handleStartFresh} color="error">
-              기존 내용 지우고 새로 작성
+              기존 내용 전부 지우고 새로 작성
             </Button>
             <Button onClick={handleRefine} variant="contained" autoFocus>
-              기존 내용 더 멋지게 다듬기
+              기존 내용 더 다듬기
             </Button>
           </DialogActions>
         </Dialog>
