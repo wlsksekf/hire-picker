@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { 
+import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Box, CircularProgress
 } from '@mui/material';
 import { getPaymentHistory } from '@/api';
@@ -64,24 +64,11 @@ const PaymentHistory = () => {
                 <TableCell align="right" sx={{ fontSize: '0.85rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>승인 일시</TableCell>
               </TableRow>
             </TableHead>
-            <TableBody>
-              {history.map((row) => (
-                <TableRow
-                  key={row.paymentIdx}
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                >
-                  <TableCell component="th" scope="row" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                    {row.paymentIdx}
-                  </TableCell>
-                  <TableCell align="right" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{row.orderId}</TableCell>
-                  <TableCell align="right" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{row.amount.toLocaleString()} 원</TableCell>
-                  <TableCell align="right" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{row.chargedCredits.toLocaleString()} C</TableCell>
-                  <TableCell align="right" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{row.paymentMethod}</TableCell>
-                  <TableCell align="right" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{row.status}</TableCell>
-                  <TableCell align="right" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{row.approvedAt ? new Date(row.approvedAt).toLocaleString() : '-'}</TableCell> {/* approvedAt null 체크 추가 */}
+            <TableBody>{history.map((row) =>
+                <TableRow key={row.paymentIdx} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableCell component="th" scope="row" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{row.paymentIdx}</TableCell><TableCell align="right" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{row.orderId}</TableCell><TableCell align="right" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{row.amount.toLocaleString()} 원</TableCell><TableCell align="right" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{row.chargedCredits.toLocaleString()} C</TableCell><TableCell align="right" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{row.paymentMethod}</TableCell><TableCell align="right" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{row.status}</TableCell><TableCell align="right" sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{row.approvedAt ? new Date(row.approvedAt).toLocaleString() : '-'}</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
+              )}</TableBody>
           </Table>
         </TableContainer>
       )}
