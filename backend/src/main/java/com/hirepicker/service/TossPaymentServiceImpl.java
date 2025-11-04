@@ -28,8 +28,11 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.Map;
 import java.util.UUID;
+import java.util.Map;
+import java.util.List;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service @RequiredArgsConstructor @Transactional
@@ -94,7 +97,7 @@ public class TossPaymentServiceImpl implements TossPaymentService {
                     .orElseThrow(() -> new EntityNotFoundException("CompanyUser not found with id: " + userDetails.getId()));
             payment.setCompanyUser(user);
         }
-        
+
         paymentRepository.save(payment);
 
         return new PaymentInitiateResponseDto(clientKey, customerKey, orderId, orderName, amount);
@@ -140,29 +143,26 @@ public class TossPaymentServiceImpl implements TossPaymentService {
         log.info("[TossPaymentService] 토스 API 응답 수신: {}", responseMap);
 
         String status = (String) responseMap.get("status");
-        
+
         if ("DONE".equals(status)) {
             processPaymentSuccess(payment, responseMap);
             log.info("[TossPaymentService] 결제 성공 처리 완료. paymentId: {}", payment.getId());
         } else if ("WAITING_FOR_DEPOSIT".equals(status)) {
             processVirtualAccount(payment, responseMap);
             log.info("[TossPaymentService] 가상계좌 입금 대기 처리 완료. paymentId: {}", payment.getId());
-        } else {
-            payment.setStatus(PaymentStatus.FAILED);
-            log.warn("[TossPaymentService] 결제 실패 또는 알 수 없는 상태. paymentId: {}, status: {}", payment.getId(), status);
         }
-        
+
         log.info("[TossPaymentService] confirmPayment 메서드 종료. 결과: {}", responseMap);
         return responseMap;
     }
-    
+
     // 3. (공통) 결제 성공 및 크레딧 지급 로직
     @Transactional
     public void processPaymentSuccess(Payment payment, Map<String, Object> responseMap) {
         payment.setStatus(PaymentStatus.DONE);
         payment.setPaymentKey((String) responseMap.get("paymentKey"));
         payment.setPaymentMethod((String) responseMap.get("method"));
-        
+
         // String approvedAtStr = (String) responseMap.get("approvedAt");
         // if (approvedAtStr != null) {
         //     payment.setApprovedAt(LocalDateTime.parse(approvedAtStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME));
@@ -187,7 +187,7 @@ public class TossPaymentServiceImpl implements TossPaymentService {
         payment.setStatus(PaymentStatus.PENDING_DEPOSIT);
         payment.setPaymentKey((String) responseMap.get("paymentKey"));
         payment.setPaymentMethod((String) responseMap.get("method"));
-        
+
         // Map<String, Object> vaInfo = (Map<String, Object>) responseMap.get("virtualAccount");
         // try {
         //     payment.setVirtualAccountInfo(objectMapper.writeValueAsString(vaInfo));
@@ -196,7 +196,7 @@ public class TossPaymentServiceImpl implements TossPaymentService {
         //     // payment.setVirtualAccountInfo("Error serializing VA info");
         // }
     }
-    
+
     // 5. 가상계좌 웹훅 처리
     @Override @Transactional
     public void handleWebhook(TossWebhookDto webhookDto) {
@@ -204,17 +204,17 @@ public class TossPaymentServiceImpl implements TossPaymentService {
             log.info("Received webhook for event type: {}, skipping.", webhookDto.eventType());
             return;
         }
-        
+
         String orderId = webhookDto.getOrderId();
         if (orderId == null) {
             log.error("Webhook received without orderId");
             return;
         }
-        
+
         log.info("Processing webhook for orderId: {}", orderId);
         Payment payment = paymentRepository.findByOrderIdAndStatus(orderId, PaymentStatus.PENDING_DEPOSIT)
                 .orElseThrow(() -> new EntityNotFoundException("Webhook target payment not found or not in PENDING_DEPOSIT state for orderId: " + orderId));
-        
+
         // Toss API에 해당 결제 건 재조회 (Toss에 직접 확인)
         String encodedSecretKey = Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
         Map<String, Object> responseMap = tossWebClient.get()
@@ -230,5 +230,22 @@ public class TossPaymentServiceImpl implements TossPaymentService {
         } else {
             log.warn("Webhook for orderId {} did not result in DONE status. Status was {}.", orderId, responseMap != null ? responseMap.get("status") : "null");
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true) // 트랜잭션 범위 확장 및 읽기 전용 설정
+    public List<PaymentHistoryResponseDto> getPaymentHistory(CustomUserDetails userDetails) { // 반환 타입 변경
+        List<Payment> payments;
+        if (userDetails.getUserType() == UserType.PERSONAL) {
+            payments = paymentRepository.findByPersonalUser_Id(userDetails.getId());
+        } else if (userDetails.getUserType() == UserType.COMPANY) {
+            payments = paymentRepository.findByCompanyUser_Id(userDetails.getId());
+        } else {
+            payments = Collections.emptyList(); // 지원하지 않는 사용자 타입
+        }
+        // Payment 엔티티 리스트를 PaymentHistoryResponseDto 리스트로 변환
+        return payments.stream()
+                .map(PaymentHistoryResponseDto::new)
+                .collect(Collectors.toList());
     }
 }
