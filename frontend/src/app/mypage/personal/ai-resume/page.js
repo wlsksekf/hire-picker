@@ -31,10 +31,19 @@ import { styled } from '@mui/material/styles';
 import useAuthStore from '@/store/authStore'; // Zustand 스토어 (로그인 정보 가져오기용)
 import { api } from '@/api'; // API 래퍼 (데이터 로드/전송용)
 // --- PDF 관련 컴포넌트 임포트 ---
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import dynamic from 'next/dynamic'; // next/dynamic 임포트
 import ResumePdfDocument from '@/components/ResumePdfDocument';
 import Loader from '@/components/Loader'; // 로더 컴포넌트 추가
 import Image from 'next/image'; // Next.js Image 컴포넌트
+
+// ssr: false가 핵심이야. 서버에서는 이 컴포넌트를 절대 불러오지 않아.
+const PDFDownloadLink = dynamic(
+  () => import('@react-pdf/renderer').then((mod) => mod.PDFDownloadLink),
+  { 
+    ssr: false,
+    loading: () => <p>PDF 생성 중...</p> // 로딩 상태 UI 추가
+  }
+);
 
 // --- 스타일 컴포넌트 정의 ---
 
@@ -356,33 +365,41 @@ export default function AiResumePage() {
       alert("이력서를 저장하려면 로그인이 필요합니다.");
       return;
     }
-    
-    // (선택) S3에 아직 업로드 안 한 이미지가 있으면 여기서 먼저 업로드 시킬 수도 있어
+
+    // selectedImage는 파일 선택 input에서 가져온 File 객체
     if (selectedImage && !formData.imageUrl) {
-         alert("증명사진 '업로드' 버튼을 눌러 먼저 이미지를 저장해주세요!");
-         // 또는 여기서 handleImageUpload()를 강제 호출할 수도 있음
-         // await handleImageUpload();
-         // -> 하지만 handleImageUpload가 비동기라 state 갱신 문제가 있을 수 있으니
-         //     가급적이면 사용자가 '업로드' 버튼을 누르게 유도하는 게 좋아.
-         return;
+      console.log("S3에 업로드되지 않은 로컬 이미지가 있습니다. 함께 전송합니다.");
     }
 
-
     setIsLoading(true);
-    // 백엔드로 보낼 데이터 객체 (필요에 따라 formData를 가공할 수 있음)
-    const resumeData = {
+
+    // 1. FormData 객체 생성
+    const submissionData = new FormData();
+
+    // 2. 이력서 데이터를 JSON 문자열로 변환
+    const resumeDto = {
       ...formData,
-      p_user_idx: user.p_user_idx, // 로그인한 사용자의 p_user_idx 추가
+      p_user_idx: user?.puserIdx,
     };
 
-    api.post('/api/resume', resumeData)
+    // 3. FormData에 데이터 추가
+    // DTO는 'resumeDto'라는 이름의 파트로, Blob 객체로 감싸서 전송
+    submissionData.append('resumeDto', new Blob([JSON.stringify(resumeDto)], { type: "application/json" }));
+    
+    // 이미지 파일은 'imageFile'이라는 이름의 파트로 추가
+    if (selectedImage) {
+      submissionData.append('imageFile', selectedImage);
+    }
+
+    // 4. api.post 호출 (Content-Type 헤더는 axios가 자동으로 설정하도록 비워둠)
+    api.post('/api/resume', submissionData, {
+      headers: {
+        // 'Content-Type': 'multipart/form-data' // 이 헤더는 axios가 자동으로 생성하므로 명시적으로 설정하지 않음
+      },
+    })
       .then(response => {
-        if (response.status === 200 || response.status === 201) {
+        if (response.status === 201) {
           alert("이력서가 성공적으로 저장되었습니다.");
-          // 저장 후 필요한 추가 로직 (예: 페이지 이동, 폼 초기화 등)
-        } else {
-          // (참고) api 래퍼(axios)가 2xx가 아닌 응답을 에러로 처리한다면 이 코드는 실행 안 될 수도 있어
-          alert("이력서 저장에 실패했습니다. 다시 시도해주세요.");
         }
       })
       .catch(error => {
@@ -764,59 +781,69 @@ export default function AiResumePage() {
                 {isLoading ? <CircularProgress size={24} /> : "AI로 작성하기"}
               </Button>
               
-              {/* ▼▼▼ [수정 1] 하이드레이션 오류 방지를 위해 isClient로 래핑 ▼▼▼ */}
-              {isClient ? (
-                <>
-                  <PDFDownloadLink
-                    document={<ResumePdfDocument formData={formData} imageUrl={formData.imageUrl} />}
-                    fileName="이력서.pdf"
-                    style={{ textDecoration: 'none' }}
-                  >
-                    {({ loading }) => (
-                      <Button
-                        variant="outlined"
-                        size="large"
-                        sx={{ minWidth: '200px' }}
-                        disabled={loading || isLoading} // AI 로딩 중에도 비활성화
-                      >
-                        {loading ? <CircularProgress size={24} /> : "PDF로 다운로드"}
-                      </Button>
-                    )}
-                  </PDFDownloadLink>
-                  
-                  {/* 이력서 저장 버튼 */}
-                  <Button
-                    variant="contained"
-                    size="large"
-                    sx={{ minWidth: '200px' }}
-                    onClick={handleSaveResume} // 저장 핸들러 연결
-                    disabled={isLoading} // 로딩 중일 때 버튼 비활성화
-                  >
-                    {isLoading ? <CircularProgress size={24} /> : "이력서 저장"}
-                  </Button>
-                </>
-              ) : (
-                // SSR 중에는 비활성화된 버튼을 보여줌 (자리 차지용)
-                <>
-                  <Button
-                    variant="outlined"
-                    size="large"
-                    sx={{ minWidth: '200px' }}
-                    disabled={true}
-                  >
-                    PDF로 다운로드
-                  </Button>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    sx={{ minWidth: '200px' }}
-                    disabled={true}
-                  >
-                    이력서 저장
-                  </Button>
-                </>
-              )}
-              {/* ▲▲▲ 수정 끝 ▲▲▲ */}
+                            {/* ▼▼▼ [수정 1] 하이드레이션 오류 방지를 위해 isClient로 래핑 ▼▼▼ */}
+              
+                            
+              
+                                <PDFDownloadLink
+              
+                                  document={<ResumePdfDocument formData={formData} imageUrl={formData.imageUrl} />}
+              
+                                  fileName="이력서.pdf"
+              
+                                  style={{ textDecoration: 'none' }}
+              
+                                >
+              
+                                  {({ loading }) => (
+              
+                                    <Button
+              
+                                      variant="outlined"
+              
+                                      size="large"
+              
+                                      sx={{ minWidth: '200px' }}
+              
+                                      disabled={loading || isLoading} // AI 로딩 중에도 비활성화
+              
+                                    >
+              
+                                      {loading ? <CircularProgress size={24} /> : "PDF로 다운로드"}
+              
+                                    </Button>
+              
+                                  )}
+              
+                                </PDFDownloadLink>
+              
+                                
+              
+                                {/* 이력서 저장 버튼 */}
+              
+                                <Button
+              
+                                  variant="contained"
+              
+                                  size="large"
+              
+                                  sx={{ minWidth: '200px' }}
+              
+                                  onClick={handleSaveResume} // 저장 핸들러 연결
+              
+                                  disabled={isLoading} // 로딩 중일 때 버튼 비활성화
+              
+                                >
+              
+                                  {isLoading ? <CircularProgress size={24} /> : "이력서 저장"}
+              
+                                </Button>
+              
+                              
+              
+                            {/* ▲▲▲ 수정 끝 ▲▲▲ */}
+              
+              
 
             </Box>
 

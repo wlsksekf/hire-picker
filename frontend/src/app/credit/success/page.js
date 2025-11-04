@@ -1,3 +1,5 @@
+
+// frontend/src/app/credit/success/page.js
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
@@ -46,13 +48,13 @@ function SuccessPageContent() {
                 }
 
                 // 5초 후 마이페이지로 이동
-                setTimeout(() => router.replace('/mypage'), 5000);
+                setTimeout(() => router.replace('/credit'), 5000);
             })
             .catch(err => {
                 console.error(err);
                 const errorMsg = err.response?.data?.message || err.message;
                 // 실패 페이지로 리다이렉트
-                router.replace(`/store/fail?code=${err.response?.status || '500'}&message=${encodeURIComponent(errorMsg)}`);
+                router.replace(`/credit/fail?code=${err.response?.status || '500'}&message=${encodeURIComponent(errorMsg)}`);
             });
         };
 
