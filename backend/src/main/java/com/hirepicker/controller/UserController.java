@@ -98,6 +98,7 @@ public class UserController {
 
                 // 3-2. PersonalUser 엔티티를 UserDto로 변환
                 UserDto userDto = new UserDto(
+                    personalUser.getId(),         // 사용자 ID
                     personalUser.getEmail(),      // 이메일
                     personalUser.getName(),       // 이름
                     personalUser.getPlatform(),   // OAuth2 제공자 (google, kakao 등)
@@ -122,6 +123,7 @@ public class UserController {
 
                 // 3-2. CompanyUser 엔티티를 UserDto로 변환
                 UserDto userDto = new UserDto(
+                    companyUser.getId(),       // 사용자 ID
                     companyUser.getEmail(),   // 담당자 이메일
                     companyUser.getName(),    // 담당자명
                     null,                     // 기업회원은 OAuth2 미지원
@@ -136,12 +138,6 @@ public class UserController {
                 return ResponseEntity.status(500).build();
             }
 
-
-            log.info("PersonalUser found: {}", personalUser.getEmail());
-            // UserDto로 변환하여 반환합니다.
-            UserDto userDto = new UserDto(personalUser.getId(), personalUser.getEmail(), personalUser.getName(), personalUser.getPlatform(), personalUser.getNickname());
-            log.info("Returning UserDto for user: {}", userDto.getEmail());
-            return ResponseEntity.ok(userDto);
         } catch (Exception e) {
             log.error("Error while fetching or processing user info: {}", e.getMessage(), e);
             return ResponseEntity.status(500).build();
