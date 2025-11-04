@@ -17,6 +17,7 @@ import {
   faCalendarXmark,
   faCalendarCheck,
   faClock,
+  faBullhorn,
 } from "@fortawesome/free-solid-svg-icons";
 import { faCalendar as faCalendarRegular } from "@fortawesome/free-regular-svg-icons";
 
@@ -31,6 +32,7 @@ export default function CustomCalendar({ events }) {
   // Custom event content rendering function
   const renderEventContent = (eventInfo) => {
     const status = eventInfo.event.extendedProps.status;
+    const type = eventInfo.event.extendedProps.type;
     let iconComponent;
     let iconColorHex;
 
@@ -48,18 +50,22 @@ export default function CustomCalendar({ events }) {
       }
     };
 
-    switch (status) {
-      case "past":
-        iconComponent = faCalendarXmark;
-        break;
-      case "ongoing":
-        iconComponent = faCalendarCheck;
-        break;
-      case "upcoming":
-        iconComponent = faClock;
-        break;
-      default:
-        iconComponent = faCalendarRegular;
+    if (type === "empEvent") {
+      iconComponent = faBullhorn;
+    } else {
+      switch (status) {
+        case "past":
+          iconComponent = faCalendarXmark;
+          break;
+        case "ongoing":
+          iconComponent = faCalendarCheck;
+          break;
+        case "upcoming":
+          iconComponent = faClock;
+          break;
+        default:
+          iconComponent = faCalendarRegular;
+      }
     }
     iconColorHex = getColor(status);
 
@@ -99,7 +105,6 @@ export default function CustomCalendar({ events }) {
   return (
     <Card sx={{ boxShadow: 3 }}>
       <CardHeader
-        title="📅 주요 일정"
         action={
           <Tooltip title="날짜 선택">
             <IconButton onClick={() => alert("날짜 선택 기능")}>

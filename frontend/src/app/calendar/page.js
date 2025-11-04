@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import axios from "axios";
 import {
   Box,
   Typography,
@@ -17,13 +17,29 @@ import {
   Alert,
   CircularProgress,
   ClickAwayListener,
-} from '@mui/material';
-import CustomCalendar from '@/components/calendar.js'; // CustomCalendar 컴포넌트 임포트
+  DialogActions,
+} from "@mui/material";
+import CustomCalendar from "@/components/calendar.js"; // CustomCalendar 컴포넌트 임포트
 
 // 선택 가능한 지역 목록 (하드코딩)
 const availableRegions = [
-  '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
-  '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주',
+  "서울",
+  "부산",
+  "대구",
+  "인천",
+  "광주",
+  "대전",
+  "울산",
+  "세종",
+  "경기",
+  "강원",
+  "충북",
+  "충남",
+  "전북",
+  "전남",
+  "경북",
+  "경남",
+  "제주",
 ];
 
 export default function CalendarPage() {
@@ -41,8 +57,10 @@ export default function CalendarPage() {
     setError(null);
     try {
       const [jobPostingsRes, empEventsRes] = await Promise.all([
-        axios.get('/api/calendar/job-postings'),
-        axios.get('/api/calendar/emp-events', { params: { regions: regions.join(',') } }), // 지역 필터링 파라미터 추가
+        axios.get("/api/calendar/job-postings"),
+        axios.get("/api/calendar/emp-events", {
+          params: { regions: regions.join(",") },
+        }), // 지역 필터링 파라미터 추가
       ]);
       setJobPostings(jobPostingsRes.data);
       setEmpEvents(empEventsRes.data);
@@ -76,24 +94,26 @@ export default function CalendarPage() {
 
   // FullCalendar 이벤트 형식으로 데이터 변환
   const events = [
-    ...jobPostings.map(job => ({
+    ...jobPostings.map((job) => ({
       id: `job-${job.id}`,
-      title: `${job.title} (${job.companyName})`,
+      title: job.companyName,
       start: job.start,
-      end: job.end,
       allDay: job.allDay,
-      color: '#42a5f5', // Job Posting color (blue)
+      backgroundColor: "transparent",
+      textColor: "#000000",
+      borderColor: "transparent",
       type: job.type,
       extendedProps: { status: getEventStatus(job.start, job.end) }, // Add status for icon rendering
     })),
-    ...(selectedRegions.length > 0 // 선택된 지역이 있을 때만 empEvents 표시
-      ? empEvents.map(event => ({
+    ...(selectedRegions.length > 0
+      ? empEvents.map((event) => ({
           id: `event-${event.id}`,
-          title: `${event.title} (${event.area})`,
+          title: event.area,
           start: event.start,
-          end: event.end,
           allDay: event.allDay,
-          color: '#ff7043', // Emp Event color (orange)
+          backgroundColor: "transparent",
+          textColor: "#000000",
+          borderColor: "transparent",
           type: event.type,
           extendedProps: { status: getEventStatus(event.start, event.end) }, // Add status for icon rendering
         }))
@@ -135,7 +155,14 @@ export default function CalendarPage() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
         <CircularProgress />
         <Typography variant="h6" sx={{ ml: 2 }}>
           캘린더 데이터를 불러오는 중...
@@ -146,7 +173,14 @@ export default function CalendarPage() {
 
   if (error) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
         <Alert severity="error">{error}</Alert>
       </Box>
     );
@@ -154,13 +188,16 @@ export default function CalendarPage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>채용 캘린더</Typography>
+      <Typography variant="h4" gutterBottom>
+        채용 캘린더
+      </Typography>
       <Button
         variant="outlined"
         onClick={handleOpenRegionPopover}
         sx={{ mb: 2 }}
       >
-        채용 행사 지역 선택 ({selectedRegions.length > 0 ? selectedRegions.join(', ') : '지역 선택'})
+        채용 행사 지역 선택 (
+        {selectedRegions.length > 0 ? selectedRegions.join(", ") : "지역 선택"})
       </Button>
 
       <Popover // Dialog 대신 Popover 사용
@@ -168,19 +205,25 @@ export default function CalendarPage() {
         anchorEl={anchorEl} // 버튼 요소를 기준으로 팝오버 위치 지정
         onClose={handleCloseRegionPopover}
         anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
+          vertical: "bottom",
+          horizontal: "left",
         }}
         transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
+          vertical: "top",
+          horizontal: "left",
         }}
       >
-        <Paper sx={{ maxHeight: 300, overflow: 'auto' }}> {/* Popover 내용 감싸기 */}
+        <Paper sx={{ maxHeight: 300, overflow: "auto" }}>
+          {" "}
+          {/* Popover 내용 감싸기 */}
           <List>
             {availableRegions.map((region) => (
               <ListItem key={region} disablePadding>
-                <ListItemButton role={undefined} onClick={handleRegionToggle(region)} dense>
+                <ListItemButton
+                  role={undefined}
+                  onClick={handleRegionToggle(region)}
+                  dense
+                >
                   <ListItemIcon>
                     <Checkbox
                       edge="start"
@@ -194,10 +237,20 @@ export default function CalendarPage() {
               </ListItem>
             ))}
           </List>
-          <DialogActions> {/* DialogActions는 Popover에서도 사용 가능 */}
+          <DialogActions>
+            {" "}
+            {/* DialogActions는 Popover에서도 사용 가능 */}
             <Button onClick={handleRegionCancel}>취소</Button>
-            <Button onClick={() => setTempSelectedRegions([])}>전체 선택 해제</Button> {/* 전체 선택 해제 버튼 */}
-            <Button onClick={handleRegionApply} variant="contained">적용</Button>
+            <Button onClick={() => setTempSelectedRegions(availableRegions)}>
+              전체 선택
+            </Button>
+            <Button onClick={() => setTempSelectedRegions([])}>
+              전체 선택 해제
+            </Button>{" "}
+            {/* 전체 선택 해제 버튼 */}
+            <Button onClick={handleRegionApply} variant="contained">
+              적용
+            </Button>
           </DialogActions>
         </Paper>
       </Popover>
