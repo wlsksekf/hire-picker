@@ -1,4 +1,4 @@
-'''// 1:1 문의 목록 페이지는 데이터를 불러오고 상태에 따라 UI가 바뀌므로 클라이언트 컴포넌트로 선언
+// 1:1 문의 목록 페이지는 데이터를 불러오고 상태에 따라 UI가 바뀌므로 클라이언트 컴포넌트로 선언
 'use client';
 
 import React from 'react';
@@ -34,31 +34,48 @@ const StatusIcon = ({ status }) => {
 const InquiryListPage = () => {
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      {/* 페이지 헤더 */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
           나의 문의 내역
         </Typography>
         <Link href="/support/inquiries/new" passHref>
-          <Button variant="contained">
+          <Button
+            variant="contained"
+            sx={{
+              borderRadius: '12px',
+              boxShadow: 'none',
+              fontWeight: 'bold',
+              py: 1,
+            }}
+          >
             문의 등록하기
           </Button>
         </Link>
       </Box>
 
       {/* 문의 내역 리스트 (테이블 대신 사용) */}
-      <Paper variant="outlined">
+      <Paper sx={{ borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
         <List disablePadding>
           {rows.map((row, index) => (
             <Link key={row.id} href={`/support/inquiries/${row.id}`} passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-              <ListItemButton component="a" divider={index < rows.length - 1}>
-                <ListItemIcon>
+              <ListItemButton
+                component="a"
+                sx={{
+                  py: 2,
+                  px: 3,
+                  borderBottom: index < rows.length - 1 ? '1px solid #eee' : 'none',
+                  '&:hover': { backgroundColor: 'action.hover' },
+                  borderRadius: index === 0 ? '12px 12px 0 0' : (index === rows.length - 1 ? '0 0 12px 12px' : '0'),
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 'auto', mr: 1.5 }}>
                   <StatusIcon status={row.status} />
                 </ListItemIcon>
                 <ListItemText
                   primary={row.title}
                   primaryTypographyProps={{ fontWeight: 'medium', component: 'div', noWrap: true, textOverflow: 'ellipsis' }}
                   secondary={`${row.category} · ${row.date}`}
+                  sx={{ my: 0 }}
                 />
               </ListItemButton>
             </Link>
@@ -70,4 +87,3 @@ const InquiryListPage = () => {
 };
 
 export default InquiryListPage;
-'''
