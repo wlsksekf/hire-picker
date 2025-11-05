@@ -22,9 +22,9 @@ import java.io.IOException;
 
 @Tag(name = "AI", description = "AI 관련 API")
 @RestController
-@RequestMapping("/api/ai")
+@RequestMapping("/api/ai-resume")
 @RequiredArgsConstructor
-public class AiController {
+public class AiResumeController {
 
     private final AiResumeService aiResumeService;
     private final S3UploadService s3UploadService;
