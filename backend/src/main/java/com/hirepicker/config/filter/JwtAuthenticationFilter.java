@@ -55,7 +55,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 "/api/payment/webhook",
                 "/chat/", // /chat/**
                 "/ws", // /ws, /ws/**
-                "/api/ai/upload-image"
+                "/api/ai/upload-image",
+                "/api/search",
+                "/api/users/me"
+
         );
 
         // 2. GET /api/posts 와 GET /api/posts/* 처리

@@ -46,6 +46,8 @@ bin/
 .env.*
 !.env.example
 !.env.sample
+.bin.*
+.lock.*
 
 # 로컬 DB 설정 등 민감 정보를 담은 yml 파일
 secret*.yml
@@ -131,4 +133,3 @@ __pycache__/
 # Environment variables (지난번에 추가했는지 확인)
 jaeyoonPython/.env
 .env
-

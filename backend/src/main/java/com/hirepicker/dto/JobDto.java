@@ -1,5 +1,8 @@
 package com.hirepicker.dto;
 
+import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 
@@ -14,6 +17,11 @@ public record JobDto(
     String title, // 공고 제목
     String employmentType, // 고용 형태
     String location, // 근무 지역
-    String imgUrl
+    String imgUrl,
+    String searchTerm,
+    String companyType,
+    Map<String, List<String>> filters,
+    String experience_level, // 학력
+    String jobType
 
 ) {}
