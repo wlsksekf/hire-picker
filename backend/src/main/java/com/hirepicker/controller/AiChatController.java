@@ -32,8 +32,7 @@ public class AiChatController {
 
     @PostMapping
     public ResponseEntity<ChatResponseDto> handleChat(
-            @RequestBody ChatRequestDto request,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @RequestBody ChatRequestDto request) {
 
         try {
             Tool searchJobPostingsTool = chatbotToolService.getSearchJobPostingsTool();
