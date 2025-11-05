@@ -1,6 +1,6 @@
 package com.hirepicker.entity;
 
-// 성별 (남성, 여성, 기타)
+// 성별 enum (DB enum과 일치: MALE, FEMALE)
 public enum Gender {
-    MALE, FEMALE, OTHER
+    MALE, FEMALE
 }

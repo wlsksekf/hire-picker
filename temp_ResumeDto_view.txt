@@ -1,0 +1,41 @@
+﻿package com.hirepicker.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.hirepicker.entity.PersonalUser;
+import com.hirepicker.entity.Resume;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+// ?대젰???곗씠???꾩넚 媛앹껜 (DB 紐낆꽭 湲곕컲?쇰줈 ?ъ닔??
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true) // ?뺤쓽?섏? ?딆? ?꾨뱶??臾댁떆
+public class ResumeDto {
+
+    // resumes ?뚯씠釉붽낵 吏곸젒 愿?⑤맂 ?꾨뱶??
+    private String title;
+    private String selfGrowth;
+    private String selfStrengths;
+    private String selfMotivation;
+    private String selfAspirations;
+    private String imageUrl;
+
+    @JsonProperty("p_user_idx")
+    private Long pUserIdx;
+
+    // DTO瑜??뷀떚?곕줈 蹂?섑븯??硫붿냼??
+    public Resume toEntity(PersonalUser personalUser, String imageUrl) {
+        return Resume.builder()
+                .personalUser(personalUser)
+                .title(title != null ? title : personalUser.getName() + "?섏쓽 ?대젰??) // title???놁쑝硫?湲곕낯媛??ㅼ젙
+                .selfGrowth(selfGrowth)
+                .selfStrengths(selfStrengths)
+                .selfMotivation(selfMotivation)
+                .selfAspirations(selfAspirations)
+                .imageUrl(imageUrl) // S3?먯꽌 諛쏆? URL ?ъ슜
+                .build();
+    }
+}

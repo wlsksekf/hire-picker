@@ -6,6 +6,7 @@ import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.entity.Resume;
 import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.repository.ResumeRepository;
+import com.hirepicker.repository.WorkExperienceRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,7 +21,8 @@ public class ResumeService {
 
     private final ResumeRepository resumeRepository;
     private final PersonalUserRepository personalUserRepository;
-    private final S3UploadService s3UploadService; // S3UploadService 주입
+    private final WorkExperienceRepository workExperienceRepository; // 경력 조회 리포지토리
+    private final S3UploadService s3UploadService; // S3 업로드 서비스
 
     // 이력서 저장 또는 업데이트
     @Transactional
@@ -36,7 +38,13 @@ public class ResumeService {
         }
 
         // 3. DTO를 엔티티로 변환 (이때 이미지 URL도 함께 전달)
+        // 3. DTO를 엔티티로 변환(이미지 URL 포함)
         Resume resume = resumeDto.toEntity(personalUser, imageUrl);
+        // 3-1. exp_idx가 있으면 경력 연동(존재 시에만)
+        if (resumeDto.getExpIdx() != null) {
+            workExperienceRepository.findById(resumeDto.getExpIdx())
+                    .ifPresent(resume::attachWorkExperience);
+        }
 
         // 4. 리포지토리를 통해 엔티티를 DB에 저장
         Resume savedResume = resumeRepository.save(resume);
