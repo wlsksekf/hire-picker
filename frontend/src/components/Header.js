@@ -177,7 +177,7 @@ function Header() {
                   마이페이지
                 </Button>
               </Link>
-              <Link href="/store" passHref style={{ textDecoration: 'none' }}>
+              <Link href="/credit" passHref style={{ textDecoration: 'none' }}>
                 <Button
                   variant="text"
                   sx={{

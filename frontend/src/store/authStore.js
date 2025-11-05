@@ -44,6 +44,7 @@ const useAuthStore = create((set, get) => ({
       // ★ 응답 상태 코드에 따라 분기
       if (response.status === 200) {
         // 200 OK: 로그인 성공
+        console.log('AuthStore: Raw response data:', response.data); // 원본 데이터 로그 추가
         console.log('AuthStore: initializeAuth success', response.data);
         set({ isAuthenticated: true, user: response.data, isLoading: false });
       } else {
