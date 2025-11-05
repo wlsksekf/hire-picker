@@ -56,8 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 "/chat/", // /chat/**
                 "/ws", // /ws, /ws/**
                 "/api/ai/upload-image",
-                "/api/search",
-                "/api/users/me"
+                "/api/search"
 
         );
 
