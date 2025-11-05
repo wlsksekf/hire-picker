@@ -1,4 +1,4 @@
-'''// 1:1 문의 등록 페이지는 사용자의 입력을 받아야 하므로 클라이언트 컴포넌트로 선언
+// 1:1 문의 등록 페이지는 사용자의 입력을 받아야 하므로 클라이언트 컴포넌트로 선언
 'use client';
 
 import React, { useState } from 'react';
@@ -46,11 +46,21 @@ const NewInquiryPage = () => {
           <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', mb: 3 }}>
             어떤 도움이 필요하신가요?
           </Typography>
-          <Paper variant="outlined">
+          <Paper sx={{ borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
             <List disablePadding>
               {categories.map((cat, index) => (
-                <ListItemButton key={cat} onClick={() => handleCategorySelect(cat)} divider={index < categories.length - 1}>
-                  <ListItemText primary={cat} primaryTypographyProps={{ fontSize: '1.1rem', p: 1 }} />
+                <ListItemButton
+                  key={cat}
+                  onClick={() => handleCategorySelect(cat)}
+                  sx={{
+                    py: 2,
+                    px: 3,
+                    borderBottom: index < categories.length - 1 ? '1px solid #eee' : 'none',
+                    '&:hover': { backgroundColor: 'action.hover' },
+                    borderRadius: index === 0 ? '12px 12px 0 0' : (index === categories.length - 1 ? '0 0 12px 12px' : '0'),
+                  }}
+                >
+                  <ListItemText primary={cat} primaryTypographyProps={{ fontSize: '1.1rem', fontWeight: 'medium' }} />
                 </ListItemButton>
               ))}
             </List>
@@ -70,7 +80,7 @@ const NewInquiryPage = () => {
             </Typography>
           </Box>
 
-          <Chip label={`유형: ${category}`} sx={{ mb: 3 }} />
+          <Chip label={`유형: ${category}`} sx={{ mb: 3, backgroundColor: 'primary.light', color: 'primary.contrastText', fontWeight: 'bold' }} />
 
           <TextField
             required
@@ -80,7 +90,16 @@ const NewInquiryPage = () => {
             name="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            sx={{ mb: 3 }}
+            sx={{
+              mb: 3,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                backgroundColor: 'background.paper',
+                '& fieldset': { borderColor: 'transparent' },
+                '&:hover fieldset': { borderColor: 'transparent' },
+                '&.Mui-focused fieldset': { borderColor: 'transparent' },
+              },
+            }}
           />
           <TextField
             required
@@ -92,7 +111,16 @@ const NewInquiryPage = () => {
             rows={10}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            sx={{ mb: 3 }}
+            sx={{
+              mb: 3,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                backgroundColor: 'background.paper',
+                '& fieldset': { borderColor: 'transparent' },
+                '&:hover fieldset': { borderColor: 'transparent' },
+                '&.Mui-focused fieldset': { borderColor: 'transparent' },
+              },
+            }}
           />
           <Button
             type="submit"
@@ -100,6 +128,12 @@ const NewInquiryPage = () => {
             size="large"
             fullWidth
             disabled={!title || !content} // 제목과 내용이 있어야 활성화
+            sx={{
+              borderRadius: '12px',
+              py: 1.5,
+              boxShadow: 'none', // 플랫한 디자인 강조
+              fontWeight: 'bold',
+            }}
           >
             제출하기
           </Button>
@@ -110,4 +144,3 @@ const NewInquiryPage = () => {
 };
 
 export default NewInquiryPage;
-'''
