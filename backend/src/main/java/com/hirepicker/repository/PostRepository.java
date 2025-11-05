@@ -22,14 +22,14 @@ public interface PostRepository extends JpaRepository<Posts, Long>{
     // Spring Data JPA가 board_idx로 조회하고 Pageable에 따라 페이징/정렬을 적용합니다.
     Page<Posts> findByBoardIdx(@Param("boardIdx") Long boardIdx, Pageable pageable);
 
-@Query("SELECT new com.hirepicker.dto.PostListDto(p.postIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
+@Query("SELECT new com.hirepicker.dto.PostListDto(p.postIdx, p.pUserIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
        "FROM Posts p JOIN PersonalUser u ON p.pUserIdx = u.id WHERE p.boardIdx = :boardIdx")
 Page<PostListDto> findPostListWithNickname(@Param("boardIdx") Long boardIdx, Pageable pageable);
 
 
 
 @Query("SELECT new com.hirepicker.dto.PostListDto(" +
-       "p.postIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
+       "p.postIdx, p.pUserIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
        "FROM Posts p JOIN PersonalUser u ON p.pUserIdx = u.id " +
        "WHERE p.postIdx = :postIdx")
 Optional<PostListDto> findPostDetailWithNickname(@Param("postIdx") Long postIdx);

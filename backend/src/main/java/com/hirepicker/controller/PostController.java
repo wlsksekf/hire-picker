@@ -35,11 +35,17 @@ public class PostController {
                 && authentication.isAuthenticated() 
                 && !(authentication instanceof AnonymousAuthenticationToken);
             String username = isAuthenticated ? authentication.getName() : null;
+            // ★ userId 추출 로직 추가!
+            Long userId = null;
+            if (isAuthenticated && authentication.getPrincipal() instanceof CustomUserDetails) {
+                userId = ((CustomUserDetails) authentication.getPrincipal()).getId();
+        }
             log.info("[PostController] Auth Check - Authenticated: {}, Username: {}", isAuthenticated, username);
 
             return ResponseEntity.ok(Map.of(
                 "authenticated", isAuthenticated,
-                "username", username
+                "username", username,
+                "id", userId
             ));
         } catch (Exception e) {
             log.error("[PostController] Exception in /api/posts/me", e);
