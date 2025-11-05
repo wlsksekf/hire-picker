@@ -96,7 +96,9 @@ public class SecurityConfig {
                                 "/chat/**",
                                 "/ws",
                                 "/ws/**",
-                                "/chat/history/**"
+                                "/chat/history/**",
+                                "/api/v1/ai-chat",
+                                "/api/v1/ai-search"
                         ).permitAll()
 
                         // 이미지 업로드 엔드포인트는 인증 없이 허용

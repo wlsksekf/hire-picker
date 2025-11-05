@@ -24,7 +24,7 @@ import java.io.IOException;
 @RestController
 @RequestMapping("/api/ai")
 @RequiredArgsConstructor
-public class AiController {
+public class AiResumeController {
 
     private final AiResumeService aiResumeService;
     private final S3UploadService s3UploadService;
