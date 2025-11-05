@@ -61,6 +61,8 @@ public class PostController {
         @RequestPart(value = "attachment", required = false) MultipartFile attachmentFile // 첨부파일 추가!
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+log.info("ImageFile: {}", imageFile != null ? imageFile.getOriginalFilename() : "null");
+log.info("AttachmentFile: {}", attachmentFile != null ? attachmentFile.getOriginalFilename() : "null");
 
         if (authentication == null 
             || !authentication.isAuthenticated() 

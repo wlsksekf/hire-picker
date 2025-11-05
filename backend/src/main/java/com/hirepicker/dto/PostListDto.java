@@ -13,4 +13,7 @@ public class PostListDto {
     private String content;
     private LocalDateTime createdAt;
     private Integer viewCount;
+    private String imgName;
+    private String fileName;
+
 }

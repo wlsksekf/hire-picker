@@ -55,16 +55,17 @@ export default function PostWritePage() {
     setFileState(fs => ({ ...fs, attachmentFile: file }));
   };
 
-  // 이미지 파일 삭제
-  const handleRemoveFile = () => {
+  // 이미지 파일 삭제: 메시지 선택적으로 표시
+  const handleRemoveFile = (showMessage = true) => {
     if (fileState.previewUrl) URL.revokeObjectURL(fileState.previewUrl);
     setFileState(fs => ({ ...fs, selectedFile: null, previewUrl: null }));
-    setMessage('파일 첨부가 취소되었습니다.');
+    if (showMessage) setMessage('파일 첨부가 취소되었습니다.');
   };
 
-  // 일반파일 삭제
-  const handleRemoveAttachment = () => {
+  // 일반파일 삭제: 메시지 선택적으로 표시
+  const handleRemoveAttachment = (showMessage = true) => {
     setFileState(fs => ({ ...fs, attachmentFile: null }));
+    if (showMessage) setMessage('파일 첨부가 취소되었습니다.');
   };
 
   // 제출
@@ -94,8 +95,9 @@ export default function PostWritePage() {
       const postId = response.data?.data?.postIdx || response.data?.id || 'new';
       setMessage(`✅ 게시글 작성이 완료되었습니다. ID: ${postId}`);
       setFormData({ title: '', content: '', board_idx: '' });
-      handleRemoveFile();
-      handleRemoveAttachment();
+      // 파일 상태만 초기화, 메시지 없이
+      handleRemoveFile(false);
+      handleRemoveAttachment(false);
       setTimeout(() => {
         router.push(`/community/${postId}`);
       }, 1000);
@@ -113,8 +115,10 @@ export default function PostWritePage() {
     }
   };
 
-  // 취소
+  // 취소 (파일 상태 초기화, 메시지 없이)
   const handleCancel = () => {
+    handleRemoveFile(false);
+    handleRemoveAttachment(false);
     router.push('/community');
   };
 
@@ -235,20 +239,20 @@ export default function PostWritePage() {
             {/* 미리보기 */}
             {fileState.selectedFile && (
               <div style={{ marginTop: "20px", display: "flex", alignItems: "center", gap: "20px", backgroundColor: "#f9f9f9", padding: "15px", borderRadius: "8px", border: "1px solid #eee" }}>
-                <div style={{ flexShrink: 0 }}>
-                  <img src={fileState.previewUrl} alt="파일 미리보기" style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #ddd' }} />
-                </div>
-                <div style={{ flexGrow: 1 }}>
-                  <p style={{ fontWeight: 'bold', marginBottom: '5px', wordBreak: 'break-all' }}>
-                    첨부된 파일: {fileState.selectedFile.name}
-                  </p>
-                  <p style={{ fontSize: '0.9em', color: '#666' }}>
-                    크기: {(fileState.selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                  <Button onClick={handleRemoveFile} color="error" variant="outlined" sx={{ marginTop: "10px" }}>
-                    첨부 취소
-                  </Button>
-                </div>
+                  <div style={{ flexShrink: 0 }}>
+                    <img src={fileState.previewUrl} alt="파일 미리보기" style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #ddd' }} />
+                  </div>
+                  <div style={{ flexGrow: 1 }}>
+                    <p style={{ fontWeight: 'bold', marginBottom: '5px', wordBreak: 'break-all' }}>
+                      첨부된 파일: {fileState.selectedFile.name}
+                    </p>
+                    <p style={{ fontSize: '0.9em', color: '#666' }}>
+                      크기: {(fileState.selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                    <Button onClick={() => handleRemoveFile(true)} color="error" variant="outlined" sx={{ marginTop: "10px" }}>
+                      첨부 취소
+                    </Button>
+                  </div>
               </div>
             )}
           </div>
@@ -278,10 +282,10 @@ export default function PostWritePage() {
             </label>
             {fileState.attachmentFile && (
               <div style={{ marginTop: "16px", backgroundColor: "#f4fff7", padding: "12px", borderRadius: "8px", border: "1px solid #c7f5dd" }}>
-                <span>첨부된 파일: {fileState.attachmentFile.name}</span>
-                <Button type="button" onClick={handleRemoveAttachment} color="error" variant="outlined" sx={{ marginLeft: "12px" }}>
-                  첨부 취소
-                </Button>
+                  <span>첨부된 파일: {fileState.attachmentFile.name}</span>
+                  <Button type="button" onClick={() => handleRemoveAttachment(true)} color="error" variant="outlined" sx={{ marginLeft: "12px" }}>
+                    첨부 취소
+                  </Button>
               </div>
             )}
           </div>
