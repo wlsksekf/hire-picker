@@ -2,37 +2,33 @@
 
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 const S3_BASE_URL = 'https://hirepicker-storage.s3.ap-northeast-2.amazonaws.com';
 
-export default function PostDetailPage({ params }) {
+export default function PostDetailPage() {
   const router = useRouter();
-
-  // --- 라우팅 id 처리 ---
-  const actualParams = React.use(params);
-  const postIdString = actualParams?.id;
+  const params = useParams();
+  const postIdString = params?.id;
   const postIdx = postIdString && !isNaN(Number(postIdString)) ? Number(postIdString) : null;
   const api_url = postIdx ? `/api/posts/${postIdx}` : null;
 
   // --- 컴포넌트 상태 선언 ---
-  const [post, setPost] = useState(null);              // 상세 게시글 데이터
+  const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
-  const [currentUserIdx, setCurrentUserIdx] = useState(null); // 로그인한 유저의 p_user_idx (id)
+  const [currentUserIdx, setCurrentUserIdx] = useState(null);
 
-  // --- 로그인한 유저 정보 불러오기 ---
   useEffect(() => {
     axios.get('/api/posts/me', { withCredentials: true })
       .then(response => {
-        setCurrentUserIdx(response.data.id);      // 서버에서 id = 내 p_user_idx 반환
+        setCurrentUserIdx(response.data.id);
       })
       .catch(() => {
         setCurrentUserIdx(null);
       });
   }, []);
 
-  // --- 게시글 상세 데이터 불러오기 ---
   useEffect(() => {
     if (!postIdx) {
       setErrorMsg('잘못된 게시글 번호입니다.');
@@ -41,8 +37,6 @@ export default function PostDetailPage({ params }) {
     }
     axios.get(api_url)
       .then(response => {
-        // 중요! 서버에서 post.pUserIdx를 반드시 포함해서 응답해야 함
-        console.log(response.data.data)
         if (response.data.msg === 'success' && response.data.data) {
           setPost(response.data.data);
         } else {
@@ -56,7 +50,6 @@ export default function PostDetailPage({ params }) {
       });
   }, [postIdx]);
 
-  // --- 버튼 스타일 ---
   const buttonStyle = {
     padding: '10px 15px',
     margin: '0 5px',
@@ -68,22 +61,26 @@ export default function PostDetailPage({ params }) {
     minWidth: '80px',
   };
 
-  // S3 파일 URL
   const imgUrl = post?.imgName ? `${S3_BASE_URL}/${post.imgName}` : null;
   const fileUrl = post?.fileName ? `${S3_BASE_URL}/${post.fileName}` : null;
 
-  // --- 이동 핸들러 ---
   const handleEdit = () => {
     if (postIdx) router.push(`/community/${postIdx}/edit`);
   };
-  const handleDelete = () => {
-    setErrorMsg(`⚠️ 삭제 기능은 현재 구현되지 않았습니다. (ID: ${postIdx})`);
+  const handleDelete = async () => {
+    if (!window.confirm('정말 삭제할까요?')) return;
+    try {
+      await axios.delete(`/api/posts/${postIdx}`, { withCredentials: true });
+      alert('삭제가 완료되었습니다.');
+      router.push('/community');
+    } catch (e) {
+      setErrorMsg('삭제 실패:' + (e.response?.data?.msg || e.message));
+    }
   };
   const handleList = () => {
     router.push('/community');
   };
 
-  // --- 로딩/에러 처리 ---
   if (loading) {
     return <div style={{ padding: '40px', textAlign: 'center', fontSize: '1.2em' }}>로딩 중...</div>;
   }
@@ -104,14 +101,8 @@ export default function PostDetailPage({ params }) {
     return <div style={{ padding: '20px', textAlign: 'center' }}>게시글이 존재하지 않습니다.</div>;
   }
 
-  // --- 콘솔로 값 검증 (개발 시 꼭 확인, 배포시 주석 처리) ---
-  console.log("currentUserIdx:", currentUserIdx, typeof currentUserIdx);   // 내 id(로그인)
-  console.log("post.puserIdx:", post?.puserIdx, typeof post?.puserIdx);   // 글 작성자 id
-
-  // --- 가장 중요한: '내가 쓴 글' 조건 비교 ---
   const isOwner = currentUserIdx && post && String(currentUserIdx) === String(post.puserIdx);
 
-  // --- 최종 렌더링 ---
   return (
     <div style={{
       width: '80%',
@@ -199,7 +190,6 @@ export default function PostDetailPage({ params }) {
             style={{ ...buttonStyle, backgroundColor: '#f0f0f0', color: '#333', borderColor: '#ccc' }}
           >목록</button>
         </div>
-        {/* 중요: 내가 쓴 글일 때만 보임 */}
         {isOwner && (
           <div>
             <button
@@ -214,7 +204,6 @@ export default function PostDetailPage({ params }) {
         )}
       </div>
 
-      {/* 에러 메시지 */}
       {errorMsg && (
         <div style={{
           marginTop: '15px',

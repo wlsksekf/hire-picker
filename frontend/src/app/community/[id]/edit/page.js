@@ -1,20 +1,19 @@
 'use client'
-// app/community/[id]/edit/page.js
+import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { Container, Typography } from '@mui/material';
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
+import axios from 'axios';   // ★ 반드시 추가!
 
 const S3_BASE_URL = 'https://hirepicker-storage.s3.ap-northeast-2.amazonaws.com';
 
-// ---- PostForm 컴포넌트 ----
+// ------- PostForm 컴포넌트 (첨부/이미지 업로드, 삭제 포함 예시) -------
 function PostForm({ initialData, isEdit, onSubmit }) {
   const [title, setTitle] = useState(initialData?.title || '');
   const [content, setContent] = useState(initialData?.content || '');
   const [selectedImg, setSelectedImg] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
 
-  // 이미지/첨부파일 상태 (기존 값, 삭제 여부)
   const [imgName, setImgName] = useState(initialData?.imgName || null);
   const [fileName, setFileName] = useState(initialData?.fileName || null);
   const [previewImgUrl, setPreviewImgUrl] = useState(imgName ? `${S3_BASE_URL}/${imgName}` : null);
@@ -27,7 +26,7 @@ function PostForm({ initialData, isEdit, onSubmit }) {
     setPreviewImgUrl(initialData?.imgName ? `${S3_BASE_URL}/${initialData.imgName}` : null);
   }, [initialData]);
 
-  // 이미지 변경 및 삭제
+  // 이미지 변경/삭제
   const handleImgChange = e => {
     if (e.target.files[0]) {
       setSelectedImg(e.target.files[0]);
@@ -35,20 +34,20 @@ function PostForm({ initialData, isEdit, onSubmit }) {
     }
   };
   const handleImgDelete = () => {
-    setSelectedImg(null);    // 신규 업로드 초기화
-    setImgName(null);        // 기존 DB/S3 이미지 제거 플래그
+    setSelectedImg(null);
+    setImgName(null);
     setPreviewImgUrl(null);
   };
 
-  // 첨부파일 변경 및 삭제
+  // 첨부파일 변경/삭제
   const handleFileChange = e => {
     if (e.target.files[0]) {
       setSelectedFile(e.target.files[0]);
     }
   };
   const handleFileDelete = () => {
-    setSelectedFile(null);  // 신규 업로드 초기화
-    setFileName(null);      // 기존 DB/S3 첨부파일 제거 플래그
+    setSelectedFile(null);
+    setFileName(null);
   };
 
   // 수정 저장
@@ -56,14 +55,11 @@ function PostForm({ initialData, isEdit, onSubmit }) {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
 
-    // FormData 생성(첨부/이미지 삭제 여부도 함께)
     const formData = new FormData();
     formData.append('title', title);
     formData.append('content', content);
-    // 새 파일/이미지 업로드 요청 포함
     if (selectedImg) formData.append('image', selectedImg);
     if (selectedFile) formData.append('attachment', selectedFile);
-    // 삭제 플래그 전달(백엔드에서 null/""이면 기존 파일 삭제)
     formData.append('deleteImg', imgName ? '' : '1');
     formData.append('deleteFile', fileName ? '' : '1');
 
@@ -78,7 +74,7 @@ function PostForm({ initialData, isEdit, onSubmit }) {
       <div>
         <textarea value={content} onChange={e => setContent(e.target.value)} rows={10} style={{ width: '100%', marginBottom: 8}} />
       </div>
-      {/* ---- 이미지 미리보기 및 삭제 ---- */}
+      {/* 이미지 미리보기/삭제 */}
       <div>
         <label>이미지: 
           <input type="file" accept="image/*" onChange={handleImgChange} />
@@ -94,7 +90,7 @@ function PostForm({ initialData, isEdit, onSubmit }) {
           </div>
         )}
       </div>
-      {/* ---- 첨부파일 미리보기 및 삭제 ---- */}
+      {/* 첨부파일 미리보기/삭제 */}
       <div style={{ marginTop: 15 }}>
         <label>첨부파일: 
           <input type="file" onChange={handleFileChange} />
@@ -119,11 +115,12 @@ function PostForm({ initialData, isEdit, onSubmit }) {
   );
 }
 
-// ---- 수정 페이지 ----
-export default function EditPostPage({ params }) {
+// ------- 게시글 수정 페이지 -------
+export default function EditPostPage() {
+  const params = useParams();
   const postId = params.id;
-  const router = useRouter();
 
+  const router = useRouter();
   const [postToEdit, setPostToEdit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -167,7 +164,7 @@ export default function EditPostPage({ params }) {
     return (
       <Container maxWidth="md" sx={{ mt: 5 }}>
         <Typography variant="h5" color="error" align="center">
-          {errorMsg} (ID: {postId})
+          {errorMsg} (ID: {String(postId)})
         </Typography>
       </Container>
     );

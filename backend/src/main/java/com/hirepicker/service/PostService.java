@@ -1,13 +1,14 @@
 package com.hirepicker.service;
 
+import com.hirepicker.dto.PostListDto;
+import com.hirepicker.entity.Posts;
+import com.hirepicker.repository.PostRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.data.domain.Sort;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -15,15 +16,9 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
-import com.hirepicker.dto.PostListDto;
-import com.hirepicker.entity.Posts;
-import com.hirepicker.repository.PostRepository;
-
-import lombok.RequiredArgsConstructor;
-
 import java.io.IOException;
-import java.util.UUID;
 import java.io.InputStream;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -46,7 +41,7 @@ public class PostService {
     @Value("${S3_REGION:ap-northeast-2}")
     private String s3Region;
 
-    // S3 Client 생성
+    // AWS S3 Client 생성
     private AmazonS3 getS3Client() {
         BasicAWSCredentials creds = new BasicAWSCredentials(awsAccessKey, awsSecretKey);
         return AmazonS3ClientBuilder.standard()
@@ -55,7 +50,7 @@ public class PostService {
                 .build();
     }
 
-    // S3 업로드 (메타데이터 강제 설정)
+    // S3 업로드 (첨부 = attachments, 이미지 = images)
     private String uploadFileToS3(MultipartFile file, String dirName) throws IOException {
         AmazonS3 s3 = getS3Client();
         String originName = file.getOriginalFilename();
@@ -66,23 +61,26 @@ public class PostService {
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(file.getSize());
         metadata.setContentType(file.getContentType());
-
-        // 첨부파일(이미지 제외)에만 Content-Disposition 추가
         if (!dirName.equalsIgnoreCase("images")) {
             metadata.setContentDisposition("attachment");
         }
-
-        // S3에 putObject 할 때 반드시 metadata가 전달되도록!
         try (InputStream is = file.getInputStream()) {
             s3.putObject(s3BucketName, key, is, metadata);
         }
-        return key; // key만 반환(DB 저장)
+        return key;
+    }
+
+    // S3 실제 삭제 로직
+    private void deleteFromS3(String key) {
+        if (key == null || key.isBlank()) return;
+        AmazonS3 s3 = getS3Client();
+        s3.deleteObject(s3BucketName, key);
     }
 
     // 게시글 작성 (CREATE)
     @Transactional
     public Posts create(Long boardIdx, Long pUserIdx, String title, String content,
-                       MultipartFile imageFile, MultipartFile attachmentFile) throws IOException {
+                        MultipartFile imageFile, MultipartFile attachmentFile) throws IOException {
         String imgKey = null;
         String fileKey = null;
 
@@ -117,4 +115,63 @@ public class PostService {
         return postRepository.findPostDetailWithNickname(postIdx)
             .orElse(null);
     }
+
+    // 게시글 수정 + S3 파일/이미지 삭제/변경까지 종합!
+    @Transactional
+    public boolean updatePost(Long postIdx, Long loginUserIdx, String title, String content,
+                              MultipartFile imageFile, MultipartFile attachmentFile,
+                              boolean deleteImg, boolean deleteFile) {
+        Posts post = postRepository.findById(postIdx).orElse(null);
+        if (post == null || !post.getPUserIdx().equals(loginUserIdx)) {
+            return false;
+        }
+        post.setTitle(title);
+        post.setContent(content);
+
+        // 이미지 삭제/변경
+        if (deleteImg && post.getImgName() != null) {
+            deleteFromS3(post.getImgName());
+            post.setImgName(null); // DB도 null로
+        } else if (imageFile != null && !imageFile.isEmpty()) {
+            if (post.getImgName() != null) deleteFromS3(post.getImgName());
+            try {
+                String newImgKey = uploadFileToS3(imageFile, "images");
+                post.setImgName(newImgKey);
+            } catch (Exception e) {
+                throw new RuntimeException("이미지 업로드 실패", e);
+            }
+        }
+
+        // 첨부파일 삭제/변경
+        if (deleteFile && post.getFileName() != null) {
+            deleteFromS3(post.getFileName());
+            post.setFileName(null);
+        } else if (attachmentFile != null && !attachmentFile.isEmpty()) {
+            if (post.getFileName() != null) deleteFromS3(post.getFileName());
+            try {
+                String newFileKey = uploadFileToS3(attachmentFile, "attachments");
+                post.setFileName(newFileKey);
+            } catch (Exception e) {
+                throw new RuntimeException("첨부파일 업로드 실패", e);
+            }
+        }
+
+        postRepository.save(post);
+        return true;
+    }
+
+        // --- 게시글 삭제 (글, S3 파일/이미지 동시 삭제) ---
+    @Transactional
+    public boolean deletePostWithFiles(Long postIdx, Long loginUserIdx) {
+        Posts post = postRepository.findById(postIdx).orElse(null);
+        if (post == null || !post.getPUserIdx().equals(loginUserIdx)) return false;
+
+        // S3 이미지/파일 삭제
+        if (post.getImgName() != null) deleteFromS3(post.getImgName());
+        if (post.getFileName() != null) deleteFromS3(post.getFileName());
+
+        postRepository.delete(post);
+        return true;
+    }
+    
 }

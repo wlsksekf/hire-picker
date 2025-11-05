@@ -129,4 +129,50 @@ log.info("AttachmentFile: {}", attachmentFile != null ? attachmentFile.getOrigin
             return ResultData.of(0, "Error fetching post", null);
         }
     }
+      @PutMapping("/{postIdx}/edit")
+    public ResultData<?> updatePost(
+        @PathVariable("postIdx") Long postIdx,
+        @RequestParam("title") String title,
+        @RequestParam("content") String content,
+        // 파일/이미지 모두 optional
+        @RequestPart(value = "image", required = false) MultipartFile imageFile,
+        @RequestPart(value = "attachment", required = false) MultipartFile attachmentFile,
+        @RequestParam(value = "deleteImg", required = false) String deleteImg,
+        @RequestParam(value = "deleteFile", required = false) String deleteFile,
+        @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long userId = userDetails.getId();
+
+        try {
+            boolean updated = postService.updatePost(
+                postIdx, userId, title, content,
+                imageFile, attachmentFile,
+                "1".equals(deleteImg),  // true면 이미지 삭제 요청
+                "1".equals(deleteFile)  // true면 첨부파일 삭제 요청
+            );
+            if (updated) {
+                return ResultData.of(1, "success", null);
+            } else {
+                return ResultData.of(0, "권한 없음 또는 글 없음", null);
+            }
+        } catch (Exception e) {
+            log.error("[PostController] Error during post update", e);
+            return ResultData.of(0, "Error during post update: " + e.getMessage(), null);
+        }
+    }
+
+    @DeleteMapping("/{postIdx}")
+public ResultData<?> deletePost(@PathVariable("postIdx") Long postIdx, 
+                                @AuthenticationPrincipal CustomUserDetails userDetails) {
+    Long userId = userDetails.getId();
+    try {
+        boolean deleted = postService.deletePostWithFiles(postIdx, userId);
+        if (deleted) return ResultData.of(1, "success", null);
+        else return ResultData.of(0, "글이 없거나 권한 없음", null);
+    } catch (Exception e) {
+        log.error("[PostController] Error during post delete", e);
+        return ResultData.of(0, "Error during delete: " + e.getMessage(), null);
+    }
+}
+
 }
