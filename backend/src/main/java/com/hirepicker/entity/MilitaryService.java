@@ -5,7 +5,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-// military_service 테이블 매핑 (개인회원 병역)
+// military_service 테이블 매핑 (개인회원 병역 정보)
 @Entity
 @Table(name = "military_service")
 @Getter

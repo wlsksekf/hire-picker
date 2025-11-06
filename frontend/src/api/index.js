@@ -196,3 +196,46 @@ export function updateUserProfile(updateData) {
       throw error;
     });
 }
+
+// [마이페이지] 기본정보 확장 업데이트(이메일 제외)
+export function updateUserProfileDetails(updateData) {
+  // 이름/성별/전화/주소/닉네임/비밀번호 등 확장 필드
+  return api.patch('/api/users/my-profile/details', updateData)
+    .then((res) => res.data)
+    .catch((err) => { console.error('기본정보 확장 업데이트 실패:', err); throw err; });
+}
+
+// [마이페이지] 학력 조회/저장
+export function getAcademics() {
+  return api.get('/api/users/academics').then(res => res.data);
+}
+export function saveAcademics(academics) {
+  return api.put('/api/users/academics', academics).then(res => res.data);
+}
+
+// [검색] 학교 검색 (UI 자동완성)
+export function searchSchools(query) {
+  return api.get('/api/schools/search', { params: { name: query } })
+    .then(res => res.data);
+}
+
+// [마이페이지] 경력 조회/저장
+export function getExperiences() {
+  return api.get('/api/users/experiences').then(res => res.data);
+}
+export function saveExperiences(experiences) {
+  return api.put('/api/users/experiences', experiences).then(res => res.data);
+}
+
+// [마이페이지] 병역 조회/저장
+export function getMilitary() {
+  return api.get('/api/users/military').then(res => res.data);
+}
+export function saveMilitary(military) {
+  return api.put('/api/users/military', military).then(res => res.data);
+}
+
+// [이력서] 수정
+export function updateResume(resumeId, payload) {
+  return api.put(`/api/resume/${resumeId}`, payload).then(res => res.data);
+}
