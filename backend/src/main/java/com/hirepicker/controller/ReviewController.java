@@ -17,6 +17,8 @@ import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.CompanyReviewDto;
 import com.hirepicker.dto.ReviewRequest;
 import com.hirepicker.entity.ComReview;
+import com.hirepicker.entity.PersonalUser;
+import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.service.ReviewService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 public class ReviewController {
 
     private final ReviewService reviewService;
+    private final PersonalUserRepository personalUserRepository;
 
     @GetMapping("/companies")
     public ResponseEntity<List<CompanyReviewDto>> getReviewableCompanies(
@@ -47,7 +50,9 @@ public class ReviewController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         Long pUserIdx = userDetails.getId();
-        Optional<ComReview> myReview = reviewService.getMyReview(companyId, pUserIdx);
+        PersonalUser personalUser = personalUserRepository.findById(pUserIdx)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다. id=" + pUserIdx));
+        Optional<ComReview> myReview = reviewService.getMyReview(companyId, personalUser);
 
         return myReview.map(review -> {
             ReviewRequest reviewRequest = new ReviewRequest();
@@ -68,12 +73,14 @@ public class ReviewController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         Long pUserIdx = userDetails.getId();
+        PersonalUser personalUser = personalUserRepository.findById(pUserIdx)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다. id=" + pUserIdx));
 
         reviewService.saveReview(
                 companyId,
                 reviewRequest.getReview(),
                 reviewRequest.getReviewerType(),
-                pUserIdx,
+                personalUser,
                 reviewRequest.getReviewIdx());
         return ResponseEntity.ok().build();
     }

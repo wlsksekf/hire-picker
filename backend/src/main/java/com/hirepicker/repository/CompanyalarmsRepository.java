@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface CompanyalarmsRepository extends JpaRepository<Companyalarms, CompanyalarmsId> {
-    List<Companyalarms> findBypUserIdx_Id(Long pUserIdx);
-    Optional<Companyalarms> findBypUserIdx_IdAndCompanyIdx_CompanyIdx(Long pUserIdx, Long companyIdx);
-    void deleteBypUserIdx_IdAndCompanyIdx_CompanyIdx(Long pUserIdx, Long companyIdx);
+    List<Companyalarms> findByPersonalUserId_Id(Long personalUserId);
+    Optional<Companyalarms> findByPersonalUserId_IdAndCompanyIdx_CompanyIdx(Long personalUserId, Long companyIdx);
+    void deleteByPersonalUserId_IdAndCompanyIdx_CompanyIdx(Long personalUserId, Long companyIdx);
 }

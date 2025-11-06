@@ -26,8 +26,9 @@ public class Posts {
     @Column(nullable = false)
     private Long boardIdx;       // BIGINT, NN
 
-    @Column(nullable = false)
-    private Long pUserIdx;       // BIGINT, NN
+    @ManyToOne
+    @JoinColumn(name = "p_user_idx", nullable = false)
+    private PersonalUser personalUser;
 
     @Column(nullable = false, length = 255)
     private String title;        // VARCHAR(255), NN
@@ -56,9 +57,11 @@ public class Posts {
     // **꼭 아래처럼 getter에만 JsonProperty 걸어서 단일 키만 보장!**
     @JsonProperty("pUserIdx")
     public Long getPUserIdx() {
-        return pUserIdx;
+        return personalUser != null ? personalUser.getId() : null;
     }
-    public void setPUserIdx(Long pUserIdx) {
-        this.pUserIdx = pUserIdx;
+
+    public void setPersonalUser(PersonalUser personalUser) {
+        this.personalUser = personalUser;
     }
+
 }

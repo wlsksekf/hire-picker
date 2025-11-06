@@ -1,23 +1,36 @@
 package com.hirepicker.service;
 
-import com.hirepicker.dto.ResumeDto;
-import com.hirepicker.dto.ResumeResponseDto;
-import com.hirepicker.dto.ResumeDetailDto;
-import com.hirepicker.dto.AcademicAbilityDto;
-import com.hirepicker.dto.MilitaryServiceDto;
-import com.hirepicker.dto.WorkExperienceDto;
-import com.hirepicker.entity.*;
-import com.hirepicker.repository.*;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.hirepicker.config.security.CustomUserDetails;
+import com.hirepicker.dto.AcademicAbilityDto;
+import com.hirepicker.dto.MilitaryServiceDto;
+import com.hirepicker.dto.ResumeDetailDto;
+import com.hirepicker.dto.ResumeDto;
+import com.hirepicker.dto.ResumeResponseDto;
+import com.hirepicker.dto.WorkExperienceDto;
+import com.hirepicker.entity.AcademicAbility;
+import com.hirepicker.entity.Gender;
+import com.hirepicker.entity.MilitaryService;
+import com.hirepicker.entity.PersonalUser;
+import com.hirepicker.entity.Resume;
+import com.hirepicker.entity.School;
+import com.hirepicker.entity.UserType;
+import com.hirepicker.entity.WorkExperience;
+import com.hirepicker.repository.AcademicAbilityRepository;
+import com.hirepicker.repository.MilitaryServiceRepository;
+import com.hirepicker.repository.PersonalUserRepository;
+import com.hirepicker.repository.ResumeRepository;
+import com.hirepicker.repository.SchoolRepository;
+import com.hirepicker.repository.WorkExperienceRepository;
+
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 // 이력서 관련 비즈니스 로직을 처리하는 서비스
 @Service
@@ -56,13 +69,14 @@ public class ResumeService {
         if (resumeDto.getGender() != null) {
             try {
                 personalUser.setGender(Gender.valueOf(resumeDto.getGender())); // 성별 업데이트
-            } catch (IllegalArgumentException ignored) { /* 잘못된 값이면 무시 */ }
+            } catch (IllegalArgumentException ignored) {
+                /* 잘못된 값이면 무시 */ }
         }
 
         // 3-3) 학력/경력/병역 저장 (선택)
         saveAcademicAbilities(resumeDto.getAcademicAbilities(), personalUser); // 학력 저장
-        saveWorkExperiences(resumeDto.getWorkExperiences(), personalUser);    // 경력 저장
-        saveMilitaryService(resumeDto.getMilitaryService(), personalUser);     // 병역 저장
+        saveWorkExperiences(resumeDto.getWorkExperiences(), personalUser); // 경력 저장
+        saveMilitaryService(resumeDto.getMilitaryService(), personalUser); // 병역 저장
 
         // 4) 이력서 저장
         Resume savedResume = resumeRepository.save(resume);
@@ -75,8 +89,10 @@ public class ResumeService {
     @Transactional
     public ResumeDetailDto getResumeDetail(Long resumeId) {
         // 현재 사용자
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-        com.hirepicker.config.security.CustomUserDetails principal = (com.hirepicker.config.security.CustomUserDetails) auth.getPrincipal();
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        com.hirepicker.config.security.CustomUserDetails principal = (com.hirepicker.config.security.CustomUserDetails) auth
+                .getPrincipal();
 
         Resume resume = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이력서입니다."));
@@ -96,8 +112,8 @@ public class ResumeService {
                 .stream()
                 .map(a -> new ResumeDetailDto.Academic(
                         a.getSchool() != null ? a.getSchool().getSchoolName() : null,
-                        a.getDegree(), a.getMajor(), a.getMajorScore(), a.getGraduationDate()
-                )).toList();
+                        a.getDegree(), a.getMajor(), a.getMajorScore(), a.getGraduationDate()))
+                .toList();
 
         // 경력 목록 구성
         var experienceList = workExperienceRepository
@@ -105,15 +121,14 @@ public class ResumeService {
                 .stream()
                 .map(w -> new ResumeDetailDto.Experience(
                         w.getCompanyName(), w.getDepartment(), w.getPosition(),
-                        w.getHireDate(), w.getResignDate(), w.getJobDescription(), w.getMainDuties()
-                )).toList();
+                        w.getHireDate(), w.getResignDate(), w.getJobDescription(), w.getMainDuties()))
+                .toList();
 
         // 병역 정보 구성(옵션)
         var militaryOpt = militaryServiceRepository.findTopByPersonalUserIdOrderByIdDesc(user.getId());
         ResumeDetailDto.Military military = militaryOpt.map(m -> new ResumeDetailDto.Military(
                 m.getServiceType(), m.getMilitaryBranch(), m.getMilitaryRank(),
-                m.getPeriodOfService(), m.getReasonForExemption()
-        )).orElse(null);
+                m.getPeriodOfService(), m.getReasonForExemption())).orElse(null);
 
         return ResumeDetailDto.builder()
                 .r(resume)
@@ -134,7 +149,8 @@ public class ResumeService {
             // 기업 계정은 개인 이력서 목록이 없으므로 빈 목록 반환
             return java.util.List.of();
         }
-        java.util.List<Resume> resumes = resumeRepository.findByPersonalUserIdOrderByIdDesc(principal.getId()); // 사용자별 조회
+        java.util.List<Resume> resumes = resumeRepository.findByPersonalUserIdOrderByIdDesc(principal.getId()); // 사용자별
+                                                                                                                // 조회
         return resumes.stream()
                 .map(com.hirepicker.dto.ResumeListItemDto::from) // 엔티티 -> DTO 변환
                 .collect(java.util.stream.Collectors.toList());
@@ -142,10 +158,12 @@ public class ResumeService {
 
     // 학력 저장 로직(리스트가 null/빈 경우 무시)
     private void saveAcademicAbilities(java.util.List<AcademicAbilityDto> list, PersonalUser user) {
-        if (list == null || list.isEmpty()) return; // 입력 없으면 패스
+        if (list == null || list.isEmpty())
+            return; // 입력 없으면 패스
         for (AcademicAbilityDto dto : list) {
             School school = schoolRepository.findById(dto.getSchoolCode()).orElse(null);
-            if (school == null) continue; // 유효하지 않으면 스킵
+            if (school == null)
+                continue; // 유효하지 않으면 스킵
             AcademicAbility ability = newAcademicAbility(user, school, dto); // 엔티티 변환
             academicAbilityRepository.save(ability); // 저장
         }
@@ -153,7 +171,8 @@ public class ResumeService {
 
     // 경력 저장 로직
     private void saveWorkExperiences(java.util.List<WorkExperienceDto> list, PersonalUser user) {
-        if (list == null || list.isEmpty()) return; // 입력 없으면 패스
+        if (list == null || list.isEmpty())
+            return; // 입력 없으면 패스
         for (WorkExperienceDto dto : list) {
             WorkExperience we = newWorkExperience(user, dto); // 엔티티 변환
             workExperienceRepository.save(we); // 저장
@@ -162,7 +181,8 @@ public class ResumeService {
 
     // 병역 저장 로직
     private void saveMilitaryService(MilitaryServiceDto dto, PersonalUser user) {
-        if (dto == null) return; // 입력 없으면 패스
+        if (dto == null)
+            return; // 입력 없으면 패스
         MilitaryService ms = newMilitaryService(user, dto); // 엔티티 변환
         militaryServiceRepository.save(ms); // 저장
     }
@@ -223,7 +243,8 @@ public class ResumeService {
 
     // 리플렉션 안전 헬퍼
     private static void setField(Object target, String fieldName, Object value) throws Exception {
-        if (value == null) return; // null 값은 생략
+        if (value == null)
+            return; // null 값은 생략
         var f = target.getClass().getDeclaredField(fieldName);
         f.setAccessible(true);
         f.set(target, value);

@@ -31,7 +31,7 @@ public class CompanyalarmsController {
 
     @PostMapping
     public ResponseEntity<?> addCompanyAlarm(@RequestBody Map<String, Long> payload) {
-        Long pUserIdx = payload.get("p_user_idx");
+        Long pUserIdx = Long.valueOf(payload.get("p_user_idx").toString());
         Long companyIdx = payload.get("company_idx");
         if (pUserIdx == null || companyIdx == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -40,7 +40,7 @@ public class CompanyalarmsController {
             Companyalarms companyalarms = companyalarmsService.addCompanyAlarm(pUserIdx, companyIdx);
             // Companyalarms 엔티티를 DTO로 변환하여 반환
             CompanyalarmsResponseDto responseDto = new CompanyalarmsResponseDto(
-                    companyalarms.getPUserIdx().getId(), // PersonalUser의 id (p_user_idx)
+                    companyalarms.getPersonalUserId().getId(), // PersonalUser의 id (p_user_idx)
                     companyalarms.getCompanyIdx().getCompanyIdx() // Company의 companyIdx
             );
             return new ResponseEntity<>(responseDto, HttpStatus.CREATED);

@@ -11,10 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.hirepicker.dto.CompanyReviewDto;
 import com.hirepicker.entity.ComReview;
+import com.hirepicker.entity.Company;
 import com.hirepicker.entity.JobPosting;
+import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.entity.Resume;
 import com.hirepicker.repository.ApplicationsRepository;
 import com.hirepicker.repository.ComReviewRepository;
+import com.hirepicker.repository.CompanyRepository;
 import com.hirepicker.repository.JobPostingRepository;
 import com.hirepicker.repository.ResumeRepository;
 
@@ -30,13 +33,14 @@ public class ReviewService {
     private final JobPostingRepository jobPostingRepository;
     private final ComReviewRepository comReviewRepository;
     private final ResumeRepository resumeRepository; // ResumeRepository 주입
+    private final CompanyRepository companyRepository;
 
     @Transactional(readOnly = true)
     public List<CompanyReviewDto> getReviewableCompanies(Long userId) {
         log.info("Fetching reviewable companies for userId: {}", userId);
 
         // 1. 사용자 ID(p_user_idx)로 이력서 목록 조회
-        List<Resume> resumes = resumeRepository.findByPUserIdx(userId);
+        List<Resume> resumes = resumeRepository.findByPersonalUser_Id(userId);
         log.info("Found {} resumes for userId: {}", resumes.size(), userId);
         if (resumes.isEmpty()) {
             return Collections.emptyList();
@@ -44,7 +48,7 @@ public class ReviewService {
 
         // 2. 이력서 ID 목록 추출
         List<Long> resumeIdxs = resumes.stream()
-                .map(Resume::getResumeIdx)
+                .map(Resume::getId)
                 .collect(Collectors.toList());
         log.info("Resume Ids: {}", resumeIdxs);
 
@@ -72,13 +76,17 @@ public class ReviewService {
         return reviewableCompanies;
     }
 
-    public Optional<ComReview> getMyReview(Long companyId, Long pUserIdx) {
-        return comReviewRepository.findByCompanyIdxAndPUserIdx(companyId, pUserIdx);
+    public Optional<ComReview> getMyReview(Long companyId, PersonalUser personalUser) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 회사를 찾을 수 없습니다. id=" + companyId));
+        return comReviewRepository.findByCompanyAndPersonalUser(company, personalUser);
     }
 
     @Transactional
-    public ComReview saveReview(Long companyId, String reviewContent, String reviewerType, Long pUserIdx,
+    public ComReview saveReview(Long companyId, String reviewContent, String reviewerType, PersonalUser personalUser,
             Long reviewIdx) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 회사를 찾을 수 없습니다. id=" + companyId));
         ComReview comReview;
         if (reviewIdx != null) {
             // Update existing review
@@ -90,10 +98,10 @@ public class ReviewService {
         } else {
             // Create new review
             comReview = ComReview.builder()
-                    .companyIdx(companyId)
+                    .company(company)
                     .content(reviewContent)
                     .reviewerType(reviewerType)
-                    .pUserIdx(pUserIdx) // Set pUserIdx for new review
+                    .personalUser(personalUser) // Set pUserIdx for new review
                     .writeDate(new Date())
                     .build();
             comReviewRepository.save(comReview);

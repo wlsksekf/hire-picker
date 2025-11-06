@@ -7,7 +7,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,11 +36,13 @@ public class ComReview {
     @Column(name = "reviewer_type")
     private String reviewerType;
 
-    @Column(name = "company_idx", nullable = false)
-    private Long companyIdx;
+    @ManyToOne
+    @JoinColumn(name = "company_idx", nullable = false)
+    private Company company;
 
-    @Column(name = "p_user_idx", nullable = false)
-    private Long pUserIdx;
+    @ManyToOne
+    @JoinColumn(name = "p_user_idx", nullable = false)
+    private PersonalUser personalUser;
 
     @Column(name = "write_date")
     private Date writeDate;

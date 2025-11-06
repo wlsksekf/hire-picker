@@ -13,22 +13,7 @@ import {
   useMediaQuery,
   useTheme,
   Typography,
-  CircularProgress
-} from '@mui/material';
-import {
-    AccountCircle,
-    Article,
-    WorkHistory,
-    Payment,
-    Business,
-    AssignmentInd,
-    ListAlt,
-    AutoAwesome // AutoAwesome 아이콘 추가
-} from '@mui/icons-material';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import useAuthStore from '@/store/authStore'; // 인증 스토어 추가
-  Typography,
+  CircularProgress,
 } from "@mui/material";
 import {
   AccountCircle,
@@ -38,12 +23,13 @@ import {
   Business,
   AssignmentInd,
   ListAlt,
-  AutoAwesome,
+  AutoAwesome, // AutoAwesome 아이콘 추가
   RateReview,
   Notifications,
 } from "@mui/icons-material";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import useAuthStore from "@/store/authStore"; // 인증 스토어 추가
 
 const drawerWidth = 240; // 사이드바 너비
 
@@ -57,11 +43,6 @@ const drawerWidth = 240; // 사이드바 너비
  * - 지원 현황: 내가 지원한 공고 목록
  * - 크레딧/결제 내역: 크레딧 충전 및 사용 내역
  */
-// 사용자 타입에 따라 메뉴 항목을 정의합니다.
-// 실제 애플리케이션에서는 로그인 정보에서 사용자 타입을 가져옵니다.
-const userType = "personal"; // 'personal' 또는 'company'로 변경하여 테스트
-
-// 개인 회원 메뉴 항목
 const personalMenuItems = [
   {
     text: "내 정보 수정",
@@ -70,12 +51,11 @@ const personalMenuItems = [
   },
   { text: "이력서 관리", icon: <Article />, path: "/mypage/personal/resumes" },
   // highlight-start
-  { text: '이력서 작성', icon: <AutoAwesome />, path: '/mypage/personal/write_resume' },
   {
-    text: "AI 이력서 작성",
+    text: "이력서 작성",
     icon: <AutoAwesome />,
-    path: "/mypage/personal/ai-resume",
-  }, // 새 탭 추가
+    path: "/mypage/personal/write_resume",
+  },
   // highlight-end
   {
     text: "지원 현황",
@@ -144,7 +124,7 @@ const companyMenuItems = [
  */
 function MyPageLayout({ children }) {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md')); // 모바일 화면 여부 확인
+  const isMobile = useMediaQuery(theme.breakpoints.down("md")); // 모바일 화면 여부 확인
   const pathname = usePathname(); // 현재 경로 (선택된 메뉴 표시용)
   const { user, isLoading } = useAuthStore(); // 인증 스토어에서 사용자 정보 가져오기
 
@@ -152,7 +132,14 @@ function MyPageLayout({ children }) {
   // initializeAuth()가 실행 중일 때 로딩 스피너 표시
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -161,20 +148,15 @@ function MyPageLayout({ children }) {
   // ===== STEP 2: 사용자 타입에 따라 메뉴 선택 =====
   // 백엔드에서 userType이 'PERSONAL' 또는 'COMPANY'로 전달됨
   // 소문자로 변환하여 비교 ('personal' 또는 'company')
-  const userType = user?.userType?.toLowerCase() || 'personal';
+  const userType = user?.userType?.toLowerCase() || "personal";
 
   // 타입에 따라 적절한 메뉴 배열 선택
   // - 개인회원: personalMenuItems (이력서, AI 작성, 지원 현황 등)
   // - 기업회원: companyMenuItems (채용공고, 지원자 목록 등)
-  const menuItems = userType === 'personal' ? personalMenuItems : companyMenuItems;
+  const menuItems =
+    userType === "personal" ? personalMenuItems : companyMenuItems;
 
   // ===== STEP 3: 사이드바 콘텐츠 구성 =====
-  const isMobile = useMediaQuery(theme.breakpoints.down("md")); // 모바일 화면 여부 확인
-  const pathname = usePathname(); // 현재 경로
-
-  const menuItems =
-    userType === "personal" ? personalMenuItems : companyMenuItems; // 사용자 타입에 따른 메뉴 선택
-
   const drawerContent = (
     <div>
       {/* 사이드바 헤더 */}
@@ -203,16 +185,6 @@ function MyPageLayout({ children }) {
                 href={item.path}
                 selected={pathname === item.path}
               >
-                <ListItemIcon>
-                  {item.icon}
-                </ListItemIcon>
-              <ListItemButton
-                component={Link}
-                href={item.path}
-                selected={pathname === item.path}
-              >
-                {" "}
-                {/* 현재 경로와 일치하면 선택된 스타일 적용 */}
                 <ListItemIcon>{item.icon}</ListItemIcon>
                 <ListItemText primary={item.text} />
               </ListItemButton>
@@ -225,20 +197,13 @@ function MyPageLayout({ children }) {
 
   // ===== STEP 4: 레이아웃 렌더링 =====
   return (
-    <Box sx={{ display: 'flex' }}>
-      {/* 좌측 사이드바 (고정) */}
     <Box sx={{ display: "flex" }}>
+      {/* 좌측 사이드바 (고정) */}
       <Drawer
         variant="permanent" // 항상 열려있는 Drawer
         sx={{
           width: drawerWidth,
           flexShrink: 0,
-          [`& .MuiDrawer-paper`]: {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-            position: 'relative',
-            borderRight: '1px solid #e0e0e0'
-          },
           [`& .MuiDrawer-paper`]: {
             width: drawerWidth,
             boxSizing: "border-box",
@@ -257,11 +222,6 @@ function MyPageLayout({ children }) {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` }
-        }}
-        sx={{
-          flexGrow: 1,
-          p: 3,
           width: { sm: `calc(100% - ${drawerWidth}px)` },
         }}
       >
@@ -272,4 +232,3 @@ function MyPageLayout({ children }) {
 }
 
 export default MyPageLayout;
-

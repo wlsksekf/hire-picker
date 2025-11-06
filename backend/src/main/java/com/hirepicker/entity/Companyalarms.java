@@ -23,8 +23,8 @@ public class Companyalarms {
 
     @Id
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "p_user_idx", referencedColumnName = "p_user_idx")
-    private PersonalUser pUserIdx;
+    @JoinColumn(name = "personal_user_id", referencedColumnName = "p_user_idx")
+    private PersonalUser personalUserId;
 
     @Id
     @ManyToOne(fetch = FetchType.LAZY)

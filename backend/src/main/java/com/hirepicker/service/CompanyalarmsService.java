@@ -30,13 +30,13 @@ public class CompanyalarmsService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid company ID"));
 
         // Check if alarm already exists
-        if (companyalarmsRepository.findBypUserIdx_IdAndCompanyIdx_CompanyIdx(personalUser.getId(),
+        if (companyalarmsRepository.findByPersonalUserId_IdAndCompanyIdx_CompanyIdx(personalUser.getId(),
                 company.getCompanyIdx()).isPresent()) {
             throw new IllegalArgumentException("Company alarm already exists for this user and company");
         }
 
         Companyalarms companyalarms = Companyalarms.builder()
-                .pUserIdx(personalUser)
+                .personalUserId(personalUser)
                 .companyIdx(company)
                 .build();
         return companyalarmsRepository.save(companyalarms);
@@ -44,16 +44,16 @@ public class CompanyalarmsService {
 
     @Transactional
     public void removeCompanyAlarm(Long pUserIdx, Long companyIdx) {
-        companyalarmsRepository.deleteBypUserIdx_IdAndCompanyIdx_CompanyIdx(pUserIdx, companyIdx);
+        companyalarmsRepository.deleteByPersonalUserId_IdAndCompanyIdx_CompanyIdx(pUserIdx, companyIdx);
     }
 
     public List<Long> getLikedCompanyIdsByPersonalUser(Long pUserIdx) {
-        return companyalarmsRepository.findBypUserIdx_Id(pUserIdx).stream()
+        return companyalarmsRepository.findByPersonalUserId_Id(pUserIdx).stream()
                 .map(companyalarms -> companyalarms.getCompanyIdx().getCompanyIdx())
                 .collect(Collectors.toList());
     }
 
     public boolean isCompanyLikedByUser(Long pUserIdx, Long companyIdx) {
-        return companyalarmsRepository.findBypUserIdx_IdAndCompanyIdx_CompanyIdx(pUserIdx, companyIdx).isPresent();
+        return companyalarmsRepository.findByPersonalUserId_IdAndCompanyIdx_CompanyIdx(pUserIdx, companyIdx).isPresent();
     }
 }

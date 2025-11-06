@@ -10,6 +10,6 @@ import java.io.Serializable;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class CompanyalarmsId implements Serializable {
-    private Long pUserIdx; // PersonalUser 엔티티의 id (p_user_idx)와 매핑
+    private Long personalUserId; // PersonalUser 엔티티의 id (p_user_idx)와 매핑
     private Long companyIdx; // Company 엔티티의 companyIdx와 매핑
 }

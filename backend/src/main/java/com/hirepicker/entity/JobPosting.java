@@ -1,5 +1,7 @@
 package com.hirepicker.entity;
 
+import java.time.LocalDate;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -52,4 +54,10 @@ public class JobPosting {
 
     @Column(name = "job_type")
     private String jobType;
+
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
 }

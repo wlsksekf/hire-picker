@@ -1,7 +1,5 @@
 package com.hirepicker.entity;
 
-import java.util.Date;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -18,51 +16,85 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
+// 이력서 엔티티 (resumes 테이블 스키마 반영)
 @Entity
 @Table(name = "resumes")
 @Getter
-@Setter
-public class Resume {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Resume extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "resume_idx")
-    private Long resumeIdx;
+    private Long id; // PK
 
-    @Column(name = "p_user_idx", nullable = false)
-    private Long pUserIdx;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "p_user_idx", nullable = false)
+    private PersonalUser personalUser; // 개인회원
 
-    @Column(nullable = false)
-    private String title;
+    @Column(nullable = false, length = 70)
+    private String title; // 제목
 
-    @Column(name = "background_and_growth", columnDefinition = "TEXT")
-    private String backgroundAndGrowth;
+    @Lob
+    @Column(name = "background_and_growth")
+    private String selfGrowth; // 성장 배경
 
-    @Column(columnDefinition = "TEXT")
-    private String personality;
+    @Lob
+    @Column(name = "personality")
+    private String selfStrengths; // 성격
 
-    @Column(name = "motivation_for_application", columnDefinition = "TEXT")
-    private String motivationForApplication;
+    @Lob
+    @Column(name = "motivation_for_application")
+    private String selfMotivation; // 지원 동기
 
-    @Column(name = "future_aspirations", columnDefinition = "TEXT")
-    private String futureAspirations;
+    @Lob
+    @Column(name = "future_aspirations")
+    private String selfAspirations; // 포부
 
-    private String cert;
+    @Column(name = "img", length = 255)
+    private String imageUrl; // 프로필 이미지 경로
 
-    @Column(name = "is_default")
-    private Boolean isDefault;
+    @Column(name = "is_default", nullable = false)
+    private boolean isDefault = false; // 기본 이력서 여부
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private ResumeStatus status = ResumeStatus.PUBLIC; // 공개 상태
 
-    @Column(name = "reg_date")
-    private Date regDate;
+    @Column(name = "cert", length = 200)
+    private String cert; // 자격증 요약
 
-    @Column(name = "mod_date")
-    private Date modDate;
+    @Column(name = "cancel")
+    private Boolean cancel; // 취소 여부(null 허용)
 
-    private Boolean cancel;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "exp_idx")
+    private WorkExperience workExperience; // 경력 연결(optional)
 
-    private String img;
+    @Builder
+    public Resume(PersonalUser personalUser, String title, String selfGrowth, String selfStrengths,
+            String selfMotivation, String selfAspirations, String imageUrl,
+            Boolean isDefault, ResumeStatus status, String cert, Boolean cancel,
+            WorkExperience workExperience) {
+        this.personalUser = personalUser;
+        this.title = title;
+        this.selfGrowth = selfGrowth;
+        this.selfStrengths = selfStrengths;
+        this.selfMotivation = selfMotivation;
+        this.selfAspirations = selfAspirations;
+        this.imageUrl = imageUrl;
+        if (isDefault != null)
+            this.isDefault = isDefault;
+        if (status != null)
+            this.status = status;
+        this.cert = cert;
+        this.cancel = cancel;
+        this.workExperience = workExperience;
+    }
+
+    // 선택 경력 연동(서비스에서 조건부로 세팅)
+    public void attachWorkExperience(WorkExperience workExperience) {
+        this.workExperience = workExperience;
+    }
 }
