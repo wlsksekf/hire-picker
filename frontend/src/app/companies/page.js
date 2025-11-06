@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import useAuthStore from "@/store/authStore";
 import {
   Container,
   Typography,
@@ -37,7 +38,11 @@ function CompaniesPage() {
 
   const [searchTerm, setSearchTerm] = useState(""); // 검색어 입력 값
   const [query, setQuery] = useState(""); // 실제 검색에 사용될 쿼리
-  const [likedCompanies, setLikedCompanies] = useState(new Set()); // 이 줄을 추가합니다.
+  const [likedCompanies, setLikedCompanies] = useState(new Set());
+  const [pUserIdx, setPUserIdx] = useState(null); // p_user_idx 상태 추가
+
+  const user = useAuthStore((state) => state.user);
+  console.log("User object:", user);
 
   // 컴포넌트가 마운트되거나 쿼리가 변경될 때 기업 정보를 불러옴
   useEffect(
@@ -69,18 +74,30 @@ function CompaniesPage() {
           setLoading(false);
         });
 
-      // TODO: 실제 p_user_idx를 가져오는 로직으로 교체해야 합니다.
-      const p_user_idx = 1; // 임시 사용자 ID
-      api
-        .get(`/api/company-alarms/user/${p_user_idx}`)
-        .then(function (response) {
-          setLikedCompanies(new Set(response.data));
-        })
-        .catch(function (err) {
-          console.error("Failed to fetch liked companies:", err);
-        });
+      if (user?.email) {
+        api
+          .get(`/api/company-alarms/idx-by-email?email=${user.email}`)
+          .then(function (response) {
+            const fetchedIdx = response.data.idx; // 백엔드 응답에서 idx를 가져온다고 가정
+            console.log("Fetched p_user_idx:", fetchedIdx);
+            setPUserIdx(fetchedIdx); // 상태 업데이트
+            if (fetchedIdx) {
+              api
+                .get(`/api/company-alarms/user/${fetchedIdx}`)
+                .then(function (response) {
+                  setLikedCompanies(new Set(response.data));
+                })
+                .catch(function (err) {
+                  console.error("Failed to fetch liked companies:", err);
+                });
+            }
+          })
+          .catch(function (err) {
+            console.error("Failed to fetch user idx by email:", err);
+          });
+      }
     },
-    [query]
+    [query, user, pUserIdx] // user와 pUserIdx를 의존성 배열에 추가
   );
 
   // 다음 페이지의 기업 정보를 불러오는 함수
@@ -131,13 +148,15 @@ function CompaniesPage() {
 
   // 관심 기업 등록/해제 함수
   async function toggleLikeCompany(companyIdx) {
-    // TODO: 실제 p_user_idx를 가져오는 로직으로 교체해야 합니다. (예: 인증된 사용자 정보에서)
-    const p_user_idx = 1; // 임시 사용자 ID
+    if (!pUserIdx) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
 
     try {
       if (likedCompanies.has(companyIdx)) {
         // 이미 좋아요 상태이면 좋아요 해제 (DELETE 요청)
-        await api.delete(`/api/company-alarms/${p_user_idx}/${companyIdx}`);
+        await api.delete(`/api/company-alarms/${pUserIdx}/${companyIdx}`);
         setLikedCompanies((prev) => {
           const newSet = new Set(prev);
           newSet.delete(companyIdx);
@@ -147,7 +166,7 @@ function CompaniesPage() {
       } else {
         // 좋아요 상태가 아니면 좋아요 등록 (POST 요청)
         await api.post("/api/company-alarms", {
-          p_user_idx,
+          p_user_idx: pUserIdx,
           company_idx: companyIdx,
         });
         setLikedCompanies((prev) => new Set(prev).add(companyIdx));

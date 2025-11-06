@@ -70,7 +70,7 @@ public class SecurityConfig {
                                 "/callback-auth", "/fail", "/swagger-ui/**",
                                 "/api-docs/**", "/error", "/api/companies/**",
                                 "/api/dart/**", "/api/national-pension/**",
-                                "/signup/company/**", "/api/calendar/**")
+                                "/signup/company/**", "/api/calendar/**", "/api/company-alarms/**")
                         .permitAll()
                         .requestMatchers("/api/payment/webhook").permitAll() // 웹훅 엔드포인트는 모두 허용
                         .requestMatchers("/chat/**", "/ws", "/ws/**", "/chat/history/**")

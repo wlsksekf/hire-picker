@@ -66,7 +66,7 @@ const personalMenuItems = [
     path: "/mypage/personal/review",
   },
   {
-    text: "기업 알림",
+    text: "관심기업",
     icon: <Notifications />,
     path: "/mypage/personal/alarm",
   },

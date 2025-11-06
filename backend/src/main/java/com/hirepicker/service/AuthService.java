@@ -99,6 +99,13 @@ public class AuthService {
         return personalUserRepository.existsByEmail(email) || companyUserRepository.existsByEmail(email);
     }
 
+    @Transactional(readOnly = true)
+    public Long findPersonalUserIdxByEmail(String email) {
+        return personalUserRepository.findByEmail(email)
+                                     .map(PersonalUser::getId)
+                                     .orElse(null);
+    }
+
     /**
      * [신규] 개인 회원 가입 처리
      * @param signupRequest 회원가입 요청 DTO

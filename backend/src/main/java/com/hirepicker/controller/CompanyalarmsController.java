@@ -1,5 +1,6 @@
 package com.hirepicker.controller;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -11,9 +12,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hirepicker.dto.CompanyalarmsResponseDto; // DTO 임포트 추가
 import com.hirepicker.entity.Companyalarms;
+import com.hirepicker.service.AuthService;
 import com.hirepicker.service.CompanyalarmsService;
 
 import lombok.RequiredArgsConstructor;
@@ -23,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CompanyalarmsController {
     private final CompanyalarmsService companyalarmsService;
+    private final AuthService authService;
 
     @PostMapping
     public ResponseEntity<?> addCompanyAlarm(@RequestBody Map<String, Long> payload) {
@@ -33,7 +38,12 @@ public class CompanyalarmsController {
         }
         try {
             Companyalarms companyalarms = companyalarmsService.addCompanyAlarm(pUserIdx, companyIdx);
-            return new ResponseEntity<>(companyalarms, HttpStatus.CREATED);
+            // Companyalarms 엔티티를 DTO로 변환하여 반환
+            CompanyalarmsResponseDto responseDto = new CompanyalarmsResponseDto(
+                    companyalarms.getPUserIdx().getId(), // PersonalUser의 id (p_user_idx)
+                    companyalarms.getCompanyIdx().getCompanyIdx() // Company의 companyIdx
+            );
+            return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
         }
@@ -53,5 +63,17 @@ public class CompanyalarmsController {
     public ResponseEntity<List<Long>> getLikedCompanyIdsByPersonalUser(@PathVariable Long pUserIdx) {
         List<Long> likedCompanyIds = companyalarmsService.getLikedCompanyIdsByPersonalUser(pUserIdx);
         return new ResponseEntity<>(likedCompanyIds, HttpStatus.OK);
+    }
+
+    @GetMapping("/idx-by-email")
+    public ResponseEntity<Map<String, Long>> getIdxByEmail(@RequestParam String email) {
+        Long idx = authService.findPersonalUserIdxByEmail(email);
+        if (idx != null) {
+            Map<String, Long> response = new HashMap<>();
+            response.put("idx", idx);
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

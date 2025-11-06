@@ -24,7 +24,6 @@ import {
 import RateReviewIcon from "@mui/icons-material/RateReview";
 
 export default function ReviewPage() {
-  console.log("ReviewPage component rendered");
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [review, setReview] = useState("");
@@ -62,7 +61,6 @@ export default function ReviewPage() {
 
       const fetchCompanies = async () => {
         try {
-          console.log("들어왔다");
           const response = await fetch("/api/reviews/companies", {
             headers: {
               // Authorization: `Bearer ${token}`, // HttpOnly cookie handles authentication
