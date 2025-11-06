@@ -60,10 +60,10 @@ public class ResumeService {
 
         // 3) 기본 이력서 엔티티 변환 및 선택 경력 연결
         Resume resume = resumeDto.toEntity(personalUser, imageUrl);
-        if (resumeDto.getExpIdx() != null) {
-            workExperienceRepository.findById(resumeDto.getExpIdx())
-                    .ifPresent(resume::attachWorkExperience);
-        }
+        // if (resumeDto.getExpIdx() != null) {
+        // workExperienceRepository.findById(resumeDto.getExpIdx())
+        // .ifPresent(resume::attachWorkExperience);
+        // }
 
         // 3-2) 성별이 전달되면 PersonalUser에 반영(유효 값만 적용)
         if (resumeDto.getGender() != null) {

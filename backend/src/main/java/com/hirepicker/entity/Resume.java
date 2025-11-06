@@ -68,9 +68,9 @@ public class Resume extends BaseEntity {
     @Column(name = "cancel")
     private Boolean cancel; // 취소 여부(null 허용)
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "exp_idx")
-    private WorkExperience workExperience; // 경력 연결(optional)
+    // @ManyToOne(fetch = FetchType.LAZY)
+    // @JoinColumn(name = "exp_idx")
+    // private WorkExperience workExperience; // 경력 연결(optional)
 
     @Builder
     public Resume(PersonalUser personalUser, String title, String selfGrowth, String selfStrengths,
@@ -90,11 +90,11 @@ public class Resume extends BaseEntity {
             this.status = status;
         this.cert = cert;
         this.cancel = cancel;
-        this.workExperience = workExperience;
+        // this.workExperience = workExperience;
     }
 
     // 선택 경력 연동(서비스에서 조건부로 세팅)
-    public void attachWorkExperience(WorkExperience workExperience) {
-        this.workExperience = workExperience;
-    }
+    // public void attachWorkExperience(WorkExperience workExperience) {
+    // this.workExperience = workExperience;
+    // }
 }

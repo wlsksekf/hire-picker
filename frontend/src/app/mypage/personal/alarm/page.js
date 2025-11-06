@@ -32,7 +32,7 @@ export default function AlarmPage() {
     const fetchLikedCompanies = async () => {
       try {
         // 1. p_user_idx로 관심 기업 ID 목록 가져오기
-        const response = await api.get(`/api/company-alarms/user/${pUserIdx}`);
+        const response = await api.get(`/api/company-alarms/user`);
         const companyIds = response.data; // [companyIdx1, companyIdx2, ...]
 
         if (companyIds.length === 0) {

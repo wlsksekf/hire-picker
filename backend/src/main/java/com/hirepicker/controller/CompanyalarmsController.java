@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.CompanyalarmsResponseDto; // DTO 임포트 추가
 import com.hirepicker.entity.Companyalarms;
 import com.hirepicker.service.AuthService;
@@ -30,8 +32,9 @@ public class CompanyalarmsController {
     private final AuthService authService;
 
     @PostMapping
-    public ResponseEntity<?> addCompanyAlarm(@RequestBody Map<String, Long> payload) {
-        Long pUserIdx = Long.valueOf(payload.get("p_user_idx").toString());
+    public ResponseEntity<?> addCompanyAlarm(@RequestBody Map<String, Long> payload,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long pUserIdx = userDetails.getId();
         Long companyIdx = payload.get("company_idx");
         if (pUserIdx == null || companyIdx == null) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -50,7 +53,9 @@ public class CompanyalarmsController {
     }
 
     @DeleteMapping("/{pUserIdx}/{companyIdx}")
-    public ResponseEntity<Void> removeCompanyAlarm(@PathVariable Long pUserIdx, @PathVariable Long companyIdx) {
+    public ResponseEntity<Void> removeCompanyAlarm(@PathVariable Long companyIdx,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long pUserIdx = userDetails.getId();
         try {
             companyalarmsService.removeCompanyAlarm(pUserIdx, companyIdx);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -60,7 +65,9 @@ public class CompanyalarmsController {
     }
 
     @GetMapping("/user/{pUserIdx}")
-    public ResponseEntity<List<Long>> getLikedCompanyIdsByPersonalUser(@PathVariable Long pUserIdx) {
+    public ResponseEntity<List<Long>> getLikedCompanyIdsByPersonalUser(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long pUserIdx = userDetails.getId();
         List<Long> likedCompanyIds = companyalarmsService.getLikedCompanyIdsByPersonalUser(pUserIdx);
         return new ResponseEntity<>(likedCompanyIds, HttpStatus.OK);
     }
