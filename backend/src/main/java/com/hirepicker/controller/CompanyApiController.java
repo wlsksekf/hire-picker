@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hirepicker.dto.CompanyDto;
 import com.hirepicker.dto.CompanySearchResponseDto;
 import com.hirepicker.dto.EventDto;
-import com.hirepicker.dto.JobDto;
 import com.hirepicker.service.CompanyDataUpdateService;
 import com.hirepicker.service.CompanyService;
 import com.hirepicker.service.EmploymentData;

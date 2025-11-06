@@ -7,14 +7,12 @@ import com.google.genai.types.FunctionCall;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.Tool;
-import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.chatbot.ChatRequestDto;
 import com.hirepicker.dto.chatbot.ChatResponseDto;
 import com.hirepicker.service.ChatbotToolService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

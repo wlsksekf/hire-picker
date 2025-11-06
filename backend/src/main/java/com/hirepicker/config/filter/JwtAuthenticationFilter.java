@@ -56,8 +56,7 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
                 "/chat/", // /chat/**
                 "/ws", // /ws, /ws/**
                 "/api/ai/upload-image",
-                "/api/search",
-                "/api/users/me"
+                "/api/search"
 
         );
 
