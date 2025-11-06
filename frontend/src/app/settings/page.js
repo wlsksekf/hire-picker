@@ -46,14 +46,21 @@ function SettingsPage() {
     api
       .get(path)
       .then(function (response) {
-        const resultText = response.data;
+        // 응답이 객체인 경우 문자열로 변환
+        const resultData = response.data;
+        const resultText = typeof resultData === 'object'
+          ? (resultData.message || JSON.stringify(resultData))
+          : resultData;
         setStatus({ type: 'success', message: resultText });
       })
       .catch(function (error) {
+        // 에러 응답이 객체인 경우 문자열로 변환
         const rawMessage =
           error.response?.data || error.message || `${name} 동기화에 실패했습니다.`;
         const errorMessage =
-          typeof rawMessage === 'object' ? JSON.stringify(rawMessage) : rawMessage;
+          typeof rawMessage === 'object'
+            ? (rawMessage.message || JSON.stringify(rawMessage))
+            : rawMessage;
         setStatus({ type: 'error', message: errorMessage });
       })
       .finally(function () {
