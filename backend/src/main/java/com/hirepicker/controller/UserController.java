@@ -105,6 +105,11 @@ public class UserController {
                     personalUser.getNickname(),   // 닉네임
                     UserType.PERSONAL             // 회원 타입 (프론트에서 메뉴 분기용)
                 );
+                // 추가 필드 설정: 폰번호/주소/성별/생년월일 반환
+                userDto.setPhoneNumber(personalUser.getPhoneNumber());
+                userDto.setAddress(personalUser.getAddress());
+                userDto.setGender(personalUser.getGender() != null ? personalUser.getGender().name() : null);
+                userDto.setBirthDate(personalUser.getBirthDate() != null ? personalUser.getBirthDate().toString() : null);
                 return ResponseEntity.ok(userDto);
 
             } else if (userType == UserType.COMPANY) {

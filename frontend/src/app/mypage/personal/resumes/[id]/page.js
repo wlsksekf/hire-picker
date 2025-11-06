@@ -61,7 +61,7 @@ export default function ResumeDetailPage() {
               </Box>
             )}
 
-            {/* ai-resume와 동일한 테이블/섹션 구성(읽기 전용) */}
+            {/* write_resume와 동일한 테이블/섹션 구성(읽기 전용) */}
             <InfoTables data={data} />
 
             {/* 기타 */}
@@ -91,7 +91,7 @@ function Section({ title, text }) {
   );
 }
 
-// 스타일: ai-resume와 유사한 라벨/입력 셀 스타일
+// 스타일: write_resume와 유사한 라벨/입력 셀 스타일
 const StyledLabelCell = styled(TableCell)(({ theme }) => ({
   backgroundColor: theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[800],
   fontWeight: 'bold',
