@@ -116,11 +116,11 @@ public class AuthController {
 
         // 2. (검증 통과) 기존 회원가입 로직 수행
         try {
-            authService.registerPersonalUser(signupRequest, response); 
+            authService.registerPersonalUser(signupRequest, response);
             log.info("개인 회원가입 성공. 사용자: {}", signupRequest.getEmail());
             // 3. 성공 응답 (JWT 토큰 포함)
             return ResponseEntity.status(HttpStatus.CREATED).build();
-            
+
         } catch (IllegalArgumentException e) {
              log.warn("회원가입 중 충돌 발생: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());

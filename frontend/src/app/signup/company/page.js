@@ -36,6 +36,10 @@ export default function CompanySignupPage() {
     companyIdx: null, // 회사 ID
   });
 
+  // 파일 업로드 state
+  const [verificationFile, setVerificationFile] = useState(null);
+  const [fileError, setFileError] = useState(null);
+
   const [isCodeSent, setIsCodeSent] = useState(false);
   const [isCodeConfirmed, setIsCodeConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -76,6 +80,36 @@ export default function CompanySignupPage() {
   useEffect(() => {
     fetchCompanies(companyInputValue);
   }, [companyInputValue, fetchCompanies]);
+
+  // --- 파일 업로드 로직 ---
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setFileError(null);
+
+    if (!file) {
+      setVerificationFile(null);
+      return;
+    }
+
+    // 파일 크기 검증 (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setFileError('파일 크기는 10MB를 초과할 수 없습니다.');
+      setVerificationFile(null);
+      return;
+    }
+
+    // 파일 확장자 검증
+    const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    if (!allowedExtensions.includes(fileExtension)) {
+      setFileError('PDF, JPG, PNG 파일만 업로드 가능합니다.');
+      setVerificationFile(null);
+      return;
+    }
+
+    setVerificationFile(file);
+  };
 
   // --- 이메일 인증 로직 ---
   const handleSendCode = () => {
@@ -130,6 +164,7 @@ export default function CompanySignupPage() {
     e.preventDefault();
     setError(null);
 
+    // === 검증 단계 ===
     if (!isCodeConfirmed) {
       return setError('이메일 인증을 먼저 완료해주세요.');
     }
@@ -142,15 +177,29 @@ export default function CompanySignupPage() {
     if (formData.password !== formData.passwordConfirm) {
       return setError('비밀번호가 일치하지 않습니다.');
     }
+    if (!verificationFile) {
+      return setError('인증 파일(사업자등록증 등)을 첨부해주세요.');
+    }
 
     setLoading(true);
 
-    // passwordConfirm은 프론트엔드 검증용이므로 백엔드로 보내지 않음
-    const { passwordConfirm, ...signupData } = formData;
+    // === FormData 생성 (파일 + JSON 데이터) ===
+    const formDataToSend = new FormData();
 
-    signupCompany(signupData)
-      .then(() => {
-        alert('기업 회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.');
+    // JSON 데이터 추가 (passwordConfirm 제외)
+    const { passwordConfirm, verificationCode, ...signupData } = formData;
+    formDataToSend.append('signupData', new Blob([JSON.stringify(signupData)], {
+      type: 'application/json'
+    }));
+
+    // 파일 추가
+    formDataToSend.append('verificationFile', verificationFile);
+
+    // === API 호출 ===
+    signupCompany(formDataToSend)
+      .then((response) => {
+        const message = response.data?.message || '기업 회원가입 신청이 완료되었습니다. 관리자 승인 후 로그인 가능합니다.';
+        alert(message);
         router.push('/login');
       })
       .catch(err => {
@@ -355,6 +404,40 @@ export default function CompanySignupPage() {
             <div style={{ fontSize: '0.75rem', color: 'grey', marginTop: '4px' }}>
               '-' 없이 숫자만 입력해주세요.
             </div>
+          </div>
+
+          <div className="input-group">
+            <label htmlFor="verificationFile">
+              인증 파일 첨부 <span style={{ color: 'red' }}>*</span>
+            </label>
+            <input
+              type="file"
+              name="verificationFile"
+              id="verificationFile"
+              onChange={handleFileChange}
+              disabled={loading}
+              accept=".pdf,.jpg,.jpeg,.png"
+              required
+              style={{
+                padding: '10px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            />
+            <div style={{ fontSize: '0.75rem', color: 'grey', marginTop: '4px' }}>
+              사업자등록증 등 기업 인증 서류 (PDF, JPG, PNG / 최대 10MB)
+            </div>
+            {verificationFile && (
+              <div style={{ fontSize: '0.75rem', color: 'green', marginTop: '4px' }}>
+                ✓ {verificationFile.name} ({(verificationFile.size / 1024 / 1024).toFixed(2)}MB)
+              </div>
+            )}
+            {fileError && (
+              <div style={{ fontSize: '0.75rem', color: 'red', marginTop: '4px' }}>
+                {fileError}
+              </div>
+            )}
           </div>
 
           <button type="submit" className="sign" disabled={!isCodeConfirmed || loading}>

@@ -12,6 +12,7 @@ import java.util.List;
 @Entity
 @Table(name = "company_user")
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor // 빌더 사용을 위해 추가
 @Builder // 빌더 어노테이션 추가
