@@ -19,6 +19,10 @@ import { faLink, faIdBadge } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { api } from "@/api"; // 공용 api 인스턴스 사용
 import Link from "next/link";
+import { HeartBroken } from "node_modules/@mui/icons-material";
+import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
+import { faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons"; // 이 줄을 추가합니다.
+import axios from "axios";
 
 const PAGE_SIZE = 20; // 페이지 당 불러올 기업 수
 
@@ -33,6 +37,7 @@ function CompaniesPage() {
 
   const [searchTerm, setSearchTerm] = useState(""); // 검색어 입력 값
   const [query, setQuery] = useState(""); // 실제 검색에 사용될 쿼리
+  const [likedCompanies, setLikedCompanies] = useState(new Set()); // 이 줄을 추가합니다.
 
   // 컴포넌트가 마운트되거나 쿼리가 변경될 때 기업 정보를 불러옴
   useEffect(
@@ -62,6 +67,17 @@ function CompaniesPage() {
         })
         .finally(function () {
           setLoading(false);
+        });
+
+      // TODO: 실제 p_user_idx를 가져오는 로직으로 교체해야 합니다.
+      const p_user_idx = 1; // 임시 사용자 ID
+      api
+        .get(`/api/company-alarms/user/${p_user_idx}`)
+        .then(function (response) {
+          setLikedCompanies(new Set(response.data));
+        })
+        .catch(function (err) {
+          console.error("Failed to fetch liked companies:", err);
         });
     },
     [query]
@@ -111,6 +127,36 @@ function CompaniesPage() {
   function handleSearchSubmit(event) {
     event.preventDefault(); // 폼의 기본 제출 동작 방지
     setQuery(searchTerm); // 검색어를 쿼리로 설정하여 데이터 요청 트리거
+  }
+
+  // 관심 기업 등록/해제 함수
+  async function toggleLikeCompany(companyIdx) {
+    // TODO: 실제 p_user_idx를 가져오는 로직으로 교체해야 합니다. (예: 인증된 사용자 정보에서)
+    const p_user_idx = 1; // 임시 사용자 ID
+
+    try {
+      if (likedCompanies.has(companyIdx)) {
+        // 이미 좋아요 상태이면 좋아요 해제 (DELETE 요청)
+        await api.delete(`/api/company-alarms/${p_user_idx}/${companyIdx}`);
+        setLikedCompanies((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(companyIdx);
+          return newSet;
+        });
+        console.log(`Company ${companyIdx} unliked.`);
+      } else {
+        // 좋아요 상태가 아니면 좋아요 등록 (POST 요청)
+        await api.post("/api/company-alarms", {
+          p_user_idx,
+          company_idx: companyIdx,
+        });
+        setLikedCompanies((prev) => new Set(prev).add(companyIdx));
+        console.log(`Company ${companyIdx} liked.`);
+      }
+    } catch (err) {
+      console.error("Failed to toggle like status:", err);
+      alert("관심 기업 상태 변경에 실패했습니다.");
+    }
   }
 
   return (
@@ -222,6 +268,50 @@ function CompaniesPage() {
                     {company.summary}
                   </Typography>
                 </Box>
+
+                <CardActions sx={{ p: 0, ml: 2 }}>
+                  <Button
+                    variant="contained"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Link 컴포넌트의 페이지 이동 방지
+                      e.preventDefault(); // 기본 이벤트 방지
+                      toggleLikeCompany(company.companyIdx);
+                    }}
+                    startIcon={
+                      <FontAwesomeIcon
+                        icon={
+                          likedCompanies.has(company.companyIdx)
+                            ? faHeartSolid
+                            : faHeartRegular
+                        }
+                      />
+                    }
+                    style={{
+                      backgroundColor: likedCompanies.has(company.companyIdx)
+                        ? theme.palette.primary.main // 좋아요 시 메인 색상
+                        : "white",
+                      color: likedCompanies.has(company.companyIdx)
+                        ? "white" // 좋아요 시 흰색
+                        : "gray",
+                    }}
+                    sx={{
+                      border: `1px solid ${
+                        likedCompanies.has(company.companyIdx)
+                          ? theme.palette.primary.main // 좋아요 시 메인 색상 테두리
+                          : "gray"
+                      }`,
+                      borderRadius: "8px",
+                      "&:hover": {
+                        backgroundColor: likedCompanies.has(company.companyIdx)
+                          ? theme.palette.primary.dark
+                          : theme.palette.grey[100],
+                      },
+                    }}
+                  >
+                    관심기업
+                  </Button>
+                </CardActions>
+
                 <CardActions sx={{ p: 0, ml: 2 }}>
                   {company.homepage && (
                     <Button

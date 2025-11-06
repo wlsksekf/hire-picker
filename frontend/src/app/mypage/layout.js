@@ -23,7 +23,8 @@ import {
   AssignmentInd,
   ListAlt,
   AutoAwesome,
-  RateReview, // AutoAwesome 아이콘 추가
+  RateReview,
+  Notifications,
 } from "@mui/icons-material";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -63,6 +64,11 @@ const personalMenuItems = [
     text: "기업 리뷰 내역",
     icon: <RateReview />,
     path: "/mypage/personal/review",
+  },
+  {
+    text: "기업 알림",
+    icon: <Notifications />,
+    path: "/mypage/personal/alarm",
   },
 ];
 

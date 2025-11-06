@@ -25,9 +25,6 @@ public class Resume {
     @Column(name = "p_user_idx", nullable = false)
     private Long pUserIdx;
 
-    @Column(name = "exp_idx")
-    private Long expIdx;
-
     @Column(nullable = false)
     private String title;
 
