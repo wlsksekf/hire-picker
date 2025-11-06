@@ -17,19 +17,26 @@ import org.springframework.data.repository.query.Param;
 @Repository
 public interface PostRepository extends JpaRepository<Posts, Long>{
 
-    // 추가: board_idx와 Pageable을 이용해 게시글 목록 조회
-    // 메서드 이름 규칙: 'findBy' + 필드명
-    // Spring Data JPA가 board_idx로 조회하고 Pageable에 따라 페이징/정렬을 적용합니다.
-    Page<Posts> findByBoardIdx(@Param("boardIdx") Long boardIdx, Pageable pageable);
-
-@Query("SELECT new com.hirepicker.dto.PostListDto(p.postIdx, p.pUserIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
-       "FROM Posts p JOIN PersonalUser u ON p.pUserIdx = u.id WHERE p.boardIdx = :boardIdx")
-Page<PostListDto> findPostListWithNickname(@Param("boardIdx") Long boardIdx, Pageable pageable);
+// 추가: board_idx와 Pageable을 이용해 게시글 목록 조회
+// 메서드 이름 규칙: 'findBy' + 필드명
 
 
+// 게시판 카테고리별 게시글 조회
+@Query("SELECT new com.hirepicker.dto.PostListDto(p.postIdx, p.boardIdx, p.pUserIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
+       "FROM Posts p JOIN PersonalUser u ON p.pUserIdx = u.id " +
+       "WHERE p.boardIdx = :boardIdx")
+Page<PostListDto> findByBoardIdx(@Param("boardIdx") Long boardIdx, Pageable pageable);
 
+
+// 전체 게시글 조회
+@Query("SELECT new com.hirepicker.dto.PostListDto(p.postIdx, p.boardIdx, p.pUserIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
+       "FROM Posts p JOIN PersonalUser u ON p.pUserIdx = u.id")
+Page<PostListDto> findAllPostList(Pageable pageable);
+
+
+// 게시글 세부내용 조회
 @Query("SELECT new com.hirepicker.dto.PostListDto(" +
-       "p.postIdx, p.pUserIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
+       "p.postIdx, p.boardIdx, p.pUserIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
        "FROM Posts p JOIN PersonalUser u ON p.pUserIdx = u.id " +
        "WHERE p.postIdx = :postIdx")
 Optional<PostListDto> findPostDetailWithNickname(@Param("postIdx") Long postIdx);
