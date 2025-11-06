@@ -7,5 +7,4 @@ public class ReviewRequest {
     private String review;
     private String reviewerType;
     private Long reviewIdx;
-    private Long pUserIdx;
 }

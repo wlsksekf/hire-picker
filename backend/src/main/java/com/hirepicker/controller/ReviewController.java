@@ -53,9 +53,8 @@ public class ReviewController {
             ReviewRequest reviewRequest = new ReviewRequest();
             reviewRequest.setReviewIdx(review.getReviewIdx());
             reviewRequest.setReview(review.getContent());
-            reviewRequest.setReviewerType(review.getReviewerType());
-            reviewRequest.setPUserIdx(review.getPUserIdx()); // Not strictly needed for frontend, but good for
-                                                             // consistency
+            reviewRequest.setReviewerType(review.getReviewerType());// Not strictly needed for frontend, but good for
+            // consistency
             return ResponseEntity.ok(reviewRequest);
         }).orElse(ResponseEntity.notFound().build());
     }

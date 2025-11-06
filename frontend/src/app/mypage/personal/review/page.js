@@ -39,111 +39,74 @@ export default function ReviewPage() {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
-      useEffect(() => {
+  useEffect(() => {
+    console.log(
+      "useEffect triggered. isLoading:",
+      isLoading,
+      "isAuthenticated:",
+      isAuthenticated,
+      "user:",
+      user
+    );
 
-        console.log("useEffect triggered. isLoading:", isLoading, "isAuthenticated:", isAuthenticated, "user:", user);
+    if (!isLoading && !isAuthenticated) {
+      console.log("User not authenticated and not loading. Returning.");
 
-        if (!isLoading && !isAuthenticated) {
+      // router.push("/login"); // Redirect to login if not authenticated
 
-          console.log("User not authenticated and not loading. Returning.");
-
-          // router.push("/login"); // Redirect to login if not authenticated
-
-          return;
-
-        }
-
-        if (user) {
-
-          console.log("User object is present. Calling fetchCompanies.");
-
-          const fetchCompanies = async () => {
-
-            const token = user?.accessToken;
-
-            console.log("Inside fetchCompanies. Token:", token ? "Present" : "Missing");
-
-            if (!token) {
-
-              setSnackbarSeverity("error");
-
-              setSnackbarMessage("인증 토큰을 찾을 수 없습니다. 다시 로그인해주세요.");
-
-              setSnackbarOpen(true);
-
-              return;
-
-            }
-
-            try {
-
-              const response = await fetch("/api/reviews/companies", {
-
-                headers: {
-
-                  Authorization: `Bearer ${token}`,
-
-                },
-
-              });
-
-              if (response.ok) {
-
-                const data = await response.json();
-
-                setCompanies(data);
-
-              } else {
-
-                setSnackbarSeverity("error");
-
-                setSnackbarMessage("기업 목록을 불러오는데 실패했습니다.");
-
-                setSnackbarOpen(true);
-
-              }
-
-            } catch (error) {
-
-              console.error("Failed to fetch companies:", error);
-
-              setSnackbarSeverity("error");
-
-              setSnackbarMessage("기업 목록을 불러오는 중 오류가 발생했습니다.");
-
-              setSnackbarOpen(true);
-
-            }
-
-          };
-
-    
-
-          fetchCompanies();
-
-        } else {
-
-          console.log("User object is NOT present. fetchCompanies will not be called.");
-
-        }
-
-      }, [isLoading, isAuthenticated, user]);
-
-  const fetchMyReview = async (companyId, pUserIdx) => {
-    const token = user?.accessToken; // Get token from auth store
-    if (!token) {
-      // This case should ideally be handled by the useEffect or router.push("/login")
-      // but adding a check here for robustness.
-      setSnackbarSeverity("error");
-      setSnackbarMessage("인증 토큰을 찾을 수 없습니다. 다시 로그인해주세요.");
-      setSnackbarOpen(true);
       return;
     }
+
+    if (user) {
+      console.log("User object is present. Calling fetchCompanies.");
+
+      const fetchCompanies = async () => {
+        try {
+          console.log("들어왔다");
+          const response = await fetch("/api/reviews/companies", {
+            headers: {
+              // Authorization: `Bearer ${token}`, // HttpOnly cookie handles authentication
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+
+            setCompanies(data);
+          } else {
+            setSnackbarSeverity("error");
+
+            setSnackbarMessage("기업 목록을 불러오는데 실패했습니다.");
+
+            setSnackbarOpen(true);
+          }
+        } catch (error) {
+          console.error("Failed to fetch companies:", error);
+
+          setSnackbarSeverity("error");
+
+          setSnackbarMessage("기업 목록을 불러오는 중 오류가 발생했습니다.");
+
+          setSnackbarOpen(true);
+        }
+      };
+
+      fetchCompanies();
+    } else {
+      console.log(
+        "User object is NOT present. fetchCompanies will not be called."
+      );
+    }
+  }, [isLoading, isAuthenticated, user]);
+
+  const fetchMyReview = async (companyId) => {
+    // Authentication is handled by HttpOnly cookies, no need for explicit token.
+    // The useEffect already handles redirection if not authenticated.
 
     try {
       const response = await fetch(`/api/reviews/${companyId}/my-review`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          // Authorization: `Bearer ${token}`,
         },
       });
       if (response.ok) {
@@ -174,7 +137,7 @@ export default function ReviewPage() {
   const handleCompanyClick = (company) => {
     setSelectedCompany(company);
     if (user && company) {
-      fetchMyReview(company.companyIdx, user.id); // Fetch review for selected company and user
+      fetchMyReview(company.companyIdx); // Fetch review for selected company
     } else {
       setReview("");
       setReviewerType("CURRENT");
@@ -202,22 +165,6 @@ export default function ReviewPage() {
       setSnackbarOpen(true);
       return;
     }
-    if (!user || !user.id) {
-      setSnackbarSeverity("error");
-      setSnackbarMessage(
-        "사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요."
-      );
-      setSnackbarOpen(true);
-      return;
-    }
-
-    const token = user?.accessToken; // Get token from auth store
-    if (!token) {
-      setSnackbarSeverity("error");
-      setSnackbarMessage("인증 토큰을 찾을 수 없습니다. 다시 로그인해주세요.");
-      setSnackbarOpen(true);
-      return;
-    }
 
     try {
       const response = await fetch(
@@ -226,13 +173,12 @@ export default function ReviewPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             review,
             reviewerType,
             reviewIdx,
-            pUserIdx: user.id,
+            // pUserIdx is obtained from authenticated user on backend
           }),
         }
       );
