@@ -14,13 +14,13 @@ import {
   useTheme,
   Typography
 } from '@mui/material';
-import { 
-    AccountCircle, 
-    Article, 
-    WorkHistory, 
-    Payment, 
-    Business, 
-    AssignmentInd, 
+import {
+    AccountCircle,
+    Article,
+    WorkHistory,
+    Payment,
+    Business,
+    AssignmentInd,
     ListAlt,
     AutoAwesome // AutoAwesome 아이콘 추가
 } from '@mui/icons-material';
@@ -38,7 +38,7 @@ const personalMenuItems = [
   { text: '내 정보 수정', icon: <AccountCircle />, path: '/mypage/personal/edit-profile' },
   { text: '이력서 관리', icon: <Article />, path: '/mypage/personal/resumes' },
   // highlight-start
-  { text: 'AI 이력서 작성', icon: <AutoAwesome />, path: '/mypage/personal/ai-resume' }, // 새 탭 추가
+  { text: '이력서 작성', icon: <AutoAwesome />, path: '/mypage/personal/write_resume' },
   // highlight-end
   { text: '지원 현황', icon: <WorkHistory />, path: '/mypage/personal/applications' },
   { text: '크레딧/결제 내역', icon: <Payment />, path: '/mypage/personal/credits' },
