@@ -7,6 +7,10 @@ server:
   address: 0.0.0.0
   tomcat:
     connection-timeout: 90000 # 90초
+    max-http-form-post-size: 128MB
+    max-swallow-size: 128MB
+      
+      
 
 # === 데이터베이스(DB) 설정 ===
 # H2 DB로 연결되는 문제를 해결하기 위해 RDS(MySQL) 설정을 명시적으로 추가
@@ -20,6 +24,11 @@ spring:
       host: localhost
       port: 6379
 
+  servlet:
+    multipart:
+      max-file-size: 128MB      # 허용할 파일 업로드 최대 크기 (128MB, 필요시 더 크게)
+      max-request-size: 128MB   # 한 번의 요청으로 허용할 최대 크기 (128MB, 필요시 더 크게)
+      
   # 공용 데이터소스 설정
 
   datasource:

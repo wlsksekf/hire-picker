@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hirepicker.dto.CompanyDto;
 import com.hirepicker.dto.CompanySearchResponseDto;
 import com.hirepicker.dto.EventDto;
-import com.hirepicker.dto.JobDto;
 import com.hirepicker.service.CompanyDataUpdateService;
 import com.hirepicker.service.CompanyService;
 import com.hirepicker.service.EmploymentData;
@@ -44,14 +43,14 @@ public class CompanyApiController {
   private final CompanyDataUpdateService companyDataUpdateService;
   private final CompanyService companyService;
 
-  @Operation(summary = "채용공고 목록 조회", description = "페이지네이션을 적용하여 채용공고 목록을 조회합니다.")
-  @GetMapping("/work24/jobs")
-  public ResponseEntity<PagedModel<EntityModel<JobDto>>> getJobs(
-      Pageable pageable,
-      PagedResourcesAssembler<JobDto> assembler) {
-    Page<JobDto> jobs = employmentData.getJobs(pageable);
-    return ResponseEntity.ok(assembler.toModel(jobs));
-  }
+//   @Operation(summary = "채용공고 목록 조회", description = "페이지네이션을 적용하여 채용공고 목록을 조회합니다.")
+//   @GetMapping("/work24/jobs")
+//   public ResponseEntity<PagedModel<EntityModel<JobDto>>> getJobs(
+//       Pageable pageable,
+//       PagedResourcesAssembler<JobDto> assembler) {
+//     Page<JobDto> jobs = employmentData.getJobs(pageable);
+//     return ResponseEntity.ok(assembler.toModel(jobs));
+//   }
 
   @Operation(summary = "채용박람회 목록 조회", description = "페이지네이션을 적용하여 채용박람회 목록을 조회합니다.")
   @GetMapping("/work24/events")

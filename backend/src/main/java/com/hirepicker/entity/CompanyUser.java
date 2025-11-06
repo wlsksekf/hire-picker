@@ -66,4 +66,12 @@ public class CompanyUser {
     public void setRefreshToken(RefreshToken refreshToken) {
         this.refreshToken = refreshToken;
     }
+
+    // 인증 파일 경로 (verification_file 컬럼)
+    @Column(name = "verification_file", length = 255)
+    private String verificationFile; // 기업회원 인증 파일 경로
+
+    // 승인 여부 (tinyint, nullable)
+    @Column(name = "is_approved")
+    private Boolean isApproved; // 승인 여부 (null 허용)
 }

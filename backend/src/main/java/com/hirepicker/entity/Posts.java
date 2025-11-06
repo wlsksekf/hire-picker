@@ -45,11 +45,11 @@ public class Posts {
     @Column(nullable = false)
     private LocalDateTime updatedAt;  // TIMESTAMP, 자동등록
 
-    @Column(length = 50)
-    private String fileName;     // VARCHAR(50)
+    @Column(length = 255)
+    private String fileName;     // VARCHAR(255)
 
-    @Column(length = 50)
-    private String imgName;      // VARCHAR(50)
+    @Column(length = 255)
+    private String imgName;      // VARCHAR(255)
 
     // Lombok 자동 getter/setter도 남아있지만 절대로 수동으로 추가X!
 

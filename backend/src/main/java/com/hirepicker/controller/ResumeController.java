@@ -11,12 +11,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
+import java.util.List;
 
 @Tag(name = "이력서", description = "이력서 관리 API")
 @RestController
@@ -54,6 +58,34 @@ public class ResumeController {
         } catch (Exception e) {
             log.error("이력서 저장 실패: 알 수 없는 오류", e);
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @Operation(summary = "이력서 목록", description = "로그인 사용자의 이력서 목록을 반환합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요")
+    })
+    @GetMapping("/resumes")
+    public ResponseEntity<List<com.hirepicker.dto.ResumeListItemDto>> getMyResumes() {
+        // 서비스로 위임해 목록 조회
+        List<com.hirepicker.dto.ResumeListItemDto> list = resumeService.getMyResumes();
+        return ResponseEntity.ok(list);
+    }
+
+    @Operation(summary = "이력서 상세", description = "이력서 ID로 상세 정보를 반환합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "404", description = "존재하지 않음")
+    })
+    @GetMapping("/resume/{id}")
+    public ResponseEntity<com.hirepicker.dto.ResumeDetailDto> getResumeDetail(@PathVariable("id") Long id) {
+        try {
+            com.hirepicker.dto.ResumeDetailDto dto = resumeService.getResumeDetail(id);
+            return ResponseEntity.ok(dto);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).build();
         }
     }
 }

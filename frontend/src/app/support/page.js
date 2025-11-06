@@ -1,4 +1,4 @@
-'''// 고객센터 페이지는 사용자와의 상호작용(검색, 탭, 아코디언)이 많으므로 클라이언트 컴포넌트로 선언
+// 고객센터 페이지는 사용자와의 상호작용(검색, 탭, 아코디언)이 많으므로 클라이언트 컴포넌트로 선언
 'use client';
 
 import React from 'react';
@@ -48,14 +48,25 @@ const SupportPage = () => {
             width: '100%',
             maxWidth: '600px',
             '& .MuiOutlinedInput-root': {
-              borderRadius: '50px', // 타원형 검색창
+              borderRadius: '12px', // 토스/당근 스타일의 부드러운 모서리
               padding: '4px 8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)', // 은은한 그림자
+              backgroundColor: 'background.paper', // 배경색 추가
+            },
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: 'transparent', // 테두리 색상 투명하게
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: 'transparent', // 호버 시에도 테두리 색상 투명하게
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: 'transparent', // 포커스 시에도 테두리 색상 투명하게
             },
           }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ ml: 1 }} />
+                <SearchIcon sx={{ ml: 1, color: 'text.secondary' }} />
               </InputAdornment>
             ),
           }}
@@ -63,11 +74,11 @@ const SupportPage = () => {
       </Box>
 
       {/* 2. 핵심 메뉴 카드 그리드 */}
-      <Grid container spacing={4} justifyContent="center">
+      <Grid container spacing={3} justifyContent="center"> {/* 간격 조정 */}
         {menuItems.map((item) => (
           <Grid item key={item.title} xs={12} sm={6} md={4}>
             <Link href={item.href} passHref style={{ textDecoration: 'none' }}>
-              <CardActionArea component="div">
+              <CardActionArea component="div" sx={{ borderRadius: '12px' }}> {/* CardActionArea에도 borderRadius 적용 */}
                 <Card
                   variant="outlined"
                   sx={{
@@ -77,11 +88,18 @@ const SupportPage = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     height: '100%',
-                    // theme.js에 정의된 hover 스타일을 그대로 사용
+                    borderRadius: '12px', // 토스/당근 스타일의 부드러운 모서리
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)', // 은은한 그림자
+                    borderColor: 'transparent', // 테두리 색상 투명하게
+                    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out', // 호버 효과
+                    '&:hover': {
+                      transform: 'translateY(-4px)', // 살짝 떠오르는 효과
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.12)', // 그림자 강조
+                    },
                   }}
                 >
-                  {item.icon}
-                  <Typography variant="h6" sx={{ mt: 2, fontWeight: 'medium' }}>
+                  {React.cloneElement(item.icon, { sx: { ...item.icon.props.sx, fontSize: 48, color: 'primary.main' } })} {/* 아이콘 색상 및 크기 조정 */}
+                  <Typography variant="h6" sx={{ mt: 2, fontWeight: 'bold', color: 'text.primary' }}> {/* 폰트 굵기 및 색상 조정 */}
                     {item.title}
                   </Typography>
                 </Card>
@@ -95,4 +113,3 @@ const SupportPage = () => {
 };
 
 export default SupportPage;
-'''

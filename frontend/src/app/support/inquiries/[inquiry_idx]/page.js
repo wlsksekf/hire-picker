@@ -1,4 +1,4 @@
-'''// 상세 페이지는 동적 파라미터(inquiry_idx)를 사용하므로 클라이언트 컴포넌트로 선언
+// 상세 페이지는 동적 파라미터(inquiry_idx)를 사용하므로 클라이언트 컴포넌트로 선언
 'use client';
 
 import React from 'react';
@@ -30,7 +30,7 @@ const InquiryDetailPage = () => {
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       {/* 상단: 문의 제목 및 정보 */}
-      <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3, border: 'none', backgroundColor: 'grey.100' }}>
+      <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3, border: 'none', backgroundColor: 'background.paper', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
         <Typography variant="h5" component="h1" sx={{ fontWeight: 'bold' }}>{inquiry.title}</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
           {inquiry.category} · {inquiry.date}
@@ -38,16 +38,17 @@ const InquiryDetailPage = () => {
       </Paper>
 
       {/* 중앙: 채팅 대화 내용 */}
-      <Stack spacing={3}>
+      <Stack spacing={2}>
         {/* 내 질문 (오른쪽) */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Paper sx={{
             p: 2,
             backgroundColor: 'primary.main',
             color: 'primary.contrastText',
-            borderRadius: '20px 20px 4px 20px',
+            borderRadius: '18px 18px 4px 18px', // 토스/당근 스타일 말풍선
             maxWidth: '80%',
             wordBreak: 'break-word',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.08)', // 은은한 그림자
           }}>
             <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
               {inquiry.content}
@@ -58,7 +59,7 @@ const InquiryDetailPage = () => {
         {/* 관리자 답변 (왼쪽) */}
         {inquiry.status === 'ANSWERED' ? (
           <Box sx={{ display: 'flex', justifyContent: 'flex-start', gap: 1.5 }}>
-            <Avatar src="/picky.png" sx={{ width: 40, height: 40 }} />
+            <Avatar src="/picky.png" sx={{ width: 36, height: 36 }} /> {/* 아바타 크기 조정 */}
             <Box>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                 피키
@@ -66,9 +67,10 @@ const InquiryDetailPage = () => {
               <Paper sx={{
                 p: 2,
                 backgroundColor: '#f0f0f0',
-                borderRadius: '4px 20px 20px 20px',
+                borderRadius: '4px 18px 18px 18px', // 토스/당근 스타일 말풍선
                 maxWidth: '100%',
                 wordBreak: 'break-word',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.08)', // 은은한 그림자
               }}>
                 <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
                   {inquiry.answer_content}
@@ -81,12 +83,12 @@ const InquiryDetailPage = () => {
           </Box>
         ) : (
           <Box sx={{ display: 'flex', justifyContent: 'flex-start', gap: 1.5 }}>
-            <Avatar src="/picky.png" sx={{ width: 40, height: 40 }} />
+            <Avatar src="/picky.png" sx={{ width: 36, height: 36 }} /> {/* 아바타 크기 조정 */}
             <Box>
                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                 피키
               </Typography>
-              <Paper sx={{ p: 2, backgroundColor: '#f0f0f0', borderRadius: '4px 20px 20px 20px' }}>
+              <Paper sx={{ p: 2, backgroundColor: '#f0f0f0', borderRadius: '4px 18px 18px 18px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
                 <Typography variant="body1" color="text.secondary">
                   문의 내용을 확인하고 있어요. 조금만 기다려주세요!
                 </Typography>
@@ -99,7 +101,15 @@ const InquiryDetailPage = () => {
       {/* 하단: 목록으로 돌아가기 버튼 */}
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
         <Link href="/support/inquiries" passHref>
-          <Button variant="contained">
+          <Button
+            variant="contained"
+            sx={{
+              borderRadius: '12px',
+              boxShadow: 'none',
+              fontWeight: 'bold',
+              py: 1.5,
+            }}
+          >
             목록으로
           </Button>
         </Link>
@@ -109,4 +119,3 @@ const InquiryDetailPage = () => {
 };
 
 export default InquiryDetailPage;
-'''
