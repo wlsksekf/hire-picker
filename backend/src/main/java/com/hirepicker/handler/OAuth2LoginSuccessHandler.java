@@ -38,34 +38,44 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             Authentication authentication) throws IOException, ServletException {
 
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        // 이메일은 CustomOAuth2UserService에서 PersonalUser에 저장했으므로,
+        // 다시 PersonalUser를 조회하여 사용합니다.
         String email = oAuth2User.getAttribute("email");
         String name = oAuth2User.getAttribute("name");
-        String provider = "GOOGLE"; // Google OAuth2
 
         Optional<PersonalUser> userOptional = personalUserRepository.findByEmail(email);
         PersonalUser personalUser;
 
-        if (userOptional.isEmpty()) {
-            // 최초 로그인: 사용자 정보 저장
-            personalUser = PersonalUser.builder()
-                    .email(email)
-                    .name(name)
-                    .platform(provider)
-                    .nickname(name) // nickname은 name과 동일하게 설정
-                    .gender(null) // gender는 null 허용
-                    .phoneNumber(null)
-                    .address(null)
-                    .build();
-            personalUserRepository.save(personalUser);
-        } else {
-            // 이미 가입된 사용자: 정보 업데이트 (필요시)
+        if (userOptional.isPresent()) {
+            // 이미 가입된 유저라면, 기존 정보를 업데이트 (필요시)
             personalUser = userOptional.get();
             // 예: 이름이 변경되었을 경우 업데이트
             if (!personalUser.getName().equals(name)) {
                 personalUser.setName(name);
                 personalUserRepository.save(personalUser);
             }
+        } else {
+            // 이 부분은 CustomOAuth2UserService에서 이미 PersonalUser를 저장했기 때문에
+            // 여기에 도달할 일이 거의 없어야 합니다.
+            // CustomOAuth2UserService에서 platform 정보도 이미 저장했을 것입니다.
+            // 만약을 대비하여 로직은 유지합니다.
+            personalUser = PersonalUser.builder()
+                    .email(email)
+                    .name(name)
+                    .platform("UNKNOWN") // 여기에 도달하면 platform 정보가 불확실하므로 UNKNOWN으로 설정
+                    .nickname(name)
+                    .gender(null)
+                    .phoneNumber(null)
+                    .address(null)
+                    .build();
+            personalUserRepository.save(personalUser);
+            // 이 시점에서 다시 조회하여 정확한 platform 정보를 가져오는 것이 필요할 수 있습니다.
+            userOptional = personalUserRepository.findByEmail(email);
+            personalUser = userOptional.orElseThrow(() -> new IllegalStateException("Newly created user not found."));
         }
+
+        // PersonalUser에서 plateform 정보를 가져와 사용합니다.
+        String provider = personalUser.getPlatform(); 
 
         String accessToken = jwtTokenProvider.createAccessToken(authentication);
         String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(authentication);

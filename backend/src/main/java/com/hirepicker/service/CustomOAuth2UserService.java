@@ -2,7 +2,7 @@ package com.hirepicker.service;
 
 import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.entity.PersonalUser;
-// import com.hirepicker.entity.Platform; // Platform 임포트 제거
+import com.hirepicker.entity.Platform; // Platform 임포트 활성화
 import com.hirepicker.repository.PersonalUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -28,8 +28,33 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         OAuth2User oAuth2User = super.loadUser(userRequest); // 기본 OAuth2 사용자 정보 로드
         Map<String, Object> attributes = oAuth2User.getAttributes(); // 속성 정보 추출
 
-        String email = (String) attributes.get("email");
-        String name = (String) attributes.get("name");
+        String registrationId = userRequest.getClientRegistration().getRegistrationId(); // registrationId 가져오기
+        String email = null;
+        String name = null;
+        Platform platform = null; // Platform enum 타입으로 변경
+
+        if ("google".equals(registrationId)) {
+            email = (String) attributes.get("email");
+            name = (String) attributes.get("name");
+            platform = Platform.GOOGLE;
+        } else if ("naver".equals(registrationId)) {
+            Map<String, Object> response = (Map<String, Object>) attributes.get("response");
+            if (response != null) {
+                email = (String) response.get("email");
+                name = (String) response.get("name");
+            }
+            platform = Platform.NAVER;
+        } else if ("kakao".equals(registrationId)) {
+            Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
+            if (kakaoAccount != null) {
+                email = (String) kakaoAccount.get("email");
+                Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
+                if (profile != null) {
+                    name = (String) profile.get("nickname");
+                }
+            }
+            platform = Platform.KAKAO;
+        }
 
         Optional<PersonalUser> userOptional = personalUserRepository.findByEmail(email);
 
@@ -43,7 +68,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .email(email)
                     .name(name)
                     .nickname(email) // 닉네임은 일단 이메일로 설정
-                    .platform("GOOGLE") // 플랫폼은 구글로 설정 (String으로 변경)
+                    .platform(platform.name()) // 플랫폼은 enum의 이름을 String으로 저장
                     // TODO: 성별 정보는 구글 스코프에 따라 추가 처리가 필요
                     .gender(com.hirepicker.entity.Gender.MALE) 
                     .build();
