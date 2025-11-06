@@ -18,11 +18,13 @@ export default function PostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [currentUserIdx, setCurrentUserIdx] = useState(null);
+  const [currentUserType, setCurrentUserType] = useState(null);
 
   useEffect(() => {
     axios.get('/api/posts/me', { withCredentials: true })
       .then(response => {
         setCurrentUserIdx(response.data.id);
+        setCurrentUserType(response.data.userType);
       })
       .catch(() => {
         setCurrentUserIdx(null);
@@ -101,7 +103,7 @@ export default function PostDetailPage() {
     return <div style={{ padding: '20px', textAlign: 'center' }}>게시글이 존재하지 않습니다.</div>;
   }
 
-  const isOwner = currentUserIdx && post && String(currentUserIdx) === String(post.puserIdx);
+  const isOwner = String(currentUserType).toLowerCase() == "personal" && currentUserIdx && post && String(currentUserIdx) === String(post.puserIdx);
 
   return (
     <div style={{
