@@ -91,7 +91,14 @@ export default function CompanySignupPage() {
         setIsCodeSent(true);
         setSuccessMessage('인증 코드가 발송되었습니다. 이메일을 확인하세요.');
       })
-      .catch(err => setError(err.response?.data || '인증 코드 발송에 실패했습니다.'))
+      .catch(err => {
+        // 에러 응답이 객체인 경우 문자열로 변환
+        const errorMsg = err.response?.data;
+        const errorText = typeof errorMsg === 'object'
+          ? (errorMsg.message || JSON.stringify(errorMsg))
+          : (errorMsg || '인증 코드 발송에 실패했습니다.');
+        setError(errorText);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -107,7 +114,14 @@ export default function CompanySignupPage() {
         setIsCodeConfirmed(true);
         setSuccessMessage(response.data);
       })
-      .catch(err => setError(err.response?.data || '인증 코드 확인에 실패했습니다.'))
+      .catch(err => {
+        // 에러 응답이 객체인 경우 문자열로 변환
+        const errorMsg = err.response?.data;
+        const errorText = typeof errorMsg === 'object'
+          ? (errorMsg.message || JSON.stringify(errorMsg))
+          : (errorMsg || '인증 코드 확인에 실패했습니다.');
+        setError(errorText);
+      })
       .finally(() => setVerifyLoading(false));
   };
 
@@ -130,12 +144,23 @@ export default function CompanySignupPage() {
     }
 
     setLoading(true);
-    signupCompany(formData)
+
+    // passwordConfirm은 프론트엔드 검증용이므로 백엔드로 보내지 않음
+    const { passwordConfirm, ...signupData } = formData;
+
+    signupCompany(signupData)
       .then(() => {
         alert('기업 회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.');
         router.push('/login');
       })
-      .catch(err => setError(err.response?.data || '회원가입에 실패했습니다.'))
+      .catch(err => {
+        // 에러 응답이 객체인 경우 문자열로 변환
+        const errorMsg = err.response?.data;
+        const errorText = typeof errorMsg === 'object'
+          ? (errorMsg.message || JSON.stringify(errorMsg))
+          : (errorMsg || '회원가입에 실패했습니다.');
+        setError(errorText);
+      })
       .finally(() => setLoading(false));
   };
 
