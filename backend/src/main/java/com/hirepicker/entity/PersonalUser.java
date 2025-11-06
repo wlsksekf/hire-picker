@@ -47,6 +47,9 @@ public class PersonalUser {
     @Column(name = "address") // "address" 컬럼과 매핑
     private String address;
 
+    @Column(name = "birth_date") // 생년월일 컬럼 매핑
+    private LocalDate birthDate; // YYYY-MM-DD
+
     @Column(nullable = false) // null이 될 수 없는 컬럼
     private String platform; // Platform enum 대신 String으로 변경
 
