@@ -24,7 +24,8 @@ public class ProfileService {
 
     // 개인회원 기본정보 업데이트 (비밀번호 제외)
     @Transactional
-    public void updatePersonalUser(Long userId, String name, String gender, String phoneNumber, String address, String encodedPassword, String nickname) {
+    // 생년월일(birth_date)까지 반영하도록 확장
+    public void updatePersonalUser(Long userId, String name, String gender, String phoneNumber, String address, String birthDate, String encodedPassword, String nickname) {
         // 닉네임은 별도 컨트롤러에서 중복 체크 이미 수행, 여기서는 전달된 값만 반영
         // 선택적 필드 업데이트를 위해 각각 개별 쿼리 수행 (간단 구현)
         if (encodedPassword != null && !encodedPassword.isBlank()) {
@@ -44,6 +45,10 @@ public class ProfileService {
         }
         if (address != null) {
             jdbcTemplate.update("UPDATE personal_user SET address=? WHERE p_user_idx=?", address.trim(), userId);
+        }
+        if (birthDate != null && !birthDate.isBlank()) {
+            // 'YYYY-MM-DD' 형식을 LocalDate로 변환해 저장
+            jdbcTemplate.update("UPDATE personal_user SET birth_date=? WHERE p_user_idx=?", java.sql.Date.valueOf(birthDate.trim()), userId);
         }
     }
 

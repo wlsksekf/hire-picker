@@ -1,242 +1,277 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from "react";
+import useAuthStore from "@/store/authStore"; // 인증 스토어 사용
+import { api } from "@/api"; // API 클라이언트
 import {
-  Container,
-  Paper,
-  Box,
-  Typography,
-  TextField,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Divider,
-  CircularProgress, // 로딩 스피너
-  // --- Dialog(팝업) 관련 컴포넌트 추가 ---
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-} from '@mui/material';
-import { styled } from '@mui/material/styles';
-import useAuthStore from '@/store/authStore'; // Zustand 스토어 (로그인 정보 가져오기용)
-import { api } from '@/api'; // API 래퍼 (데이터 로드/전송용)
-// --- PDF 관련 컴포넌트 임포트 ---
-import dynamic from 'next/dynamic'; // next/dynamic 임포트
-import ResumePdfDocument from '@/components/ResumePdfDocument';
-import Loader from '@/components/Loader'; // 로더 컴포넌트 추가
-import Image from 'next/image'; // Next.js Image 컴포넌트
-import { pdf } from '@react-pdf/renderer'; // pdf 함수 임포트
+  getUserProfile,
+  getAcademics,
+  getExperiences,
+  getMilitary,
+  updateUserProfileDetails,
+} from "@/api"; // 프로필/학력/경력/병역 API
+import ResumePdfDocument from "@/components/ResumePdfDocument";
+import { pdf } from "@react-pdf/renderer"; // PDF 생성
+import ResumeForm from "@/components/ResumeForm";
 
-// --- 스타일 컴포넌트 정의 ---
-
-// 테이블의 '헤더' 셀 스타일 (예: "성명", "주소" 등 라벨)
-const StyledLabelCell = styled(TableCell)(({ theme }) => ({
-  backgroundColor: theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[800],
-  fontWeight: 'bold',
-  border: '1px solid #ccc',
-  textAlign: 'center',
-  width: '15%', // 라벨 칸 너비 고정
-}));
-
-// 테이블의 '입력' 셀 스타일
-const StyledInputCell = styled(TableCell)(() => ({
-  border: '1px solid #ccc',
-  padding: '4px 8px', // 패딩을 살짝 줘서 입력창이 붙지 않게 함
-}));
-
-// 테이블 셀 안에서 테두리(underline)가 없는 깔끔한 텍스트 필드
-const FormTextField = (props) => (
-  <TextField
-    variant="standard"
-    fullWidth
-    InputProps={{ disableUnderline: true, ...props.InputProps }}
-    {...props}
-    sx={{ padding: '4px' }}
-  />
-);
-
-// --- AI 이력서 작성 페이지 컴포넌트 ---
+// 성별 텍스트 정규화 유틸
+const normalizeGender = (v) => {
+  if (!v) return "male";
+  const s = String(v).toLowerCase();
+  if (["female", "f", "여", "여성", "여자"].some((k) => s.includes(k))) return "female";
+  if (["male", "m", "남", "남성", "남자"].some((k) => s.includes(k))) return "male";
+  return "male";
+};
 
 export default function AiResumePage() {
-  const { isAuthenticated, user } = useAuthStore((state) => state); // Zustand에서 사용자 정보 가져오기
-  const [isLoading, setIsLoading] = useState(false); // AI 응답 로딩 상태
-  const [selectedImage, setSelectedImage] = useState(null); // 선택된 이미지 파일
-  const [previewImage, setPreviewImage] = useState(null); // 미리보기 이미지 URL
+  const { isAuthenticated, user } = useAuthStore((state) => state);
 
-  // --- 팝업 상태 관리 state 추가 ---
-  const [dialogOpen, setDialogOpen] = useState(false); // 메인 선택 팝업
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false); // 삭제 확인 팝업
-  const [isClient, setIsClient] = useState(false); // 클라이언트 렌더링 확인용
+  // 로컬 상태
+  const [isLoading, setIsLoading] = useState(false); // 로딩 상태
+  const [selectedImage, setSelectedImage] = useState(null); // 업로드 파일
+  const [previewImage, setPreviewImage] = useState(null); // 미리보기 URL
 
-  // 페이지가 마운트된 후 isClient를 true로 설정
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  // 다이얼로그 상태
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
-  // 선택된 이미지가 변경될 때마다 미리보기 URL 생성 및 해제
-  useEffect(() => {
-    // 선택된 파일이 있을 때만 FileReader 실행
-    if (selectedImage) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewImage(reader.result);
-      };
-      reader.readAsDataURL(selectedImage);
-    } else {
-      // selectedImage가 null이면 (예: 업로드 취소) 미리보기 이미지도 null로
-      setPreviewImage(null);
-    }
-
-    // (참고) 클린업 함수는 data URL을 쓸 땐 필수는 아니지만,
-    // Object URL(URL.createObjectURL)을 쓴다면 여기서 URL.revokeObjectURL을 해줘야 해.
-  }, [selectedImage]);
-
-
-  // 이력서 폼의 모든 데이터를 관리하는 state
+  // 폼 데이터 상태
   const [formData, setFormData] = useState({
-    // 인적 사항
-    name: '',
-    nationality: '',
-    gender: 'male', // 기본값
-    birthdate: '',
-    phone: '',
-    email: '',
-    address: '',
+    // 기본 정보
+    name: "",
+    nationality: "내국인", // UI 고정 표시
+    gender: "male",
+    birthdate: "",
+    phone: "",
+    email: "",
+    address: "",
 
-    // 학력 사항 (원본처럼 2줄 하드코딩)
-    edu1_period: '',
-    edu1_school: '',
-    edu1_major: '',
-    edu1_status: '',
-    edu1_location: '',
-    edu1_score: '',
-    edu2_period: '',
-    edu2_school: '',
-    edu2_major: '',
-    edu2_status: '',
-    edu2_location: '',
-    edu2_score: '',
+    // 학력 (최대 2개)
+    edu1_period: "",
+    edu1_school: "",
+    edu1_major: "",
+    edu1_status: "",
+    edu1_location: "",
+    edu1_score: "",
+    edu2_period: "",
+    edu2_school: "",
+    edu2_major: "",
+    edu2_status: "",
+    edu2_location: "",
+    edu2_score: "",
 
-    // 병역 사항
-    military_status: '필',
-    military_branch: '',
-    military_rank: '',
-    military_period: '',
-    military_reason: '',
+    // 병역
+    military_status: "",
+    military_branch: "",
+    military_rank: "",
+    military_period: "",
+    military_reason: "",
 
-    // 자격 사항 (원본처럼 3줄 하드코딩)
-    cert1_name: '',
-    cert1_level: '',
-    cert1_date: '',
-    cert1_issuer: '',
-    cert2_name: '',
-    cert2_level: '',
-    cert2_date: '',
-    cert2_issuer: '',
-    cert3_name: '',
-    cert3_level: '',
-    cert3_date: '',
-    cert3_issuer: '',
+    // 자격증 (최대 3개)
+    cert1_name: "",
+    cert1_level: "",
+    cert1_date: "",
+    cert1_issuer: "",
+    cert2_name: "",
+    cert2_level: "",
+    cert2_date: "",
+    cert2_issuer: "",
+    cert3_name: "",
+    cert3_level: "",
+    cert3_date: "",
+    cert3_issuer: "",
 
-    // 경력 사항
-    exp1_period: '',
-    exp1_company: '',
-    exp1_position: '',
-    exp1_duties: '',
-    exp1_type: '',
-    exp2_period: '',
-    exp2_company: '',
-    exp2_position: '',
-    exp2_duties: '',
-    exp2_type: '',
+    // 경력 (최대 2개)
+    exp1_period: "",
+    exp1_company: "",
+    exp1_position: "",
+    exp1_duties: "",
+    exp1_type: "",
+    exp2_period: "",
+    exp2_company: "",
+    exp2_position: "",
+    exp2_duties: "",
+    exp2_type: "",
 
-    // 자기소개서
-    selfGrowth: '',
-    selfStrengths: '',
-    selfMotivation: '',
-    selfAspirations: '',
-
-
+    // 자기소개
+    selfGrowth: "",
+    selfStrengths: "",
+    selfMotivation: "",
+    selfAspirations: "",
 
     // AI 프롬프트
-    aiPrompt: '',
+    aiPrompt: "",
   });
 
-  // 페이지 로드 시 DB에서 사용자 기본 정보 불러오기
+  // 사용자 기본값 반영
   useEffect(() => {
-    if (user) { // user 정보가 있을 때만 실행
+    if (user) {
       setFormData((prev) => ({
         ...prev,
-        name: user.name || '',
-        gender: user.gender || 'male',
-        phone: user.phoneNumber || '',
-        email: user.email || '',
-        address: user.address || '',
-        // birthdate는 user 객체에 없을 수 있으므로 기존 formData 값을 유지하거나 별도 처리
+        name: user.name || "",
+        gender: normalizeGender(user.gender),
+        phone: user.phoneNumber || "",
+        email: user.email || "",
+        address: user.address || "",
       }));
     }
-  }, [user]); // user 객체가 변경될 때마다 실행
+  }, [user]);
 
-  // 폼 입력값을 처리하는 공통 핸들러
+  // 학력/경력/병역 불러오기
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const [p, a, e, m] = await Promise.allSettled([
+          getUserProfile(),
+          getAcademics(),
+          getExperiences(),
+          getMilitary(),
+        ]);
+
+        if (!mounted) return;
+
+        setFormData((prev) => {
+          const next = { ...prev };
+
+          // 프로필
+          if (p.status === "fulfilled" && p.value) {
+            const prof = p.value;
+            next.name = prof.name ?? next.name;
+            if (prof.gender) next.gender = normalizeGender(prof.gender);
+            next.phone = prof.phoneNumber ?? next.phone;
+            next.email = prof.email ?? next.email;
+            next.address = prof.address ?? next.address;
+            next.birthdate = prof.birthDate ?? next.birthdate;
+          }
+
+          // 학력 (2개까지만 매핑)
+          if (a.status === "fulfilled" && Array.isArray(a.value)) {
+            const list = a.value;
+            const mapAcademic = (src) => ({
+              school: src?.schoolName || "",
+              major: src?.major || "",
+              status: src?.degree || "",
+              score: src?.majorScore != null ? String(src.majorScore) : "",
+              period: "",
+              location: "",
+            });
+            const a1 = list[0] ? mapAcademic(list[0]) : null;
+            const a2 = list[1] ? mapAcademic(list[1]) : null;
+            if (a1) {
+              next.edu1_school = a1.school;
+              next.edu1_major = a1.major;
+              next.edu1_status = a1.status;
+              next.edu1_score = a1.score;
+              next.edu1_period = a1.period;
+              next.edu1_location = a1.location;
+            }
+            if (a2) {
+              next.edu2_school = a2.school;
+              next.edu2_major = a2.major;
+              next.edu2_status = a2.status;
+              next.edu2_score = a2.score;
+              next.edu2_period = a2.period;
+              next.edu2_location = a2.location;
+            }
+          }
+
+          // 경력 (2개까지만 매핑)
+          if (e.status === "fulfilled" && Array.isArray(e.value)) {
+            const list = e.value;
+            const fmt = (it) => {
+              const s = it?.hireDate || "";
+              const t = it?.resignDate || "";
+              return s && t ? `${s} ~ ${t}` : s || t || "";
+            };
+            const e1 = list[0];
+            const e2 = list[1];
+            if (e1) {
+              next.exp1_company = e1.companyName || "";
+              next.exp1_position = e1.position || "";
+              next.exp1_duties = e1.mainDuties || e1.jobDescription || "";
+              next.exp1_period = fmt(e1);
+              next.exp1_type = next.exp1_type || "";
+            }
+            if (e2) {
+              next.exp2_company = e2.companyName || "";
+              next.exp2_position = e2.position || "";
+              next.exp2_duties = e2.mainDuties || e2.jobDescription || "";
+              next.exp2_period = fmt(e2);
+              next.exp2_type = next.exp2_type || "";
+            }
+          }
+
+          // 병역
+          if (m.status === "fulfilled" && m.value) {
+            const ms = m.value;
+            next.military_status = ms.serviceType || next.military_status;
+            next.military_branch = ms.militaryBranch || "";
+            next.military_rank = ms.militaryRank || "";
+            next.military_period = ms.periodOfService || "";
+            next.military_reason = ms.reasonForExemption || "";
+          }
+
+          return next;
+        });
+      } catch (err) {
+        console.error("초기 데이터 로드 실패:", err);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // 공통 입력 핸들러
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 이미지 파일 선택 핸들러
+  // 이미지 선택 핸들러
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedImage(file);
-    } else {
-      setSelectedImage(null);
-    }
+    const file = e.target.files?.[0];
+    setSelectedImage(file || null);
   };
 
-  // AI에게 보낼 사용자 데이터를 문자열로 변환하는 헬퍼 함수
-  const serializeUserData = () => {
-    let userDataString = "";
-    userDataString += `이름: ${formData.name}, 성별: ${formData.gender}, 생년월일: ${formData.birthdate}, 연락처: ${formData.phone}, 이메일: ${formData.email}, 주소: ${formData.address}\n`;
-    userDataString += `학력1: ${formData.edu1_period}, ${formData.edu1_school}, ${formData.edu1_major}, ${formData.edu1_status}, ${formData.edu1_score}\n`;
-    userDataString += `학력2: ${formData.edu2_period}, ${formData.edu2_school}, ${formData.edu2_major}, ${formData.edu2_status}, ${formData.edu2_score}\n`;
-    userDataString += `병역: ${formData.military_status}, ${formData.military_branch}, ${formData.military_rank}, ${formData.military_period}\n`;
-    userDataString += `자격증1: ${formData.cert1_name}, ${formData.cert1_level}, ${formData.cert1_date}\n`;
-    userDataString += `자격증2: ${formData.cert2_name}, ${formData.cert2_level}, ${formData.cert2_date}\n`;
-    userDataString += `자격증3: ${formData.cert3_name}, ${formData.cert3_level}, ${formData.cert3_date}\n`;
-    userDataString += `경력1: ${formData.exp1_period}, ${formData.exp1_company}, ${formData.exp1_position}, ${formData.exp1_duties}\n`;
-    userDataString += `경력2: ${formData.exp2_period}, ${formData.exp2_company}, ${formData.exp2_position}, ${formData.exp2_duties}\n`;
-    return userDataString;
-  }
+  // 이미지 미리보기 생성
+  useEffect(() => {
+    if (selectedImage) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreviewImage(reader.result);
+      reader.readAsDataURL(selectedImage);
+    } else {
+      setPreviewImage(null);
+    }
+  }, [selectedImage]);
 
-  // --- AI 호출 로직 (핵심) ---
-  const callAiApi = (mode = 'generate') => {
+  // AI 전달용 문자열 생성
+  const serializeUserData = () => {
+    let s = "";
+    s += `이름: ${formData.name}, 성별: ${formData.gender}, 생년월일: ${formData.birthdate}, 연락처: ${formData.phone}, 이메일: ${formData.email}, 주소: ${formData.address}\n`;
+    s += `학력1: ${formData.edu1_period}, ${formData.edu1_school}, ${formData.edu1_major}, ${formData.edu1_status}, ${formData.edu1_score}\n`;
+    s += `학력2: ${formData.edu2_period}, ${formData.edu2_school}, ${formData.edu2_major}, ${formData.edu2_status}, ${formData.edu2_score}\n`;
+    s += `병역: ${formData.military_status}, ${formData.military_branch}, ${formData.military_rank}, ${formData.military_period}\n`;
+    s += `자격증1: ${formData.cert1_name}, ${formData.cert1_level}, ${formData.cert1_date}\n`;
+    s += `자격증2: ${formData.cert2_name}, ${formData.cert2_level}, ${formData.cert2_date}\n`;
+    s += `자격증3: ${formData.cert3_name}, ${formData.cert3_level}, ${formData.cert3_date}\n`;
+    s += `경력1: ${formData.exp1_period}, ${formData.exp1_company}, ${formData.exp1_position}, ${formData.exp1_duties}\n`;
+    s += `경력2: ${formData.exp2_period}, ${formData.exp2_company}, ${formData.exp2_position}, ${formData.exp2_duties}\n`;
+    return s;
+  };
+
+  // AI 호출
+  const callAiApi = (mode = "generate") => {
     setIsLoading(true);
     setDialogOpen(false);
     setConfirmDialogOpen(false);
 
     const userData = serializeUserData();
-    const jobPostingData = formData.aiPrompt || "(요청사항 없음)";
+    const jobPostingData = formData.aiPrompt || "(채용공고 요약)";
 
-    // 백엔드로 보낼 데이터 객체
-    const requestBody = {
-      userData,
-      jobPostingData,
-    };
-
-    // "다듬기" 모드일 경우, 기존 자소서 내용을 추가로 전송
-    if (mode === 'refine') {
+    const requestBody = { userData, jobPostingData };
+    if (mode === "refine") {
       requestBody.resumeDraft = {
         growthProcess: formData.selfGrowth,
         jobCompetencies: formData.selfMotivation,
@@ -245,9 +280,11 @@ export default function AiResumePage() {
       };
     }
 
-    api.post('/api/ai/resume-draft', requestBody)
-      .then(response => {
-        const { growthProcess, jobCompetencies, prosAndCons, aspirations } = response.data;
+    api
+      .post("/api/ai/resume-draft", requestBody)
+      .then((response) => {
+        const { growthProcess, jobCompetencies, prosAndCons, aspirations } =
+          response.data;
         setFormData((prev) => ({
           ...prev,
           selfGrowth: growthProcess,
@@ -256,580 +293,121 @@ export default function AiResumePage() {
           selfAspirations: aspirations,
         }));
       })
-      .catch(error => {
-        console.error("AI 자기소개서 생성 실패:", error);
-        alert("AI 자기소개서 생성 중 오류가 발생했습니다.");
+      .catch((error) => {
+        console.error("AI 초안/개선 요청 실패:", error);
+        alert("AI 요청 처리 중 오류가 발생했습니다.");
       })
-      .finally(() => {
-        setIsLoading(false);
-      });
+      .finally(() => setIsLoading(false));
   };
 
-
-
-  // "AI로 작성하기" 버튼 클릭 핸들러 (로직 수정)
+  // AI 생성 버튼
   const handleAiGenerate = () => {
     if (!isAuthenticated) {
-      alert("AI 기능을 사용하려면 로그인이 필요합니다.");
+      alert("AI 사용을 위해 로그인이 필요합니다.");
       return;
     }
-
-    // 자기소개서에 이미 내용이 있는지 확인
-    const hasExistingContent =
+    const hasExisting =
       formData.selfGrowth ||
       formData.selfStrengths ||
       formData.selfMotivation ||
       formData.selfAspirations;
-
-    if (hasExistingContent) {
-      setDialogOpen(true); // 내용이 있으면 팝업 열기
-    } else {
-      callAiApi('generate'); // 내용이 없으면 바로 새로 생성
-    }
+    if (hasExisting) setDialogOpen(true);
+    else callAiApi("generate");
   };
 
-  // --- 팝업(Dialog) 관련 핸들러 ---
-
-  // 메인 팝업 닫기
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-  };
-
-  // "기존 내용 다듬기" 선택
-  const handleRefine = () => {
-    callAiApi('refine');
-  };
-
-  // "새로 작성하기" 선택 -> 확인 팝업 열기
+  // 다이얼로그 핸들러
+  const handleDialogClose = () => setDialogOpen(false);
+  const handleRefine = () => callAiApi("refine");
   const handleStartFresh = () => {
     setDialogOpen(false);
     setConfirmDialogOpen(true);
   };
+  const handleConfirmDialogClose = () => setConfirmDialogOpen(false);
+  const handleConfirmStartFresh = () => callAiApi("generate");
 
-  // 삭제 확인 팝업 닫기
-  const handleConfirmDialogClose = () => {
-    setConfirmDialogOpen(false);
-  };
-
-  // 최종적으로 "새로 작성" 확정
-  const handleConfirmStartFresh = () => {
-    callAiApi('generate');
-  };
-
-  // --- 이력서 저장 핸들러 ---
+  // 저장 처리
   const handleSaveResume = () => {
     if (!isAuthenticated) {
-      alert("이력서를 저장하려면 로그인이 필요합니다.");
+      alert("저장을 위해 로그인이 필요합니다.");
       return;
-    }
-
-    // selectedImage는 파일 선택 input에서 가져온 File 객체
-    if (selectedImage) { // formData.imageUrl이 제거되므로 이 조건은 selectedImage만 확인하게 됨
-      console.log("S3에 업로드되지 않은 로컬 이미지가 있습니다. 함께 전송합니다.");
     }
 
     setIsLoading(true);
 
-    // 1. FormData 객체 생성
     const submissionData = new FormData();
+    const resumeDto = { ...formData, p_user_idx: user?.puserIdx };
+    submissionData.append(
+      "resumeDto",
+      new Blob([JSON.stringify(resumeDto)], { type: "application/json" })
+    );
+    if (selectedImage) submissionData.append("imageFile", selectedImage);
 
-    // 2. 이력서 데이터를 JSON 문자열로 변환
-    const resumeDto = {
-      ...formData,
-      p_user_idx: user?.puserIdx,
-    };
+    (async () => {
+      try {
+        // 프로필 업데이트 (선택적)
+        const g = formData.gender ? String(formData.gender).toLowerCase() : "";
+        const mappedGender = g === "female" ? "FEMALE" : g === "male" ? "MALE" : undefined;
+        const profilePayload = {
+          name: formData.name || undefined,
+          gender: mappedGender,
+          phoneNumber: formData.phone || undefined,
+          address: formData.address || undefined,
+          birthdate: formData.birthdate || undefined,
+        };
+        await updateUserProfileDetails(profilePayload);
+      } catch (e) {
+        console.warn("프로필 업데이트 실패(무시 가능)", e);
+      }
 
-    // 3. FormData에 데이터 추가
-    // DTO는 'resumeDto'라는 이름의 파트로, Blob 객체로 감싸서 전송
-    submissionData.append('resumeDto', new Blob([JSON.stringify(resumeDto)], { type: "application/json" }));
-
-    // 이미지 파일은 'imageFile'이라는 이름의 파트로 추가
-    if (selectedImage) {
-      submissionData.append('imageFile', selectedImage);
-    }
-
-    // 4. api.post 호출 (Content-Type 헤더는 axios가 자동으로 설정하도록 비워둠)
-    api.post('/api/resume', submissionData, {
-      headers: {
-        // 'Content-Type': 'multipart/form-data' // 이 헤더는 axios가 자동으로 생성하므로 명시적으로 설정하지 않음
-      },
-    })
-      .then(response => {
-        if (response.status === 201) {
-          alert("이력서가 성공적으로 저장되었습니다.");
-        }
-      })
-      .catch(error => {
-        console.error("이력서 저장 실패:", error);
-        alert("이력서 저장 중 오류가 발생했습니다.");
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+      return api
+        .post("/api/resume", submissionData, { headers: {} })
+        .then((response) => {
+          if (response.status === 201) alert("이력서 저장이 완료되었습니다.");
+        })
+        .catch((error) => {
+          console.error("이력서 저장 실패:", error);
+          alert("이력서 저장 중 오류가 발생했습니다.");
+        })
+        .finally(() => setIsLoading(false));
+    })();
   };
 
-  // PDF 다운로드 핸들러 (Blob URL 방식)
+  // PDF 다운로드
   const handleDownload = async () => {
     try {
-      const blob = await pdf(<ResumePdfDocument formData={formData} imageUrl={previewImage} />).toBlob();
+      const blob = await pdf(
+        <ResumePdfDocument formData={formData} imageUrl={previewImage} />
+      ).toBlob();
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = '이력서.pdf';
+      link.download = "이력서.pdf";
       link.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('PDF 다운로드 중 오류:', error);
+      console.error("PDF 생성 실패:", error);
     }
   };
 
-
+  // 페이지는 상태/핸들러를 제공하고, UI는 컴포넌트에 위임
   return (
-    <>
-      {/* --- 로딩 오버레이 --- */}
-      {isLoading && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)', // 배경을 희미하게 처리
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 9999, // 다른 요소들 위에 표시
-          }}
-        >
-          <Loader />
-        </Box>
-      )}
-
-      <Container maxWidth="md">
-        <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, my: 4 }}>
-          <Box component="form" noValidate autoComplete="off">
-
-            <Typography variant="h4" align="center" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-              입사지원서
-            </Typography>
-
-            {/* --- 1. 기본 인적 사항 --- */}
-            <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
-              {/* 사진 영역 */}
-              <Box sx={{
-                width: '120px',
-                height: '160px',
-                border: '2px dashed',
-                borderColor: 'grey.400',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                position: 'relative',
-                overflow: 'hidden', // Image가 Box 밖으로 나가지 않게
-              }}>
-                {previewImage ? (
-                  <Image src={previewImage} alt="미리보기" fill style={{ objectFit: 'cover' }} />
-                ) : (
-                  <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
-                    사진을 드래그하거나 클릭해 업로드
-                  </Typography>
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  id="profile-image-upload" // id 추가
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    opacity: 0,
-                    cursor: 'pointer',
-                    zIndex: 1, // input이 위에 오도록 zIndex 설정
-                  }}
-                />
-
-              </Box>
-
-              {/* 인적사항 테이블 영역 */}
-              <TableContainer sx={{ border: '1px solid #ccc', width: '100%' }}>
-                <Table sx={{ tableLayout: 'fixed' }}>
-                  <TableBody>
-                    <TableRow>
-                      <StyledLabelCell>성명</StyledLabelCell>
-                      <StyledInputCell>
-                        <FormTextField name="name" value={formData.name} onChange={handleChange} />
-                      </StyledInputCell>
-                      <StyledLabelCell>국적</StyledLabelCell>
-                      <StyledInputCell>
-                        <FormTextField name="nationality" value={formData.nationality} onChange={handleChange} />
-                      </StyledInputCell>
-                    </TableRow>
-                    <TableRow>
-                      <StyledLabelCell>성별</StyledLabelCell>
-                      <StyledInputCell>
-                        <RadioGroup row name="gender" value={formData.gender} onChange={handleChange}>
-                          <FormControlLabel value="male" control={<Radio size="small" />} label="남" />
-                          <FormControlLabel value="female" control={<Radio size="small" />} label="여" />
-                        </RadioGroup>
-                      </StyledInputCell>
-                      <StyledLabelCell>생년월일</StyledLabelCell>
-                      <StyledInputCell>
-                        <FormTextField name="birthdate" value={formData.birthdate} onChange={handleChange} placeholder="YYYY-MM-DD" />
-                      </StyledInputCell>
-                    </TableRow>
-                    <TableRow>
-                      <StyledLabelCell>휴대폰</StyledLabelCell>
-                      <StyledInputCell>
-                        <FormTextField name="phone" value={formData.phone} onChange={handleChange} />
-                      </StyledInputCell>
-                      <StyledLabelCell>E-mail</StyledLabelCell>
-                      <StyledInputCell>
-                        <FormTextField name="email" value={formData.email} onChange={handleChange} />
-                      </StyledInputCell>
-                    </TableRow>
-                    <TableRow>
-                      <StyledLabelCell>주소</StyledLabelCell>
-                      <StyledInputCell colSpan={3}>
-                        <FormTextField name="address" value={formData.address} onChange={handleChange} />
-                      </StyledInputCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Box>
-
-            {/* --- 2. 학력 사항 --- */}
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-              [학력사항]
-            </Typography>
-            <TableContainer sx={{ border: '1px solid #ccc', mb: 4 }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <StyledLabelCell sx={{ width: '25%' }}>기간</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: '15%' }}>학교명</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: '20%' }}>학과</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: '15%' }}>졸업구분</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: '10%' }}>소재지</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: '15%' }}>학점</StyledLabelCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {/* 학력 1 */}
-                  <TableRow>
-                    <StyledInputCell><FormTextField name="edu1_period" value={formData.edu1_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="edu1_school" value={formData.edu1_school} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="edu1_major" value={formData.edu1_major} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="edu1_status" value={formData.edu1_status} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="edu1_location" value={formData.edu1_location} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="edu1_score" value={formData.edu1_score} onChange={handleChange} /></StyledInputCell>
-                  </TableRow>
-                  {/* 학력 2 */}
-                  <TableRow>
-                    <StyledInputCell><FormTextField name="edu2_period" value={formData.edu2_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="edu2_school" value={formData.edu2_school} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="edu2_major" value={formData.edu2_major} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="edu2_status" value={formData.edu2_status} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="edu2_location" value={formData.edu2_location} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="edu2_score" value={formData.edu2_score} onChange={handleChange} /></StyledInputCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            {/* --- 3. 병역 사항 --- */}
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-              [병역사항]
-            </Typography>
-            <TableContainer sx={{ border: '1px solid #ccc', mb: 4 }}>
-              <Table>
-                <TableBody>
-                  <TableRow>
-                    <StyledLabelCell>구분</StyledLabelCell>
-                    <StyledInputCell>
-                      <RadioGroup row name="military_status" value={formData.military_status} onChange={handleChange}>
-                        <FormControlLabel value="필" control={<Radio size="small" />} label="병역필" />
-                        <FormControlLabel value="미필" control={<Radio size="small" />} label="미필" />
-                        <FormControlLabel value="해당없음" control={<Radio size="small" />} label="해당없음" />
-                      </RadioGroup>
-                    </StyledInputCell>
-                    <StyledLabelCell>군별</StyledLabelCell>
-                    <StyledInputCell><FormTextField name="military_branch" value={formData.military_branch} onChange={handleChange} /></StyledInputCell>
-                  </TableRow>
-                  <TableRow>
-                    <StyledLabelCell>계급</StyledLabelCell>
-                    <StyledInputCell><FormTextField name="military_rank" value={formData.military_rank} onChange={handleChange} /></StyledInputCell>
-                    <StyledLabelCell>복무기간</StyledLabelCell>
-                    <StyledInputCell><FormTextField name="military_period" value={formData.military_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
-                  </TableRow>
-                  <TableRow>
-                    <StyledLabelCell>면제사유</StyledLabelCell>
-                    <StyledInputCell colSpan={3}>
-                      <FormTextField name="military_reason" value={formData.military_reason} onChange={handleChange} />
-                    </StyledInputCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            {/* --- 4. 자격 및 면허 취득 사항 --- */}
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-              [자격 및 면허 취득 사항]
-            </Typography>
-            <TableContainer sx={{ border: '1px solid #ccc', mb: 4 }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <StyledLabelCell sx={{ width: '35%' }}>자격증명</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: '20%' }}>등급(점수)</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: '20%' }}>취득년월</StyledLabelCell>
-                    <StyledLabelCell>발급기관</StyledLabelCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {/* 자격증 1 */}
-                  <TableRow>
-                    <StyledInputCell><FormTextField name="cert1_name" value={formData.cert1_name} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert1_level" value={formData.cert1_level} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert1_date" value={formData.cert1_date} onChange={handleChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert1_issuer" value={formData.cert1_issuer} onChange={handleChange} /></StyledInputCell>
-                  </TableRow>
-                  {/* 자격증 2 */}
-                  <TableRow>
-                    <StyledInputCell><FormTextField name="cert2_name" value={formData.cert2_name} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert2_level" value={formData.cert2_level} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert2_date" value={formData.cert2_date} onChange={handleChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert2_issuer" value={formData.cert2_issuer} onChange={handleChange} /></StyledInputCell>
-                  </TableRow>
-                  {/* 자격증 3 */}
-                  <TableRow>
-                    <StyledInputCell><FormTextField name="cert3_name" value={formData.cert3_name} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert3_level" value={formData.cert3_level} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert3_date" value={formData.cert3_date} onChange={handleChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert3_issuer" value={formData.cert3_issuer} onChange={handleChange} /></StyledInputCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            {/* --- 5. 경력사항 --- */}
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-              [경력사항]
-            </Typography>
-            <TableContainer sx={{ border: '1px solid #ccc', mb: 4 }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <StyledLabelCell sx={{ width: '25%' }}>근무기간</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: '20%' }}>회사명</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: '15%' }}>직위</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: '30%' }}>담당업무</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: '10%' }}>구분</StyledLabelCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {/* 경력 1 */}
-                  <TableRow>
-                    <StyledInputCell><FormTextField name="exp1_period" value={formData.exp1_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp1_company" value={formData.exp1_company} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp1_position" value={formData.exp1_position} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp1_duties" value={formData.exp1_duties} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp1_type" value={formData.exp1_type} onChange={handleChange} /></StyledInputCell>
-                  </TableRow>
-                  {/* 경력 2 */}
-                  <TableRow>
-                    <StyledInputCell><FormTextField name="exp2_period" value={formData.exp2_period} onChange={handleChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp2_company" value={formData.exp2_company} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp2_position" value={formData.exp2_position} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp2_duties" value={formData.exp2_duties} onChange={handleChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp2_type" value={formData.exp2_type} onChange={handleChange} /></StyledInputCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            {/* --- 6. 자기소개서 --- */}
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mt: 4 }}>
-              [자기소개서]
-            </Typography>
-            <Box sx={{ mb: 2 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={8}
-                label="1. 성장과정"
-                name="selfGrowth"
-                value={formData.selfGrowth}
-                onChange={handleChange}
-                variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0 } }}
-              />
-            </Box>
-            <Box sx={{ mb: 2 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={8}
-                label="2. 성격의 장·단점 및 특기"
-                name="selfStrengths"
-                value={formData.selfStrengths}
-                onChange={handleChange}
-                variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0 } }}
-              />
-            </Box>
-            <Box sx={{ mb: 2 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={8}
-                label="3. 지원동기"
-                name="selfMotivation"
-                value={formData.selfMotivation}
-                onChange={handleChange}
-                variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0 } }}
-              />
-            </Box>
-            <Box sx={{ mb: 2 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={8}
-                label="4. 입사 후 포부"
-                name="selfAspirations"
-                value={formData.selfAspirations}
-                onChange={handleChange}
-                variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 0 } }}
-              />
-            </Box>
-
-            <Divider sx={{ my: 4 }} />
-
-            {/* --- 7. AI 프롬프트 섹션 --- */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-              <Image src="/picky.png" alt="Picky" width={24} height={24} />
-              <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                AI로 자기소개서 채우기
-              </Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              위의 이력서 내용을 바탕으로 이력서 작성 비서 ai 픽키가 자기소개서를 작성해 줍니다. 픽키에게 특별히 강조하고 싶은 점이나 원하는 스타일을 자유롭게 요청해 보세요.
-            </Typography>
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              label="픽키에게 요청할 프롬프트를 입력하세요."
-              name="aiPrompt"
-              value={formData.aiPrompt}
-              onChange={handleChange}
-              variant="outlined"
-              placeholder="예: 긍정적이고 도전적인 성향을 강조해서 성장과정을 작성해 줘. java와 python을 사용한 실무 경험을 장점으로 부각시켜 줘."
-            />
-
-            {/* ▼▼▼ [수정 2] 버튼 영역 가독성 수정 + flexWrap: 'wrap' 추가 ▼▼▼ */}
-            <Box
-              textAlign="center"
-              sx={{
-                mt: 2,
-                display: 'flex',
-                gap: 2,
-                justifyContent: 'center',
-                flexWrap: 'wrap' // 버튼이 많아지면 줄바꿈 처리
-              }}
-            >
-              <Button
-                variant="contained"
-                size="large"
-                onClick={handleAiGenerate}
-                sx={{ minWidth: '200px' }}
-                disabled={isLoading} // 로딩 중일 때 버튼 비활성화
-              >
-                {isLoading ? <CircularProgress size={24} /> : "AI로 작성하기"}
-              </Button>
-
-              {/* ▼▼▼ [수정 3] 하이드레이션 오류 방지를 위해 isClient로 래핑 (PDFDownloadLink) ▼▼▼ */}
-              {isClient && (
-                <Button
-                  variant="outlined"
-                  size="large"
-                  sx={{ minWidth: '200px' }}
-                  onClick={handleDownload} // 새로운 다운로드 핸들러 연결
-                  disabled={isLoading} // 로딩 중일 때 비활성화
-                >
-                  {isLoading ? <CircularProgress size={24} /> : "PDF로 다운로드"}
-                </Button>
-              )}
-
-              {/* 이력서 저장 버튼 */}
-              <Button
-                variant="contained"
-                size="large"
-                sx={{ minWidth: '200px' }}
-                onClick={handleSaveResume} // 저장 핸들러 연결
-                disabled={isLoading} // 로딩 중일 때 버튼 비활성화
-              >
-                {isLoading ? <CircularProgress size={24} /> : "이력서 저장"}
-              </Button>
-            </Box>
-
-          </Box>
-        </Paper>
-
-        {/* --- 선택 팝업 (Dialog) --- */}
-        <Dialog
-          open={dialogOpen}
-          onClose={handleDialogClose}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle id="alert-dialog-title">
-            {"이미 작성 중인 내용이 있습니다!"}
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              AI가 어떻게 도와드릴까요?
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleDialogClose}>취소</Button>
-            <Button onClick={handleStartFresh} color="error">
-              기존 내용 전부 지우고 새로 작성
-            </Button>
-            <Button onClick={handleRefine} variant="contained" autoFocus>
-              기존 내용 더 다듬기
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* --- 삭제 확인 팝업 (Confirm Dialog) --- */}
-        <Dialog
-          open={confirmDialogOpen}
-          onClose={handleConfirmDialogClose}
-        >
-          <DialogTitle>정말 새로 작성할까요?</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              이 작업은 되돌릴 수 없습니다. 현재 자기소개서에 작성된 모든 내용이 삭제됩니다.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleConfirmDialogClose}>취소</Button>
-            <Button onClick={handleConfirmStartFresh} color="error">
-              삭제하고 새로 작성
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-      </Container>
-    </>
+    <ResumeForm
+      formData={formData}
+      onChange={handleChange}
+      previewImage={previewImage}
+      onImageChange={handleImageChange}
+      isLoading={isLoading}
+      onAiGenerate={handleAiGenerate}
+      onDownload={handleDownload}
+      onSave={handleSaveResume}
+      dialogOpen={dialogOpen}
+      onDialogClose={handleDialogClose}
+      onStartFresh={handleStartFresh}
+      onRefine={handleRefine}
+      confirmDialogOpen={confirmDialogOpen}
+      onConfirmDialogClose={handleConfirmDialogClose}
+      onConfirmStartFresh={handleConfirmStartFresh}
+    />
   );
 }
+

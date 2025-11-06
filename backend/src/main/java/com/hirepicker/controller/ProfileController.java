@@ -74,6 +74,7 @@ public class ProfileController {
                 req.get("gender"),
                 req.get("phoneNumber"),
                 req.get("address"),
+                req.get("birthdate"), // 생년월일 추가(YYYY-MM-DD)
                 encodedPwd,
                 nickname
         );

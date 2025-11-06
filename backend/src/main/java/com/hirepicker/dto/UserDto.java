@@ -56,4 +56,20 @@ public class UserDto {
      * 용도: 프론트엔드에서 마이페이지 메뉴 분기, 권한 체크 등에 사용
      */
     private UserType userType;
+
+    // 추가 필드: 마이페이지/폼 자동 채움에 필요
+    private String phoneNumber; // 개인유저 전화번호
+    private String address;     // 개인유저 주소
+    private String gender;      // 성별 문자열(MALE/FEMALE)
+    private String birthDate;   // 생년월일(YYYY-MM-DD)
+
+    // 호환용 생성자(기존 사용 코드 유지): pUserIdx, email, name, provider, nickname, userType
+    public UserDto(Long pUserIdx, String email, String name, String provider, String nickname, UserType userType) {
+        this.pUserIdx = pUserIdx;
+        this.email = email;
+        this.name = name;
+        this.provider = provider;
+        this.nickname = nickname;
+        this.userType = userType;
+    }
 }
