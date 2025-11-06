@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import com.hirepicker.dto.CalendarEmpEventDto;
@@ -15,6 +16,7 @@ import com.hirepicker.dto.CalendarJobPostingDto;
 import com.hirepicker.dto.CompanyDto;
 import com.hirepicker.dto.EventDto;
 import com.hirepicker.dto.JobDto;
+import com.hirepicker.dto.SearchFilterDTO;
 import com.hirepicker.entity.Company;
 import com.hirepicker.entity.EmpEvent;
 import com.hirepicker.entity.JobPosting;
@@ -22,6 +24,7 @@ import com.hirepicker.repository.CompanyRepository;
 import com.hirepicker.repository.EmpEventRepository;
 import com.hirepicker.repository.JobPostingRepository;
 
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
 @Service // Spring의 서비스 빈으로 등록
@@ -134,6 +137,98 @@ public class EmploymentDataImpl implements EmploymentData {
                 company.getRegDate(),
                 company.getSalesAmount(), // sales_amount
                 company.getWelfareBenefits()); // welfare_benefits
+    }
+
+    public Page<JobDto> jobFilter(SearchFilterDTO dto, Pageable pageable) {
+        Specification<JobPosting> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // 🔍 검색어(title)
+            if (dto.getSearchTerm() != null && !dto.getSearchTerm().isEmpty()) {
+                predicates.add(
+                        cb.like(
+                                cb.lower(root.join("company").get("companyName")),
+                                "%" + dto.getSearchTerm().trim().toLowerCase() + "%"));
+            }
+
+            // 🧩 직종
+            if (dto.getFilters().get("jobType") != null && !dto.getFilters().get("jobType").isEmpty()) {
+                predicates.add(root.get("jobType").in(dto.getFilters().get("jobType")));
+            }
+
+            // 📍 근무 지역 (OR 조건)
+            if (dto.getFilters().get("location") != null && !dto.getFilters().get("location").isEmpty()) {
+                List<String> locations = dto.getFilters().get("location");
+                List<Predicate> locationPredicates = new ArrayList<>();
+                for (String loc : locations) {
+                    locationPredicates.add(
+                            cb.like(
+                                    cb.lower(root.join("company").get("address")),
+                                    "%" + loc.trim().toLowerCase() + "%"));
+                }
+                predicates.add(cb.or(locationPredicates.toArray(new Predicate[0])));
+            }
+
+            // 💼 고용 형태 (LIKE 검색)
+            if (dto.getFilters().get("employmentType") != null && !dto.getFilters().get("employmentType").isEmpty()) {
+                List<String> employmentTypes = dto.getFilters().get("employmentType");
+                List<Predicate> employmentPredicates = new ArrayList<>();
+                for (String type : employmentTypes) {
+                    employmentPredicates.add(
+                            cb.like(cb.lower(root.get("employmentType")), "%" + type.trim().toLowerCase() + "%"));
+                }
+                predicates.add(cb.or(employmentPredicates.toArray(new Predicate[0])));
+            }
+
+            // 🎓 학력 (LIKE 검색, REPLACE 제거)
+            if (dto.getFilters().get("experienceLevel") != null && !dto.getFilters().get("experienceLevel").isEmpty()) {
+                List<String> experienceLevels = dto.getFilters().get("experienceLevel");
+                List<Predicate> expPredicates = new ArrayList<>();
+                for (String level : experienceLevels) {
+                    if (level == null || level.isBlank())
+                        continue;
+
+                    String pattern = "%" + level.trim().toLowerCase() + "%";
+                    System.out.println("DEBUG: pattern='" + pattern + "'");
+                    expPredicates.add(
+                            cb.like(cb.lower(root.get("experience_level")), pattern));
+                }
+                predicates.add(cb.or(expPredicates.toArray(new Predicate[0])));
+            }
+
+            // ✅ 기업 종류 (JobPosting.location 컬럼 기준)
+            if (dto.getFilters().get("companyType") != null && !dto.getFilters().get("companyType").isEmpty()) {
+                predicates.add(root.get("location").in(dto.getFilters().get("companyType")));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<JobPosting> jobPostings = jobPostingRepository.findAll(spec, pageable);
+
+        List<JobDto> jobDtos = new ArrayList<>();
+        for (JobPosting job : jobPostings.getContent()) {
+            String companyName = "";
+            String imgUrl = null;
+            if (job.getCompany() != null) {
+                companyName = job.getCompany().getCompanyName();
+                imgUrl = job.getCompany().getImgPath();
+            }
+
+            jobDtos.add(JobDto.builder()
+                    .id(job.getPostingId())
+                    .companyName(companyName)
+                    .title(job.getTitle())
+                    .employmentType(job.getEmploymentType())
+                    .location(job.getCompany().getAddress())
+                    .imgUrl(imgUrl)
+                    .experience_level(job.getExperience_level())
+                    .companyType(job.getLocation())
+                    .jobType(job.getJobType())
+                    .build());
+        }
+
+        return new PageImpl<>(jobDtos, pageable, jobPostings.getTotalElements());
     }
 
     @Override

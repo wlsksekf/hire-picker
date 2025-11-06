@@ -7,132 +7,96 @@ import {
   TextField,
   Button,
   Paper,
-  Grid,
-  Avatar,
   Container,
   CircularProgress,
-  Alert
+  Alert,
+  MenuItem,
+  Tabs,
+  Tab
 } from '@mui/material';
-import { getUserProfile, updateUserProfile } from '@/api';
+import { getUserProfile, updateUserProfileDetails } from '@/api';
+import AcademicInfoForm from './AcademicInfoForm';
+import ExperienceInfoForm from './ExperienceInfoForm';
+import MilitaryInfoForm from './MilitaryInfoForm';
+import CertificationInfoForm from './CertificationInfoForm';
 
-// 개인 마이페이지 - 내 정보 수정 컴포넌트
-function EditProfile() {
+// 개인 마이페이지 - 내 정보 관리
+export default function EditProfile() {
   const [profile, setProfile] = useState({
-    imageUrl: 'https://via.placeholder.com/150', // 기본 이미지
     name: '',
     nickname: '',
-    email: ''
+    email: '',
+    phoneNumber: '',
+    address: '',
+    gender: ''
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // 수정할 정보
-  const [nickname, setNickname] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
 
-  // 페이지 로드 시 사용자 정보 가져오기
-  useEffect(function() {
+  const [form, setForm] = useState({
+    name: '',
+    nickname: '',
+    password: '',
+    confirmPassword: '',
+    phoneNumber: '',
+    address: '',
+    gender: ''
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [tab, setTab] = useState(0); // 0 기본정보, 1 학력, 2 경력, 3 병역, 4 자격증
+
+  useEffect(() => {
     getUserProfile()
-      .then(function(userData) {
+      .then((userData) => {
         setProfile({
-          imageUrl: userData.imageUrl || 'https://via.placeholder.com/150',
           name: userData.name || '',
           nickname: userData.nickname || '',
-          email: userData.email || ''
+          email: userData.email || '',
+          phoneNumber: userData.phoneNumber || '',
+          address: userData.address || '',
+          gender: userData.gender || ''
         });
-        setNickname(userData.nickname || ''); // 닉네임 초기값 설정
+        setForm((prev) => ({
+          ...prev,
+          name: userData.name || '',
+          nickname: userData.nickname || '',
+          phoneNumber: userData.phoneNumber || '',
+          address: userData.address || '',
+          gender: userData.gender || ''
+        }));
         setLoading(false);
       })
-      .catch(function(err) {
+      .catch((err) => {
         console.error('사용자 정보 조회 실패:', err);
-        setError('사용자 정보를 불러오는데 실패했습니다. 다시 로그인해주세요.');
+        setError('사용자 정보를 불러오지 못했습니다. 다시 로그인해주세요.');
         setLoading(false);
       });
   }, []);
 
-  // 파일 변경 핸들러
-  function handleFileChange(event) {
-    if (event.target.files && event.target.files[0]) {
-      const imageUrl = URL.createObjectURL(event.target.files[0]);
-      setProfile(function(prev) {
-        return { ...prev, imageUrl: imageUrl };
-      });
-    }
+  function handleChange(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  // 닉네임 변경 핸들러
-  function handleNicknameChange(event) {
-    setNickname(event.target.value);
-  }
-
-  // 비밀번호 변경 핸들러
-  function handlePasswordChange(event) {
-    const newPassword = event.target.value;
-    setPassword(newPassword);
-    
-    // 비밀번호 확인란에 값이 있으면 다시 검증
-    if (confirmPassword) {
-      if (confirmPassword !== newPassword) {
-        setPasswordError('비밀번호가 일치하지 않습니다');
-      } else {
-        setPasswordError('');
-      }
-    }
-  }
-
-  // 비밀번호 확인 변경 핸들러 (실시간 검증)
-  function handleConfirmPasswordChange(event) {
-    const value = event.target.value;
-    setConfirmPassword(value);
-    
-    // 실시간으로 비밀번호 일치 여부 확인
-    if (value && value !== password) {
-      setPasswordError('비밀번호가 일치하지 않습니다');
-    } else {
-      setPasswordError('');
-    }
-  }
-
-  // 수정하기 버튼 핸들러
-  function handleSubmit(event) {
-    event.preventDefault();
-    
-    // 비밀번호가 입력되었는데 일치하지 않으면 중단
-    if (password && password !== confirmPassword) {
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (form.password && form.password !== form.confirmPassword) {
       setPasswordError('비밀번호가 일치하지 않습니다');
       return;
     }
-    
-    // 업데이트할 데이터 준비
-    const updateData = {
-      nickname: nickname
+    setPasswordError('');
+
+    const payload = {
+      name: form.name,
+      nickname: form.nickname,
+      password: form.password || undefined,
+      phoneNumber: form.phoneNumber,
+      address: form.address,
+      gender: form.gender
     };
-    
-    // 비밀번호가 입력되었으면 추가
-    if (password) {
-      updateData.password = password;
-    }
-    
-    // 백엔드로 업데이트 요청
-    setLoading(true);
-    updateUserProfile(updateData)
-      .then(function(result) {
-        alert('프로필이 성공적으로 업데이트되었습니다!');
-        // 비밀번호 필드 초기화
-        setPassword('');
-        setConfirmPassword('');
-        setLoading(false);
-      })
-      .catch(function(err) {
-        console.error('프로필 업데이트 실패:', err);
-        alert('프로필 업데이트에 실패했습니다. 다시 시도해주세요.');
-        setLoading(false);
-      });
+    await updateUserProfileDetails(payload);
+    alert('기본정보가 저장되었습니다.');
   }
 
-  // 로딩 중일 때
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4, display: 'flex', justifyContent: 'center' }}>
@@ -141,7 +105,6 @@ function EditProfile() {
     );
   }
 
-  // 에러가 있을 때
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -153,106 +116,61 @@ function EditProfile() {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold' }}>
-        회원 정보 수정
+        내 정보 관리
       </Typography>
-      
-      <Grid container spacing={3}>
-        
-        {/* 1. 왼쪽 사진 란 */}
-        {/* <Grid item xs={12} md={4}>
-          <Paper 
-            sx={{ 
-              p: 2, 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              height: '100%'  // 높이를 100%로 설정
-            }}
-          >
-            <Avatar src={profile.imageUrl} sx={{ width: 150, height: 150, mb: 2 }} />
-            <Button variant="contained" component="label">
-              사진 업로드
-              <input type="file" hidden onChange={handleFileChange} />
-            </Button>
-            <Typography variant="caption" sx={{ mt: 1 }}>
-              JPG, PNG, GIF - 5MB 이하
-            </Typography>
-          </Paper>
-        </Grid> */}
 
-        {/* 2. 오른쪽 정보 표 */}
-        <Grid item xs={12} md={8}>
-          <Paper 
-            sx={{ 
-              p: 3,
-              height: '100%'  // 높이를 100%로 설정
-            }}
-          >
-            <Box component="form" noValidate sx={{ mt: 1 }} onSubmit={handleSubmit}>
-              <TextField 
-                label="이름"
-                value={profile.name} 
-                fullWidth 
-                margin="normal" 
-                disabled 
-              />
-              <TextField 
-                label="닉네임" 
-                value={nickname}
-                onChange={handleNicknameChange}
-                fullWidth 
-                margin="normal" 
-              />
-              <TextField
-                fullWidth
-                id="email"
-                label="이메일 주소"
-                name="email"
-                value={profile.email}
-                disabled
-                margin="normal"
-              />
-              <TextField
-                fullWidth
-                name="password"
-                label="새 비밀번호"
-                type="password"
-                id="password"
-                value={password}
-                onChange={handlePasswordChange}
-                margin="normal"
-                helperText="비밀번호를 변경하지 않으려면 비워두세요"
-              />
-              <TextField
-                fullWidth
-                name="confirmPassword"
-                label="새 비밀번호 확인"
-                type="password"
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={handleConfirmPasswordChange}
-                margin="normal"
-                error={Boolean(passwordError)}
-                helperText={passwordError || ''}
-              />
-              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button 
-                  variant="contained" 
-                  color="primary"
-                  type="submit"
-                  disabled={Boolean(passwordError)}
-                >
-                  수정하기
-                </Button>
-              </Box>
+      <Paper sx={{ mb: 3 }}>
+        <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons allowScrollButtonsMobile>
+          <Tab label="기본정보" />
+          <Tab label="학력" />
+          <Tab label="경력" />
+          <Tab label="병역" />
+          <Tab label="자격증" />
+        </Tabs>
+      </Paper>
+
+      {tab === 0 && (
+        <Paper sx={{ p: 3 }}>
+          <Box component="form" noValidate onSubmit={handleSubmit}>
+            <TextField label="이름" value={form.name} onChange={(e) => handleChange('name', e.target.value)} fullWidth margin="normal" />
+            <TextField label="닉네임" value={form.nickname} onChange={(e) => handleChange('nickname', e.target.value)} fullWidth margin="normal" />
+            <TextField label="이메일" value={profile.email} fullWidth margin="normal" disabled />
+            <TextField label="전화번호" value={form.phoneNumber} onChange={(e) => handleChange('phoneNumber', e.target.value)} fullWidth margin="normal" />
+            <TextField label="주소" value={form.address} onChange={(e) => handleChange('address', e.target.value)} fullWidth margin="normal" />
+            <TextField select label="성별" value={form.gender} onChange={(e) => handleChange('gender', e.target.value)} fullWidth margin="normal">
+              <MenuItem value="">선택 안 함</MenuItem>
+              <MenuItem value="MALE">남성</MenuItem>
+              <MenuItem value="FEMALE">여성</MenuItem>
+            </TextField>
+            <TextField fullWidth name="password" label="새 비밀번호" type="password" value={form.password} onChange={(e) => handleChange('password', e.target.value)} margin="normal" helperText="비밀번호를 변경하지 않으면 비워두세요" />
+            <TextField fullWidth name="confirmPassword" label="새 비밀번호 확인" type="password" value={form.confirmPassword} onChange={(e) => handleChange('confirmPassword', e.target.value)} margin="normal" error={Boolean(passwordError)} helperText={passwordError || ''} />
+            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+              <Button variant="contained" color="primary" type="submit" disabled={Boolean(passwordError)}>저장</Button>
             </Box>
-          </Paper>
-        </Grid>
+          </Box>
+        </Paper>
+      )}
 
-      </Grid>
+      {tab === 1 && (
+        <Paper sx={{ p: 3 }}>
+          <AcademicInfoForm />
+        </Paper>
+      )}
+      {tab === 2 && (
+        <Paper sx={{ p: 3 }}>
+          <ExperienceInfoForm />
+        </Paper>
+      )}
+      {tab === 3 && (
+        <Paper sx={{ p: 3 }}>
+          <MilitaryInfoForm />
+        </Paper>
+      )}
+      {tab === 4 && (
+        <Paper sx={{ p: 3 }}>
+          <CertificationInfoForm />
+        </Paper>
+      )}
     </Container>
   );
 }
-
-export default EditProfile;

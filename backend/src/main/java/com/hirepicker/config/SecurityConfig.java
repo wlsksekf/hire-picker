@@ -1,22 +1,17 @@
 package com.hirepicker.config;
 
 import java.util.Arrays;
-import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.hirepicker.config.filter.JwtAuthenticationFilter;
 import com.hirepicker.handler.CustomAuthenticationEntryPoint;
@@ -35,6 +30,11 @@ public class SecurityConfig {
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint; // 커스텀 인증 진입점
     private final JwtAuthenticationFilter jwtAuthenticationFilter; // JWT 인증 필터
     private final Environment env; // 환경 변수 접근을 위한 Environment 객체
+    private final CustomOAuth2UserService customOAuth2UserService; // 커스텀 OAuth2 사용자 서비스
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler; // OAuth2 로그인 성공 핸들러
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint; // 커스텀 인증 진입점
+    private final JwtAuthenticationFilter jwtAuthenticationFilter; // JWT 인증 필터
+    private final Environment env; // 환경 변수 접근을 위한 Environment 객체
 
     // AuthenticationManager를 Bean으로 등록
     @Bean
@@ -43,6 +43,18 @@ public class SecurityConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
+    // AuthenticationManager를 Bean으로 등록
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean // Spring의 빈으로 등록
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        boolean isProduction = Arrays.asList(env.getActiveProfiles()).contains("prod");
+        String failureUrl = isProduction ? "https://hirepicker.duckdns.org/oauth/fail"
+                : "http://localhost:3000/oauth/fail";
     @Bean // Spring의 빈으로 등록
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         boolean isProduction = Arrays.asList(env.getActiveProfiles()).contains("prod");
@@ -108,7 +120,12 @@ public class SecurityConfig {
 
         return http.build();
     }
+        return http.build();
+    }
 
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -118,7 +135,16 @@ public class SecurityConfig {
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+        config.setAllowedOrigins(List.of("http://localhost:3000", "https://hirepicker.duckdns.org"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("*"));
 
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config); // 모든 경로에 대해 이 설정 적용
+        return source;
+    }
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config); // 모든 경로에 대해 이 설정 적용
         return source;
