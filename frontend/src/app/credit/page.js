@@ -1,8 +1,9 @@
+// frontend/src/app/credit/page.js
 'use client';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import CreditCard from '../../components/CreditCard';
-import CreditHistory from '../../components/CreditHistory';
+
 import { getCreditBalance } from '@/api';
 import useAuthStore from '@/store/authStore';
 import { useRouter } from 'next/navigation'; // useRouter 임포트
@@ -83,7 +84,7 @@ const StorePage = () => {
       return;
     }
     // 선택된 상품 ID를 가지고 Checkout 페이지로 이동
-    router.push(`/mypage/checkout?productId=${selectedCard}`);
+    router.push(`/credit/checkout?productId=${selectedCard}`);
   };
 
   return (
@@ -108,7 +109,7 @@ const StorePage = () => {
         {isAuthenticated ? '결제하기' : '로그인이 필요합니다'}
       </PurchaseButton>
 
-      {isAuthenticated && <CreditHistory />}
+
     </StoreContainer>
   );
 };

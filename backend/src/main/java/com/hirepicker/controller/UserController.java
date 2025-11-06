@@ -62,7 +62,7 @@ public class UserController {
 
             log.info("PersonalUser found: {}", personalUser.getEmail());
             // UserDto로 변환하여 반환합니다.
-            UserDto userDto = new UserDto(personalUser.getEmail(), personalUser.getName(), personalUser.getPlatform(), personalUser.getNickname());
+            UserDto userDto = new UserDto(personalUser.getId(), personalUser.getEmail(), personalUser.getName(), personalUser.getPlatform(), personalUser.getNickname());
             log.info("Returning UserDto for user: {}", userDto.getEmail());
             return ResponseEntity.ok(userDto);
         } catch (Exception e) {

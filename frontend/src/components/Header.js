@@ -40,16 +40,37 @@ function Header() {
   // 모바일 화면일 경우
   if (isMobile) {
     return (
-      <AppBar position="sticky" elevation={0} sx={{ 
-        borderBottom: '1px solid', 
-        borderColor: 'divider', 
-        backgroundColor: 'background.paper',
-        zIndex: theme.zIndex.drawer + 1, // 헤더가 다른 요소 위에 오도록 z-index 설정
-      }}>
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          zIndex: theme.zIndex.drawer + 1, // 헤더가 다른 요소 위에 오도록 z-index 설정
+        }}
+      >
         <Toolbar>
-          <Link href="/" passHref style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <Box component="img" src="/hirepicker_logo.png" alt="HirePicker Logo" sx={{ width: 32, height: 32, marginRight: '8px' }} />
-            <Typography variant="h6" component="span" fontWeight="bold">HirePicker</Typography>
+          <Link
+            href="/"
+            passHref
+            style={{
+              textDecoration: 'none',
+              color: 'inherit',
+              display: 'flex',
+              alignItems: 'center',
+              flexGrow: 1,
+            }}
+          >
+            <Box
+              component="img"
+              src="/hirepicker_logo.png"
+              alt="HirePicker Logo"
+              sx={{ width: 32, height: 32, marginRight: '8px' }}
+            />
+            <Typography variant="h6" component="span" fontWeight="bold">
+              HirePicker
+            </Typography>
           </Link>
         </Toolbar>
       </AppBar>
@@ -71,15 +92,30 @@ function Header() {
       <Toolbar sx={{ minHeight: '72px' }}>
         {/* 로고 */}
         <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, mr: 4 }}>
-          <Link href="/" passHref style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center' }}>
-            <Box component="img" src="/hirepicker_logo.png" alt="HirePicker Logo" sx={{ width: 40, height: 40, marginRight: '8px' }} />
-            <Typography variant="h6" component="span" fontWeight="bold">HirePicker</Typography>
+          <Link
+            href="/"
+            passHref
+            style={{
+              textDecoration: 'none',
+              color: 'inherit',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <Box
+              component="img"
+              src="/hirepicker_logo.png"
+              alt="HirePicker Logo"
+              sx={{ width: 40, height: 40, marginRight: '8px' }}
+            />
+            <Typography variant="h6" component="span" fontWeight="bold">
+              HirePicker
+            </Typography>
           </Link>
         </Box>
-
         {/* 메인 메뉴 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {mainNavItems.map(function(item) {
+          {mainNavItems.map(function (item) {
             return (
               <Link key={item.text} href={item.path} passHref style={{ textDecoration: 'none' }}>
                 <Button
@@ -98,12 +134,10 @@ function Header() {
                   {item.text}
                 </Button>
               </Link>
-            )
+            );
           })}
         </Box>
-
         <Box sx={{ flexGrow: 1 }} /> {/* 오른쪽으로 밀어주는 빈 공간 */}
-
         {/* 로그인/회원가입 메뉴 */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {isLoading ? ( // 로딩 중일 때
@@ -143,7 +177,7 @@ function Header() {
                   마이페이지
                 </Button>
               </Link>
-              <Link href="/store" passHref style={{ textDecoration: 'none' }}>
+              <Link href="/credit" passHref style={{ textDecoration: 'none' }}>
                 <Button
                   variant="text"
                   sx={{
@@ -161,7 +195,8 @@ function Header() {
                 </Button>
               </Link>
             </>
-          ) : ( // 로딩 완료 후 인증되지 않은 상태
+          ) : (
+            // 로딩 완료 후 인증되지 않은 상태
             <>
               <Link href="/login" passHref style={{ textDecoration: 'none' }}>
                 <Button
@@ -199,6 +234,23 @@ function Header() {
               </Link>
             </>
           )}
+          <Link href="/calendar" passHref style={{ textDecoration: 'none' }}>
+            <Button
+              variant="text"
+              sx={{
+                color: 'text.primary',
+                fontWeight: 'bold',
+                textTransform: 'none',
+                fontSize: '0.9rem',
+                '&:hover': {
+                  color: 'primary.main',
+                  backgroundColor: 'action.hover',
+                },
+              }}
+            >
+              캘린더
+            </Button>
+          </Link>
           <Link href="/settings" passHref style={{ textDecoration: 'none' }}>
             <Button
               variant="text"

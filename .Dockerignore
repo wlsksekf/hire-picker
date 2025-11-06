@@ -12,7 +12,6 @@ frontend/.next/
 frontend/npm-debug.log
 frontend/yarn-debug.log
 frontend/yarn-error.log
-frontend/package-lock.json
 
 # Backend (Gradle/Java) exclusions
 backend/build/

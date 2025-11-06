@@ -1,3 +1,4 @@
+// frontend/src/app/credit/checkout/CheckoutClient.js
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -63,11 +64,11 @@ const CheckoutClient = () => {
         setSelectedProduct(product);
       } else {
         alert('유효하지 않은 상품입니다.');
-        router.push('/store');
+        router.push('/credit');
       }
     } else {
       alert('상품 정보가 없습니다.');
-      router.push('/store');
+      router.push('/credit');
     }
   }, [searchParams, router]);
 
@@ -116,8 +117,8 @@ const CheckoutClient = () => {
       orderId: paymentDetails.orderId,
       orderName: paymentDetails.orderName,
       customerName: paymentDetails.customerName, // 이 값도 백엔드에서 오는 것을 사용
-      successUrl: `${window.location.origin}/mypage/payment-success`,
-      failUrl: `${window.location.origin}/mypage/payment-fail`,
+      successUrl: `${window.location.origin}/credit/success`,
+      failUrl: `${window.location.origin}/credit/fail`,
     });
   };
 

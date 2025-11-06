@@ -13,7 +13,7 @@ public class DataMapper {
         if (id == null || id.isBlank())
             return null; // Or throw an exception
         return new JobDto(id, XmlParser.getTagValue(e, "empBusiNm"), XmlParser.getTagValue(e, "empWantedTitle"),
-                XmlParser.getTagValue(e, "empWantedTypeNm"), XmlParser.getTagValue(e, "coClcdNm"), id);
+                XmlParser.getTagValue(e, "empWantedTypeNm"), XmlParser.getTagValue(e, "coClcdNm"), id, null,null,null,null,null);
     }
 
     public static EventDto mapToEventDto(Element e) {

@@ -32,29 +32,34 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
     String path = request.getRequestURI();
     String method = request.getMethod();
 
-    List<String> permitAllPaths = List.of(
-        "/api/users/signup",
-        "/api/oauth2/",
-        "/login/oauth2/code/",
-        "/api/auth/",
-        "/api/work24/",
-        "/actuator/",
-        "/api/health/",
-        "/api/manage/",
-        "/confirm/",
-        "/confirm-billing",
-        "/issue-billing-key",
-        "/callback-auth",
-        "/fail",
-        "/swagger-ui/",
-        "/api-docs/",
-        "/error",
-        "/api/companies/",
-        "/api/payment/webhook",
-        "/chat/",
-        "/ws",
-        "/api/ai/upload-image"
-    );
+        // 1. permitAll()로 설정된 경로 리스트
+        //    주의: "/api/auth/**"는 "/api/auth/"로 시작하는지 검사해야 함
+        List<String> permitAllPaths = List.of(
+                "/api/users/signup",
+                "/api/oauth2/", // /api/oauth2/**
+                "/login/oauth2/code/", // /login/oauth2/code/**
+                "/api/auth/", // /api/auth/**
+                "/api/work24/", // /api/work24/**
+                "/actuator/", // /actuator/**
+                "/api/health/", // /api/health/**
+                "/api/manage/", // /api/manage/**
+                "/confirm/", // /confirm/**
+                "/confirm-billing",
+                "/issue-billing-key",
+                "/callback-auth",
+                "/fail",
+                "/swagger-ui/", // /swagger-ui/**
+                "/api-docs/", // /api-docs/**
+                "/error",
+                "/api/companies/", // /api/companies/**
+                "/api/payment/webhook",
+                "/chat/", // /chat/**
+                "/ws", // /ws, /ws/**
+                "/api/ai/upload-image",
+                "/api/search",
+                "/api/users/me"
+
+        );
 
     // ★ GET /api/posts와 /api/posts/{postIdx}는 필터 미적용 (비회원 조회 가능)
     if (method.equals("GET") && (path.equals("/api/posts") || path.matches("/api/posts/\\d+"))) {

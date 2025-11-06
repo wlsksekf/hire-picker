@@ -1,3 +1,4 @@
+// frontend/src/app/credit/fail/page.js
 'use client';
 
 import { Suspense } from 'react';
@@ -24,7 +25,7 @@ function FailPageContent() {
                 </Typography>
                 <Button 
                     component={Link} 
-                    href="/store" 
+                    href="/credit" 
                     variant="contained" 
                     fullWidth
                 >
