@@ -44,7 +44,9 @@ const drawerWidth = 240; // 사이드바 너비
 const personalMenuItems = [
   { text: '내 정보 수정', icon: <AccountCircle />, path: '/mypage/personal/edit-profile' },
   { text: '이력서 관리', icon: <Article />, path: '/mypage/personal/resumes' },
-  { text: 'AI 이력서 작성', icon: <AutoAwesome />, path: '/mypage/personal/ai-resume' },
+  // highlight-start
+  { text: '이력서 작성', icon: <AutoAwesome />, path: '/mypage/personal/write_resume' },
+  // highlight-end
   { text: '지원 현황', icon: <WorkHistory />, path: '/mypage/personal/applications' },
   { text: '크레딧/결제 내역', icon: <Payment />, path: '/mypage/personal/credits' },
 ];
