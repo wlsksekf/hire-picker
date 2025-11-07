@@ -19,9 +19,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.hirepicker.dto.PostListDto;
-import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.entity.Posts;
-import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.repository.PostRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -31,7 +29,6 @@ import lombok.RequiredArgsConstructor;
 public class PostService {
 
     private final PostRepository postRepository;
-    private final PersonalUserRepository personalUserRepository;
 
     private static final int PAGE_SIZE = 10;
 
@@ -86,9 +83,8 @@ public class PostService {
 
     // 게시글 작성 (CREATE)
     @Transactional
-    public Posts create(Long boardIdx, PersonalUser personalUser, String title, String content,
+    public Posts create(Long boardIdx, Long pUserIdx, String title, String content,
             MultipartFile imageFile, MultipartFile attachmentFile) throws IOException {
-
         String imgKey = null;
         String fileKey = null;
 
@@ -101,7 +97,7 @@ public class PostService {
 
         Posts post = new Posts();
         post.setBoardIdx(boardIdx);
-        post.setPersonalUser(personalUser);
+        post.setPUserIdx(pUserIdx);
         post.setTitle(title);
         post.setContent(content);
         post.setImgName(imgKey); // S3 key만 저장
@@ -117,7 +113,7 @@ public class PostService {
         return postRepository.findAllPostList(pageable);
     }
 
-        // 카테고리별 게시글 조회
+    // 카테고리별 게시글 조회
     public Page<PostListDto> getByBoardIdx(String bname, int cPage, Long boardIdx) {
         Pageable pageable = PageRequest.of(cPage - 1, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "postIdx"));
         return postRepository.findByBoardIdx(boardIdx, pageable);
@@ -135,7 +131,7 @@ public class PostService {
             MultipartFile imageFile, MultipartFile attachmentFile,
             boolean deleteImg, boolean deleteFile) {
         Posts post = postRepository.findById(postIdx).orElse(null);
-        if (post == null || !post.getPersonalUser().getId().equals(loginUserIdx)) {
+        if (post == null || !post.getPUserIdx().equals(loginUserIdx)) {
             return false;
         }
         post.setTitle(title);
@@ -179,7 +175,7 @@ public class PostService {
     @Transactional
     public boolean deletePostWithFiles(Long postIdx, Long loginUserIdx) {
         Posts post = postRepository.findById(postIdx).orElse(null);
-        if (post == null || !post.getPersonalUser().getId().equals(loginUserIdx))
+        if (post == null || !post.getPUserIdx().equals(loginUserIdx))
             return false;
 
         // S3 이미지/파일 삭제
