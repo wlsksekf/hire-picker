@@ -136,7 +136,9 @@ public class ResumeService {
         }
         java.util.List<Resume> resumes = resumeRepository.findByPersonalUserIdOrderByIdDesc(principal.getId()); // 사용자별 조회
         return resumes.stream()
-                .map(com.hirepicker.dto.ResumeListItemDto::from) // 엔티티 -> DTO 변환
+                .map(resume -> com.hirepicker.dto.ResumeListItemDto.from(
+                        resume,
+                        resume.getWorkExperience() != null ? resume.getWorkExperience().getId() : null))
                 .collect(java.util.stream.Collectors.toList());
     }
 

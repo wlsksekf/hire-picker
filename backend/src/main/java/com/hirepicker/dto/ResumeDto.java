@@ -58,7 +58,6 @@ public class ResumeDto {
                 .status(statusEnum)
                 .cert(cert)
                 .cancel(null) // cancel 기본 null 유지
-                .workExperience(null) // expIdx는 별도로 연결
                 .build();
     }
 }
