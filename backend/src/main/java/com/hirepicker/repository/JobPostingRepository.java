@@ -17,6 +17,7 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long>,Jp
     Optional<JobPosting> findByPostingId(String postingId);
 
     // AI 챗봇에서 키워드와 지역으로 채용 공고를 검색하는 메소드 추가
+    List<JobPosting> findByTitleContaining(String keyword); // 키워드로만 검색
     List<JobPosting> findByTitleContainingAndLocation(String keyword, String location);
 
     // N+1 문제 해결을 위해 @EntityGraph 사용 (company 엔티티를 함께 fetch)

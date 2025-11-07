@@ -1,84 +1,127 @@
 'use client';
 
 import React, { useState } from 'react';
+import styled, { css } from 'styled-components';
 import {
-  Fab,
   Avatar,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
+  Box,
 } from '@mui/material';
 import ChatWindow from './ChatWindow';
 import SearchIcon from '@mui/icons-material/Search';
 import LanguageIcon from '@mui/icons-material/Language';
 
+// 메인 버튼 클릭 시 펼쳐지는 애니메이션을 위한 스타일 정의
+const StyledWrapper = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['isOpen'].includes(prop),
+})`
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  z-index: 1100;
+
+  .buttons {
+    position: relative;
+    display: grid;
+    place-items: center;
+    height: fit-content;
+    width: fit-content;
+    transition: 0.3s;
+    border-radius: 50%;
+  }
+
+  .main-button {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border: none;
+    background: #ffffff;
+    box-shadow: 0 4px 12px 0 rgba(0,0,0,0.15);
+    border-radius: 50%;
+    transition: 0.2s;
+    z-index: 100;
+    cursor: pointer;
+  }
+
+  .button {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border: none;
+    background: #e8e8e8;
+    box-shadow: 5px 5px 12px rgba(202, 202, 202, 0), -5px -5px 12px rgba(255, 255, 255, 0);
+    transition: 0.3s;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #333;
+  }
+
+  .site-search-button:hover {
+    background: #66bb6a; // Green
+    color: white;
+  }
+
+  .web-search-button:hover {
+    background: #42a5f5; // Blue
+    color: white;
+  }
+
+  // isOpen 상태일 때 버튼 펼침
+  ${({ isOpen }) => isOpen && css`
+    .buttons {
+      padding: 60px;
+    }
+    .button {
+      box-shadow: 5px 5px 12px #cacaca, -5px -5px 12px #ffffff;
+    }
+    .site-search-button {
+      translate: 0px -70px; /* 위로 */
+    }
+    .web-search-button {
+      translate: -70px 0px; /* 왼쪽으로 */
+    }
+  `}
+`;
+
 const Chatbot = () => {
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [siteChatOpen, setSiteChatOpen] = useState(false);
   const [webChatOpen, setWebChatOpen] = useState(false);
 
-  const handleMenuClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
+  const handleMenuToggle = () => {
+    setIsMenuOpen(!isMenuOpen);
   };
 
   const openSiteChat = () => {
     setSiteChatOpen(true);
-    handleMenuClose();
+    setIsMenuOpen(false);
   };
 
   const openWebChat = () => {
     setWebChatOpen(true);
-    handleMenuClose();
+    setIsMenuOpen(false);
   };
 
   return (
     <>
-      <Fab
-        aria-label="open chatbot menu"
-        onClick={handleMenuClick}
-        sx={{
-          position: 'fixed',
-          bottom: 32,
-          right: 32,
-          backgroundColor: 'white',
-          '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.9)' },
-          boxShadow: '0 4px 12px 0 rgba(0,0,0,0.15)',
-        }}
-      >
-        <Avatar src="/picky.png" sx={{ width: 56, height: 56 }} />
-      </Fab>
-
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-      >
-        <MenuItem onClick={openSiteChat}>
-          <ListItemIcon>
-            <SearchIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>사이트 정보 검색</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={openWebChat}>
-          <ListItemIcon>
-            <LanguageIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>웹 검색</ListItemText>
-        </MenuItem>
-      </Menu>
+      <StyledWrapper isOpen={isMenuOpen}>
+        <div className="buttons">
+          <button className="main-button" onClick={handleMenuToggle}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Avatar src="/picky.png" sx={{ width: 56, height: 56, transform: 'translateX(-5px)' }} />
+            </Box>
+          </button>
+          <button className="site-search-button button" onClick={openSiteChat}>
+            <SearchIcon />
+          </button>
+          <button className="web-search-button button" onClick={openWebChat}>
+            <LanguageIcon />
+          </button>
+        </div>
+      </StyledWrapper>
 
       <ChatWindow
         open={siteChatOpen}

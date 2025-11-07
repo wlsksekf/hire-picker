@@ -96,7 +96,7 @@ public class ProfileController {
     @PutMapping("/academics")
     @Transactional
     public ResponseEntity<Map<String, String>> saveAcademics(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                                             @RequestBody List<AcademicAbilityDto> academics) {
+                                                            @RequestBody List<AcademicAbilityDto> academics) {
         if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         profileService.replaceAcademics(userDetails.getId(), academics);
         return ResponseEntity.ok(Map.of("message", "학력 정보가 저장되었습니다."));
@@ -125,7 +125,7 @@ public class ProfileController {
     @PutMapping("/experiences")
     @Transactional
     public ResponseEntity<Map<String, String>> saveExperiences(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                                               @RequestBody List<WorkExperienceDto> experiences) {
+                                                                @RequestBody List<WorkExperienceDto> experiences) {
         if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         profileService.replaceExperiences(userDetails.getId(), experiences);
         return ResponseEntity.ok(Map.of("message", "경력 정보가 저장되었습니다."));
@@ -157,7 +157,7 @@ public class ProfileController {
     @PutMapping("/certifications")
     @Transactional
     public ResponseEntity<Map<String, String>> saveCertifications(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                                                  @RequestBody CertificationUpdateRequestDto req) {
+                                                                @RequestBody CertificationUpdateRequestDto req) {
         if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         profileService.replaceResumeCertifications(userDetails.getId(), req.getResumeIdx(), req.getCertIdxList(), req.getCertNameList());
         return ResponseEntity.ok(Map.of("message", "자격증 정보가 저장되었습니다."));

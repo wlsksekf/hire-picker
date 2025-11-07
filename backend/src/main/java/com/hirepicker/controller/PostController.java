@@ -9,12 +9,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -30,11 +28,19 @@ public class PostController {
 
     /** 인증 상태 확인 (로그인 확인 등) */
     @GetMapping("/me")
-    public ResponseEntity<?> checkAuthentication(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        boolean isAuthenticated = (userDetails != null);
-        String username = isAuthenticated ? userDetails.getUsername() : null;
-        Long userId = isAuthenticated ? userDetails.getId() : null;
-        String userType = isAuthenticated ? userDetails.getUserType().name().toLowerCase() : null;
+    public ResponseEntity<?> checkAuthentication() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAuthenticated = (auth != null && auth.isAuthenticated() &&
+                                   auth.getPrincipal() instanceof CustomUserDetails);
+        String username = null;
+        Long userId = null;
+        String userType = null;
+        if (isAuthenticated) {
+            CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+            username = userDetails.getUsername();
+            userId = userDetails.getId();
+            userType = userDetails.getUserType().name().toLowerCase();
+        }
         return ResponseEntity.ok(Map.of(
                 "authenticated", isAuthenticated,
                 "username", username,
@@ -45,9 +51,7 @@ public class PostController {
 
     /** 게시글 전체 목록 조회 */
     @GetMapping("")
-    public ResultData<?> getList(
-            @RequestParam(value = "cPage", defaultValue = "1") int cPage
-    ) {
+    public ResultData<?> getList(@RequestParam(value = "cPage", defaultValue = "1") int cPage) {
         Page<PostListDto> postPage = postService.getAllPostList(cPage);
         List<PostListDto> list = postPage.getContent();
         long totalCount = postPage.getTotalElements();
@@ -82,31 +86,31 @@ public class PostController {
         return ResultData.of(1, (list != null && !list.isEmpty()) ? "success" : "fail", data);
     }
 
-    /** 게시글 상세 조회 + 조회수 증가(중복방지, Redis) */
-@GetMapping("/{postIdx}")
-public ResultData<PostListDto> getPost(@PathVariable("postIdx") Long postIdx,
-                                       HttpServletRequest request) {
-    try {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String userKey;
-        if (auth != null && auth.isAuthenticated()
-            && auth.getPrincipal() instanceof CustomUserDetails) {
-            CustomUserDetails details = (CustomUserDetails) auth.getPrincipal();
-            userKey = "user:" + details.getId();
-            log.info("회원 접근 userKey: {}", userKey);
-        } else {
-            userKey = "ip:" + request.getRemoteAddr();
-            log.info("비회원 접근 userKey: {}", userKey);
-        }
-        PostListDto post = postService.getPostDetailWithNickname(postIdx, userKey);
-        String msg = (post != null) ? "success" : "fail";
-        return ResultData.of((post != null ? 1 : 0), msg, post);
-    } catch (Exception e) {
-        log.error("[PostController] Error fetching post detail - PostIdx: {}", postIdx, e);
-        return ResultData.of(0, "Error fetching post", null);
-    }
-}
+    /** 게시글 상세 조회 + 조회수 증가(회원=JWT/userId, 비회원=IP) */
+    @GetMapping("/{postIdx}")
+    public ResultData<PostListDto> getPost(@PathVariable("postIdx") Long postIdx,
+                                           HttpServletRequest request) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String userKey;
 
+            if (auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof CustomUserDetails) {
+                CustomUserDetails details = (CustomUserDetails) auth.getPrincipal();
+                userKey = "user:" + details.getId();
+                log.info("회원 userKey: {}", userKey);
+            } else {
+                userKey = "ip:" + request.getRemoteAddr();
+                log.info("비회원 userKey: {}", userKey);
+            }
+
+            PostListDto post = postService.getPostDetailWithNickname(postIdx, userKey);
+            String msg = (post != null) ? "success" : "fail";
+            return ResultData.of((post != null ? 1 : 0), msg, post);
+        } catch (Exception e) {
+            log.error("[PostController] Error fetching post detail - PostIdx: {}", postIdx, e);
+            return ResultData.of(0, "Error fetching post", null);
+        }
+    }
 
     /** 게시글 작성 (로그인 사용자만, 이미지/첨부파일 지원) */
     @PostMapping("/write")
@@ -114,13 +118,14 @@ public ResultData<PostListDto> getPost(@PathVariable("postIdx") Long postIdx,
             @RequestParam("board_idx") Long board_idx,
             @RequestParam("title") String title,
             @RequestParam("content") String content,
-            @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestPart(value = "image", required = false) MultipartFile imageFile,
             @RequestPart(value = "attachment", required = false) MultipartFile attachmentFile
     ) {
-        if (userDetails == null) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (!(auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof CustomUserDetails)) {
             return ResultData.of(0, "Authentication required. Please login.", null);
         }
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
         Long pUserIdx = userDetails.getId();
         try {
             Posts newPost = postService.create(board_idx, pUserIdx, title, content, imageFile, attachmentFile);
@@ -140,12 +145,13 @@ public ResultData<PostListDto> getPost(@PathVariable("postIdx") Long postIdx,
             @RequestPart(value = "image", required = false) MultipartFile imageFile,
             @RequestPart(value = "attachment", required = false) MultipartFile attachmentFile,
             @RequestParam(value = "deleteImg", required = false) String deleteImg,
-            @RequestParam(value = "deleteFile", required = false) String deleteFile,
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @RequestParam(value = "deleteFile", required = false) String deleteFile
     ) {
-        if (userDetails == null) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (!(auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof CustomUserDetails)) {
             return ResultData.of(0, "Authentication required.", null);
         }
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
         Long userId = userDetails.getId();
         try {
             boolean updated = postService.updatePost(
@@ -167,11 +173,12 @@ public ResultData<PostListDto> getPost(@PathVariable("postIdx") Long postIdx,
 
     /** 게시글 삭제 (글 + S3 파일/이미지 삭제) */
     @DeleteMapping("/{postIdx}")
-    public ResultData<?> deletePost(@PathVariable("postIdx") Long postIdx,
-                                    @AuthenticationPrincipal CustomUserDetails userDetails) {
-        if (userDetails == null) {
+    public ResultData<?> deletePost(@PathVariable("postIdx") Long postIdx) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (!(auth != null && auth.isAuthenticated() && auth.getPrincipal() instanceof CustomUserDetails)) {
             return ResultData.of(0, "Authentication required.", null);
         }
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
         Long userId = userDetails.getId();
         try {
             boolean deleted = postService.deletePostWithFiles(postIdx, userId);
