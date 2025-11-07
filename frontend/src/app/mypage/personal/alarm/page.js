@@ -12,6 +12,7 @@ import {
   Card,
   CardContent,
   CardMedia,
+  Divider,
 } from "@mui/material";
 import { api } from "@/api"; // 공용 api 인스턴스 사용
 
@@ -20,20 +21,44 @@ export default function AlarmPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const user = useAuthStore((state) => state.user);
-  const pUserIdx = user?.idx; // 로그인한 사용자 ID
+  const [pUserIdx, setPUserIdx] = useState(null); // pUserIdx를 state로 관리
+
+  useEffect(() => {
+    const fetchUserIdx = async () => {
+      if (user?.email) {
+        try {
+          const response = await api.get("/api/company-alarms/idx-by-email", {
+            params: { email: user.email },
+          });
+          setPUserIdx(response.data.idx);
+        } catch (err) {
+          console.error("Failed to fetch user index:", err);
+          setError("사용자 정보를 가져오는데 실패했습니다.");
+          setLoading(false);
+        }
+      } else if (!user) {
+        setLoading(false);
+        setError("로그인이 필요합니다.");
+      }
+    };
+
+    fetchUserIdx();
+  }, [user]);
 
   useEffect(() => {
     if (!pUserIdx) {
-      setLoading(false);
-      setError("로그인이 필요합니다.");
+      // pUserIdx가 아직 설정되지 않았으면 로딩 상태를 유지하거나,
+      // user 정보는 있지만 pUserIdx를 받아오지 못한 경우에 대한 처리를 할 수 있습니다.
+      if (user) setLoading(true);
       return;
     }
 
     const fetchLikedCompanies = async () => {
+      setLoading(true);
       try {
         // 1. p_user_idx로 관심 기업 ID 목록 가져오기
-        const response = await api.get(`/api/company-alarms/user`);
-        const companyIds = response.data; // [companyIdx1, companyIdx2, ...]
+        const response = await api.get(`/api/company-alarms/user/${pUserIdx}`);
+        const companyIds = response.data;
 
         if (companyIds.length === 0) {
           setLikedCompanies([]);
@@ -60,7 +85,7 @@ export default function AlarmPage() {
     };
 
     fetchLikedCompanies();
-  }, [pUserIdx]);
+  }, [pUserIdx, user]);
 
   const getLogoUrl = (url) => {
     if (!url) return null;
@@ -81,51 +106,93 @@ export default function AlarmPage() {
 
   if (error) {
     return (
-      <Container sx={{ py: 8 }}>
+      <Container maxWidth={false} sx={{ py: 8 }}>
+        {" "}
         <Alert severity="error">{error}</Alert>
       </Container>
     );
   }
 
   return (
-    <Container sx={{ py: 8 }}>
-      <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+    <Container maxWidth={false} sx={{ pt: 4, pb: 3 }}>
+      <Typography
+        variant="h4"
+        component="h1"
+        fontWeight="bold"
+        gutterBottom
+        sx={{ mb: 2 }}
+      >
         내 관심 기업
       </Typography>
+      <Divider sx={{ mb: 4, borderColor: "grey" }} />
 
       {likedCompanies.length === 0 ? (
         <Alert severity="info">관심 기업으로 등록된 회사가 없습니다.</Alert>
       ) : (
-        <Grid container spacing={3}>
+        <Grid container columnSpacing={2} rowSpacing={1.5}>
           {likedCompanies.map((company) => (
-            <Grid item key={company.companyIdx} xs={12} sm={6} md={4} lg={3}>
+            <Grid item key={company.companyIdx} xs={3} sm={3} md={3} lg={3}>
               <Card
                 sx={{
-                  height: "100%",
+                  width: 260, // 고정된 카드 너비
+                  height: 100, // 고정된 카드 높이
                   display: "flex",
                   flexDirection: "column",
                   boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                   borderRadius: "12px",
                 }}
               >
-                <CardMedia
-                  component="img"
+                <CardContent
                   sx={{
-                    height: 140,
-                    objectFit: "contain",
-                    p: 2,
-                    borderBottom: "1px solid #eee",
+                    p: 0.5,
+                    paddingBottom: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    flexGrow: 1,
+                    pt: 2.3,
+                    "&:last-child": {
+                      paddingBottom: 0,
+                    },
                   }}
-                  image={getLogoUrl(company.logoUrl)}
-                  alt={`${company.name} 로고`}
-                />
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography gutterBottom variant="h6" component="div">
-                    {company.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {company.summary || "회사 요약 정보가 없습니다."}
-                  </Typography>
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <CardMedia
+                      component="img"
+                      sx={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: "50%",
+                        objectFit: "contain", // 로고 내용이 잘리지 않도록 contain으로 변경
+                        mr: 1,
+                      }}
+                      image={getLogoUrl(company.logoUrl)}
+                      alt={`${company.name} 로고`}
+                    />
+                    <Typography
+                      variant="subtitle1"
+                      component="div"
+                      sx={{
+                        flexShrink: 1, // 필요시 축소
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        fontWeight: "bold", // 회사명 폰트 두껍게
+                        lineHeight: 1, // 세로 중앙 정렬을 위해 줄 높이 제거
+                        margin: 0, // 모든 마진 제거
+                        padding: 0, // 모든 패딩 제거
+                      }}
+                    >
+                      {company.name}
+                    </Typography>
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>
