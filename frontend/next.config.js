@@ -11,6 +11,7 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_TOSS_CLIENT_KEY: process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY,
     NEXT_PUBLIC_TOSS_CUSTOMER_KEY: process.env.NEXT_PUBLIC_TOSS_CUSTOMER_KEY,
+    NEXT_PUBLIC_KAKAO_REST_API_KEY: process.env.KAKAO_OAUTH_CLIENT_ID, // 카카오 REST API 키 추가
   },
 
   // Next.js의 rewrites 설정을 통해 API 요청을 프록시

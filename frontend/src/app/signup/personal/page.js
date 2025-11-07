@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image'; // Image 컴포넌트 임포트
 import { Button, TextField, Container, Typography, Box, Alert, CircularProgress, MenuItem } from '@mui/material';
 import { Autocomplete } from '@react-google-maps/api';
 import { sendVerificationEmail, checkVerificationCode, signupPersonal } from '@/api'; // checkVerificationCode 임포트
@@ -103,7 +104,7 @@ export default function SignupPage() {
             }
         }
     };
-    
+
     const handleAddressChange = (e) => {
         setFormData(prevData => ({ ...prevData, address: e.target.value }));
     };
@@ -158,35 +159,52 @@ export default function SignupPage() {
 
                 {error && <Alert severity="error" sx={{ width: '100%', mt: 2 }}>{typeof error === 'object' ? error.message : error}</Alert>}
                 {successMessage && <Alert severity="success" sx={{ width: '100%', mt: 2 }}>{typeof successMessage === 'object' ? successMessage.message : successMessage}</Alert>}
-                
+
                 <form className="form" onSubmit={handleSubmit} noValidate>
                     <div className="input-group">
-                        <label htmlFor="email">이메일 주소</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <input style={{ flexGrow: 1 }} type="email" name="email" id="email" value={formData.email} onChange={handleChange} disabled={isCodeSent || loading} required />
+                        <label htmlFor="email">이메일</label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <TextField
+                                id="email"
+                                name="email"
+                                type="email"
+                                fullWidth
+                                value={formData.email}
+                                onChange={handleChange}
+                                placeholder="example@email.com"
+                                disabled={isCodeSent}
+                            />
                             <Button
                                 variant="contained"
                                 onClick={handleSendCode}
                                 disabled={isCodeSent || loading}
-                                sx={{ height: '45px', flexShrink: 0 }}
+                                sx={{ flexShrink: 0, width: '120px' }}
                             >
-                                {loading && !isCodeSent ? <CircularProgress size={24} /> : (isCodeSent ? '발송됨' : '인증 발송')}
+                                {loading ? <CircularProgress size={24} /> : '인증코드 발송'}
                             </Button>
                         </div>
                     </div>
 
                     {isCodeSent && (
                         <div className="input-group">
-                            <label htmlFor="verificationCode">인증 코드 6자리</label>
-                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input style={{ flexGrow: 1 }} type="text" name="verificationCode" id="verificationCode" value={formData.verificationCode} onChange={handleChange} disabled={isCodeConfirmed || verifyLoading} required />
+                            <label htmlFor="verificationCode">인증코드</label>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <TextField
+                                    id="verificationCode"
+                                    name="verificationCode"
+                                    fullWidth
+                                    value={formData.verificationCode}
+                                    onChange={handleChange}
+                                    placeholder="6자리 코드를 입력하세요"
+                                    disabled={isCodeConfirmed}
+                                />
                                 <Button
                                     variant="contained"
                                     onClick={handleCheckCode}
                                     disabled={isCodeConfirmed || verifyLoading}
-                                    sx={{ height: '45px', flexShrink: 0, backgroundColor: isCodeConfirmed ? 'grey' : undefined }}
+                                    sx={{ flexShrink: 0, width: '120px' }}
                                 >
-                                    {verifyLoading ? <CircularProgress size={24} /> : (isCodeConfirmed ? '확인됨' : '인증 확인')}
+                                    {verifyLoading ? <CircularProgress size={24} /> : '코드 확인'}
                                 </Button>
                             </div>
                         </div>
@@ -194,35 +212,77 @@ export default function SignupPage() {
 
                     <div className="input-group">
                         <label htmlFor="password">비밀번호</label>
-                        <input type="password" name="password" id="password" value={formData.password} onChange={handleChange} disabled={loading} required autoComplete="new-password" />
+                        <TextField
+                            id="password"
+                            name="password"
+                            type="password"
+                            fullWidth
+                            value={formData.password}
+                            onChange={handleChange}
+                            disabled={!isCodeConfirmed}
+                        />
                     </div>
 
                     <div className="input-group">
                         <label htmlFor="passwordConfirm">비밀번호 확인</label>
-                        <input type="password" name="passwordConfirm" id="passwordConfirm" value={formData.passwordConfirm} onChange={handleChange} disabled={loading} required autoComplete="new-password" />
+                        <TextField
+                            id="passwordConfirm"
+                            name="passwordConfirm"
+                            type="password"
+                            fullWidth
+                            value={formData.passwordConfirm}
+                            onChange={handleChange}
+                            disabled={!isCodeConfirmed}
+                        />
                     </div>
 
                     <div className="input-group">
                         <label htmlFor="name">이름</label>
-                        <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} disabled={loading} required />
+                        <TextField
+                            id="name"
+                            name="name"
+                            fullWidth
+                            value={formData.name}
+                            onChange={handleChange}
+                            disabled={!isCodeConfirmed}
+                        />
                     </div>
 
                     <div className="input-group">
                         <label htmlFor="nickname">닉네임</label>
-                        <input type="text" name="nickname" id="nickname" value={formData.nickname} onChange={handleChange} disabled={loading} required />
+                        <TextField
+                            id="nickname"
+                            name="nickname"
+                            fullWidth
+                            value={formData.nickname}
+                            onChange={handleChange}
+                            disabled={!isCodeConfirmed}
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label htmlFor="phone_number">전화번호</label>
+                        <TextField
+                            id="phone_number"
+                            name="phone_number"
+                            fullWidth
+                            value={formData.phone_number}
+                            onChange={handleChange}
+                            placeholder="- 없이 숫자만 입력"
+                            disabled={!isCodeConfirmed}
+                        />
                     </div>
 
                     <div className="input-group">
                         <label htmlFor="gender">성별</label>
                         <TextField
-                            select
-                            fullWidth
                             id="gender"
                             name="gender"
+                            select
+                            fullWidth
                             value={formData.gender}
                             onChange={handleChange}
-                            disabled={loading}
-                            variant="outlined"
+                            disabled={!isCodeConfirmed}
                         >
                             {genders.map((option) => (
                                 <MenuItem key={option.value} value={option.value}>
@@ -233,30 +293,21 @@ export default function SignupPage() {
                     </div>
 
                     <div className="input-group">
-                        <label htmlFor="phone_number">전화번호</label>
-                        <input type="tel" name="phone_number" id="phone_number" value={formData.phone_number} onChange={handleChange} disabled={loading} required />
-                        <div style={{ fontSize: '0.75rem', color: 'grey', marginTop: '4px' }}>'- ' 없이 숫자만 입력해주세요.</div>
-                    </div>
-
-                    <div className="input-group">
-                        <label htmlFor="address">주소 (자동완성)</label>
+                        <label htmlFor="address">주소</label>
                         <Autocomplete
                             onLoad={handleAutocompleteLoad}
                             onPlaceChanged={handlePlaceChanged}
-                            options={{ componentRestrictions: { country: 'kr' }, types: ['geocode'] }}
                         >
                             <TextField
-                                fullWidth
                                 id="address"
                                 name="address"
+                                fullWidth
                                 value={formData.address}
                                 onChange={handleAddressChange}
-                                disabled={loading}
-                                variant="outlined"
+                                disabled={!isCodeConfirmed}
                             />
                         </Autocomplete>
                     </div>
-
                     <button type="submit" className="sign" disabled={!isCodeConfirmed || loading}>
                         {loading ? <CircularProgress size={24} color="inherit" /> : '가입하기'}
                     </button>
@@ -267,11 +318,15 @@ export default function SignupPage() {
                     <p className="message">소셜 계정으로 시작하기</p>
                     <div className="line" />
                 </div>
-                <div className="social-icons">
+                <div className="social-icons" style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '16px' }}>
                     <a href="/api/oauth2/authorization/google" aria-label="Log in with Google" className="icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="w-5 h-5 fill-current">
-                            <path d="M16.318 13.714v5.484h9.078c-0.37 2.354-2.745 6.901-9.078 6.901-5.458 0-9.917-4.521-9.917-10.099s4.458-10.099 9.917-10.099c3.109 0 5.193 1.318 6.38 2.464l4.339-4.182c-2.786-2.599-6.396-4.182-10.719-4.182-8.844 0-16 7.151-16 16s7.156 16 16 16c9.234 0 15.365-6.49 15.365-15.635 0-1.052-0.115-1.854-0.255-2.651z" />
-                        </svg>
+                        <Image src="/assets/google-logo.svg" alt="Google a-logo" width={40} height={40} />
+                    </a>
+                    <a href="/api/oauth2/authorization/naver" aria-label="Log in with Naver" className="icon">
+                        <Image src="/assets/naver_logo.png" alt="Naver logo" width={40} height={40} />
+                    </a>
+                    <a href="/api/oauth2/authorization/kakao" aria-label="Log in with Kakao" className="icon">
+                        <Image src="/assets/kakao-logo.svg" alt="Kakao logo" width={40} height={40} />
                     </a>
                 </div>
 
