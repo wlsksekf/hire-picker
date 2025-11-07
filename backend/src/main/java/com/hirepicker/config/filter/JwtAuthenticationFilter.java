@@ -62,7 +62,7 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
 
     // ★ GET /api/posts와 /api/posts/{postIdx}는 필터 미적용 (비회원 조회 가능)
     if (method.equals("GET") && (path.equals("/api/posts") || path.matches("/api/posts/\\d+"))) {
-        return true;
+        return false;
     }
 
     // ★ /api/posts/me는 필터를 적용해야 함 (인증 정보 필요) - 반환값: false
