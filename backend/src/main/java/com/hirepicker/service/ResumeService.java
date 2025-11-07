@@ -6,6 +6,8 @@ import com.hirepicker.dto.ResumeDetailDto;
 import com.hirepicker.dto.AcademicAbilityDto;
 import com.hirepicker.dto.MilitaryServiceDto;
 import com.hirepicker.dto.WorkExperienceDto;
+import com.hirepicker.dto.AcademicAbilityViewDto; // 자동채움 학력 요약 DTO
+import com.hirepicker.dto.ResumeTemplateDto; // 자동채움 응답 DTO
 import com.hirepicker.entity.*;
 import com.hirepicker.repository.*;
 import jakarta.transaction.Transactional;
@@ -69,6 +71,56 @@ public class ResumeService {
 
         // 5) 응답 반환
         return new ResumeResponseDto(savedResume);
+    }
+
+    // 자동채움 데이터 조회(학력/경력/병역을 한 번에 반환)
+    @Transactional
+    public ResumeTemplateDto getResumeTemplate(Long userId) {
+        // 학력 요약: 최근 졸업일 순으로 학교명 포함
+        var academicList = academicAbilityRepository
+                .findByPersonalUserOrderByGraduationDateDesc(userId)
+                .stream()
+                .map(a -> {
+                    String schoolName = schoolRepository.findById(a.getSchool())
+                            .map(School::getSchoolName)
+                            .orElse(null);
+                    return new AcademicAbilityViewDto(
+                            a.getSchool(),
+                            schoolName,
+                            a.getDegree(),
+                            a.getMajor(),
+                            a.getMajorScore()
+                    );
+                }).toList();
+
+        // 경력 목록: 최신 입사일 순으로 변환
+        var expList = workExperienceRepository.findByPersonalUserIdOrderByHireDateDesc(userId)
+                .stream()
+                .map(w -> new WorkExperienceDto(
+                        null,
+                        w.getCompanyName(),
+                        w.getDepartment(),
+                        w.getPosition(),
+                        w.getHireDate(),
+                        w.getResignDate(),
+                        w.getJobDescription(),
+                        w.getMainDuties()
+                ))
+                .toList();
+
+        // 병역: 최신 1건만 제공(없으면 null)
+        MilitaryServiceDto military = militaryServiceRepository.findTopByPersonalUserIdOrderByIdDesc(userId)
+                .map(m -> new MilitaryServiceDto(
+                        null,
+                        m.getServiceType(),
+                        m.getMilitaryBranch(),
+                        m.getMilitaryRank(),
+                        m.getPeriodOfService(),
+                        m.getReasonForExemption()
+                ))
+                .orElse(null);
+
+        return new ResumeTemplateDto(academicList, expList, military);
     }
 
     // 상세 조회(소유자 검증 포함)

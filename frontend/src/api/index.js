@@ -239,3 +239,16 @@ export function saveMilitary(military) {
 export function updateResume(resumeId, payload) {
   return api.put(`/api/resume/${resumeId}`, payload).then(res => res.data);
 }
+
+// [이력서] 자격증 매핑 저장(이력서별)
+// - certIdxList를 알고 있으면 전달, 모르면 certNameList로 전달하면 백엔드가 마스터 생성/매핑 처리
+export function saveResumeCertifications(resumeIdx, { certIdxList = [], certNameList = [] } = {}) {
+  return api
+    .put('/api/users/certifications', { resumeIdx, certIdxList, certNameList })
+    .then(res => res.data);
+}
+
+// [이력서] 자동채움 데이터(학력/경력/병역) 일괄 조회
+export function getResumeTemplate() {
+  return api.get('/api/resumes/template').then(res => res.data);
+}

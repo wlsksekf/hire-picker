@@ -2,6 +2,8 @@ package com.hirepicker.controller;
 
 import com.hirepicker.dto.ResumeDto;
 import com.hirepicker.dto.ResumeResponseDto;
+import com.hirepicker.dto.ResumeTemplateDto; // 자동채움 응답 DTO
+import com.hirepicker.config.security.CustomUserDetails; // 인증 사용자 주입
 import com.hirepicker.service.ResumeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -11,6 +13,7 @@ import jakarta.validation.Valid; // @Valid 임포트
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal; // 인증 Principal 주입
 import org.springframework.validation.BindingResult; // BindingResult 임포트
 import org.springframework.validation.FieldError; // FieldError 임포트
 import org.springframework.web.bind.annotation.PostMapping;
@@ -102,5 +105,13 @@ public class ResumeController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(404).build(); // 404 Not Found와 오류 메시지 반환
         }
+    }
+
+    @Operation(summary = "이력서 자동채움 데이터", description = "사용자 저장 학력/경력/병역을 한 번에 반환합니다.")
+    @GetMapping("/resumes/template")
+    public ResponseEntity<ResumeTemplateDto> getResumeTemplate(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        if (userDetails == null) return ResponseEntity.status(401).build();
+        ResumeTemplateDto body = resumeService.getResumeTemplate(userDetails.getId());
+        return ResponseEntity.ok(body);
     }
 }
