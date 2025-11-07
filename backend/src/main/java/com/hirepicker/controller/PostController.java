@@ -24,6 +24,7 @@ import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.PostListDto;
 import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.entity.Posts;
+import com.hirepicker.entity.UserType;
 import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.result.ResultData;
 import com.hirepicker.service.PostService;
@@ -50,7 +51,10 @@ public class PostController {
             String username = isAuthenticated ? authentication.getName() : null;
             // ★ userId 추출 로직 추가!
             Long userId = null;
+            UserType userType = null;
             if (isAuthenticated && authentication.getPrincipal() instanceof CustomUserDetails) {
+                CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+                userType = userDetails.getUserType();
                 userId = ((CustomUserDetails) authentication.getPrincipal()).getId();
             }
             log.info("[PostController] Auth Check - Authenticated: {}, Username: {}", isAuthenticated, username);
@@ -58,7 +62,8 @@ public class PostController {
             return ResponseEntity.ok(Map.of(
                     "authenticated", isAuthenticated,
                     "username", username,
-                    "id", userId));
+                    "id", userId,
+                    "userType", userType != null ? userType.name().toLowerCase() : null));
         } catch (Exception e) {
             log.error("[PostController] Exception in /api/posts/me", e);
             return ResponseEntity.status(401).body(Map.of(
@@ -107,20 +112,44 @@ public class PostController {
     /** 게시글 목록 조회 (비회원 가능) */
     @GetMapping("")
     public ResultData<?> getList(
-            @RequestParam(value = "bname", defaultValue = "BBS") String bname,
             @RequestParam(value = "cPage", defaultValue = "1") int cPage) {
         try {
-            Page<PostListDto> postPage = postService.getPostListWithNickname(bname, cPage);
+            Page<PostListDto> postPage = postService.getAllPostList(cPage);
             List<PostListDto> list = postPage.getContent();
             long totalCount = postPage.getTotalElements();
             int totalPages = postPage.getTotalPages();
-
             String msg = (list != null && !list.isEmpty()) ? "success" : "fail";
             Map<String, Object> data = new java.util.HashMap<>();
             data.put("list", list != null ? list : new java.util.ArrayList<>());
             data.put("totalCount", totalCount);
             data.put("totalPages", totalPages);
             data.put("cPage", cPage);
+
+            return ResultData.of(1, msg, data);
+        } catch (Exception e) {
+            log.error("[PostController] Error fetching post list", e);
+            return ResultData.of(0, "Error fetching posts", null);
+        }
+    }
+
+    /** 카테고리별 게시글 조회 */
+    @GetMapping("/category")
+    public ResultData<?> getCategoryList(
+            @RequestParam(value = "bname", defaultValue = "all") String bname,
+            @RequestParam(value = "cPage", defaultValue = "1") int cPage,
+            @RequestParam(value = "boardIdx", defaultValue = "1") Long boardIdx) {
+        try {
+            Page<PostListDto> postPage = postService.getByBoardIdx(bname, cPage, boardIdx);
+            List<PostListDto> list = postPage.getContent();
+            long totalCount = postPage.getTotalElements();
+            int totalPages = postPage.getTotalPages();
+            String msg = (list != null && !list.isEmpty()) ? "success" : "fail";
+            Map<String, Object> data = new java.util.HashMap<>();
+            data.put("list", list != null ? list : new java.util.ArrayList<>());
+            data.put("totalCount", totalCount);
+            data.put("totalPages", totalPages);
+            data.put("cPage", cPage);
+            data.put("boardIdx", boardIdx);
 
             return ResultData.of(1, msg, data);
         } catch (Exception e) {
