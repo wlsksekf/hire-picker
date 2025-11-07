@@ -157,9 +157,9 @@ public class ProfileService {
         }
 
         // 매핑 전체 삭제 후 삽입
-        jdbcTemplate.update("DELETE FROM ehave_certification WHERE resume_idx=?", resumeId);
+        jdbcTemplate.update("DELETE FROM have_certification WHERE resume_idx=?", resumeId);
         if (finalIds.isEmpty()) return; // 입력 없으면 비움
-        String insertSql = "INSERT INTO ehave_certification (resume_idx, cert_idx) VALUES (?,?)";
+        String insertSql = "INSERT INTO have_certification (resume_idx, cert_idx) VALUES (?,?)";
         for (Long id : finalIds) {
             jdbcTemplate.update(insertSql, resumeId, id);
         }
@@ -200,7 +200,7 @@ public class ProfileService {
         if (isDefault != null) { sql.append("is_default=?,"); params.add(isDefault ? 1 : 0); }
         if (status != null) { sql.append("status=?,"); params.add(status); }
         if (cert != null) { sql.append("cert=?,"); params.add(cert); }
-        if (expIdx != null) { sql.append("exp_idx=?,"); params.add(expIdx); }
+        // DB 스키마에는 resumes.exp_idx 컬럼이 없으므로 조인 테이블(chosen_exp)로 별도 처리
 
         // 수정할 값이 없으면 0 반환
         if (params.isEmpty()) return 0;
@@ -211,7 +211,15 @@ public class ProfileService {
         params.add(resumeId);
         params.add(userId);
 
-        return jdbcTemplate.update(sql.toString(), params.toArray());
+        int rows = jdbcTemplate.update(sql.toString(), params.toArray());
+
+        // 선택 경력 매핑(chosen_exp) 갱신: 기존 매핑 제거 후 새 expIdx가 있으면 삽입
+        if (expIdx != null) {
+            jdbcTemplate.update("DELETE FROM chosen_exp WHERE resume_idx=?", resumeId);
+            jdbcTemplate.update("INSERT INTO chosen_exp (exp_idx, resume_idx) VALUES (?,?)", expIdx, resumeId);
+        }
+
+        return rows;
     }
 
     private static boolean isBlank(String s) { return s == null || s.isBlank(); }

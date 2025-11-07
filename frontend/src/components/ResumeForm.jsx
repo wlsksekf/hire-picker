@@ -59,6 +59,12 @@ const UndisabledUnderlineTextField = (props) => (
   />
 );
 
+// 공통 텍스트 입력 래퍼(폼 전용) - 위 표준 입력을 재사용
+// 누락된 컴포넌트로 인한 런타임 오류를 방지하기 위한 최소 정의
+const FormTextField = (props) => (
+  <UndisabledUnderlineTextField {...props} />
+);
+
 // 프리젠테이션 컴포넌트: 이력서 작성 양식
 export default function ResumeForm({
   formData,
@@ -67,6 +73,7 @@ export default function ResumeForm({
   onImageChange,
   isLoading,
   onAiGenerate,
+  onOpenAiDialog,
   onDownload,
   onSave,
   dialogOpen,
@@ -549,7 +556,11 @@ export default function ResumeForm({
 
             {/* 버튼 영역 */}
             <Box sx={{ display: "flex", gap: 1, mt: 2, justifyContent: "flex-end" }}>
-              <Button variant="outlined" onClick={onAiGenerate}>
+              <Button
+                variant="outlined"
+                onClick={() => (typeof onOpenAiDialog === 'function' ? onOpenAiDialog() : onAiGenerate())}
+                disabled={isLoading}
+              >
                 {isLoading ? <CircularProgress size={18} /> : "AI 초안 생성"}
               </Button>
               <Button variant="outlined" onClick={onDownload}>PDF 다운로드</Button>

@@ -98,7 +98,15 @@ export { api };
  * @param {string} prompt - AI에게 전달할 키워드
  */
 export const generateAiFullDraft = (prompt) => {
-    return api.post('/api/ai/generate-full-draft', { prompt });
+    // 백엔드 스펙: POST /api/ai/resume-draft { userData, jobPostingData, resumeDraft }
+    const body = { userData: String(prompt || ''), jobPostingData: null, resumeDraft: null };
+    return api.post('/api/ai/resume-draft', body).then(res => res);
+};
+
+// [AI] 기존 초안을 함께 보내 개선 요청 (refine 모드)
+export const generateAiResumeDraft = ({ userData = '', jobPostingData = null, resumeDraft = null } = {}) => {
+  const body = { userData: String(userData || ''), jobPostingData, resumeDraft };
+  return api.post('/api/ai/resume-draft', body).then(res => res);
 };
 
 /**
@@ -251,4 +259,21 @@ export function saveResumeCertifications(resumeIdx, { certIdxList = [], certName
 // [이력서] 자동채움 데이터(학력/경력/병역) 일괄 조회
 export function getResumeTemplate() {
   return api.get('/api/resumes/template').then(res => res.data);
+}
+
+// [이력서] 신규 생성 (multipart: resumeDto JSON + imageFile)
+export function createResume(resumeDto, imageFile) {
+  const fd = new FormData();
+  // resumeDto를 JSON Blob으로 첨부
+  fd.append('resumeDto', new Blob([JSON.stringify(resumeDto)], { type: 'application/json' }));
+  if (imageFile) fd.append('imageFile', imageFile);
+  return api.post('/api/resume', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    .then(res => res.data);
+}
+
+// [공통] 자격증 자동완성 검색
+export function searchCertifications(keyword) {
+  if (!keyword || keyword.trim().length === 0) return Promise.resolve([]);
+  return api.get('/api/certifications/search', { params: { keyword } })
+    .then(res => Array.isArray(res.data) ? res.data : []);
 }
