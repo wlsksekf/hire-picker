@@ -1,6 +1,7 @@
 package com.hirepicker.handler;
 
 import com.hirepicker.config.jwt.JwtTokenProvider;
+import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.entity.RefreshToken;
 import com.hirepicker.entity.UserType;
@@ -13,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +21,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -37,35 +36,10 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException, ServletException {
 
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-        String email = oAuth2User.getAttribute("email");
-        String name = oAuth2User.getAttribute("name");
-        String provider = "GOOGLE"; // Google OAuth2
-
-        Optional<PersonalUser> userOptional = personalUserRepository.findByEmail(email);
-        PersonalUser personalUser;
-
-        if (userOptional.isEmpty()) {
-            // 최초 로그인: 사용자 정보 저장
-            personalUser = PersonalUser.builder()
-                    .email(email)
-                    .name(name)
-                    .platform(provider)
-                    .nickname(name) // nickname은 name과 동일하게 설정
-                    .gender(null) // gender는 null 허용
-                    .phoneNumber(null)
-                    .address(null)
-                    .build();
-            personalUserRepository.save(personalUser);
-        } else {
-            // 이미 가입된 사용자: 정보 업데이트 (필요시)
-            personalUser = userOptional.get();
-            // 예: 이름이 변경되었을 경우 업데이트
-            if (!personalUser.getName().equals(name)) {
-                personalUser.setName(name);
-                personalUserRepository.save(personalUser);
-            }
-        }
+        CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
+        String email = customUserDetails.getUsername();
+        PersonalUser personalUser = personalUserRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("User not found with email: " + email));
 
         String accessToken = jwtTokenProvider.createAccessToken(authentication);
         String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(authentication);

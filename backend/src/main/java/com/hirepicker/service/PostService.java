@@ -27,7 +27,6 @@ public class PostService {
     private final PostRepository postRepository;
 
     private static final int PAGE_SIZE = 10;
-    private static final Long DEFAULT_BOARD_ID = 1L;
 
     @Value("${S3_ACCESS_KEY}")
     private String awsAccessKey;
@@ -50,7 +49,7 @@ public class PostService {
                 .build();
     }
 
-    // S3 업로드 (첨부 = attachments, 이미지 = images)
+    // S3 업로드 (첨부파일 = attachments, 이미지 = images)
     private String uploadFileToS3(MultipartFile file, String dirName) throws IOException {
         AmazonS3 s3 = getS3Client();
         String originName = file.getOriginalFilename();
@@ -103,11 +102,16 @@ public class PostService {
         return postRepository.save(post);
     }
 
-    // 게시글 목록 조회
-    public Page<PostListDto> getPostListWithNickname(String bname, int cPage) {
-        Long boardIdx = DEFAULT_BOARD_ID;
+    // 게시글 전체목록 조회
+    public Page<PostListDto> getAllPostList(int cPage) {
         Pageable pageable = PageRequest.of(cPage - 1, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "postIdx"));
-        return postRepository.findPostListWithNickname(boardIdx, pageable);
+        return postRepository.findAllPostList(pageable);
+    }
+
+        // 카테고리별 게시글 조회
+    public Page<PostListDto> getByBoardIdx(String bname, int cPage, Long boardIdx) {
+        Pageable pageable = PageRequest.of(cPage - 1, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "postIdx"));
+        return postRepository.findByBoardIdx(boardIdx, pageable);
     }
 
     // 게시글 상세 조회
