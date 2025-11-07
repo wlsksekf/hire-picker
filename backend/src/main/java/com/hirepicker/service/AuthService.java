@@ -5,6 +5,7 @@ import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.CompanySignupRequestDto;
 import com.hirepicker.dto.LoginRequest;
 import com.hirepicker.dto.SignupRequestDto;
+import com.hirepicker.entity.ApprovalStatus;
 import com.hirepicker.entity.Company;
 import com.hirepicker.entity.CompanyUser;
 import com.hirepicker.entity.PersonalUser;
@@ -27,8 +28,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +47,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
     private final Environment environment;
+    private final S3UploadService s3UploadService;
 
     /**
      * 로그인 처리 (개인회원/기업회원 통합)
@@ -88,6 +93,34 @@ public class AuthService {
                 CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
                 UserType userType = userDetails.getUserType();  // PERSONAL 또는 COMPANY
                 Long userId = userDetails.getId();              // 사용자 PK
+
+                // ========== 기업회원 승인 상태 체크 ==========
+                if (userType == UserType.COMPANY) {
+                    log.info("Checking approval status for company user ID: {}", userId);
+                    CompanyUser companyUser = companyUserRepository.findById(userId)
+                            .orElseThrow(() -> new IllegalStateException("기업 사용자를 찾을 수 없습니다."));
+
+                    String approvalStatus = companyUser.getIsApproved();
+
+                    // APPROVED가 아니면 로그인 불가
+                    if (!ApprovalStatus.APPROVED.equals(approvalStatus)) {
+                        log.warn("Company user login blocked. Status: {}, ID: {}", approvalStatus, userId);
+
+                        // 상태별 에러 메시지
+                        String errorMessage;
+                        if (ApprovalStatus.PENDING.equals(approvalStatus)) {
+                            errorMessage = "관리자 승인 대기 중입니다. 승인 후 로그인이 가능합니다.";
+                        } else if (ApprovalStatus.REJECTED.equals(approvalStatus)) {
+                            errorMessage = "회원가입이 거부되었습니다. 고객센터로 문의해주세요.";
+                        } else {
+                            errorMessage = "알 수 없는 승인 상태입니다. 관리자에게 문의해주세요.";
+                        }
+
+                        throw new IllegalStateException(errorMessage);
+                    }
+
+                    log.info("Company user approval check passed. ID: {}", userId);
+                }
 
                 // ========== STEP 2: JWT 토큰 생성 ==========
                 log.info("Step 2: Creating tokens for user ID: {}, type: {}", userId, userType);
@@ -241,6 +274,92 @@ public class AuthService {
         handleRefreshToken(savedUser, refreshTokenValue, UserType.COMPANY);
 
         addTokensToCookie(response, accessToken, refreshTokenValue);
+    }
+
+    /**
+     * 기업 회원가입 (파일 업로드 포함)
+     *
+     * 전체 흐름:
+     * 1. 중복 체크 (아이디, 이메일)
+     * 2. 파일 검증 (크기, 확장자)
+     * 3. S3에 파일 업로드
+     * 4. CompanyUser 생성 (isApproved = PENDING, verificationFile = S3 URL)
+     * 5. DB 저장
+     *
+     * 주의: 자동 로그인하지 않음 (승인 대기 상태이므로)
+     */
+    @Transactional
+    public void registerCompanyUserWithDocument(CompanySignupRequestDto request, MultipartFile file, HttpServletResponse response) throws IOException {
+        log.info("기업 회원가입 처리 시작. ID: {}, 파일명: {}", request.getId(), file.getOriginalFilename());
+
+        // === STEP 1: 중복 체크 ===
+        if (companyUserRepository.existsByLoginId(request.getId())) {
+            throw new IllegalArgumentException("이미 사용중인 아이디입니다.");
+        }
+        if (isEmailDuplicate(request.getEmail())) {
+            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+        }
+
+        // === STEP 2: 회사 정보 조회 ===
+        Company company = companyRepository.findById(request.getCompanyIdx())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회사입니다."));
+
+        // === STEP 3: 파일 검증 ===
+        validateVerificationFile(file);
+
+        // === STEP 4: S3에 파일 업로드 ===
+        log.info("S3에 인증 파일 업로드 중...");
+        String fileUrl = s3UploadService.uploadFile(file, "company-verifications");
+        log.info("S3 업로드 완료. URL: {}", fileUrl);
+
+        // === STEP 5: CompanyUser 생성 및 저장 ===
+        CompanyUser newUser = CompanyUser.builder()
+                .loginId(request.getId())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .name(request.getName())
+                .email(request.getEmail())
+                .phoneNumber(request.getPhone_number())
+                .company(company)
+                .verificationFile(fileUrl)               // S3 URL 저장
+                .isApproved(ApprovalStatus.PENDING)      // 승인 대기 상태
+                .build();
+
+        CompanyUser savedUser = companyUserRepository.save(newUser);
+        log.info("기업 회원가입 신청 완료. ID: {}, Status: {}", savedUser.getId(), savedUser.getIsApproved());
+
+        // 주의: 자동 로그인하지 않음 (관리자 승인 필요)
+    }
+
+    /**
+     * 인증 파일 검증
+     * - 파일 크기: 최대 10MB
+     * - 허용 확장자: pdf, jpg, jpeg, png
+     */
+    private void validateVerificationFile(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("파일을 첨부해주세요.");
+        }
+
+        // 파일 크기 검증 (10MB)
+        long maxSize = 10 * 1024 * 1024; // 10MB in bytes
+        if (file.getSize() > maxSize) {
+            throw new IllegalArgumentException("파일 크기는 10MB를 초과할 수 없습니다.");
+        }
+
+        // 확장자 검증
+        String filename = file.getOriginalFilename();
+        if (filename == null || !filename.contains(".")) {
+            throw new IllegalArgumentException("올바른 파일 형식이 아닙니다.");
+        }
+
+        String extension = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
+        List<String> allowedExtensions = Arrays.asList("pdf", "jpg", "jpeg", "png");
+
+        if (!allowedExtensions.contains(extension)) {
+            throw new IllegalArgumentException("PDF, JPG, PNG 파일만 업로드 가능합니다.");
+        }
+
+        log.info("파일 검증 완료. 파일명: {}, 크기: {}bytes, 확장자: {}", filename, file.getSize(), extension);
     }
 
     // 리프레시 토큰 처리 로직을 별도 메서드로 분리 (PersonalUser, CompanyUser 공용)

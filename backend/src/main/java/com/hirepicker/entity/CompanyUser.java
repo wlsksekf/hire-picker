@@ -68,11 +68,13 @@ public class CompanyUser {
         this.refreshToken = refreshToken;
     }
 
-    // 인증 파일 경로 (verification_file 컬럼)
-    @Column(name = "verification_file", length = 255)
-    private String verificationFile; // 기업회원 인증 파일 경로
+    // 인증 파일 경로 (S3 URL, verification_file 컬럼)
+    @Column(name = "verification_file", length = 500)
+    private String verificationFile;
 
-    // 승인 여부 (tinyint, nullable)
-    @Column(name = "is_approved")
-    private Boolean isApproved; // 승인 여부 (null 허용)
+    // 승인 상태 (is_approved 컬럼)
+    // 가능한 값: "PENDING", "APPROVED", "REJECTED"
+    @Column(name = "is_approved", length = 20)
+    @Builder.Default
+    private String isApproved = ApprovalStatus.PENDING; // 기본값: 승인 대기
 }

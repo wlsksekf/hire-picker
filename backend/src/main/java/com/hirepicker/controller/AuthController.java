@@ -19,7 +19,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -141,27 +143,43 @@ public class AuthController {
         @ApiResponse(responseCode = "500", description = "회원가입 중 오류가 발생했습니다.")
     })
     @PostMapping("/signup/company")
-    public ResponseEntity<String> registerCompanyUser(@Valid @RequestBody CompanySignupRequestDto signupRequest, HttpServletResponse response) {
-        log.info("[API] /api/auth/signup/company 요청 수신. 사용자 ID: {}", signupRequest.getId());
+    public ResponseEntity<Map<String, String>> registerCompanyUser(
+            @Parameter(description = "회원가입 정보 (JSON)", required = true)
+            @Valid @RequestPart("signupData") CompanySignupRequestDto signupRequest,
+            @Parameter(description = "인증 파일 (사업자등록증 등, PDF/JPG/PNG, 최대 10MB)", required = true)
+            @RequestPart("verificationFile") MultipartFile file,
+            HttpServletResponse response
+    ) {
+        log.info("[API] /api/auth/signup/company 요청 수신. 사용자 ID: {}, 파일명: {}",
+                signupRequest.getId(), file.getOriginalFilename());
 
-        // (★수정) '인증 완료' 상태 검증
+        // === STEP 1: 이메일 인증 상태 검증 ===
         boolean isVerified = emailService.isEmailVerified(signupRequest.getEmail());
-
         if (!isVerified) {
             log.warn("'인증 완료' 상태가 아닙니다. 이메일: {}", signupRequest.getEmail());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("이메일 인증이 완료되지 않았거나 만료되었습니다.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "이메일 인증이 완료되지 않았거나 만료되었습니다."));
         }
 
         try {
-            authService.registerCompanyUser(signupRequest, response);
-            log.info("기업 회원가입 성공. 사용자 ID: {}", signupRequest.getId());
-            return ResponseEntity.status(HttpStatus.CREATED).build();
+            // === STEP 2: 파일 검증 및 회원가입 처리 ===
+            authService.registerCompanyUserWithDocument(signupRequest, file, response);
+
+            log.info("기업 회원가입 신청 완료. 사용자 ID: {}", signupRequest.getId());
+
+            // === STEP 3: 성공 응답 ===
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of("message", "회원가입 신청이 완료되었습니다. 관리자 승인 후 로그인 가능합니다."));
+
         } catch (IllegalArgumentException e) {
-            log.warn("회원가입 중 충돌 발생: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            log.warn("회원가입 중 검증 실패: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+
         } catch (Exception e) {
             log.error("회원가입 처리 중 알 수 없는 오류 발생. 사용자 ID: {}", signupRequest.getId(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("회원가입 중 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "회원가입 중 오류가 발생했습니다: " + e.getMessage()));
         }
     }
 
@@ -175,10 +193,22 @@ public class AuthController {
         @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @PostMapping("/login")
-    public ResponseEntity<Void> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
+    public ResponseEntity<Map<String, String>> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         log.info("[API] /api/auth/login 요청 수신. 사용자: {}", loginRequest.getEmail());
-        authService.login(loginRequest, response);
-        return ResponseEntity.ok().build();
+        try {
+            authService.login(loginRequest, response);
+            return ResponseEntity.ok().build();
+        } catch (IllegalStateException e) {
+            // 기업회원 승인 대기/거부 등 상태 관련 에러
+            log.warn("[API] 로그인 거부: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            // 일반 인증 실패 (아이디/비밀번호 오류)
+            log.warn("[API] 로그인 실패: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "아이디 또는 비밀번호가 올바르지 않습니다."));
+        }
     }
 
     @Operation(summary = "로그아웃", description = "사용자 세션을 종료하고 JWT 토큰 쿠키를 삭제합니다.")

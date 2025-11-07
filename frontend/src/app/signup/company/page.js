@@ -186,8 +186,8 @@ export default function CompanySignupPage() {
     // === FormData 생성 (파일 + JSON 데이터) ===
     const formDataToSend = new FormData();
 
-    // JSON 데이터 추가 (passwordConfirm 제외)
-    const { passwordConfirm, verificationCode, ...signupData } = formData;
+    // JSON 데이터 추가 (passwordConfirm만 제외)
+    const { passwordConfirm, ...signupData } = formData;
     formDataToSend.append('signupData', new Blob([JSON.stringify(signupData)], {
       type: 'application/json'
     }));
