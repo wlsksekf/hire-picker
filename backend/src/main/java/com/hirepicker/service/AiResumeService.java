@@ -1,4 +1,4 @@
-﻿package com.hirepicker.service;
+package com.hirepicker.service;
 
 import com.google.genai.Client;
 import com.google.genai.types.Content;
@@ -147,4 +147,3 @@ public class AiResumeService {
         return ""; // 모든 후보가 없으면 빈 문자열 반환
     }
 }
-
