@@ -1,6 +1,8 @@
 package com.hirepicker.dto;
-import com.hirepicker.entity.UserType;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.hirepicker.entity.UserType;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -59,9 +61,9 @@ public class UserDto {
 
     // 추가 필드: 마이페이지/폼 자동 채움에 필요
     private String phoneNumber; // 개인유저 전화번호
-    private String address;     // 개인유저 주소
-    private String gender;      // 성별 문자열(MALE/FEMALE)
-    private String birthDate;   // 생년월일(YYYY-MM-DD)
+    private String address; // 개인유저 주소
+    private String gender; // 성별 문자열(MALE/FEMALE)
+    private String birthDate; // 생년월일(YYYY-MM-DD)
 
     // 호환용 생성자(기존 사용 코드 유지): pUserIdx, email, name, provider, nickname, userType
     public UserDto(Long pUserIdx, String email, String name, String provider, String nickname, UserType userType) {

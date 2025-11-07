@@ -72,16 +72,21 @@ function LoginPage() {
       })
       .catch(function(err) {
         // === STEP 4: 로그인 실패 처리 ===
-        console.error('로그인 요청 중 오류 발생:', err.response || err);
-
         // 4-1. 소셜 계정 전용 에러 처리
         //      (소셜 로그인으로 가입한 계정이 로컬 로그인 시도 시)
         if (err.response?.data?.error === 'SOCIAL_ACCOUNT_NEEDS_PASSWORD_SETUP') {
+          console.warn('소셜 계정 비밀번호 미설정:', err.response.data.message);
           setError(err.response.data.message || '소셜 계정입니다. 비밀번호를 설정해주세요.');
           setIsSocialError(true);
+        } else if (err.response?.data?.message) {
+          // 4-2. 백엔드에서 보낸 에러 메시지 우선 표시
+          //      (예: 기업회원 승인 대기, 거부 등)
+          console.warn('로그인 거부:', err.response.data.message);
+          setError(err.response.data.message);
         } else {
-          // 4-2. 일반 인증 실패 (이메일/아이디 또는 비밀번호 오류)
+          // 4-3. 일반 인증 실패 (이메일/아이디 또는 비밀번호 오류)
           //      탭에 따라 에러 메시지 다르게 표시
+          console.error('로그인 실패:', err.response || err);
           const errorMsg = tabValue === 0
             ? '이메일 또는 비밀번호가 올바르지 않습니다.'
             : '아이디 또는 비밀번호가 올바르지 않습니다.';
