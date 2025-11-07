@@ -49,10 +49,15 @@ public class PostController {
         ));
     }
 
-    /** 게시글 전체 목록 조회 */
+    /** 게시글 전체 목록 조회 & 검색 기능 추가 */
     @GetMapping("")
-    public ResultData<?> getList(@RequestParam(value = "cPage", defaultValue = "1") int cPage) {
-        Page<PostListDto> postPage = postService.getAllPostList(cPage);
+    public ResultData<?> getList(
+            @RequestParam(value = "cPage", defaultValue = "1") int cPage,
+            @RequestParam(value = "type", required = false, defaultValue = "title") String type,
+            @RequestParam(value = "query", required = false, defaultValue = "") String query
+    ) {
+        // 검색 파라미터 받으면 검색 서비스 호출, 아니면 전체 목록
+        Page<PostListDto> postPage = postService.getPostListWithSearch(cPage, type, query);
         List<PostListDto> list = postPage.getContent();
         long totalCount = postPage.getTotalElements();
         int totalPages = postPage.getTotalPages();
