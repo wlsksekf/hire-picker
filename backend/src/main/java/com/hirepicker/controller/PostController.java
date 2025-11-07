@@ -22,10 +22,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.PostListDto;
-import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.entity.Posts;
 import com.hirepicker.entity.UserType;
-import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.result.ResultData;
 import com.hirepicker.service.PostService;
 
@@ -38,7 +36,6 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 public class PostController {
     private final PostService postService;
-    private final PersonalUserRepository personalUserRepository;
 
     /** 인증 상태 확인 */
     @GetMapping("/me")
@@ -94,12 +91,10 @@ public class PostController {
         }
 
         Long pUserIdx = userDetails.getId();
-        PersonalUser personalUser = personalUserRepository.findById(pUserIdx)
-                .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다. id=" + pUserIdx));
         Posts newPost;
         try {
             // PostService에 첨부파일/이미지 모두 전달
-            newPost = this.postService.create(board_idx, personalUser, title, content, imageFile, attachmentFile);
+            newPost = this.postService.create(board_idx, pUserIdx, title, content, imageFile, attachmentFile);
             log.info("[PostController] Post created successfully - PostIdx: {}", newPost.getPostIdx());
         } catch (Exception e) {
             log.error("[PostController] Error during post creation", e);
