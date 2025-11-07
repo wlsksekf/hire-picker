@@ -2,6 +2,7 @@ package com.hirepicker.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -11,7 +12,7 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "work_experience")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PUBLIC) // DTO에서 new로 생성 가능하도록 public으로 노출
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // DTO에서 new로 생성 가능하도록 public으로 노출
 public class WorkExperience {
 
     @Id
@@ -44,4 +45,19 @@ public class WorkExperience {
 
     @Column(name = "main_duties", length = 20)
     private String mainDuties; // 주요 직무 키워드
+
+    @Builder
+    public WorkExperience(Long id, PersonalUser personalUser, String companyName, String department,
+                          String position, LocalDate hireDate, LocalDate resignDate,
+                          String jobDescription, String mainDuties) {
+        this.id = id;
+        this.personalUser = personalUser;
+        this.companyName = companyName;
+        this.department = department;
+        this.position = position;
+        this.hireDate = hireDate;
+        this.resignDate = resignDate;
+        this.jobDescription = jobDescription;
+        this.mainDuties = mainDuties;
+    }
 }
