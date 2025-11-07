@@ -157,13 +157,13 @@ function LoginPage() {
 
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: '16px', width: '100%' }}>
           <a href="/api/oauth2/authorization/google" aria-label="Log in with Google">
-            <Image src="/assets/google-logo.svg" alt="Google logo" width={48} height={48} />
+            <Image src="/assets/google-logo.svg" alt="Google logo" width={40} height={40} />
           </a>
           <a href="/api/oauth2/authorization/naver" aria-label="Log in with Naver">
-            <Image src="/assets/naver_logo.png" alt="Naver logo" width={48} height={48} />
+            <Image src="/assets/naver_logo.png" alt="Naver logo" width={40} height={40} />
           </a>
           <a href="/api/oauth2/authorization/kakao" aria-label="Log in with Kakao">
-            <Image src="/assets/kakao-logo.svg" alt="Kakao logo" width={48} height={48} />
+            <Image src="/assets/kakao-logo.svg" alt="Kakao logo" width={40} height={40} />
           </a>
         </Box>
 

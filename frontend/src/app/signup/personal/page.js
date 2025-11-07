@@ -104,7 +104,7 @@ export default function SignupPage() {
             }
         }
     };
-    
+
     const handleAddressChange = (e) => {
         setFormData(prevData => ({ ...prevData, address: e.target.value }));
     };
@@ -159,10 +159,155 @@ export default function SignupPage() {
 
                 {error && <Alert severity="error" sx={{ width: '100%', mt: 2 }}>{typeof error === 'object' ? error.message : error}</Alert>}
                 {successMessage && <Alert severity="success" sx={{ width: '100%', mt: 2 }}>{typeof successMessage === 'object' ? successMessage.message : successMessage}</Alert>}
-                
-                <form className="form" onSubmit={handleSubmit} noValidate>
-                    {/* ... (폼 입력 필드들) ... */}
 
+                <form className="form" onSubmit={handleSubmit} noValidate>
+                    <div className="input-group">
+                        <label htmlFor="email">이메일</label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <TextField
+                                id="email"
+                                name="email"
+                                type="email"
+                                fullWidth
+                                value={formData.email}
+                                onChange={handleChange}
+                                placeholder="example@email.com"
+                                disabled={isCodeSent}
+                            />
+                            <Button
+                                variant="contained"
+                                onClick={handleSendCode}
+                                disabled={isCodeSent || loading}
+                                sx={{ flexShrink: 0, width: '120px' }}
+                            >
+                                {loading ? <CircularProgress size={24} /> : '인증코드 발송'}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {isCodeSent && (
+                        <div className="input-group">
+                            <label htmlFor="verificationCode">인증코드</label>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <TextField
+                                    id="verificationCode"
+                                    name="verificationCode"
+                                    fullWidth
+                                    value={formData.verificationCode}
+                                    onChange={handleChange}
+                                    placeholder="6자리 코드를 입력하세요"
+                                    disabled={isCodeConfirmed}
+                                />
+                                <Button
+                                    variant="contained"
+                                    onClick={handleCheckCode}
+                                    disabled={isCodeConfirmed || verifyLoading}
+                                    sx={{ flexShrink: 0, width: '120px' }}
+                                >
+                                    {verifyLoading ? <CircularProgress size={24} /> : '코드 확인'}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="input-group">
+                        <label htmlFor="password">비밀번호</label>
+                        <TextField
+                            id="password"
+                            name="password"
+                            type="password"
+                            fullWidth
+                            value={formData.password}
+                            onChange={handleChange}
+                            disabled={!isCodeConfirmed}
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label htmlFor="passwordConfirm">비밀번호 확인</label>
+                        <TextField
+                            id="passwordConfirm"
+                            name="passwordConfirm"
+                            type="password"
+                            fullWidth
+                            value={formData.passwordConfirm}
+                            onChange={handleChange}
+                            disabled={!isCodeConfirmed}
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label htmlFor="name">이름</label>
+                        <TextField
+                            id="name"
+                            name="name"
+                            fullWidth
+                            value={formData.name}
+                            onChange={handleChange}
+                            disabled={!isCodeConfirmed}
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label htmlFor="nickname">닉네임</label>
+                        <TextField
+                            id="nickname"
+                            name="nickname"
+                            fullWidth
+                            value={formData.nickname}
+                            onChange={handleChange}
+                            disabled={!isCodeConfirmed}
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label htmlFor="phone_number">전화번호</label>
+                        <TextField
+                            id="phone_number"
+                            name="phone_number"
+                            fullWidth
+                            value={formData.phone_number}
+                            onChange={handleChange}
+                            placeholder="- 없이 숫자만 입력"
+                            disabled={!isCodeConfirmed}
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label htmlFor="gender">성별</label>
+                        <TextField
+                            id="gender"
+                            name="gender"
+                            select
+                            fullWidth
+                            value={formData.gender}
+                            onChange={handleChange}
+                            disabled={!isCodeConfirmed}
+                        >
+                            {genders.map((option) => (
+                                <MenuItem key={option.value} value={option.value}>
+                                    {option.label}
+                                </MenuItem>
+                            ))}
+                        </TextField>
+                    </div>
+
+                    <div className="input-group">
+                        <label htmlFor="address">주소</label>
+                        <Autocomplete
+                            onLoad={handleAutocompleteLoad}
+                            onPlaceChanged={handlePlaceChanged}
+                        >
+                            <TextField
+                                id="address"
+                                name="address"
+                                fullWidth
+                                value={formData.address}
+                                onChange={handleAddressChange}
+                                disabled={!isCodeConfirmed}
+                            />
+                        </Autocomplete>
+                    </div>
                     <button type="submit" className="sign" disabled={!isCodeConfirmed || loading}>
                         {loading ? <CircularProgress size={24} color="inherit" /> : '가입하기'}
                     </button>
@@ -175,13 +320,13 @@ export default function SignupPage() {
                 </div>
                 <div className="social-icons" style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '16px' }}>
                     <a href="/api/oauth2/authorization/google" aria-label="Log in with Google" className="icon">
-                        <Image src="/assets/google-logo.svg" alt="Google a-logo" width={48} height={48} />
+                        <Image src="/assets/google-logo.svg" alt="Google a-logo" width={40} height={40} />
                     </a>
                     <a href="/api/oauth2/authorization/naver" aria-label="Log in with Naver" className="icon">
-                        <Image src="/assets/naver-logo.svg" alt="Naver logo" width={48} height={48} />
+                        <Image src="/assets/naver_logo.png" alt="Naver logo" width={40} height={40} />
                     </a>
                     <a href="/api/oauth2/authorization/kakao" aria-label="Log in with Kakao" className="icon">
-                        <Image src="/assets/kakao-logo.svg" alt="Kakao logo" width={48} height={48} />
+                        <Image src="/assets/kakao-logo.svg" alt="Kakao logo" width={40} height={40} />
                     </a>
                 </div>
 
