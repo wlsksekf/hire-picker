@@ -37,7 +37,7 @@ export default function PostDetailPage() {
       setLoading(false);
       return;
     }
-    axios.get(api_url)
+    axios.get(api_url, {withCredentials: true})
       .then(response => {
         if (response.data.msg === 'success' && response.data.data) {
           setPost(response.data.data);

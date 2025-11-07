@@ -6,6 +6,7 @@ import com.hirepicker.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,24 +20,24 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor // final 필드 자동 생성자 주입 (@Autowired 불필요)
 public class PostService {
 
-    private final PostRepository postRepository;
+    private final PostRepository postRepository;            // DB 액세스 레이어
+    private final RedisTemplate<String, Object> redisTemplate; // Redis 캐시
 
     private static final int PAGE_SIZE = 10;
 
+    // S3 환경변수 주입
     @Value("${S3_ACCESS_KEY}")
     private String awsAccessKey;
-
     @Value("${S3_SECRET_KEY}")
     private String awsSecretKey;
-
     @Value("${S3_BUCKET_NAME}")
     private String s3BucketName;
-
     @Value("${S3_REGION:ap-northeast-2}")
     private String s3Region;
 
@@ -49,7 +50,7 @@ public class PostService {
                 .build();
     }
 
-    // S3 업로드 (첨부파일 = attachments, 이미지 = images)
+    // S3 업로드 (첨부파일/이미지 구분, S3 key 반환)
     private String uploadFileToS3(MultipartFile file, String dirName) throws IOException {
         AmazonS3 s3 = getS3Client();
         String originName = file.getOriginalFilename();
@@ -69,7 +70,7 @@ public class PostService {
         return key;
     }
 
-    // S3 실제 삭제 로직
+    // S3 실제 삭제
     private void deleteFromS3(String key) {
         if (key == null || key.isBlank()) return;
         AmazonS3 s3 = getS3Client();
@@ -102,25 +103,35 @@ public class PostService {
         return postRepository.save(post);
     }
 
-    // 게시글 전체목록 조회
+    // 전체 게시글 조회 (pagination)
     public Page<PostListDto> getAllPostList(int cPage) {
         Pageable pageable = PageRequest.of(cPage - 1, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "postIdx"));
         return postRepository.findAllPostList(pageable);
     }
 
-        // 카테고리별 게시글 조회
+    // 카테고리별 게시글 조회
     public Page<PostListDto> getByBoardIdx(String bname, int cPage, Long boardIdx) {
         Pageable pageable = PageRequest.of(cPage - 1, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "postIdx"));
         return postRepository.findByBoardIdx(boardIdx, pageable);
     }
 
-    // 게시글 상세 조회
-    public PostListDto getPostDetailWithNickname(Long postIdx) {
+    // 게시글 상세 조회 + 조회수 증가(중복방지, Redis 24시간 TTL)
+    @Transactional
+    public PostListDto getPostDetailWithNickname(Long postIdx, String userKey) {
+        String cacheKey = "viewed:" + userKey + ":" + postIdx;
+        // 1. Redis에서 키가 이미 있으면 - 중복 조회 (조회수 증가X)
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(cacheKey))) {
+            return postRepository.findPostDetailWithNickname(postIdx)
+                .orElse(null);
+        }
+        // 2. 조회수 DB 1 증가 + Redis에 24시간 키 기록
+        postRepository.increaseViewCount(postIdx); // 동시성 안전 Native 쿼리 필요
+        redisTemplate.opsForValue().set(cacheKey, "1", 24, TimeUnit.HOURS);
         return postRepository.findPostDetailWithNickname(postIdx)
             .orElse(null);
     }
 
-    // 게시글 수정 + S3 파일/이미지 삭제/변경까지 종합!
+    // 게시글 수정 + S3 파일/이미지 삭제/변경
     @Transactional
     public boolean updatePost(Long postIdx, Long loginUserIdx, String title, String content,
                               MultipartFile imageFile, MultipartFile attachmentFile,
@@ -135,7 +146,7 @@ public class PostService {
         // 이미지 삭제/변경
         if (deleteImg && post.getImgName() != null) {
             deleteFromS3(post.getImgName());
-            post.setImgName(null); // DB도 null로
+            post.setImgName(null);
         } else if (imageFile != null && !imageFile.isEmpty()) {
             if (post.getImgName() != null) deleteFromS3(post.getImgName());
             try {
@@ -164,18 +175,16 @@ public class PostService {
         return true;
     }
 
-        // --- 게시글 삭제 (글, S3 파일/이미지 동시 삭제) ---
+    // 게시글 삭제 (S3 파일/이미지 동시 삭제)
     @Transactional
     public boolean deletePostWithFiles(Long postIdx, Long loginUserIdx) {
         Posts post = postRepository.findById(postIdx).orElse(null);
         if (post == null || !post.getPUserIdx().equals(loginUserIdx)) return false;
 
-        // S3 이미지/파일 삭제
         if (post.getImgName() != null) deleteFromS3(post.getImgName());
         if (post.getFileName() != null) deleteFromS3(post.getFileName());
 
         postRepository.delete(post);
         return true;
     }
-    
 }

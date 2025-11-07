@@ -3,11 +3,14 @@ package com.hirepicker.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.hirepicker.dto.PostListDto;
 import com.hirepicker.entity.Posts;
+
+import jakarta.transaction.Transactional;
 
 import java.util.Optional;
 
@@ -41,5 +44,11 @@ Page<PostListDto> findAllPostList(Pageable pageable);
        "WHERE p.postIdx = :postIdx")
 Optional<PostListDto> findPostDetailWithNickname(@Param("postIdx") Long postIdx);
 
+    // 조회수 1 증가 (Native Query, 동시성 안정)
+    @Transactional
+    @Modifying
+    @Query("UPDATE Posts p SET p.viewCount = p.viewCount + 1 WHERE p.postIdx = :postIdx")
+    void increaseViewCount(@Param("postIdx") Long postIdx);
+    
 }
 
