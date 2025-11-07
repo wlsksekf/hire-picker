@@ -9,6 +9,7 @@ import {
   getExperiences,
   getMilitary,
   updateUserProfileDetails,
+  searchSchools, // searchSchools 임포트 추가
 } from "@/api"; // 프로필/학력/경력/병역 API
 import ResumePdfDocument from "@/components/ResumePdfDocument";
 import { pdf } from "@react-pdf/renderer"; // PDF 생성
@@ -31,12 +32,21 @@ export default function AiResumePage() {
   const [selectedImage, setSelectedImage] = useState(null); // 업로드 파일
   const [previewImage, setPreviewImage] = useState(null); // 미리보기 URL
 
+  // 학교 검색 관련 상태
+  const [schoolOptions1, setSchoolOptions1] = useState([]);
+  const [schoolLoading1, setSchoolLoading1] = useState(false);
+  const [schoolOptions2, setSchoolOptions2] = useState([]);
+  const [schoolLoading2, setSchoolLoading2] = useState(false);
+
   // 다이얼로그 상태
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
   // 폼 데이터 상태
   const [formData, setFormData] = useState({
+    // 이력서 제목 추가
+    title: "",
+
     // 기본 정보
     name: "",
     nationality: "내국인", // UI 고정 표시
@@ -49,12 +59,14 @@ export default function AiResumePage() {
     // 학력 (최대 2개)
     edu1_period: "",
     edu1_school: "",
+    edu1_schoolCode: null, // 학교 코드 추가
     edu1_major: "",
     edu1_status: "",
     edu1_location: "",
     edu1_score: "",
     edu2_period: "",
     edu2_school: "",
+    edu2_schoolCode: null, // 학교 코드 추가
     edu2_major: "",
     edu2_status: "",
     edu2_location: "",
@@ -229,6 +241,15 @@ export default function AiResumePage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // 학교 선택 핸들러
+  const handleSchoolSelect = (eduPrefix, selectedSchool) => {
+    setFormData((prev) => ({
+      ...prev,
+      [`${eduPrefix}_school`]: selectedSchool ? selectedSchool.schoolName : "",
+      [`${eduPrefix}_schoolCode`]: selectedSchool ? selectedSchool.schoolCode : null,
+    }));
+  };
+
   // 이미지 선택 핸들러
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
@@ -249,6 +270,7 @@ export default function AiResumePage() {
   // AI 전달용 문자열 생성
   const serializeUserData = () => {
     let s = "";
+    s += `이력서 제목: ${formData.title}\n`; // 이력서 제목 추가
     s += `이름: ${formData.name}, 성별: ${formData.gender}, 생년월일: ${formData.birthdate}, 연락처: ${formData.phone}, 이메일: ${formData.email}, 주소: ${formData.address}\n`;
     s += `학력1: ${formData.edu1_period}, ${formData.edu1_school}, ${formData.edu1_major}, ${formData.edu1_status}, ${formData.edu1_score}\n`;
     s += `학력2: ${formData.edu2_period}, ${formData.edu2_school}, ${formData.edu2_major}, ${formData.edu2_status}, ${formData.edu2_score}\n`;
@@ -335,7 +357,88 @@ export default function AiResumePage() {
     setIsLoading(true);
 
     const submissionData = new FormData();
-    const resumeDto = { ...formData, p_user_idx: user?.puserIdx };
+    const academicAbilities = [];
+
+    // 학력 1
+    if (formData.edu1_school && formData.edu1_schoolCode) {
+      academicAbilities.push({
+        pUserIdx: user?.puserIdx,
+        schoolCode: formData.edu1_schoolCode,
+        degree: formData.edu1_status,
+        major: formData.edu1_major,
+        majorScore: parseFloat(formData.edu1_score) || 0.0, // 숫자로 변환
+        graduationDate: formData.edu1_period.split('~')[1]?.trim() ? new Date(formData.edu1_period.split('~')[1].trim()) : null, // YYYY.MM 형식 파싱
+      });
+    }
+    // 학력 2
+    if (formData.edu2_school && formData.edu2_schoolCode) {
+      academicAbilities.push({
+        pUserIdx: user?.puserIdx,
+        schoolCode: formData.edu2_schoolCode,
+        degree: formData.edu2_status,
+        major: formData.edu2_major,
+        majorScore: parseFloat(formData.edu2_score) || 0.0,
+        graduationDate: formData.edu2_period.split('~')[1]?.trim() ? new Date(formData.edu2_period.split('~')[1].trim()) : null,
+      });
+    }
+
+    // 경력 (WorkExperienceDto)
+    const workExperiences = [];
+    if (formData.exp1_company) {
+      workExperiences.push({
+        pUserIdx: user?.puserIdx,
+        companyName: formData.exp1_company,
+        department: formData.exp1_type, // 형태를 부서로 매핑
+        position: formData.exp1_position,
+        hireDate: formData.exp1_period.split('~')[0]?.trim() ? new Date(formData.exp1_period.split('~')[0].trim()) : null,
+        resignDate: formData.exp1_period.split('~')[1]?.trim() ? new Date(formData.exp1_period.split('~')[1].trim()) : null,
+        jobDescription: formData.exp1_duties,
+        mainDuties: formData.exp1_duties, // 담당업무를 주요 직무로 매핑
+      });
+    }
+    if (formData.exp2_company) {
+      workExperiences.push({
+        pUserIdx: user?.puserIdx,
+        companyName: formData.exp2_company,
+        department: formData.exp2_type,
+        position: formData.exp2_position,
+        hireDate: formData.exp2_period.split('~')[0]?.trim() ? new Date(formData.exp2_period.split('~')[0].trim()) : null,
+        resignDate: formData.exp2_period.split('~')[1]?.trim() ? new Date(formData.exp2_period.split('~')[1].trim()) : null,
+        jobDescription: formData.exp2_duties,
+        mainDuties: formData.exp2_duties,
+      });
+    }
+
+    // 병역 (MilitaryServiceDto)
+    let militaryService = null;
+    if (formData.military_status) {
+      militaryService = {
+        pUserIdx: user?.puserIdx,
+        serviceType: formData.military_status,
+        militaryBranch: formData.military_branch,
+        militaryRank: formData.military_rank,
+        periodOfService: formData.military_period,
+        reasonForExemption: formData.military_reason,
+      };
+    }
+
+    const resumeDto = {
+      ...formData,
+      p_user_idx: user?.puserIdx,
+      academicAbilities: academicAbilities,
+      workExperiences: workExperiences,
+      militaryService: militaryService,
+      // formData에서 직접 매핑되지 않는 필드는 제거
+      edu1_period: undefined, edu1_school: undefined, edu1_schoolCode: undefined, edu1_major: undefined, edu1_status: undefined, edu1_location: undefined, edu1_score: undefined,
+      edu2_period: undefined, edu2_school: undefined, edu2_schoolCode: undefined, edu2_major: undefined, edu2_status: undefined, edu2_location: undefined, edu2_score: undefined,
+      exp1_period: undefined, exp1_company: undefined, exp1_position: undefined, exp1_duties: undefined, exp1_type: undefined,
+      exp2_period: undefined, exp2_company: undefined, exp2_position: undefined, exp2_duties: undefined, exp2_type: undefined,
+      military_status: undefined, military_branch: undefined, military_rank: undefined, military_period: undefined, military_reason: undefined,
+      cert1_name: undefined, cert1_level: undefined, cert1_date: undefined, cert1_issuer: undefined,
+      cert2_name: undefined, cert2_level: undefined, cert2_date: undefined, cert2_issuer: undefined,
+      cert3_name: undefined, cert3_level: undefined, cert3_date: undefined, cert3_issuer: undefined,
+      aiPrompt: undefined,
+    };
     submissionData.append(
       "resumeDto",
       new Blob([JSON.stringify(resumeDto)], { type: "application/json" })
@@ -407,7 +510,13 @@ export default function AiResumePage() {
       confirmDialogOpen={confirmDialogOpen}
       onConfirmDialogClose={handleConfirmDialogClose}
       onConfirmStartFresh={handleConfirmStartFresh}
+      // 학교 검색 관련 props 추가
+      searchSchools={searchSchools}
+      onSchoolSelect={handleSchoolSelect}
+      schoolOptions1={schoolOptions1}
+      schoolLoading1={schoolLoading1}
+      schoolOptions2={schoolOptions2}
+      schoolLoading2={schoolLoading2}
     />
   );
 }
-

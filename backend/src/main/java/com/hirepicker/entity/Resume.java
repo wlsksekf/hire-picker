@@ -60,8 +60,10 @@ public class Resume extends BaseEntity {
     @Column(name = "cancel")
     private Boolean cancel; // 취소 여부
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chosen_exp_idx") // 선택 경력 FK
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(name = "chosen_exp",
+        joinColumns = @JoinColumn(name = "resume_idx"),
+        inverseJoinColumns = @JoinColumn(name = "exp_idx"))
     private WorkExperience workExperience;
 
     // 모든 필드를 포함하는 생성자 (Lombok @Builder가 사용)
