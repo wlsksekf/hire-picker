@@ -42,7 +42,7 @@ public class ReviewService {
         log.info("Fetching reviewable companies for userId: {}", userId);
 
         // 1. 사용자 ID(p_user_idx)로 이력서 목록 조회
-        List<Resume> resumes = resumeRepository.findByPersonalUser_Id(userId);
+        List<Resume> resumes = resumeRepository.findByPersonalUserIdOrderByIdDesc(userId);
         log.info("Found {} resumes for userId: {}", resumes.size(), userId);
         if (resumes.isEmpty()) {
             return Collections.emptyList();

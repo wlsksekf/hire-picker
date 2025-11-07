@@ -1,4 +1,4 @@
-package com.hirepicker.service;
+﻿package com.hirepicker.service;
 
 import com.google.genai.Client;
 import com.google.genai.types.Content;
@@ -110,11 +110,21 @@ public class AiResumeService {
             String jsonString = responseText.substring(startIndex, endIndex + 1);
             JSONObject jsonResponse = new JSONObject(jsonString);
 
+            // 키 불일치 대비: DB 컬럼명 기반 키와 기존 키를 모두 허용
+            String growth = getFirstNonBlank(jsonResponse,
+                    "background_and_growth", "growthProcess");
+            String personality = getFirstNonBlank(jsonResponse,
+                    "personality", "jobCompetencies");
+            String motivation = getFirstNonBlank(jsonResponse,
+                    "motivation_for_application", "prosAndCons");
+            String aspirations = getFirstNonBlank(jsonResponse,
+                    "future_aspirations", "aspirations");
+
             return new FullResumeDraftDto(
-                    jsonResponse.getString("growthProcess"),
-                    jsonResponse.getString("jobCompetencies"),
-                    jsonResponse.getString("prosAndCons"),
-                    jsonResponse.getString("aspirations")
+                    growth,
+                    personality,
+                    motivation,
+                    aspirations
             );
         } catch (Throwable t) {
             log.error("!!! AiResumeService에서 예측하지 못한 에러 발생 !!!", t);
@@ -126,4 +136,15 @@ public class AiResumeService {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'generateFullDraft'");
     }
+    // JSON에서 다수 후보 키 중 첫 번째로 존재하고 공백이 아닌 값을 반환하는 헬퍼
+    private static String getFirstNonBlank(org.json.JSONObject json, String... keys) {
+        for (String k : keys) {
+            if (json.has(k)) {
+                String v = json.optString(k, null);
+                if (v != null && !v.isBlank()) return v;
+            }
+        }
+        return ""; // 모든 후보가 없으면 빈 문자열 반환
+    }
 }
+

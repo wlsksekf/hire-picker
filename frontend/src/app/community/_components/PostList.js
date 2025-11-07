@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Pagination, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import Link from "next/link";
-
+import {Button} from "@mui/material";
 // ar: 게시글 목록
 // tp: 전체 페이지 수
 // cp: 페이지 변경 함수
@@ -20,23 +20,21 @@ export default function PostList({ ar, tp, cp, isLoggedIn, loading, currentUserT
       {/* 카테고리 버튼 목록 */}
       <div style={{ margin: "20px 0 16px 0", textAlign: "left" }}>
         {BOARD_CATEGORIES.map(cat => (
-          <button
+        <Button
             key={cat.value}
-            onClick={() => setBoardIdx(cat.value)}
-            style={{
-              marginRight: "10px",
-              padding: "9px 16px",
-              background: boardIdx === cat.value ? "#007bff" : "#eee",
-              color: boardIdx === cat.value ? "#fff" : "#333",
-              border: "none",
-              borderRadius: "6px",
-              fontWeight: "bold",
-              cursor: "pointer"
+            variant={boardIdx === cat.value ? "contained" : "outlined"}
+            color="primary"
+            sx={{
+            marginRight: "10px",
+            fontWeight: "bold",
+            borderRadius: "6px"
             }}
-          >
+            onClick={() => setBoardIdx(cat.value)}
+        >
             {cat.label}
-          </button>
+        </Button>
         ))}
+
       </div>
 
       <TableContainer component={Paper} sx={{ minWidth: 650 }}>
@@ -82,20 +80,19 @@ export default function PostList({ ar, tp, cp, isLoggedIn, loading, currentUserT
           </div>
           <div>
             {!loading && isLoggedIn && String(currentUserType).toLowerCase() === "personal" && (
-              <button
-                style={{
-                  padding: "10px 20px",
-                  borderRadius: "7px",
-                  background: "#007bff",
-                  color: "#fff",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  border: "none"
-                }}
-                onClick={() => router.push('/community/write')}
-              >
-                글쓰기
-              </button>
+            <Button
+            variant="contained"
+            color="primary"
+            sx={{
+                padding: "10px 20px",
+                borderRadius: "7px",
+                fontWeight: "bold"
+            }}
+            onClick={() => router.push('/community/write')}
+            >
+            글쓰기
+            </Button>
+
             )}
           </div>
         </div>

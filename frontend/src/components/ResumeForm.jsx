@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Container,
   Paper,
@@ -24,6 +24,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Autocomplete, // Autocomplete 임포트
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import Image from "next/image";
@@ -47,8 +48,8 @@ const StyledInputCell = styled(TableCell)(() => ({
   padding: "4px 8px",
 }));
 
-// 밑줄 제거한 입력 필드
-const FormTextField = (props) => (
+// 밑줄 제거한 입력 필드 (Autocomplete 내부에서 사용될 예정)
+const UndisabledUnderlineTextField = (props) => (
   <TextField
     variant="standard"
     fullWidth
@@ -56,6 +57,12 @@ const FormTextField = (props) => (
     {...props}
     sx={{ padding: "4px" }}
   />
+);
+
+// 공통 텍스트 입력 래퍼(폼 전용) - 위 표준 입력을 재사용
+// 누락된 컴포넌트로 인한 런타임 오류를 방지하기 위한 최소 정의
+const FormTextField = (props) => (
+  <UndisabledUnderlineTextField {...props} />
 );
 
 // 프리젠테이션 컴포넌트: 이력서 작성 양식
@@ -66,6 +73,7 @@ export default function ResumeForm({
   onImageChange,
   isLoading,
   onAiGenerate,
+  onOpenAiDialog,
   onDownload,
   onSave,
   dialogOpen,
@@ -75,7 +83,27 @@ export default function ResumeForm({
   confirmDialogOpen,
   onConfirmDialogClose,
   onConfirmStartFresh,
+  // 학교 검색 관련 props 추가
+  searchSchools,
+  onSchoolSelect,
+  schoolOptions1,
+  schoolLoading1,
+  schoolOptions2,
+  schoolLoading2,
 }) {
+  const [searchOpen1, setSearchOpen1] = useState(false);
+  const [searchOpen2, setSearchOpen2] = useState(false);
+
+  // Autocomplete의 value를 처리하기 위한 헬퍼 함수
+  const getSchoolValue = (eduPrefix) => {
+    const schoolName = formData[`${eduPrefix}_school`];
+    const schoolCode = formData[`${eduPrefix}_schoolCode`];
+    if (schoolName && schoolCode !== null) {
+      return { schoolName: schoolName, schoolCode: schoolCode };
+    }
+    return null;
+  };
+
   return (
     <>
       {isLoading && (
@@ -100,14 +128,17 @@ export default function ResumeForm({
       <Container maxWidth="md">
         <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, my: 4 }}>
           <Box component="form" noValidate autoComplete="off">
-            <Typography
-              variant="h4"
-              align="center"
-              gutterBottom
-              sx={{ fontWeight: "bold", mb: 3 }}
-            >
-              이력서 작성
-            </Typography>
+            {/* 이력서 제목 입력 필드 */} 
+            <TextField
+              fullWidth
+              label="이력서 제목"
+              name="title"
+              value={formData.title}
+              onChange={onChange}
+              variant="outlined"
+              margin="normal"
+              sx={{ mb: 4, mt: 2 }} // 상단 마진 추가
+            />
 
             {/* 1. 기본 정보 */}
             <Box sx={{ display: "flex", gap: 2, mb: 4 }}>
@@ -231,7 +262,40 @@ export default function ResumeForm({
                       <FormTextField name="edu1_period" value={formData.edu1_period} onChange={onChange} placeholder="YYYY.MM ~ YYYY.MM" />
                     </StyledInputCell>
                     <StyledInputCell>
-                      <FormTextField name="edu1_school" value={formData.edu1_school} onChange={onChange} />
+                      <Autocomplete
+                        fullWidth
+                        options={schoolOptions1}
+                        getOptionLabel={(option) => option.schoolName || ""}
+                        isOptionEqualToValue={(option, value) => option.schoolCode === value.schoolCode}
+                        value={getSchoolValue("edu1")}
+                        onChange={(event, newValue) => {
+                          onSchoolSelect("edu1", newValue);
+                        }}
+                        onInputChange={(event, newInputValue) => {
+                          onChange({ target: { name: "edu1_school", value: newInputValue } });
+                          searchSchools("edu1", newInputValue);
+                        }}
+                        loading={schoolLoading1}
+                        open={searchOpen1}
+                        onOpen={() => setSearchOpen1(true)}
+                        onClose={() => setSearchOpen1(false)}
+                        renderInput={(params) => (
+                          <UndisabledUnderlineTextField
+                            {...params}
+                            name="edu1_school"
+                            placeholder="학교명"
+                            InputProps={{
+                              ...params.InputProps,
+                              endAdornment: (
+                                <React.Fragment>
+                                  {schoolLoading1 ? <CircularProgress color="inherit" size={20} /> : null}
+                                  {params.InputProps.endAdornment}
+                                </React.Fragment>
+                              ),
+                            }}
+                          />
+                        )}
+                      />
                     </StyledInputCell>
                     <StyledInputCell>
                       <FormTextField name="edu1_major" value={formData.edu1_major} onChange={onChange} />
@@ -251,7 +315,40 @@ export default function ResumeForm({
                       <FormTextField name="edu2_period" value={formData.edu2_period} onChange={onChange} placeholder="YYYY.MM ~ YYYY.MM" />
                     </StyledInputCell>
                     <StyledInputCell>
-                      <FormTextField name="edu2_school" value={formData.edu2_school} onChange={onChange} />
+                      <Autocomplete
+                        fullWidth
+                        options={schoolOptions2}
+                        getOptionLabel={(option) => option.schoolName || ""}
+                        isOptionEqualToValue={(option, value) => option.schoolCode === value.schoolCode}
+                        value={getSchoolValue("edu2")}
+                        onChange={(event, newValue) => {
+                          onSchoolSelect("edu2", newValue);
+                        }}
+                        onInputChange={(event, newInputValue) => {
+                          onChange({ target: { name: "edu2_school", value: newInputValue } });
+                          searchSchools("edu2", newInputValue);
+                        }}
+                        loading={schoolLoading2}
+                        open={searchOpen2}
+                        onOpen={() => setSearchOpen2(true)}
+                        onClose={() => setSearchOpen2(false)}
+                        renderInput={(params) => (
+                          <UndisabledUnderlineTextField
+                            {...params}
+                            name="edu2_school"
+                            placeholder="학교명"
+                            InputProps={{
+                              ...params.InputProps,
+                              endAdornment: (
+                                <React.Fragment>
+                                  {schoolLoading2 ? <CircularProgress color="inherit" size={20} /> : null}
+                                  {params.InputProps.endAdornment}
+                                </React.Fragment>
+                              ),
+                            }}
+                          />
+                        )}
+                      />
                     </StyledInputCell>
                     <StyledInputCell>
                       <FormTextField name="edu2_major" value={formData.edu2_major} onChange={onChange} />
@@ -459,7 +556,11 @@ export default function ResumeForm({
 
             {/* 버튼 영역 */}
             <Box sx={{ display: "flex", gap: 1, mt: 2, justifyContent: "flex-end" }}>
-              <Button variant="outlined" onClick={onAiGenerate}>
+              <Button
+                variant="outlined"
+                onClick={() => (typeof onOpenAiDialog === 'function' ? onOpenAiDialog() : onAiGenerate())}
+                disabled={isLoading}
+              >
                 {isLoading ? <CircularProgress size={18} /> : "AI 초안 생성"}
               </Button>
               <Button variant="outlined" onClick={onDownload}>PDF 다운로드</Button>
