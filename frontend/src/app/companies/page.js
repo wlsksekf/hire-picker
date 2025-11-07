@@ -16,6 +16,7 @@ import {
   Alert,
   TextField,
 } from "@mui/material";
+import { blue, pink } from "@mui/material/colors";
 import { faLink, faIdBadge } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { api } from "@/api"; // 공용 api 인스턴스 사용
@@ -280,12 +281,12 @@ function CompaniesPage() {
                 <Box
                   sx={{ flexGrow: 1, display: "flex", alignItems: "baseline" }}
                 >
-                  <Typography variant="h5" fontWeight="bold" sx={{ mr: 10 }}>
+                  <Typography variant="h6" fontWeight="bold" sx={{ mr: 10 }}>
                     {company.name}
                   </Typography>
-                  <Typography variant="body1" color="text.secondary">
+                  {/* <Typography variant="body1" color="text.secondary">
                     {company.summary}
-                  </Typography>
+                  </Typography> */}
                 </Box>
 
                 <CardActions sx={{ p: 0, ml: 2 }}>
@@ -307,7 +308,7 @@ function CompaniesPage() {
                     }
                     style={{
                       backgroundColor: likedCompanies.has(company.companyIdx)
-                        ? theme.palette.primary.main // 좋아요 시 메인 색상
+                        ? pink[500] // 좋아요 시 메인 색상
                         : "white",
                       color: likedCompanies.has(company.companyIdx)
                         ? "white" // 좋아요 시 흰색
@@ -316,10 +317,10 @@ function CompaniesPage() {
                     sx={{
                       border: `1px solid ${
                         likedCompanies.has(company.companyIdx)
-                          ? theme.palette.primary.main // 좋아요 시 메인 색상 테두리
+                          ? pink[500] // 좋아요 시 메인 색상 테두리
                           : "gray"
                       }`,
-                      borderRadius: "8px",
+                      borderRadius: "13px",
                       "&:hover": {
                         backgroundColor: likedCompanies.has(company.companyIdx)
                           ? theme.palette.primary.dark
@@ -341,6 +342,10 @@ function CompaniesPage() {
                           ? company.homepage
                           : `http://${company.homepage}`;
                         window.open(url, "_blank", "noopener,noreferrer");
+                      }}
+                      sx={{
+                        backgroundColor: "#ffffff",
+                        border: "1px, solid gray",
                       }}
                       startIcon={<FontAwesomeIcon icon={faLink} />}
                     >

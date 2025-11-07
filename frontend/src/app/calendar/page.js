@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import {
   Box,
@@ -16,7 +16,6 @@ import {
   Checkbox,
   Alert,
   CircularProgress,
-  ClickAwayListener,
   DialogActions,
 } from "@mui/material";
 import CustomCalendar from "@/components/calendar.js"; // CustomCalendar 컴포넌트 임포트
@@ -47,7 +46,7 @@ export default function CalendarPage() {
   const [empEvents, setEmpEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isRegionDialogOpen, setIsRegionDialogOpen] = useState(false);
+  const [isRegionDialogOpen, setIsRegionDialogOpen] = useState(false); // 지역 선택 Popover의 가시성과 위치를 제어
   const [selectedRegions, setSelectedRegions] = useState([]); // 선택된 지역
   const [tempSelectedRegions, setTempSelectedRegions] = useState([]); // Popover 내 임시 선택 지역
   const [anchorEl, setAnchorEl] = useState(null); // Popover를 띄울 기준 요소
