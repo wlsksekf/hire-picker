@@ -32,8 +32,8 @@ public class PostController {
     public ResponseEntity<?> checkAuthentication() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            boolean isAuthenticated = authentication != null 
-                && authentication.isAuthenticated() 
+            boolean isAuthenticated = authentication != null
+                && authentication.isAuthenticated()
                 && !(authentication instanceof AnonymousAuthenticationToken);
             String username = isAuthenticated ? authentication.getName() : null;
             // ★ userId 추출 로직 추가!
@@ -64,7 +64,7 @@ public class PostController {
     /** 게시글 작성 (로그인 사용자만) - 첨부파일, 이미지 모두 지원 */
     @PostMapping("/write")
     public ResultData<?> writePost(
-        @RequestParam("board_idx") Long board_idx, 
+        @RequestParam("board_idx") Long board_idx,
         @RequestParam("title") String title,
         @RequestParam("content") String content,
         @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -75,8 +75,8 @@ public class PostController {
 log.info("ImageFile: {}", imageFile != null ? imageFile.getOriginalFilename() : "null");
 log.info("AttachmentFile: {}", attachmentFile != null ? attachmentFile.getOriginalFilename() : "null");
 
-        if (authentication == null 
-            || !authentication.isAuthenticated() 
+        if (authentication == null
+            || !authentication.isAuthenticated()
             || authentication instanceof AnonymousAuthenticationToken) {
             log.warn("[PostController] Unauthorized write attempt");
             return ResultData.of(0, "Authentication required. Please login.", null);
@@ -159,7 +159,7 @@ log.info("AttachmentFile: {}", attachmentFile != null ? attachmentFile.getOrigin
             return ResultData.of(0, "Error fetching post", null);
         }
     }
-      @PutMapping("/{postIdx}/edit")
+    @PutMapping("/{postIdx}/edit")
     public ResultData<?> updatePost(
         @PathVariable("postIdx") Long postIdx,
         @RequestParam("title") String title,
@@ -192,7 +192,7 @@ log.info("AttachmentFile: {}", attachmentFile != null ? attachmentFile.getOrigin
     }
 
     @DeleteMapping("/{postIdx}")
-public ResultData<?> deletePost(@PathVariable("postIdx") Long postIdx, 
+public ResultData<?> deletePost(@PathVariable("postIdx") Long postIdx,
                                 @AuthenticationPrincipal CustomUserDetails userDetails) {
     Long userId = userDetails.getId();
     try {

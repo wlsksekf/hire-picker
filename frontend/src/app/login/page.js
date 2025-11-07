@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image'; // Image 컴포넌트 임포트
 import { Container, Box, Typography, TextField, Tabs, Tab, Paper, Alert, Button, Divider } from '@mui/material';
 import AnimatedButton from '@/components/AnimatedButton';
 import { api } from '@/api';
@@ -154,16 +155,16 @@ function LoginPage() {
 
         <Divider sx={{ width: '100%', my: 2 }}>OR</Divider>
 
-        <Box sx={{ width: '100%' }}>
-          <Button
-            component="a"
-            href="/api/oauth2/authorization/google" // 프록시를 사용하므로 /api 추가
-            fullWidth
-            variant="outlined"
-            sx={{ justifyContent: 'center' }}
-          >
-            구글로 로그인
-          </Button>
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: '16px', width: '100%' }}>
+          <a href="/api/oauth2/authorization/google" aria-label="Log in with Google">
+            <Image src="/assets/google-logo.svg" alt="Google logo" width={40} height={40} />
+          </a>
+          <a href="/api/oauth2/authorization/naver" aria-label="Log in with Naver">
+            <Image src="/assets/naver_logo.png" alt="Naver logo" width={40} height={40} />
+          </a>
+          <a href="/api/oauth2/authorization/kakao" aria-label="Log in with Kakao">
+            <Image src="/assets/kakao-logo.svg" alt="Kakao logo" width={40} height={40} />
+          </a>
         </Box>
 
       </Paper>
