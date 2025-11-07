@@ -103,9 +103,8 @@ public class EmploymentDataProcessorService {
             if (dto.companyType() != null && !dto.companyType().isBlank()) {
                 c.setCompanyType(dto.companyType());
             }
-            if (dto.adres() != null && !dto.adres().isBlank()) {
+            if (dto.adres() != null && !dto.adres().isBlank())
                 c.setAddress(dto.adres());
-            }
             if (dto.ceoNm() != null && !dto.ceoNm().isBlank()) {
                 c.setCeoName(dto.ceoNm());
             }

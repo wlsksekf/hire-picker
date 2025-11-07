@@ -18,7 +18,6 @@ import com.hirepicker.dto.CertificationUpdateRequestDto;
 import com.hirepicker.dto.AcademicAbilityViewDto;
 import com.hirepicker.dto.WorkExperienceDto;
 import com.hirepicker.entity.PersonalUser;
-import com.hirepicker.repository.AcademicAbilityRepository;
 import com.hirepicker.repository.MilitaryServiceRepository;
 import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.repository.WorkExperienceRepository;
@@ -37,7 +36,6 @@ import lombok.extern.slf4j.Slf4j;
 public class ProfileController {
 
     private final ProfileService profileService;
-    private final AcademicAbilityRepository academicAbilityRepository;
     private final WorkExperienceRepository workExperienceRepository;
     private final MilitaryServiceRepository militaryServiceRepository;
     private final PersonalUserRepository personalUserRepository;

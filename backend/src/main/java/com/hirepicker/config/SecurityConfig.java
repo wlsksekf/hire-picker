@@ -100,8 +100,9 @@ public class SecurityConfig {
                                 "/chat/history/**",
                                 "/api/v1/ai-chat",
                                 "/api/v1/ai-search",
-                                "/api/search"
-                        ).permitAll()
+                                "/api/search", "/api/calendar/**",
+                                "/api/company-alarms/**")
+                        .permitAll()
 
                         // 이미지 업로드 엔드포인트는 인증 없이 허용
                         .requestMatchers(HttpMethod.POST, "/api/ai/upload-image").permitAll()
@@ -112,8 +113,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/credits/**").authenticated() // [크레딧 기능 추가] 크레딧 관련 API는 인증된 사용자만 접근 가능
 
                         // 그 외 모든 요청은 인증 필요
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
 
                 // 4. 커스텀 필터 추가 (JWT)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -125,8 +125,7 @@ public class SecurityConfig {
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService))
                         .successHandler(oAuth2LoginSuccessHandler)
-                        .failureUrl(failureUrl)
-                )
+                        .failureUrl(failureUrl))
 
                 // 6. 예외 처리 (인증 예외)
                 .exceptionHandling(e -> e.authenticationEntryPoint(customAuthenticationEntryPoint));

@@ -15,29 +15,53 @@ const theme = extendTheme({
         primary: {
           main: 'oklch(0.76 0.17 170)', // 선명한 민트 (Vivid Mint)
           light: 'oklch(0.86 0.17 170)', // 밝은 버전
-          dark: 'oklch(0.66 0.17 170)',  // 어두운 버전
-          contrastText: '#000000', // 대비 텍스트 색상 (밝은 배경이므로 어둡게)
+          dark: 'oklch(0.66 0.17 170)', // 어두운 버전
+          contrastText: '#000000',
         },
-        filters: lightFilterPalette, // 필터 색상 팔레트
+        success: {
+          main: 'oklch(0.76 0.20 140)', // 연한 그린 민트 (예시)
+          contrastText: '#fff',
+        },
+        error: {
+          main: 'oklch(0.66 0.13 27)', // 선명한 레드 (예시)
+          contrastText: '#fff',
+        },
+        info: {
+          main: 'oklch(0.70 0.18 220)', // 연파랑/민트톤
+          contrastText: '#fff',
+        },
+        filters: lightFilterPalette,
       },
     },
     dark: {
       palette: {
         primary: {
-          main: 'oklch(0.76 0.17 170)', // 선명한 민트 (Vivid Mint)
+          main: 'oklch(0.76 0.17 170)',
           light: 'oklch(0.86 0.17 170)',
           dark: 'oklch(0.66 0.17 170)',
-          contrastText: '#000000', // 대비 텍스트 색상
+          contrastText: '#000000',
+        },
+        success: {
+          main: 'oklch(0.76 0.20 140)',
+          contrastText: '#fff',
+        },
+        error: {
+          main: 'oklch(0.66 0.13 27)',
+          contrastText: '#fff',
+        },
+        info: {
+          main: 'oklch(0.70 0.18 220)',
+          contrastText: '#fff',
         },
         background: {
-          default: '#121212', // 기본 배경색
-          paper: '#1E1E1E', // 종이 배경색
+          default: '#121212',
+          paper: '#1E1E1E',
         },
         text: {
-          primary: 'rgba(255, 255, 255, 0.87)', // 주 텍스트 색상
-          secondary: 'rgba(255, 255, 255, 0.6)', // 보조 텍스트 색상
+          primary: 'rgba(255, 255, 255, 0.87)',
+          secondary: 'rgba(255, 255, 255, 0.6)',
         },
-        filters: { // 다크 모드 필터 색상 팔레트
+        filters: {
           employmentType: 'oklch(0.80 0.25 30)',
           jobField: 'oklch(0.80 0.25 90)',
           experienceLevel: 'oklch(0.75 0.25 200)',
@@ -57,49 +81,49 @@ const theme = extendTheme({
     fontFamily: 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif',
   },
   shape: {
-    borderRadius: 12, // 전역 둥근 모서리 값 설정
+    borderRadius: 12,
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
-          boxShadow: 'none', // 버튼 그림자 제거
+          boxShadow: 'none',
         },
         contained: {
           '&:hover': {
-            boxShadow: 'none', // 호버 시 버튼 그림자 제거
+            boxShadow: 'none',
           },
         },
       },
     },
     MuiPaper: {
-        styleOverrides: {
-            root: {
-                boxShadow: 'none', // 종이 그림자 제거
-                border: '1px solid #e8e8e8', // 테두리 추가
-            }
+      styleOverrides: {
+        root: {
+          boxShadow: 'none',
+          border: '1px solid #e8e8e8',
         }
+      }
     },
     MuiCard: {
-        styleOverrides: {
-            root: {
-                boxShadow: 'none', // 카드 그림자 제거
-                border: '1px solid #e8e8e8', // 테두리 추가
-                '&:hover': {
-                    boxShadow: '0 4px 20px 0 rgba(0,0,0,0.07)' // 호버 시 그림자 효과
-                }
-            }
+      styleOverrides: {
+        root: {
+          boxShadow: 'none',
+          border: '1px solid #e8e8e8',
+          '&:hover': {
+            boxShadow: '0 4px 20px 0 rgba(0,0,0,0.07)'
+          }
         }
+      }
     },
     MuiTextField: {
-        defaultProps: {
-            variant: 'filled', // 텍스트 필드 기본 variant 설정
-        }
+      defaultProps: {
+        variant: 'filled',
+      }
     },
     MuiSelect: {
-        defaultProps: {
-            variant: 'filled', // 선택 상자 기본 variant 설정
-        }
+      defaultProps: {
+        variant: 'filled',
+      }
     }
   },
 });
