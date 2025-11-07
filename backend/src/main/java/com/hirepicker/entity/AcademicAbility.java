@@ -2,41 +2,49 @@ package com.hirepicker.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
-// academic_ability ?�이�?매핑 (개인?�원 ?�력)
+// academic_ability 테이블 매핑 (개인회원 학력 정보)
 @Entity
 @Table(name = "academic_ability")
-@IdClass(AcademicAbilityId.class)
+@IdClass(AcademicAbilityId.class) // PK: p_user_idx + school_code (DDL 반영)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AcademicAbility {
 
-    // 복합?? p_user_idx + school_code + degree
+    // PK 구성: p_user_idx + school_code
     @Id
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "p_user_idx", nullable = false)
-    private PersonalUser personalUser; // 개인?�원
+    @Column(name = "p_user_idx", nullable = false)
+    private Long personalUser; // 개인회원 ID
 
     @Id
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "school_code", nullable = false)
-    private School school; // ?�교
+    @Column(name = "school_code", nullable = false)
+    private Long school; // 학교 코드
 
-    @Id
     @Column(name = "degree", nullable = false, length = 10)
-    private String degree; // ?�위(문자???�?? 고졸/?�사/?�사/박사)
+    private String degree; // 학위(고졸/학사/석사/박사)
 
     @Column(name = "major", nullable = false, length = 100)
-    private String major; // ?�공
+    private String major; // 전공
 
     @Column(name = "major_score", precision = 2, scale = 1, nullable = false)
-    private java.math.BigDecimal majorScore; // ?�공 ?�점(2,1)
+    private java.math.BigDecimal majorScore; // 전공 점수(2,1)
 
     @Column(name = "graduation_date")
-    private LocalDate graduationDate; // 졸업??
-}
+    private LocalDate graduationDate; // 졸업일
 
+    @Builder
+    public AcademicAbility(Long personalUser, Long school, String degree, String major,
+                           java.math.BigDecimal majorScore, LocalDate graduationDate) {
+        this.personalUser = personalUser;
+        this.school = school;
+        this.degree = degree;
+        this.major = major;
+        this.majorScore = majorScore;
+        this.graduationDate = graduationDate;
+    }
+}

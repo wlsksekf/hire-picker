@@ -98,7 +98,15 @@ export { api };
  * @param {string} prompt - AI에게 전달할 키워드
  */
 export const generateAiFullDraft = (prompt) => {
-    return api.post('/api/ai/generate-full-draft', { prompt });
+    // 백엔드 스펙: POST /api/ai/resume-draft { userData, jobPostingData, resumeDraft }
+    const body = { userData: String(prompt || ''), jobPostingData: null, resumeDraft: null };
+    return api.post('/api/ai/resume-draft', body).then(res => res);
+};
+
+// [AI] 기존 초안을 함께 보내 개선 요청 (refine 모드)
+export const generateAiResumeDraft = ({ userData = '', jobPostingData = null, resumeDraft = null } = {}) => {
+  const body = { userData: String(userData || ''), jobPostingData, resumeDraft };
+  return api.post('/api/ai/resume-draft', body).then(res => res);
 };
 
 /**
@@ -196,3 +204,78 @@ export function updateUserProfile(updateData) {
       throw error;
     });
 }
+
+
+// [마이페이지] 기본정보 확장 업데이트(이메일 제외)
+export function updateUserProfileDetails(updateData) {
+  // 이름/성별/전화/주소/닉네임/비밀번호 등 확장 필드
+  return api.patch('/api/users/my-profile/details', updateData)
+    .then((res) => res.data)
+    .catch((err) => { console.error('기본정보 확장 업데이트 실패:', err); throw err; });
+}
+
+// [마이페이지] 학력 조회/저장
+export function getAcademics() {
+  return api.get('/api/users/academics').then(res => res.data);
+}
+export function saveAcademics(academics) {
+  return api.put('/api/users/academics', academics).then(res => res.data);
+}
+
+// [검색] 학교 검색 (UI 자동완성)
+export function searchSchools(query) {
+  return api.get('/api/schools/search', { params: { name: query } })
+    .then(res => res.data);
+}
+
+// [마이페이지] 경력 조회/저장
+export function getExperiences() {
+  return api.get('/api/users/experiences').then(res => res.data);
+}
+export function saveExperiences(experiences) {
+  return api.put('/api/users/experiences', experiences).then(res => res.data);
+}
+
+// [마이페이지] 병역 조회/저장
+export function getMilitary() {
+  return api.get('/api/users/military').then(res => res.data);
+}
+export function saveMilitary(military) {
+  return api.put('/api/users/military', military).then(res => res.data);
+}
+
+// [이력서] 수정
+export function updateResume(resumeId, payload) {
+  return api.put(`/api/resume/${resumeId}`, payload).then(res => res.data);
+}
+
+// [이력서] 자격증 매핑 저장(이력서별)
+// - certIdxList를 알고 있으면 전달, 모르면 certNameList로 전달하면 백엔드가 마스터 생성/매핑 처리
+export function saveResumeCertifications(resumeIdx, { certIdxList = [], certNameList = [] } = {}) {
+  return api
+    .put('/api/users/certifications', { resumeIdx, certIdxList, certNameList })
+    .then(res => res.data);
+}
+
+// [이력서] 자동채움 데이터(학력/경력/병역) 일괄 조회
+export function getResumeTemplate() {
+  return api.get('/api/resumes/template').then(res => res.data);
+}
+
+// [이력서] 신규 생성 (multipart: resumeDto JSON + imageFile)
+export function createResume(resumeDto, imageFile) {
+  const fd = new FormData();
+  // resumeDto를 JSON Blob으로 첨부
+  fd.append('resumeDto', new Blob([JSON.stringify(resumeDto)], { type: 'application/json' }));
+  if (imageFile) fd.append('imageFile', imageFile);
+  return api.post('/api/resume', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    .then(res => res.data);
+}
+
+// [공통] 자격증 자동완성 검색
+export function searchCertifications(keyword) {
+  if (!keyword || keyword.trim().length === 0) return Promise.resolve([]);
+  return api.get('/api/certifications/search', { params: { keyword } })
+    .then(res => Array.isArray(res.data) ? res.data : []);
+}
+

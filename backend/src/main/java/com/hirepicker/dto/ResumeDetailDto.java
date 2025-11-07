@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-// 이력서 상세 응답 DTO (읽기용)
+// 이력서 상세 응답 DTO (보기용)
 @Getter
 public class ResumeDetailDto {
     private final Long id;             // PK
@@ -26,6 +26,7 @@ public class ResumeDetailDto {
     // 추가: 개인/학력/경력/병역 상세 포함 생성자
     @Builder
     public ResumeDetailDto(Resume r,
+                           Long expIdx,
                            Personal personal,
                            List<Academic> academics,
                            List<Experience> experiences,
@@ -40,7 +41,7 @@ public class ResumeDetailDto {
         this.status = r.getStatus() != null ? r.getStatus().name() : null;
         this.cert = r.getCert();
         this.modifiedDate = r.getModifiedDate();
-        this.expIdx = r.getWorkExperience() != null ? r.getWorkExperience().getId() : null;
+        this.expIdx = expIdx;
         this.personal = personal;
         this.academics = academics;
         this.experiences = experiences;
@@ -67,7 +68,7 @@ public class ResumeDetailDto {
         private final String gender;     // 성별(MALE/FEMALE)
     }
 
-    // 학력 DTO(간단 표기)
+    // 학력 DTO(간단 보기)
     @Getter
     @AllArgsConstructor
     public static class Academic {
@@ -78,7 +79,7 @@ public class ResumeDetailDto {
         private final LocalDate graduationDate; // 졸업일
     }
 
-    // 경력 DTO(간단 표기)
+    // 경력 DTO(간단 보기)
     @Getter
     @AllArgsConstructor
     public static class Experience {
@@ -87,7 +88,7 @@ public class ResumeDetailDto {
         private final String position;      // 직책
         private final LocalDate hireDate;   // 입사일
         private final LocalDate resignDate; // 퇴사일
-        private final String jobDescription;// 업무설명
+        private final String jobDescription;// 직무설명
         private final String mainDuties;    // 주요 직무
     }
 

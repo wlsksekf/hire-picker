@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 import {
   Box,
   Drawer,
@@ -13,21 +13,23 @@ import {
   useMediaQuery,
   useTheme,
   Typography,
-  CircularProgress
-} from '@mui/material';
+  CircularProgress,
+} from "@mui/material";
 import {
-    AccountCircle,
-    Article,
-    WorkHistory,
-    Payment,
-    Business,
-    AssignmentInd,
-    ListAlt,
-    AutoAwesome // AutoAwesome 아이콘 추가
-} from '@mui/icons-material';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import useAuthStore from '@/store/authStore'; // 인증 스토어 추가
+  AccountCircle,
+  Article,
+  WorkHistory,
+  Payment,
+  Business,
+  AssignmentInd,
+  ListAlt,
+  AutoAwesome, // AutoAwesome 아이콘 추가
+  RateReview,
+  Notifications,
+} from "@mui/icons-material";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import useAuthStore from "@/store/authStore"; // 인증 스토어 추가
 
 const drawerWidth = 240; // 사이드바 너비
 
@@ -42,11 +44,39 @@ const drawerWidth = 240; // 사이드바 너비
  * - 크레딧/결제 내역: 크레딧 충전 및 사용 내역
  */
 const personalMenuItems = [
-  { text: '내 정보 수정', icon: <AccountCircle />, path: '/mypage/personal/edit-profile' },
-  { text: '이력서 관리', icon: <Article />, path: '/mypage/personal/resumes' },
-  { text: 'AI 이력서 작성', icon: <AutoAwesome />, path: '/mypage/personal/ai-resume' },
-  { text: '지원 현황', icon: <WorkHistory />, path: '/mypage/personal/applications' },
-  { text: '크레딧/결제 내역', icon: <Payment />, path: '/mypage/personal/credits' },
+  {
+    text: "내 정보 수정",
+    icon: <AccountCircle />,
+    path: "/mypage/personal/edit-profile",
+  },
+  { text: "이력서 관리", icon: <Article />, path: "/mypage/personal/resumes" },
+  // highlight-start
+  {
+    text: "이력서 작성",
+    icon: <AutoAwesome />,
+    path: "/mypage/personal/write_resume",
+  },
+  // highlight-end
+  {
+    text: "지원 현황",
+    icon: <WorkHistory />,
+    path: "/mypage/personal/applications",
+  },
+  {
+    text: "크레딧/결제 내역",
+    icon: <Payment />,
+    path: "/mypage/personal/credits",
+  },
+  {
+    text: "기업 리뷰 내역",
+    icon: <RateReview />,
+    path: "/mypage/personal/review",
+  },
+  {
+    text: "관심기업",
+    icon: <Notifications />,
+    path: "/mypage/personal/alarm",
+  },
 ];
 
 /**
@@ -58,9 +88,21 @@ const personalMenuItems = [
  * - 지원자 목록: 우리 회사 공고에 지원한 지원자 관리
  */
 const companyMenuItems = [
-    { text: '기업 정보 수정', icon: <Business />, path: '/mypage/company/edit-info' },
-    { text: '채용공고 관리', icon: <ListAlt />, path: '/mypage/company/postings' },
-    { text: '지원자 목록', icon: <AssignmentInd />, path: '/mypage/company/applicants' },
+  {
+    text: "기업 정보 수정",
+    icon: <Business />,
+    path: "/mypage/company/edit-info",
+  },
+  {
+    text: "채용공고 관리",
+    icon: <ListAlt />,
+    path: "/mypage/company/postings",
+  },
+  {
+    text: "지원자 목록",
+    icon: <AssignmentInd />,
+    path: "/mypage/company/applicants",
+  },
 ];
 
 /**
@@ -82,7 +124,7 @@ const companyMenuItems = [
  */
 function MyPageLayout({ children }) {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md')); // 모바일 화면 여부 확인
+  const isMobile = useMediaQuery(theme.breakpoints.down("md")); // 모바일 화면 여부 확인
   const pathname = usePathname(); // 현재 경로 (선택된 메뉴 표시용)
   const { user, isLoading } = useAuthStore(); // 인증 스토어에서 사용자 정보 가져오기
 
@@ -90,7 +132,14 @@ function MyPageLayout({ children }) {
   // initializeAuth()가 실행 중일 때 로딩 스피너 표시
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -99,26 +148,32 @@ function MyPageLayout({ children }) {
   // ===== STEP 2: 사용자 타입에 따라 메뉴 선택 =====
   // 백엔드에서 userType이 'PERSONAL' 또는 'COMPANY'로 전달됨
   // 소문자로 변환하여 비교 ('personal' 또는 'company')
-  const userType = user?.userType?.toLowerCase() || 'personal';
+  const userType = user?.userType?.toLowerCase() || "personal";
 
   // 타입에 따라 적절한 메뉴 배열 선택
   // - 개인회원: personalMenuItems (이력서, AI 작성, 지원 현황 등)
   // - 기업회원: companyMenuItems (채용공고, 지원자 목록 등)
-  const menuItems = userType === 'personal' ? personalMenuItems : companyMenuItems;
+  const menuItems =
+    userType === "personal" ? personalMenuItems : companyMenuItems;
 
   // ===== STEP 3: 사이드바 콘텐츠 구성 =====
   const drawerContent = (
     <div>
       {/* 사이드바 헤더 */}
       <Toolbar>
-        <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold' }}>
-            마이페이지
+        <Typography
+          variant="h6"
+          noWrap
+          component="div"
+          sx={{ fontWeight: "bold" }}
+        >
+          마이페이지
         </Typography>
       </Toolbar>
 
       {/* 메뉴 리스트 */}
       <List>
-        {menuItems.map(function(item, index) {
+        {menuItems.map(function (item, index) {
           return (
             <ListItem key={item.text} disablePadding>
               {/*
@@ -130,13 +185,11 @@ function MyPageLayout({ children }) {
                 href={item.path}
                 selected={pathname === item.path}
               >
-                <ListItemIcon>
-                  {item.icon}
-                </ListItemIcon>
+                <ListItemIcon>{item.icon}</ListItemIcon>
                 <ListItemText primary={item.text} />
               </ListItemButton>
             </ListItem>
-          )
+          );
         })}
       </List>
     </div>
@@ -144,7 +197,7 @@ function MyPageLayout({ children }) {
 
   // ===== STEP 4: 레이아웃 렌더링 =====
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       {/* 좌측 사이드바 (고정) */}
       <Drawer
         variant="permanent" // 항상 열려있는 Drawer
@@ -153,9 +206,9 @@ function MyPageLayout({ children }) {
           flexShrink: 0,
           [`& .MuiDrawer-paper`]: {
             width: drawerWidth,
-            boxSizing: 'border-box',
-            position: 'relative',
-            borderRight: '1px solid #e0e0e0'
+            boxSizing: "border-box",
+            position: "relative",
+            borderRight: "1px solid #e0e0e0",
           },
         }}
       >
@@ -169,7 +222,7 @@ function MyPageLayout({ children }) {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` }
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
         }}
       >
         {children}

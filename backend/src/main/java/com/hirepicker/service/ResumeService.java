@@ -6,6 +6,8 @@ import com.hirepicker.dto.ResumeDetailDto;
 import com.hirepicker.dto.AcademicAbilityDto;
 import com.hirepicker.dto.MilitaryServiceDto;
 import com.hirepicker.dto.WorkExperienceDto;
+import com.hirepicker.dto.AcademicAbilityViewDto; // 자동채움 학력 요약 DTO
+import com.hirepicker.dto.ResumeTemplateDto; // 자동채움 응답 DTO
 import com.hirepicker.entity.*;
 import com.hirepicker.repository.*;
 import jakarta.transaction.Transactional;
@@ -14,8 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -73,6 +73,56 @@ public class ResumeService {
         return new ResumeResponseDto(savedResume);
     }
 
+    // 자동채움 데이터 조회(학력/경력/병역을 한 번에 반환)
+    @Transactional
+    public ResumeTemplateDto getResumeTemplate(Long userId) {
+        // 학력 요약: 최근 졸업일 순으로 학교명 포함
+        var academicList = academicAbilityRepository
+                .findByPersonalUserOrderByGraduationDateDesc(userId)
+                .stream()
+                .map(a -> {
+                    String schoolName = schoolRepository.findById(a.getSchool())
+                            .map(School::getSchoolName)
+                            .orElse(null);
+                    return new AcademicAbilityViewDto(
+                            a.getSchool(),
+                            schoolName,
+                            a.getDegree(),
+                            a.getMajor(),
+                            a.getMajorScore()
+                    );
+                }).toList();
+
+        // 경력 목록: 최신 입사일 순으로 변환
+        var expList = workExperienceRepository.findByPersonalUserIdOrderByHireDateDesc(userId)
+                .stream()
+                .map(w -> new WorkExperienceDto(
+                        null,
+                        w.getCompanyName(),
+                        w.getDepartment(),
+                        w.getPosition(),
+                        w.getHireDate(),
+                        w.getResignDate(),
+                        w.getJobDescription(),
+                        w.getMainDuties()
+                ))
+                .toList();
+
+        // 병역: 최신 1건만 제공(없으면 null)
+        MilitaryServiceDto military = militaryServiceRepository.findTopByPersonalUserIdOrderByIdDesc(userId)
+                .map(m -> new MilitaryServiceDto(
+                        null,
+                        m.getServiceType(),
+                        m.getMilitaryBranch(),
+                        m.getMilitaryRank(),
+                        m.getPeriodOfService(),
+                        m.getReasonForExemption()
+                ))
+                .orElse(null);
+
+        return new ResumeTemplateDto(academicList, expList, military);
+    }
+
     // 상세 조회(소유자 검증 포함)
     @Transactional
     public ResumeDetailDto getResumeDetail(Long resumeId) {
@@ -94,12 +144,17 @@ public class ResumeService {
 
         // 학력 목록 구성
         var academicList = academicAbilityRepository
-                .findByPersonalUserIdOrderByGraduationDateDesc(user.getId())
+                .findByPersonalUserOrderByGraduationDateDesc(user.getId())
                 .stream()
-                .map(a -> new ResumeDetailDto.Academic(
-                        a.getSchool() != null ? a.getSchool().getSchoolName() : null,
-                        a.getDegree(), a.getMajor(), a.getMajorScore(), a.getGraduationDate()
-                )).toList();
+                .map(a -> {
+                    String schoolName = schoolRepository.findById(a.getSchool())
+                            .map(School::getSchoolName)
+                            .orElse(null);
+                    return new ResumeDetailDto.Academic(
+                            schoolName,
+                            a.getDegree(), a.getMajor(), a.getMajorScore(), a.getGraduationDate()
+                    );
+                }).toList();
 
         // 경력 목록 구성
         var experienceList = workExperienceRepository
@@ -119,6 +174,7 @@ public class ResumeService {
 
         return ResumeDetailDto.builder()
                 .r(resume)
+                .expIdx(resume.getWorkExperience() != null ? resume.getWorkExperience().getId() : null)
                 .personal(personal)
                 .academics(academicList)
                 .experiences(experienceList)
@@ -138,7 +194,9 @@ public class ResumeService {
         }
         java.util.List<Resume> resumes = resumeRepository.findByPersonalUserIdOrderByIdDesc(principal.getId()); // 사용자별 조회
         return resumes.stream()
-                .map(com.hirepicker.dto.ResumeListItemDto::from) // 엔티티 -> DTO 변환
+                .map(resume -> com.hirepicker.dto.ResumeListItemDto.from(
+                        resume,
+                        resume.getWorkExperience() != null ? resume.getWorkExperience().getId() : null))
                 .collect(java.util.stream.Collectors.toList());
     }
 
@@ -169,65 +227,46 @@ public class ResumeService {
         militaryServiceRepository.save(ms); // 저장
     }
 
-    // 리플렉션으로 AcademicAbility 생성 및 필드 세팅(엔티티 setter 부재 대응)
+    // 학력 엔티티 생성 (빌더 패턴 사용)
     private AcademicAbility newAcademicAbility(PersonalUser user, School school, AcademicAbilityDto dto) {
-        try {
-            var ctor = AcademicAbility.class.getDeclaredConstructor();
-            ctor.setAccessible(true);
-            AcademicAbility aa = ctor.newInstance(); // 인스턴스 생성
-            setField(aa, "personalUser", user); // 사용자
-            setField(aa, "school", school); // 학교
-            setField(aa, "degree", dto.getDegree()); // 학위
-            setField(aa, "major", dto.getMajor()); // 전공
-            setField(aa, "majorScore", dto.getMajorScore()); // 전공 학점
-            setField(aa, "graduationDate", dto.getGraduationDate()); // 졸업일자
-            return aa;
-        } catch (Exception e) {
-            throw new RuntimeException("학력 엔티티 생성 실패", e); // 간단 예외 래핑
-        }
+        return AcademicAbility.builder()
+                .personalUser(user.getId())
+                .school(school.getSchoolCode())
+                .degree(dto.getDegree())
+                .major(dto.getMajor())
+                .majorScore(dto.getMajorScore())
+                .graduationDate(dto.getGraduationDate())
+                .build();
     }
 
-    // 리플렉션으로 WorkExperience 생성 및 필드 세팅
+    // 경력 엔티티 생성 (빌더 패턴 사용)
     private WorkExperience newWorkExperience(PersonalUser user, WorkExperienceDto dto) {
-        try {
-            WorkExperience we = new WorkExperience(); // public 기본 생성자 사용
-            setField(we, "personalUser", user);
-            setField(we, "companyName", dto.getCompanyName());
-            setField(we, "department", dto.getDepartment());
-            setField(we, "position", dto.getPosition());
-            setField(we, "hireDate", dto.getHireDate());
-            setField(we, "resignDate", dto.getResignDate());
-            setField(we, "jobDescription", dto.getJobDescription());
-            setField(we, "mainDuties", dto.getMainDuties());
-            return we;
-        } catch (Exception e) {
-            throw new RuntimeException("경력 엔티티 생성 실패", e);
-        }
+        return WorkExperience.builder()
+                .personalUser(user)
+                .companyName(dto.getCompanyName())
+                .department(dto.getDepartment())
+                .position(dto.getPosition())
+                .hireDate(dto.getHireDate())
+                .resignDate(dto.getResignDate())
+                .jobDescription(dto.getJobDescription())
+                .mainDuties(dto.getMainDuties())
+                .build();
     }
 
-    // 리플렉션으로 MilitaryService 생성 및 필드 세팅
+    // 병역 엔티티 생성 (빌더 패턴 사용)
     private MilitaryService newMilitaryService(PersonalUser user, MilitaryServiceDto dto) {
-        try {
-            var ctor = MilitaryService.class.getDeclaredConstructor();
-            ctor.setAccessible(true);
-            MilitaryService ms = ctor.newInstance();
-            setField(ms, "personalUser", user);
-            setField(ms, "serviceType", dto.getServiceType());
-            setField(ms, "militaryBranch", dto.getMilitaryBranch());
-            setField(ms, "militaryRank", dto.getMilitaryRank());
-            setField(ms, "periodOfService", dto.getPeriodOfService());
-            setField(ms, "reasonForExemption", dto.getReasonForExemption());
-            return ms;
-        } catch (Exception e) {
-            throw new RuntimeException("병역 엔티티 생성 실패", e);
-        }
+        return MilitaryService.builder()
+                .personalUser(user)
+                .serviceType(dto.getServiceType())
+                .militaryBranch(dto.getMilitaryBranch())
+                .militaryRank(dto.getMilitaryRank())
+                .periodOfService(dto.getPeriodOfService())
+                .reasonForExemption(dto.getReasonForExemption())
+                .build();
     }
 
-    // 리플렉션 안전 헬퍼
+    // 리플렉션 안전 헬퍼 (더 이상 사용되지 않음)
     private static void setField(Object target, String fieldName, Object value) throws Exception {
-        if (value == null) return; // null 값은 생략
-        var f = target.getClass().getDeclaredField(fieldName);
-        f.setAccessible(true);
-        f.set(target, value);
+        // 이 메서드는 더 이상 사용되지 않으므로 비워둡니다.
     }
 }

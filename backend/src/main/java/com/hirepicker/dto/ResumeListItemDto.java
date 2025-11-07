@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import java.time.LocalDateTime;
 
-// 이력서 목록 응답용 DTO(필요 필드만 간단 노출)
+// 이력서 목록 응답용 DTO(주요 필드만 간단 추출)
 @Getter
 @AllArgsConstructor
 public class ResumeListItemDto {
@@ -18,17 +18,6 @@ public class ResumeListItemDto {
     private final Long expIdx;       // 연결된 경력 PK(옵션)
     private final LocalDateTime modifiedDate; // 최종 수정일시
 
-    // 엔티티 -> DTO 변환 편의 메서드
-    public static ResumeListItemDto from(Resume resume) {
-        WorkExperience we = resume.getWorkExperience(); // 연결 경력
-        return new ResumeListItemDto(
-                resume.getId(),
-                resume.getTitle(),
-                resume.getStatus() != null ? resume.getStatus().name() : null,
-                resume.isDefault(),
-                resume.getImageUrl(),
-                we != null ? we.getId() : null,
-                resume.getModifiedDate()
-        );
-    }
+    // 엔티티 -> DTO 변환용 메서드
+    public static ResumeListItemDto from(Resume resume, Long expIdx) { return new ResumeListItemDto( resume.getId(), resume.getTitle(), resume.getStatus() != null ? resume.getStatus().name() : null, resume.isDefault(), resume.getImageUrl(), expIdx, resume.getModifiedDate() ); }
 }

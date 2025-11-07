@@ -28,8 +28,6 @@ import java.util.zip.ZipInputStream;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -38,6 +36,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hirepicker.dto.CompanyDto;
 import com.hirepicker.dto.EventDto;
 import com.hirepicker.dto.JobDto;
@@ -809,7 +809,7 @@ public class EmploymentDataService {
     public void init() {
         // --- [추가됨] ---
         // 6. @Value로 주입받은 키들을 리스트로 만듦
-        //    (init()은 생성자 호출 후, @Value 주입이 완료된 후에 실행됨)
+        // (init()은 생성자 호출 후, @Value 주입이 완료된 후에 실행됨)
         dartApiKeys = List.of(dartKey1, dartKey2, dartKey3, dartKey4, dartKey5);
         // --- [추가 끝] ---
 

@@ -6,11 +6,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-// 이력서 엔티티 (resumes 테이블 스키마 반영)
+// 이력서 엔티티(resumes 테이블 매핑)
 @Entity
 @Table(name = "resumes")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder // 빌더 패턴 자동 생성
 public class Resume extends BaseEntity {
 
     @Id
@@ -20,7 +21,7 @@ public class Resume extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "p_user_idx", nullable = false)
-    private PersonalUser personalUser; // 개인회원
+    private PersonalUser personalUser; // 개인 회원
 
     @Column(nullable = false, length = 70)
     private String title; // 제목
@@ -31,7 +32,7 @@ public class Resume extends BaseEntity {
 
     @Lob
     @Column(name = "personality")
-    private String selfStrengths; // 성격
+    private String selfStrengths; // 성격/강점
 
     @Lob
     @Column(name = "motivation_for_application")
@@ -42,30 +43,35 @@ public class Resume extends BaseEntity {
     private String selfAspirations; // 포부
 
     @Column(name = "img", length = 255)
-    private String imageUrl; // 프로필 이미지 경로
+    private String imageUrl; // 이미지 경로
 
     @Column(name = "is_default", nullable = false)
-    private boolean isDefault = false; // 기본 이력서 여부
+    @Builder.Default // 빌더 기본값 설정
+    private boolean isDefault = false; // 대표 이력서 여부
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
+    @Builder.Default // 빌더 기본값 설정
     private ResumeStatus status = ResumeStatus.PUBLIC; // 공개 상태
 
     @Column(name = "cert", length = 200)
-    private String cert; // 자격증 요약
+    private String cert; // 자격 요약
 
     @Column(name = "cancel")
-    private Boolean cancel; // 취소 여부(null 허용)
+    private Boolean cancel; // 취소 여부
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "exp_idx")
-    private WorkExperience workExperience; // 경력 연결(optional)
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(name = "chosen_exp",
+        joinColumns = @JoinColumn(name = "resume_idx"),
+        inverseJoinColumns = @JoinColumn(name = "exp_idx"))
+    private WorkExperience workExperience;
 
+    // 모든 필드를 포함하는 생성자 (Lombok @Builder가 사용)
     @Builder
-    public Resume(PersonalUser personalUser, String title, String selfGrowth, String selfStrengths,
-                  String selfMotivation, String selfAspirations, String imageUrl,
-                  Boolean isDefault, ResumeStatus status, String cert, Boolean cancel,
-                  WorkExperience workExperience) {
+    public Resume(Long id, PersonalUser personalUser, String title, String selfGrowth, String selfStrengths,
+                  String selfMotivation, String selfAspirations, String imageUrl, boolean isDefault,
+                  ResumeStatus status, String cert, Boolean cancel, WorkExperience workExperience) {
+        this.id = id;
         this.personalUser = personalUser;
         this.title = title;
         this.selfGrowth = selfGrowth;
@@ -73,16 +79,16 @@ public class Resume extends BaseEntity {
         this.selfMotivation = selfMotivation;
         this.selfAspirations = selfAspirations;
         this.imageUrl = imageUrl;
-        if (isDefault != null) this.isDefault = isDefault;
-        if (status != null) this.status = status;
+        this.isDefault = isDefault;
+        this.status = status;
         this.cert = cert;
         this.cancel = cancel;
         this.workExperience = workExperience;
     }
 
-    // 선택 경력 연동(서비스에서 조건부로 세팅)
+
+    // 경력 연결을 위한 편의 메서드
     public void attachWorkExperience(WorkExperience workExperience) {
         this.workExperience = workExperience;
     }
 }
-

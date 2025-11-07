@@ -2,10 +2,11 @@ package com.hirepicker.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-// military_service 테이블 매핑 (개인회원 병역)
+// military_service 테이블 매핑 (개인회원 병역 정보)
 @Entity
 @Table(name = "military_service")
 @Getter
@@ -35,5 +36,17 @@ public class MilitaryService {
 
     @Column(name = "reason_for_exemption", length = 20)
     private String reasonForExemption; // 면제 사유
-}
 
+    @Builder
+    public MilitaryService(Long id, PersonalUser personalUser, String serviceType,
+                           String militaryBranch, String militaryRank, String periodOfService,
+                           String reasonForExemption) {
+        this.id = id;
+        this.personalUser = personalUser;
+        this.serviceType = serviceType;
+        this.militaryBranch = militaryBranch;
+        this.militaryRank = militaryRank;
+        this.periodOfService = periodOfService;
+        this.reasonForExemption = reasonForExemption;
+    }
+}
