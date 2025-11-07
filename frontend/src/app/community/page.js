@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import PostList from "./_components/PostList";
 
@@ -22,21 +22,24 @@ export default function Page() {
   const [loading, setLoading] = useState(true);        // 로딩 상태
   const [currentUserType, setCurrentUserType] = useState(null);
 
-  // 검색 관련 상태
+  // 실검색 상태(for API 요청)
+  const [appliedSearchType, setAppliedSearchType] = useState('title');
+  const [appliedSearchText, setAppliedSearchText] = useState('');
+  // 입력란 제어 상태(실시간 입력/타이핑)
   const [searchType, setSearchType] = useState('title');
   const [searchText, setSearchText] = useState('');
 
-  // 게시글 데이터 불러오기 함수
-  function callData() {
+  // 게시글 데이터 불러오기 함수, useCallback으로 memoization
+  const callData = useCallback(() => {
     setLoading(true);
+
     const params = { cPage };
     if (boardIdx !== '') params.boardIdx = boardIdx;
-    if (searchText.trim() !== '') {
-      params.type = searchType;
-      params.query = searchText;
+    if (appliedSearchText.trim() !== '') {
+      params.type = appliedSearchType;
+      params.query = appliedSearchText;
     }
 
-    // boardIdx가 ""이면 전체글, 그 외에는 카테고리별
     let url = "/api/posts";
     if (boardIdx !== '') url = "/api/posts/category";
 
@@ -55,7 +58,7 @@ export default function Page() {
         setTotalPage(0);
       })
       .finally(() => setLoading(false));
-  }
+  }, [boardIdx, cPage, appliedSearchType, appliedSearchText]);
 
   // 로그인 상태 및 유저타입 불러오기
   useEffect(() => {
@@ -68,29 +71,28 @@ export default function Page() {
       .finally(() => setLoading(false));
   }, []);
 
-  // 주요 상태 변경 시 게시글 데이터 갱신
+  // boardIdx, cPage, appliedSearchType, appliedSearchText가 바뀔 때만 실제 검색!
   useEffect(() => {
     callData();
-    // eslint-disable-next-line
-  }, [boardIdx, cPage, searchType, searchText]);
+  }, [boardIdx, cPage, appliedSearchType, appliedSearchText, callData]);
 
   // 페이지 변경 함수
   function changePage(e, p) {
     setcPage(p);
   }
 
-  // 검색 처리 함수: PostList에서 onSearch로 내려줌
+  // 검색 버튼 혹은 엔터 시 실행 함수
   function handleSearch(type, text) {
-    setSearchType(type);
-    setSearchText(text);
+    setAppliedSearchType(type);
+    setAppliedSearchText(text);
     setcPage(1);
   }
 
-  // 카테고리 변경 함수 (검색조건 리셋은 취향 따라)
+  // 카테고리 변경 함수
   function handleBoardIdxChange(newIdx) {
     setBoardIdx(newIdx);
     setcPage(1);
-    // setSearchText(''); setSearchType('title'); // 필요시 검색조건 리셋 가능
+    // setSearchText(''); setSearchType('title'); // 카테고리 변경시 검색 상태 리셋 원하면 활성화
   }
 
   return (
