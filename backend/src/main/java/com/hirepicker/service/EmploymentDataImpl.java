@@ -33,6 +33,13 @@ public class EmploymentDataImpl implements EmploymentData {
     private final EmpEventRepository empEventRepository; // 채용 행사 리포지토리
     private final CompanyRepository companyRepository; // 기업 리포지토리
 
+
+    public JobPosting findByPostingId(String postingId) {
+    return jobPostingRepository.findByPostingId(postingId)
+            .orElseThrow(() -> new IllegalArgumentException("해당 posting_id에 해당하는 공고를 찾을 수 없습니다."));
+}
+
+
     // 채용 공고 목록 조회
     @Override
     public Page<JobDto> getJobs(Pageable pageable) {
@@ -233,5 +240,7 @@ public class EmploymentDataImpl implements EmploymentData {
 
     return new PageImpl<>(jobDtos, pageable, jobPostings.getTotalElements());
 }
+
+
 
 }

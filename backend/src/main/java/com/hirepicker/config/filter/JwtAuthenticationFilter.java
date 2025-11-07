@@ -27,10 +27,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider; // JWT 토큰 제공자
 
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        String path = request.getRequestURI();
-        String method = request.getMethod();
+@Override
+protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+    String path = request.getRequestURI();
+    String method = request.getMethod();
 
         // 1. permitAll()로 설정된 경로 리스트
         //    주의: "/api/auth/**"는 "/api/auth/"로 시작하는지 검사해야 함
@@ -56,26 +56,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 "/chat/", // /chat/**
                 "/ws", // /ws, /ws/**
                 "/api/ai/upload-image",
-                "/api/search",
-                "/api/users/me"
+                "/api/search"
+                
 
         );
 
-        // 2. GET /api/posts 와 GET /api/posts/* 처리
-        if (method.equals("GET") && (path.equals("/api/posts") || path.startsWith("/api/posts/"))) {
-            return true; // 필터 실행 안 함 (통과)
-        }
-
-        // 3. 나머지 permitAll 경로들 확인
-        for (String permitPath : permitAllPaths) {
-            if (path.startsWith(permitPath)) {
-                return true; // 필터 실행 안 함 (통과)
-            }
-        }
-
-        // 4. 여기에 해당 안 되면 필터 실행
-        return false;
+    // ★ GET /api/posts와 /api/posts/{postIdx}는 필터 미적용 (비회원 조회 가능)
+    if (method.equals("GET") && (path.equals("/api/posts") || path.matches("/api/posts/\\d+"))) {
+        return true;
     }
+
+    // ★ /api/posts/me는 필터를 적용해야 함 (인증 정보 필요) - 반환값: false
+    if (path.equals("/api/posts/me")) {
+        return false; // 필터 실행
+    }
+
+    // ★ POST /api/posts/write는 필터를 적용해야 함 (인증 필요)
+    if (method.equals("POST") && path.equals("/api/posts/write")) {
+        return false; // 필터 실행
+    }
+
+    for (String permitPath : permitAllPaths) {
+        if (path.startsWith(permitPath)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 
     // 실제 필터링 로직
     @Override

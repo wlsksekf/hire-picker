@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-// 이력서 정보를 담는 엔티티 (DB 명세 기반으로 재수정)
+// 이력서 엔티티 (resumes 테이블 스키마 반영)
 @Entity
 @Table(name = "resumes")
 @Getter
@@ -16,42 +16,56 @@ public class Resume extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "resume_idx")
-    private Long id;
+    private Long id; // PK
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "p_user_idx", nullable = false)
-    private PersonalUser personalUser;
+    private PersonalUser personalUser; // 개인회원
 
-    @Column(nullable = false)
-    private String title;
+    @Column(nullable = false, length = 70)
+    private String title; // 제목
 
     @Lob
     @Column(name = "background_and_growth")
-    private String selfGrowth;
+    private String selfGrowth; // 성장 배경
 
     @Lob
     @Column(name = "personality")
-    private String selfStrengths;
+    private String selfStrengths; // 성격
 
     @Lob
     @Column(name = "motivation_for_application")
-    private String selfMotivation;
+    private String selfMotivation; // 지원 동기
 
     @Lob
     @Column(name = "future_aspirations")
-    private String selfAspirations;
+    private String selfAspirations; // 포부
 
-    @Column(name = "img")
-    private String imageUrl;
+    @Column(name = "img", length = 255)
+    private String imageUrl; // 프로필 이미지 경로
 
-    @Column(name = "is_default")
-    private boolean isDefault = false;
+    @Column(name = "is_default", nullable = false)
+    private boolean isDefault = false; // 기본 이력서 여부
 
-    private String status = "PUBLIC"; // ENUM 타입에 맞춰 "PUBLIC"으로 변경
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private ResumeStatus status = ResumeStatus.PUBLIC; // 공개 상태
+
+    @Column(name = "cert", length = 200)
+    private String cert; // 자격증 요약
+
+    @Column(name = "cancel")
+    private Boolean cancel; // 취소 여부(null 허용)
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "exp_idx")
+    private WorkExperience workExperience; // 경력 연결(optional)
 
     @Builder
-    public Resume(PersonalUser personalUser, String title, String selfGrowth, String selfStrengths, 
-                    String selfMotivation, String selfAspirations, String imageUrl) {
+    public Resume(PersonalUser personalUser, String title, String selfGrowth, String selfStrengths,
+                  String selfMotivation, String selfAspirations, String imageUrl,
+                  Boolean isDefault, ResumeStatus status, String cert, Boolean cancel,
+                  WorkExperience workExperience) {
         this.personalUser = personalUser;
         this.title = title;
         this.selfGrowth = selfGrowth;
@@ -59,5 +73,16 @@ public class Resume extends BaseEntity {
         this.selfMotivation = selfMotivation;
         this.selfAspirations = selfAspirations;
         this.imageUrl = imageUrl;
+        if (isDefault != null) this.isDefault = isDefault;
+        if (status != null) this.status = status;
+        this.cert = cert;
+        this.cancel = cancel;
+        this.workExperience = workExperience;
+    }
+
+    // 선택 경력 연동(서비스에서 조건부로 세팅)
+    public void attachWorkExperience(WorkExperience workExperience) {
+        this.workExperience = workExperience;
     }
 }
+

@@ -39,13 +39,10 @@ public class JobPosting {
     @Column(name = "location") // "location" 컬럼과 매핑
     private String location;
 
+
     @Column(name = "experience_level")
     private String experience_level;
 
     @Column(name = "job_type")
     private String jobType;
-
-
-
-
 }

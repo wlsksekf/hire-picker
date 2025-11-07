@@ -10,8 +10,8 @@ import useAuthStore from '@/store/authStore';
 
 // 로그인 페이지 컴포넌트
 function LoginPage() {
-  const [tabValue, setTabValue] = useState(0); // 탭 값 (개인회원/기업회원)
-  const [email, setEmail] = useState(''); // 이메일 입력 값
+  const [tabValue, setTabValue] = useState(0); // 탭 값 (0: 개인회원, 1: 기업회원)
+  const [username, setUsername] = useState(''); // 이메일 또는 아이디 입력 값
   const [password, setPassword] = useState(''); // 비밀번호 입력 값
   const [error, setError] = useState(null); // 에러 메시지
   const [isSocialError, setIsSocialError] = useState(false); // 소셜 로그인 에러 여부
@@ -19,33 +19,72 @@ function LoginPage() {
   const router = useRouter(); // Next.js 라우터
   const { login } = useAuthStore(); // 인증 스토어에서 로그인 함수 가져오기
 
-  // 탭 변경 핸들러
+  // 탭 변경 핸들러 - 탭 변경 시 입력 필드 초기화
   function handleTabChange(event, newValue) {
     setTabValue(newValue);
+    setUsername(''); // 입력 필드 초기화
+    setPassword('');
+    setError(null);
   }
 
-  // 폼 제출 핸들러
+  /**
+   * 로그인 폼 제출 핸들러
+   *
+   * 흐름:
+   * 1. 탭 값에 따라 userType 결정 (0: PERSONAL, 1: COMPANY)
+   * 2. username, password, userType을 백엔드로 전송
+   * 3. 성공 시: 인증 상태 초기화 후 메인 페이지로 이동
+   * 4. 실패 시: 에러 메시지 표시
+   */
   function handleSubmit(event) {
     event.preventDefault();
     setError(null);
     setIsSocialError(false);
 
+    // === STEP 1: userType 결정 ===
+    // 탭 값(tabValue)에 따라 회원 타입 결정
+    // - 0 (개인회원 탭): PERSONAL
+    // - 1 (기업회원 탭): COMPANY
+    const userType = tabValue === 0 ? 'PERSONAL' : 'COMPANY';
 
-    api.post('/api/auth/login', { email, password })
+    // === STEP 2: 백엔드로 로그인 요청 ===
+    api.post('/api/auth/login', {
+      email: username,      // 개인회원: 이메일, 기업회원: 아이디
+      password,             // 비밀번호 (평문)
+      userType: userType    // 회원 타입 (백엔드에서 효율적 검색용)
+    })
       .then(function(response) {
+        // === STEP 3: 로그인 성공 처리 ===
         console.log('로그인 성공. HttpOnly 쿠키가 설정되었습니다.');
-        // 백엔드가 쿠키를 설정해주므로, 프론트에서는 상태만 변경합니다.
-        // 로그인 성공 후, initializeAuth를 호출하여 사용자 정보를 가져옵니다.
-        useAuthStore.getState().initializeAuth(); // initializeAuth 호출
-        router.push('/'); // 로그인 성공 시 메인 페이지로 이동
+
+        // 3-1. 백엔드가 HttpOnly 쿠키로 토큰을 설정 (access_token, refresh_token)
+        //      프론트에서는 직접 토큰을 저장하지 않음 (XSS 공격 방지)
+
+        // 3-2. 인증 상태 초기화: /api/users/me 호출하여 사용자 정보 가져오기
+        //      완료를 기다린 후 페이지 전환 (비동기 처리)
+        return useAuthStore.getState().initializeAuth();
+      })
+      .then(function(userData) {
+        // 3-3. 인증 상태 초기화 완료 후 메인 페이지로 리다이렉트
+        console.log('인증 상태 초기화 완료:', userData);
+        router.push('/');
       })
       .catch(function(err) {
+        // === STEP 4: 로그인 실패 처리 ===
         console.error('로그인 요청 중 오류 발생:', err.response || err);
+
+        // 4-1. 소셜 계정 전용 에러 처리
+        //      (소셜 로그인으로 가입한 계정이 로컬 로그인 시도 시)
         if (err.response?.data?.error === 'SOCIAL_ACCOUNT_NEEDS_PASSWORD_SETUP') {
           setError(err.response.data.message || '소셜 계정입니다. 비밀번호를 설정해주세요.');
           setIsSocialError(true);
         } else {
-          setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+          // 4-2. 일반 인증 실패 (이메일/아이디 또는 비밀번호 오류)
+          //      탭에 따라 에러 메시지 다르게 표시
+          const errorMsg = tabValue === 0
+            ? '이메일 또는 비밀번호가 올바르지 않습니다.'
+            : '아이디 또는 비밀번호가 올바르지 않습니다.';
+          setError(errorMsg);
         }
       });
   }
@@ -67,13 +106,14 @@ function LoginPage() {
             margin="normal"
             required
             fullWidth
-            id="email"
-            label="이메일 주소"
-            name="email"
-            autoComplete="email"
+            id="username"
+            label={tabValue === 0 ? "이메일 주소" : "아이디"}
+            name="username"
+            autoComplete={tabValue === 0 ? "email" : "username"}
             autoFocus
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder={tabValue === 0 ? "example@email.com" : "로그인 아이디"}
           />
           <TextField
             margin="normal"
@@ -87,7 +127,7 @@ function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          
+
           {error && ( // 에러 메시지가 있을 경우 표시
             <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
               {error}

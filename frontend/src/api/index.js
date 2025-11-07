@@ -32,7 +32,7 @@ api.interceptors.response.use(
       }).catch((refreshError) => {
         // 리프레시 토큰 갱신 실패 시 (예: 리프레시 토큰 만료)
         console.log('Axios Interceptor: Token refresh failed (expected in logged-out state).');
-        
+
         // 로그아웃 처리
         useAuthStore.getState().logout();
         return Promise.reject(refreshError);
@@ -173,14 +173,14 @@ export function getUserProfile() {
 
 /**
  * [마이페이지] 사용자 정보 업데이트 (부분 수정)
- * 
+ *
  * HTTP PATCH 메서드 사용:
  * - PATCH는 리소스의 일부분만 수정할 때 사용하는 HTTP 메서드입니다
  * - PUT과 달리 모든 필드를 보낼 필요 없이, 변경할 필드만 전송합니다
  * - 예시: { nickname: "새닉네임" } 만 보내면 닉네임만 변경됨
- * 
+ *
  * 쿠키의 액세스 토큰을 통해 인증
- * 
+ *
  * @param {object} updateData - 업데이트할 정보 (변경할 필드만 포함)
  *   예시 1: { nickname: "새닉네임" } - 닉네임만 변경
  *   예시 2: { nickname: "새닉네임", password: "새비밀번호" } - 닉네임과 비밀번호 변경

@@ -24,6 +24,8 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long>,Jp
     @EntityGraph(attributePaths = {"company"})
     Page<JobPosting> findAll(Pageable pageable);
 
+
     
+
 
 }

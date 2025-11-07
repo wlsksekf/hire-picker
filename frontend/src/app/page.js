@@ -18,6 +18,7 @@
   import { useTheme } from '@mui/material/styles';
   import ChatRoom from '@/components/ChatRoom';
   import SearchFilterBar from '@/components/SearchFilterBar'; // ✅ 검색 + 필터 컴포넌트
+import Bookmark from '@/components/BookMark';
 
   const PAGE_SIZE = 18;
 
@@ -164,6 +165,7 @@
             전체 채용공고
           </Typography>
 
+
           <Grid container spacing={3}>
             {jobs.map(function (job) {
               return (
@@ -209,6 +211,7 @@
                         )}
                       </Box>
                       <CardActions sx={{ mt: 2, justifyContent: 'flex-end' }}>
+                        <Bookmark jobId={job.id}/>
                         <Button
                           variant="outlined"
                           onClick={function () { setSelectedPost(job); }}
