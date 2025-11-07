@@ -1,13 +1,25 @@
 package com.hirepicker.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
+import java.time.LocalDateTime;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @Entity
 @Getter
@@ -21,47 +33,45 @@ public class Posts {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long postIdx;        // BIGINT, PK, AI
+    private Long postIdx; // BIGINT, PK, AI
 
     @Column(nullable = false)
-    private Long boardIdx;       // BIGINT, NN
+    private Long boardIdx; // BIGINT, NN
 
-    @ManyToOne
-    @JoinColumn(name = "p_user_idx", nullable = false)
-    private PersonalUser personalUser;
+    @Column(nullable = false)
+    private Long pUserIdx; // BIGINT, NN
 
     @Column(nullable = false, length = 255)
-    private String title;        // VARCHAR(255), NN
+    private String title; // VARCHAR(255), NN
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String content;      // TEXT, NN
+    private String content; // TEXT, NN
 
-    private Integer viewCount;   // INT, NULL 허용
+    private Integer viewCount; // INT, NULL 허용
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;  // TIMESTAMP, 자동등록
+    private LocalDateTime createdAt; // TIMESTAMP, 자동등록
 
     @LastModifiedDate
     @Column(nullable = false)
-    private LocalDateTime updatedAt;  // TIMESTAMP, 자동등록
+    private LocalDateTime updatedAt; // TIMESTAMP, 자동등록
 
     @Column(length = 255)
-    private String fileName;     // VARCHAR(255)
+    private String fileName; // VARCHAR(255)
 
     @Column(length = 255)
-    private String imgName;      // VARCHAR(255)
+    private String imgName; // VARCHAR(255)
 
     // Lombok 자동 getter/setter도 남아있지만 절대로 수동으로 추가X!
 
     // **꼭 아래처럼 getter에만 JsonProperty 걸어서 단일 키만 보장!**
     @JsonProperty("pUserIdx")
     public Long getPUserIdx() {
-        return personalUser != null ? personalUser.getId() : null;
+        return pUserIdx;
     }
 
-    public void setPersonalUser(PersonalUser personalUser) {
-        this.personalUser = personalUser;
+    public void setPUserIdx(Long pUserIdx) {
+        this.pUserIdx = pUserIdx;
     }
-
 }
