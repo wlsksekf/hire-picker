@@ -5,7 +5,6 @@ import axios from 'axios';
 import { Button } from '@mui/material';
 import { useRouter } from 'next/navigation';
 
-// ✅ 카테고리 목록
 const BOARD_CATEGORIES = [
   { value: '', label: '카테고리 선택' },
   { value: '1', label: '취준/이직' },
@@ -16,28 +15,21 @@ const BOARD_CATEGORIES = [
 
 export default function PostWritePage() {
   const router = useRouter();
-
-  // 폼 상태
   const [formData, setFormData] = useState({ title: '', content: '', board_idx: '' });
-
-  // 첨부파일 상태(이미지, 기타)
   const [fileState, setFileState] = useState({
     selectedFile: null,
     previewUrl: null,
-    attachmentFile: null, // 일반 파일
+    attachmentFile: null,
   });
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const write_api_url = `/api/posts/write`;
 
-  // 입력 핸들러
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // 이미지 파일 핸들러
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (fileState.previewUrl) URL.revokeObjectURL(fileState.previewUrl);
@@ -49,53 +41,41 @@ export default function PostWritePage() {
     }
   };
 
-  // 일반파일 핸들러
   const handleAttachmentChange = (e) => {
     const file = e.target.files[0];
     setFileState(fs => ({ ...fs, attachmentFile: file }));
   };
 
-  // 이미지 파일 삭제: 메시지 선택적으로 표시
   const handleRemoveFile = (showMessage = true) => {
     if (fileState.previewUrl) URL.revokeObjectURL(fileState.previewUrl);
     setFileState(fs => ({ ...fs, selectedFile: null, previewUrl: null }));
     if (showMessage) setMessage('파일 첨부가 취소되었습니다.');
   };
 
-  // 일반파일 삭제: 메시지 선택적으로 표시
   const handleRemoveAttachment = (showMessage = true) => {
     setFileState(fs => ({ ...fs, attachmentFile: null }));
     if (showMessage) setMessage('파일 첨부가 취소되었습니다.');
   };
 
-  // 제출
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
-
     if (!formData.title || !formData.content || !formData.board_idx) {
       setMessage('⚠️ 제목, 내용, 그리고 카테고리를 모두 선택해주세요.');
       return;
     }
     setIsSubmitting(true);
-
     const postData = new FormData();
     postData.append('title', formData.title);
     postData.append('content', formData.content);
     postData.append('board_idx', formData.board_idx);
-    if (fileState.selectedFile) {
-      postData.append('image', fileState.selectedFile);
-    }
-    if (fileState.attachmentFile) {
-      postData.append('attachment', fileState.attachmentFile);
-    }
-
+    if (fileState.selectedFile) postData.append('image', fileState.selectedFile);
+    if (fileState.attachmentFile) postData.append('attachment', fileState.attachmentFile);
     try {
       const response = await axios.post(write_api_url, postData, { withCredentials: true });
       const postId = response.data?.data?.postIdx || response.data?.id || 'new';
       setMessage(`✅ 게시글 작성이 완료되었습니다. ID: ${postId}`);
       setFormData({ title: '', content: '', board_idx: '' });
-      // 파일 상태만 초기화, 메시지 없이
       handleRemoveFile(false);
       handleRemoveAttachment(false);
       setTimeout(() => {
@@ -115,7 +95,6 @@ export default function PostWritePage() {
     }
   };
 
-  // 취소 (파일 상태 초기화, 메시지 없이)
   const handleCancel = () => {
     handleRemoveFile(false);
     handleRemoveAttachment(false);
@@ -124,13 +103,10 @@ export default function PostWritePage() {
 
   useEffect(() => {
     return () => {
-      if (fileState.previewUrl) {
-        URL.revokeObjectURL(fileState.previewUrl);
-      }
+      if (fileState.previewUrl) URL.revokeObjectURL(fileState.previewUrl);
     };
   }, [fileState.previewUrl]);
 
-  // 스타일
   const inputStyle = {
     width: '100%',
     padding: '12px',
@@ -209,7 +185,7 @@ export default function PostWritePage() {
             disabled={isSubmitting}
           />
         </div>
-        {/* --- 파일 첨부 영역 (이미지/일반파일 분리) --- */}
+        {/* --- 파일 첨부 영역 (이미지/일반파일) --- */}
         <div style={{ marginBottom: "30px", border: "1px dashed #ccc", padding: "20px", borderRadius: "8px" }}>
           {/* 이미지 첨부 */}
           <div style={{ marginBottom: "28px" }}>
@@ -227,14 +203,21 @@ export default function PostWritePage() {
             <label htmlFor="file-upload-input" style={{
               display: 'inline-block',
               padding: '8px 16px',
-              backgroundColor: '#007bff',
-              color: 'white',
               borderRadius: '4px',
               cursor: 'pointer',
               fontWeight: 'bold',
-              marginBottom: '10px'
+              backgroundColor: fileState.selectedFile ? undefined : undefined,
+              color: undefined,
             }}>
-              {fileState.selectedFile ? "이미지 변경" : "이미지 선택"}
+              <Button
+                variant="contained"
+                color="primary"
+                component="span"
+                size="small"
+                disabled={isSubmitting}
+              >
+                {fileState.selectedFile ? "이미지 변경" : "이미지 선택"}
+              </Button>
             </label>
             {/* 미리보기 */}
             {fileState.selectedFile && (
@@ -256,7 +239,7 @@ export default function PostWritePage() {
               </div>
             )}
           </div>
-          {/* 첨부파일 분리영역 */}
+          {/* 첨부파일 (일반 파일) */}
           <div>
             <label style={{ display: "block", marginBottom: "12px", fontWeight: "bold", color: "#555" }}>
               일반 파일 첨부 (pdf/doc/zip 등, 선택 사항)
@@ -272,13 +255,19 @@ export default function PostWritePage() {
             <label htmlFor="attachment-file-input" style={{
               display: 'inline-block',
               padding: '8px 16px',
-              backgroundColor: '#198754',
-              color: 'white',
               borderRadius: '4px',
               cursor: 'pointer',
               fontWeight: 'bold'
             }}>
-              {fileState.attachmentFile ? "파일 변경" : "파일 첨부"}
+              <Button
+                variant="contained"
+                color="primary"
+                component="span"
+                size="small"
+                disabled={isSubmitting}
+              >
+                {fileState.attachmentFile ? "파일 변경" : "파일 첨부"}
+              </Button>
             </label>
             {fileState.attachmentFile && (
               <div style={{ marginTop: "16px", backgroundColor: "#f4fff7", padding: "12px", borderRadius: "8px", border: "1px solid #c7f5dd" }}>
@@ -313,13 +302,9 @@ export default function PostWritePage() {
             type="button"
             onClick={handleCancel}
             variant="outlined"
-            sx={{
-              padding: '12px 25px',
-              fontWeight: 'bold',
-              color: '#495057',
-              borderColor: '#ccc'
-            }}
+            color="primary"
             disabled={isSubmitting}
+            sx={{ padding: '12px 25px', fontWeight: 'bold' }}
           >
             취소
           </Button>
@@ -327,12 +312,8 @@ export default function PostWritePage() {
             type="submit"
             variant="contained"
             color="primary"
-            sx={{
-              padding: '12px 25px',
-              fontWeight: 'bold',
-              backgroundColor: isSubmitting ? '#6c757d' : '#007bff',
-            }}
             disabled={isSubmitting}
+            sx={{ padding: '12px 25px', fontWeight: 'bold' }}
           >
             {isSubmitting ? '작성 중...' : '작성 완료'}
           </Button>
