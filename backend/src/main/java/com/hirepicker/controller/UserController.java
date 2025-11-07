@@ -1,21 +1,5 @@
 package com.hirepicker.controller;
 
-import com.hirepicker.config.security.CustomUserDetails;
-import com.hirepicker.dto.UserDto;
-import com.hirepicker.entity.CompanyUser;
-import com.hirepicker.entity.PersonalUser;
-import com.hirepicker.entity.UserType;
-import com.hirepicker.entity.Gender; // Gender enum 임포트 추가
-import com.hirepicker.repository.CompanyUserRepository;
-import com.hirepicker.repository.PersonalUserRepository;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j; // Slf4j 임포트 추가
-
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,6 +12,23 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.hirepicker.config.security.CustomUserDetails;
+import com.hirepicker.dto.UserDto;
+import com.hirepicker.entity.CompanyUser;
+import com.hirepicker.entity.Gender; // Gender enum 임포트 추가
+import com.hirepicker.entity.PersonalUser;
+import com.hirepicker.entity.UserType;
+import com.hirepicker.repository.CompanyUserRepository;
+import com.hirepicker.repository.PersonalUserRepository;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j; // Slf4j 임포트 추가
 
 @Tag(name = "사용자", description = "사용자 정보 관련 API")
 @RestController
@@ -77,8 +78,8 @@ public class UserController {
         try {
             // ===== STEP 2: 사용자 타입과 ID 추출 =====
             // JWT 토큰에 저장된 정보 (JwtTokenProvider가 생성 시 포함시킴)
-            UserType userType = userDetails.getUserType();  // PERSONAL 또는 COMPANY
-            Long userId = userDetails.getId();               // 사용자 PK
+            UserType userType = userDetails.getUserType(); // PERSONAL 또는 COMPANY
+            Long userId = userDetails.getId(); // 사용자 PK
             log.info("Fetching user info - ID: {}, Type: {}", userId, userType);
 
             // ===== STEP 3: userType에 따라 분기 처리 =====
@@ -99,18 +100,19 @@ public class UserController {
 
                 // 3-2. PersonalUser 엔티티를 UserDto로 변환
                 UserDto userDto = new UserDto(
-                    personalUser.getId(),         // 사용자 ID
-                    personalUser.getEmail(),      // 이메일
-                    personalUser.getName(),       // 이름
-                    personalUser.getPlatform(),   // OAuth2 제공자 (google, kakao 등)
-                    personalUser.getNickname(),   // 닉네임
-                    UserType.PERSONAL             // 회원 타입 (프론트에서 메뉴 분기용)
+                        personalUser.getId(), // 사용자 ID
+                        personalUser.getEmail(), // 이메일
+                        personalUser.getName(), // 이름
+                        personalUser.getPlatform(), // OAuth2 제공자 (google, kakao 등)
+                        personalUser.getNickname(), // 닉네임
+                        UserType.PERSONAL // 회원 타입 (프론트에서 메뉴 분기용)
                 );
                 // 추가 필드 설정: 폰번호/주소/성별/생년월일 반환
                 userDto.setPhoneNumber(personalUser.getPhoneNumber());
                 userDto.setAddress(personalUser.getAddress());
                 userDto.setGender(personalUser.getGender() != null ? personalUser.getGender().name() : null);
-                userDto.setBirthDate(personalUser.getBirthDate() != null ? personalUser.getBirthDate().toString() : null);
+                userDto.setBirthDate(
+                        personalUser.getBirthDate() != null ? personalUser.getBirthDate().toString() : null);
                 return ResponseEntity.ok(userDto);
 
             } else if (userType == UserType.COMPANY) {
@@ -129,12 +131,12 @@ public class UserController {
 
                 // 3-2. CompanyUser 엔티티를 UserDto로 변환
                 UserDto userDto = new UserDto(
-                    companyUser.getId(),       // 사용자 ID
-                    companyUser.getEmail(),   // 담당자 이메일
-                    companyUser.getName(),    // 담당자명
-                    null,                     // 기업회원은 OAuth2 미지원
-                    null,                     // 기업회원은 닉네임 없음
-                    UserType.COMPANY          // 회원 타입 (프론트에서 메뉴 분기용)
+                        companyUser.getId(), // 사용자 ID
+                        companyUser.getEmail(), // 담당자 이메일
+                        companyUser.getName(), // 담당자명
+                        null, // 기업회원은 OAuth2 미지원
+                        null, // 기업회원은 닉네임 없음
+                        UserType.COMPANY // 회원 타입 (프론트에서 메뉴 분기용)
                 );
                 return ResponseEntity.ok(userDto);
 
@@ -150,7 +152,7 @@ public class UserController {
         }
     }
 
-     /**
+    /**
      * 내 프로필 정보 수정 (부분 수정)
      *
      * HTTP PATCH 메서드:
@@ -216,6 +218,7 @@ public class UserController {
         // ===== 6단계: 성공 응답 반환 =====
         return ResponseEntity.ok(Map.of("message", "프로필이 성공적으로 업데이트되었습니다."));
     }
+
     @Operation(summary = "내 프로필 정보 수정 (소셜 회원가입 후)", description = "현재 로그인된 개인 회원의 프로필 정보를 부분 수정합니다.")
     @PatchMapping("/me/details")
     @Transactional

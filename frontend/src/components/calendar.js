@@ -12,24 +12,99 @@ import {
   Tooltip,
 } from "@mui/material";
 import { CalendarToday } from "@mui/icons-material";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faCalendarXmark,
+  faCalendarCheck,
+  faClock,
+  faBullhorn,
+} from "@fortawesome/free-solid-svg-icons";
+import { faCalendar as faCalendarRegular } from "@fortawesome/free-regular-svg-icons";
 
-export default function CustomCalendar() {
+export default function CustomCalendar({ events }) {
   const calendarRef = useRef();
-  const [events] = useState([
-    { title: "공고 마감", date: "2025-11-10" },
-    { title: "공고2 마감", date: "2025-11-10" },
-    { title: "면접 일정", date: "2025-11-15" },
-  ]);
 
   const handleSelectDate = (date) => {
     const calendarApi = calendarRef.current?.getApi();
     calendarApi?.gotoDate(date.toDate());
   };
 
+  // Custom event content rendering function
+  const renderEventContent = (eventInfo) => {
+    const status = eventInfo.event.extendedProps.status;
+    const type = eventInfo.event.extendedProps.type;
+    let iconComponent;
+    let iconColorHex;
+
+    const getColor = (status) => {
+      // 색상별 의미
+      switch (status) {
+        case "past":
+          return "#6B7280"; // 과거 이벤트 (회색)
+        case "ongoing":
+          return "#10B981"; // 진행 중인 이벤트 (초록색)
+        case "upcoming":
+          return "#6366F1"; // 예정된 이벤트 (파란색)
+        default:
+          return "#A78BFA"; // 기본/기타 이벤트 (보라색)
+      }
+    };
+
+    if (type === "empEvent") {
+      iconComponent = faBullhorn;
+    } else {
+      switch (status) {
+        case "past":
+          iconComponent = faCalendarXmark;
+          break;
+        case "ongoing":
+          iconComponent = faCalendarCheck;
+          break;
+        case "upcoming":
+          iconComponent = faClock;
+          break;
+        default:
+          iconComponent = faCalendarRegular;
+      }
+    }
+    iconColorHex = getColor(status);
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          width: "100%",
+          paddingLeft: "4px",
+        }}
+      >
+        {iconComponent && (
+          <FontAwesomeIcon
+            icon={iconComponent}
+            style={{ flexShrink: 0, color: iconColorHex, marginRight: "4px" }}
+          />
+        )}
+        <div
+          style={{
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            flexGrow: 1,
+            minWidth: 0, // 이게 필수
+          }}
+        >
+          {eventInfo.timeText && (
+            <b style={{ marginRight: "4px" }}>{eventInfo.timeText}</b>
+          )}
+          {eventInfo.event.title}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Card sx={{ boxShadow: 3 }}>
       <CardHeader
-        title="📅 주요 일정"
         action={
           <Tooltip title="날짜 선택">
             <IconButton onClick={() => alert("날짜 선택 기능")}>
@@ -53,6 +128,7 @@ export default function CustomCalendar() {
               right: "dayGridMonth,dayGridWeek,dayGridDay",
             }}
             dayHeaderClassNames="fc-daygrid-day-header"
+            eventContent={renderEventContent} // Use custom content renderer
           />
         </Box>
       </CardContent>

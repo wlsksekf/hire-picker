@@ -1,30 +1,37 @@
 package com.hirepicker.service;
 
-import com.hirepicker.dto.PostListDto;
-import com.hirepicker.entity.Posts;
-import com.hirepicker.repository.PostRepository;
-import lombok.RequiredArgsConstructor;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.hirepicker.dto.PostListDto;
+import com.hirepicker.entity.PersonalUser;
+import com.hirepicker.entity.Posts;
+import com.hirepicker.repository.PersonalUserRepository;
+import com.hirepicker.repository.PostRepository;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class PostService {
 
     private final PostRepository postRepository;
+    private final PersonalUserRepository personalUserRepository;
 
     private static final int PAGE_SIZE = 10;
 
@@ -71,15 +78,17 @@ public class PostService {
 
     // S3 실제 삭제 로직
     private void deleteFromS3(String key) {
-        if (key == null || key.isBlank()) return;
+        if (key == null || key.isBlank())
+            return;
         AmazonS3 s3 = getS3Client();
         s3.deleteObject(s3BucketName, key);
     }
 
     // 게시글 작성 (CREATE)
     @Transactional
-    public Posts create(Long boardIdx, Long pUserIdx, String title, String content,
-                        MultipartFile imageFile, MultipartFile attachmentFile) throws IOException {
+    public Posts create(Long boardIdx, PersonalUser personalUser, String title, String content,
+            MultipartFile imageFile, MultipartFile attachmentFile) throws IOException {
+
         String imgKey = null;
         String fileKey = null;
 
@@ -92,10 +101,10 @@ public class PostService {
 
         Posts post = new Posts();
         post.setBoardIdx(boardIdx);
-        post.setPUserIdx(pUserIdx);
+        post.setPersonalUser(personalUser);
         post.setTitle(title);
         post.setContent(content);
-        post.setImgName(imgKey);   // S3 key만 저장
+        post.setImgName(imgKey); // S3 key만 저장
         post.setFileName(fileKey); // S3 key만 저장
         post.setViewCount(0);
 
@@ -117,16 +126,16 @@ public class PostService {
     // 게시글 상세 조회
     public PostListDto getPostDetailWithNickname(Long postIdx) {
         return postRepository.findPostDetailWithNickname(postIdx)
-            .orElse(null);
+                .orElse(null);
     }
 
     // 게시글 수정 + S3 파일/이미지 삭제/변경까지 종합!
     @Transactional
     public boolean updatePost(Long postIdx, Long loginUserIdx, String title, String content,
-                              MultipartFile imageFile, MultipartFile attachmentFile,
-                              boolean deleteImg, boolean deleteFile) {
+            MultipartFile imageFile, MultipartFile attachmentFile,
+            boolean deleteImg, boolean deleteFile) {
         Posts post = postRepository.findById(postIdx).orElse(null);
-        if (post == null || !post.getPUserIdx().equals(loginUserIdx)) {
+        if (post == null || !post.getPersonalUser().getId().equals(loginUserIdx)) {
             return false;
         }
         post.setTitle(title);
@@ -137,7 +146,8 @@ public class PostService {
             deleteFromS3(post.getImgName());
             post.setImgName(null); // DB도 null로
         } else if (imageFile != null && !imageFile.isEmpty()) {
-            if (post.getImgName() != null) deleteFromS3(post.getImgName());
+            if (post.getImgName() != null)
+                deleteFromS3(post.getImgName());
             try {
                 String newImgKey = uploadFileToS3(imageFile, "images");
                 post.setImgName(newImgKey);
@@ -151,7 +161,8 @@ public class PostService {
             deleteFromS3(post.getFileName());
             post.setFileName(null);
         } else if (attachmentFile != null && !attachmentFile.isEmpty()) {
-            if (post.getFileName() != null) deleteFromS3(post.getFileName());
+            if (post.getFileName() != null)
+                deleteFromS3(post.getFileName());
             try {
                 String newFileKey = uploadFileToS3(attachmentFile, "attachments");
                 post.setFileName(newFileKey);
@@ -164,18 +175,21 @@ public class PostService {
         return true;
     }
 
-        // --- 게시글 삭제 (글, S3 파일/이미지 동시 삭제) ---
+    // --- 게시글 삭제 (글, S3 파일/이미지 동시 삭제) ---
     @Transactional
     public boolean deletePostWithFiles(Long postIdx, Long loginUserIdx) {
         Posts post = postRepository.findById(postIdx).orElse(null);
-        if (post == null || !post.getPUserIdx().equals(loginUserIdx)) return false;
+        if (post == null || !post.getPersonalUser().getId().equals(loginUserIdx))
+            return false;
 
         // S3 이미지/파일 삭제
-        if (post.getImgName() != null) deleteFromS3(post.getImgName());
-        if (post.getFileName() != null) deleteFromS3(post.getFileName());
+        if (post.getImgName() != null)
+            deleteFromS3(post.getImgName());
+        if (post.getFileName() != null)
+            deleteFromS3(post.getFileName());
 
         postRepository.delete(post);
         return true;
     }
-    
+
 }
