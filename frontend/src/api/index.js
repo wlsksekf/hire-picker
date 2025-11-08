@@ -227,6 +227,13 @@ export function searchSchools(query) {
     .then(res => res.data);
 }
 
+// [검색] 정확히 일치하는 학교 찾기
+export function findExactSchool(name) {
+  return api.get('/api/schools/find', { params: { name } })
+    .then(res => res.data)
+    .catch(() => null); // 없으면 null 반환
+}
+
 // [마이페이지] 경력 조회/저장
 export function getExperiences() {
   return api.get('/api/users/experiences').then(res => res.data);
@@ -241,6 +248,14 @@ export function getMilitary() {
 }
 export function saveMilitary(military) {
   return api.put('/api/users/military', military).then(res => res.data);
+}
+
+// [마이페이지] 자격증 조회/저장
+export function getCertifications() {
+  return api.get('/api/users/certifications').then(res => res.data || []);
+}
+export function saveCertifications({ certIdxList = [], certNameList = [] } = {}) {
+  return api.put('/api/users/certifications', { resumeIdx: null, certIdxList, certNameList }).then(res => res.data);
 }
 
 // [이력서] 수정

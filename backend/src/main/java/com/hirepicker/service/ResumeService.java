@@ -81,15 +81,17 @@ public class ResumeService {
                 .findByPersonalUserOrderByGraduationDateDesc(userId)
                 .stream()
                 .map(a -> {
-                    String schoolName = schoolRepository.findById(a.getSchool())
-                            .map(School::getSchoolName)
-                            .orElse(null);
+                    School school = schoolRepository.findById(a.getSchool()).orElse(null);
+                    String schoolName = school != null ? school.getSchoolName() : null;
+                    String campus = school != null ? school.getCampus() : null;
                     return new AcademicAbilityViewDto(
                             a.getSchool(),
                             schoolName,
+                            campus,
                             a.getDegree(),
                             a.getMajor(),
-                            a.getMajorScore()
+                            a.getMajorScore(),
+                            a.getGraduationDate()
                     );
                 }).toList();
 

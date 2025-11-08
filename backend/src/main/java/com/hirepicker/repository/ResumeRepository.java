@@ -11,4 +11,7 @@ public interface ResumeRepository extends JpaRepository<Resume, Long> {
     // 개인회원 ID로 이력서 목록 조회(최신순)
     @Query("SELECT r FROM Resume r LEFT JOIN FETCH r.workExperience WHERE r.personalUser.id = :personalUserId ORDER BY r.id DESC")
     List<Resume> findByPersonalUserIdOrderByIdDesc(Long personalUserId);
+    
+    // 개인회원 ID로 기본 이력서 조회
+    java.util.Optional<Resume> findByPersonalUserIdAndIsDefaultTrue(Long personalUserId);
 }

@@ -190,7 +190,7 @@ public class EmploymentDataImpl implements EmploymentData {
                     String pattern = "%" + level.trim().toLowerCase() + "%";
                     System.out.println("DEBUG: pattern='" + pattern + "'");
                     expPredicates.add(
-                            cb.like(cb.lower(root.get("experience_level")), pattern));
+                            cb.like(cb.lower(root.get("experienceLevel")), pattern));
                 }
                 predicates.add(cb.or(expPredicates.toArray(new Predicate[0])));
             }
@@ -221,7 +221,7 @@ public class EmploymentDataImpl implements EmploymentData {
                     .employmentType(job.getEmploymentType())
                     .location(job.getCompany().getAddress())
                     .imgUrl(imgUrl)
-                    .experience_level(job.getExperience_level())
+                    .experience_level(job.getExperienceLevel())
                     .companyType(job.getLocation())
                     .jobType(job.getJobType())
                     .build());

@@ -12,4 +12,5 @@ import lombok.Setter;
 public class SchoolDto {
     private Long schoolCode;
     private String schoolName;
+    private String campus; // 캠퍼스 정보 추가
 }

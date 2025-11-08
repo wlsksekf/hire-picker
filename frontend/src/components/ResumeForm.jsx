@@ -62,7 +62,7 @@ const UndisabledUnderlineTextField = (props) => (
 // 공통 텍스트 입력 래퍼(폼 전용) - 위 표준 입력을 재사용
 // 누락된 컴포넌트로 인한 런타임 오류를 방지하기 위한 최소 정의
 const FormTextField = (props) => (
-  <UndisabledUnderlineTextField {...props} />
+  <UndisabledUnderlineTextField {...props} value={props.value ?? ''} />
 );
 
 // 프리젠테이션 컴포넌트: 이력서 작성 양식
@@ -90,20 +90,12 @@ export default function ResumeForm({
   schoolLoading1,
   schoolOptions2,
   schoolLoading2,
+  // 경력/자격증 선택 관련 props 추가
+  availableExperiences = [],
+  availableCertifications = [],
+  onExperienceSelect,
+  onCertificationSelect,
 }) {
-  const [searchOpen1, setSearchOpen1] = useState(false);
-  const [searchOpen2, setSearchOpen2] = useState(false);
-
-  // Autocomplete의 value를 처리하기 위한 헬퍼 함수
-  const getSchoolValue = (eduPrefix) => {
-    const schoolName = formData[`${eduPrefix}_school`];
-    const schoolCode = formData[`${eduPrefix}_schoolCode`];
-    if (schoolName && schoolCode !== null) {
-      return { schoolName: schoolName, schoolCode: schoolCode };
-    }
-    return null;
-  };
-
   return (
     <>
       {isLoading && (
@@ -252,7 +244,6 @@ export default function ResumeForm({
                     <StyledLabelCell>학교명</StyledLabelCell>
                     <StyledLabelCell>전공</StyledLabelCell>
                     <StyledLabelCell>상태</StyledLabelCell>
-                    <StyledLabelCell>소재지</StyledLabelCell>
                     <StyledLabelCell>학점</StyledLabelCell>
                   </TableRow>
                 </TableHead>
@@ -262,49 +253,13 @@ export default function ResumeForm({
                       <FormTextField name="edu1_period" value={formData.edu1_period} onChange={onChange} placeholder="YYYY.MM ~ YYYY.MM" />
                     </StyledInputCell>
                     <StyledInputCell>
-                      <Autocomplete
-                        fullWidth
-                        options={schoolOptions1}
-                        getOptionLabel={(option) => option.schoolName || ""}
-                        isOptionEqualToValue={(option, value) => option.schoolCode === value.schoolCode}
-                        value={getSchoolValue("edu1")}
-                        onChange={(event, newValue) => {
-                          onSchoolSelect("edu1", newValue);
-                        }}
-                        onInputChange={(event, newInputValue) => {
-                          onChange({ target: { name: "edu1_school", value: newInputValue } });
-                          searchSchools("edu1", newInputValue);
-                        }}
-                        loading={schoolLoading1}
-                        open={searchOpen1}
-                        onOpen={() => setSearchOpen1(true)}
-                        onClose={() => setSearchOpen1(false)}
-                        renderInput={(params) => (
-                          <UndisabledUnderlineTextField
-                            {...params}
-                            name="edu1_school"
-                            placeholder="학교명"
-                            InputProps={{
-                              ...params.InputProps,
-                              endAdornment: (
-                                <React.Fragment>
-                                  {schoolLoading1 ? <CircularProgress color="inherit" size={20} /> : null}
-                                  {params.InputProps.endAdornment}
-                                </React.Fragment>
-                              ),
-                            }}
-                          />
-                        )}
-                      />
+                      <FormTextField name="edu1_school" value={formData.edu1_school} onChange={onChange} placeholder="학교명" />
                     </StyledInputCell>
                     <StyledInputCell>
                       <FormTextField name="edu1_major" value={formData.edu1_major} onChange={onChange} />
                     </StyledInputCell>
                     <StyledInputCell>
                       <FormTextField name="edu1_status" value={formData.edu1_status} onChange={onChange} />
-                    </StyledInputCell>
-                    <StyledInputCell>
-                      <FormTextField name="edu1_location" value={formData.edu1_location} onChange={onChange} />
                     </StyledInputCell>
                     <StyledInputCell>
                       <FormTextField name="edu1_score" value={formData.edu1_score} onChange={onChange} />
@@ -315,49 +270,13 @@ export default function ResumeForm({
                       <FormTextField name="edu2_period" value={formData.edu2_period} onChange={onChange} placeholder="YYYY.MM ~ YYYY.MM" />
                     </StyledInputCell>
                     <StyledInputCell>
-                      <Autocomplete
-                        fullWidth
-                        options={schoolOptions2}
-                        getOptionLabel={(option) => option.schoolName || ""}
-                        isOptionEqualToValue={(option, value) => option.schoolCode === value.schoolCode}
-                        value={getSchoolValue("edu2")}
-                        onChange={(event, newValue) => {
-                          onSchoolSelect("edu2", newValue);
-                        }}
-                        onInputChange={(event, newInputValue) => {
-                          onChange({ target: { name: "edu2_school", value: newInputValue } });
-                          searchSchools("edu2", newInputValue);
-                        }}
-                        loading={schoolLoading2}
-                        open={searchOpen2}
-                        onOpen={() => setSearchOpen2(true)}
-                        onClose={() => setSearchOpen2(false)}
-                        renderInput={(params) => (
-                          <UndisabledUnderlineTextField
-                            {...params}
-                            name="edu2_school"
-                            placeholder="학교명"
-                            InputProps={{
-                              ...params.InputProps,
-                              endAdornment: (
-                                <React.Fragment>
-                                  {schoolLoading2 ? <CircularProgress color="inherit" size={20} /> : null}
-                                  {params.InputProps.endAdornment}
-                                </React.Fragment>
-                              ),
-                            }}
-                          />
-                        )}
-                      />
+                      <FormTextField name="edu2_school" value={formData.edu2_school} onChange={onChange} placeholder="학교명" />
                     </StyledInputCell>
                     <StyledInputCell>
                       <FormTextField name="edu2_major" value={formData.edu2_major} onChange={onChange} />
                     </StyledInputCell>
                     <StyledInputCell>
                       <FormTextField name="edu2_status" value={formData.edu2_status} onChange={onChange} />
-                    </StyledInputCell>
-                    <StyledInputCell>
-                      <FormTextField name="edu2_location" value={formData.edu2_location} onChange={onChange} />
                     </StyledInputCell>
                     <StyledInputCell>
                       <FormTextField name="edu2_score" value={formData.edu2_score} onChange={onChange} />
@@ -420,31 +339,139 @@ export default function ResumeForm({
                 </TableHead>
                 <TableBody>
                   <TableRow>
-                    <StyledInputCell><FormTextField name="cert1_name" value={formData.cert1_name} onChange={onChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert1_level" value={formData.cert1_level} onChange={onChange} /></StyledInputCell>
+                    <StyledInputCell>
+                      {availableCertifications.length > 0 && onCertificationSelect ? (
+                        <Autocomplete
+                          fullWidth
+                          freeSolo
+                          options={availableCertifications}
+                          getOptionLabel={(option) => (typeof option === 'string' ? option : option.certName || '')}
+                          value={availableCertifications.find(c => c.certName === formData.cert1_name) || formData.cert1_name || null}
+                          onChange={(event, newValue) => {
+                            if (onCertificationSelect) {
+                              onCertificationSelect(1, typeof newValue === 'string' ? null : newValue);
+                            }
+                          }}
+                          onInputChange={(event, newInputValue) => {
+                            onChange({ target: { name: 'cert1_name', value: newInputValue } });
+                          }}
+                          renderInput={(params) => (
+                            <UndisabledUnderlineTextField
+                              {...params}
+                              placeholder="저장된 자격증 선택 또는 직접 입력"
+                            />
+                          )}
+                        />
+                      ) : (
+                        <FormTextField name="cert1_name" value={formData.cert1_name} onChange={onChange} placeholder="자격명" />
+                      )}
+                    </StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert1_level" value={formData.cert1_level} onChange={onChange} placeholder="등급/급수" /></StyledInputCell>
                     <StyledInputCell><FormTextField name="cert1_date" value={formData.cert1_date} onChange={onChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert1_issuer" value={formData.cert1_issuer} onChange={onChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert1_issuer" value={formData.cert1_issuer} onChange={onChange} placeholder="발급기관" /></StyledInputCell>
                   </TableRow>
                   <TableRow>
-                    <StyledInputCell><FormTextField name="cert2_name" value={formData.cert2_name} onChange={onChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert2_level" value={formData.cert2_level} onChange={onChange} /></StyledInputCell>
+                    <StyledInputCell>
+                      {availableCertifications.length > 0 && onCertificationSelect ? (
+                        <Autocomplete
+                          fullWidth
+                          freeSolo
+                          options={availableCertifications}
+                          getOptionLabel={(option) => (typeof option === 'string' ? option : option.certName || '')}
+                          value={availableCertifications.find(c => c.certName === formData.cert2_name) || formData.cert2_name || null}
+                          onChange={(event, newValue) => {
+                            if (onCertificationSelect) {
+                              onCertificationSelect(2, typeof newValue === 'string' ? null : newValue);
+                            }
+                          }}
+                          onInputChange={(event, newInputValue) => {
+                            onChange({ target: { name: 'cert2_name', value: newInputValue } });
+                          }}
+                          renderInput={(params) => (
+                            <UndisabledUnderlineTextField
+                              {...params}
+                              placeholder="저장된 자격증 선택 또는 직접 입력"
+                            />
+                          )}
+                        />
+                      ) : (
+                        <FormTextField name="cert2_name" value={formData.cert2_name} onChange={onChange} placeholder="자격명" />
+                      )}
+                    </StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert2_level" value={formData.cert2_level} onChange={onChange} placeholder="등급/급수" /></StyledInputCell>
                     <StyledInputCell><FormTextField name="cert2_date" value={formData.cert2_date} onChange={onChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert2_issuer" value={formData.cert2_issuer} onChange={onChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert2_issuer" value={formData.cert2_issuer} onChange={onChange} placeholder="발급기관" /></StyledInputCell>
                   </TableRow>
                   <TableRow>
-                    <StyledInputCell><FormTextField name="cert3_name" value={formData.cert3_name} onChange={onChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert3_level" value={formData.cert3_level} onChange={onChange} /></StyledInputCell>
+                    <StyledInputCell>
+                      {availableCertifications.length > 0 && onCertificationSelect ? (
+                        <Autocomplete
+                          fullWidth
+                          freeSolo
+                          options={availableCertifications}
+                          getOptionLabel={(option) => (typeof option === 'string' ? option : option.certName || '')}
+                          value={availableCertifications.find(c => c.certName === formData.cert3_name) || formData.cert3_name || null}
+                          onChange={(event, newValue) => {
+                            if (onCertificationSelect) {
+                              onCertificationSelect(3, typeof newValue === 'string' ? null : newValue);
+                            }
+                          }}
+                          onInputChange={(event, newInputValue) => {
+                            onChange({ target: { name: 'cert3_name', value: newInputValue } });
+                          }}
+                          renderInput={(params) => (
+                            <UndisabledUnderlineTextField
+                              {...params}
+                              placeholder="저장된 자격증 선택 또는 직접 입력"
+                            />
+                          )}
+                        />
+                      ) : (
+                        <FormTextField name="cert3_name" value={formData.cert3_name} onChange={onChange} placeholder="자격명" />
+                      )}
+                    </StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert3_level" value={formData.cert3_level} onChange={onChange} placeholder="등급/급수" /></StyledInputCell>
                     <StyledInputCell><FormTextField name="cert3_date" value={formData.cert3_date} onChange={onChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert3_issuer" value={formData.cert3_issuer} onChange={onChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="cert3_issuer" value={formData.cert3_issuer} onChange={onChange} placeholder="발급기관" /></StyledInputCell>
                   </TableRow>
                 </TableBody>
               </Table>
             </TableContainer>
 
             {/* 5. 경력 */}
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold", mt: 4 }}>
-              [경력]
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 4, mb: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                [경력]
+              </Typography>
+              {availableExperiences.length > 0 && onExperienceSelect && (
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Autocomplete
+                    size="small"
+                    sx={{ width: 200 }}
+                    options={availableExperiences}
+                    getOptionLabel={(option) => option.companyName || ''}
+                    onChange={(event, newValue) => {
+                      if (onExperienceSelect && newValue) {
+                        // 첫 번째 빈 경력 필드에 자동 채우기
+                        if (!formData.exp1_company) {
+                          onExperienceSelect(1, newValue);
+                        } else if (!formData.exp2_company) {
+                          onExperienceSelect(2, newValue);
+                        }
+                      }
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="저장된 경력 선택"
+                        variant="outlined"
+                        size="small"
+                      />
+                    )}
+                  />
+                </Box>
+              )}
+            </Box>
             <TableContainer sx={{ border: "1px solid #ccc" }}>
               <Table sx={{ tableLayout: "fixed" }}>
                 <TableHead>
@@ -459,17 +486,17 @@ export default function ResumeForm({
                 <TableBody>
                   <TableRow>
                     <StyledInputCell><FormTextField name="exp1_period" value={formData.exp1_period} onChange={onChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp1_company" value={formData.exp1_company} onChange={onChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp1_position" value={formData.exp1_position} onChange={onChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp1_duties" value={formData.exp1_duties} onChange={onChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp1_type" value={formData.exp1_type} onChange={onChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp1_company" value={formData.exp1_company} onChange={onChange} placeholder="회사명" /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp1_position" value={formData.exp1_position} onChange={onChange} placeholder="직위" /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp1_duties" value={formData.exp1_duties} onChange={onChange} placeholder="담당업무" /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp1_type" value={formData.exp1_type} onChange={onChange} placeholder="형태" /></StyledInputCell>
                   </TableRow>
                   <TableRow>
                     <StyledInputCell><FormTextField name="exp2_period" value={formData.exp2_period} onChange={onChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp2_company" value={formData.exp2_company} onChange={onChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp2_position" value={formData.exp2_position} onChange={onChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp2_duties" value={formData.exp2_duties} onChange={onChange} /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="exp2_type" value={formData.exp2_type} onChange={onChange} /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp2_company" value={formData.exp2_company} onChange={onChange} placeholder="회사명" /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp2_position" value={formData.exp2_position} onChange={onChange} placeholder="직위" /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp2_duties" value={formData.exp2_duties} onChange={onChange} placeholder="담당업무" /></StyledInputCell>
+                    <StyledInputCell><FormTextField name="exp2_type" value={formData.exp2_type} onChange={onChange} placeholder="형태" /></StyledInputCell>
                   </TableRow>
                 </TableBody>
               </Table>

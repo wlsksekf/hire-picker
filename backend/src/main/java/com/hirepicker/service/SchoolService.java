@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,7 +19,22 @@ public class SchoolService {
     public List<SchoolDto> searchSchoolsByName(String schoolName) {
         List<School> schools = schoolRepository.findBySchoolNameContaining(schoolName);
         return schools.stream()
-                .map(school -> new SchoolDto(school.getSchoolCode(), school.getSchoolName()))
+                .map(school -> new SchoolDto(school.getSchoolCode(), school.getSchoolName(), school.getCampus()))
                 .collect(Collectors.toList());
+    }
+
+    // 정확히 일치하는 학교 찾기 (학교명으로)
+    public Optional<SchoolDto> findExactSchoolByName(String schoolName) {
+        // 정확히 일치하는 학교 찾기 (campus는 null 허용)
+        List<School> schools = schoolRepository.findBySchoolNameContaining(schoolName);
+        Optional<School> exactMatch = schools.stream()
+                .filter(s -> s.getSchoolName().equals(schoolName))
+                .findFirst();
+        
+        return exactMatch.map(school -> new SchoolDto(
+                school.getSchoolCode(), 
+                school.getSchoolName(), 
+                school.getCampus()
+        ));
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/schools")
@@ -22,5 +23,12 @@ public class SchoolController {
     public ResponseEntity<List<SchoolDto>> searchSchools(@RequestParam String name) {
         List<SchoolDto> schools = schoolService.searchSchoolsByName(name);
         return ResponseEntity.ok(schools);
+    }
+
+    @GetMapping("/find")
+    public ResponseEntity<SchoolDto> findExactSchool(@RequestParam String name) {
+        Optional<SchoolDto> school = schoolService.findExactSchoolByName(name);
+        return school.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
