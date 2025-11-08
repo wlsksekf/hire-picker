@@ -49,13 +49,17 @@ const StyledInputCell = styled(TableCell)(() => ({
 }));
 
 // 밑줄 제거한 입력 필드 (Autocomplete 내부에서 사용될 예정)
-const UndisabledUnderlineTextField = (props) => (
+const UndisabledUnderlineTextField = ({ InputProps, sx, ...props }) => (
   <TextField
     variant="standard"
     fullWidth
-    InputProps={{ disableUnderline: true, ...props.InputProps }}
+    InputProps={{ disableUnderline: true, ...(InputProps || {}) }}
     {...props}
-    sx={{ padding: "4px" }}
+    sx={{
+      padding: "4px",
+      "& .MuiInputBase-input": { textAlign: "center" },
+      ...(sx || {}),
+    }}
   />
 );
 
@@ -129,7 +133,12 @@ export default function ResumeForm({
               onChange={onChange}
               variant="outlined"
               margin="normal"
-              sx={{ mb: 4, mt: 2 }} // 상단 마진 추가
+              inputProps={{ style: { textAlign: "center" } }}
+              sx={{
+                mb: 4,
+                mt: 2,
+                "& .MuiInputBase-input": { textAlign: "center" },
+              }} // 상단 마진 추가
             />
 
             {/* 1. 기본 정보 */}

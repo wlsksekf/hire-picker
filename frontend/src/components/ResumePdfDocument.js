@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
   table: { display: 'table', width: 'auto', borderStyle: 'solid', borderWidth: 1, borderColor: '#bfbfbf', marginBottom: 15 },
   tableRow: { flexDirection: 'row' },
   tableColHeader: { width: '15%', borderRight: '1px solid #bfbfbf', backgroundColor: '#f2f2f2', padding: 5, fontFamily: 'Pretendard', textAlign: 'center' },
-  tableCol: { padding: 5, borderRight: '1px solid #bfbfbf' },
+  tableCol: { padding: 5, borderRight: '1px solid #bfbfbf', textAlign: 'center' },
   photoBox: {
     width: 120,
     height: 160,
@@ -104,7 +104,7 @@ export default function ResumePdfDocument({ formData, imageUrl }) {
               </View>
               <View style={{...styles.tableRow, borderBottom: 0}}>
                 <Text style={{...styles.tableColHeader}}>주소</Text>
-                <Text style={{...styles.tableCol, width: '85%', borderRight: 0}}>{formData.address}</Text>
+                <Text style={{...styles.tableCol, width: '85%', borderRight: 0, textAlign: 'left'}}>{formData.address}</Text>
               </View>
             </View>
           </View>
@@ -149,13 +149,13 @@ export default function ResumePdfDocument({ formData, imageUrl }) {
               <Text style={{...styles.tableCol, width: '25%'}}>{formData.exp1_period}</Text>
               <Text style={{...styles.tableCol, width: '20%'}}>{formData.exp1_company}</Text>
               <Text style={{...styles.tableCol, width: '15%'}}>{formData.exp1_position}</Text>
-              <Text style={{...styles.tableCol, width: '40%', borderRight: 0}}>{formData.exp1_duties}</Text>
+              <Text style={{...styles.tableCol, width: '40%', borderRight: 0, textAlign: 'left'}}>{formData.exp1_duties}</Text>
           </View>
            <View style={{...styles.tableRow, borderBottom: 0}}>
               <Text style={{...styles.tableCol, width: '25%'}}>{formData.exp2_period}</Text>
               <Text style={{...styles.tableCol, width: '20%'}}>{formData.exp2_company}</Text>
               <Text style={{...styles.tableCol, width: '15%'}}>{formData.exp2_position}</Text>
-              <Text style={{...styles.tableCol, width: '40%', borderRight: 0}}>{formData.exp2_duties}</Text>
+              <Text style={{...styles.tableCol, width: '40%', borderRight: 0, textAlign: 'left'}}>{formData.exp2_duties}</Text>
           </View>
         </View>
 
