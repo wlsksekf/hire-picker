@@ -1,12 +1,15 @@
 "use client";
-import React from 'react';
-import styled from 'styled-components';
 
-const ClawToggle = () => {
+import React from "react";
+import styled from "styled-components";
+
+// 뽑기기계 컨셉의 조이스틱(토글) 컴포넌트
+const ClawToggle: React.FC = () => {
   return (
     <StyledWrapper>
       <div className="toggle-container">
         <input className="toggle-input" type="checkbox" />
+        {/* 손잡이(노브 + 기둥) 영역 */}
         <div className="toggle-handle-wrapper">
           <div className="toggle-handle">
             <div className="toggle-handle-knob" />
@@ -15,6 +18,7 @@ const ClawToggle = () => {
             </div>
           </div>
         </div>
+        {/* 베이스(바닥판) 영역 */}
         <div className="toggle-base">
           <div className="toggle-base-inside" />
         </div>
@@ -23,6 +27,7 @@ const ClawToggle = () => {
   );
 };
 
+// 스타일 정의(원본 디자인 유지, 주석으로 구조 설명)
 const StyledWrapper = styled.div`
   .toggle-container {
     --knob-size: 1.75em;

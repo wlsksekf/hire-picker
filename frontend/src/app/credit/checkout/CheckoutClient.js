@@ -8,6 +8,7 @@ import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { initiateTossPayment } from '@/api';
 import CreditCoinIcon from '@/components/CreditCoinIcon';
 
+// 배경/정렬을 포함한 전체 페이지 래퍼
 const PageWrapper = styled.div`
   min-height: 100vh;
   display: flex;
@@ -17,6 +18,7 @@ const PageWrapper = styled.div`
   background: #f7f8fb;
 `;
 
+// 결제 카드: 상점 카드와 동일한 톤으로 구성
 const CheckoutCard = styled.div`
   width: min(640px, 100%);
   background: #ffffff;
@@ -29,6 +31,7 @@ const CheckoutCard = styled.div`
   gap: 28px;
 `;
 
+// 카드 상단 타이틀/설명 영역
 const HeaderSection = styled.div`
   display: flex;
   flex-direction: column;
@@ -49,6 +52,7 @@ const HeaderSection = styled.div`
   }
 `;
 
+// 선택된 상품을 요약해서 보여주는 카드
 const SummaryCard = styled.div`
   display: flex;
   align-items: center;
@@ -59,6 +63,7 @@ const SummaryCard = styled.div`
   background: linear-gradient(135deg, rgba(28, 99, 255, 0.06), rgba(28, 99, 255, 0.12));
 `;
 
+// 요약 텍스트 영역
 const SummaryText = styled.div`
   display: flex;
   flex-direction: column;
@@ -75,6 +80,7 @@ const SummaryText = styled.div`
   }
 `;
 
+// 상품 세부 정보(크레딧, 금액, 코드)를 격자로 배치
 const DetailGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -85,6 +91,7 @@ const DetailGrid = styled.div`
   border: 1px solid #dfe5f5;
 `;
 
+// 각 세부 항목 (라벨 + 값)
 const DetailItem = styled.div`
   display: flex;
   flex-direction: column;
@@ -102,6 +109,7 @@ const DetailItem = styled.div`
   }
 `;
 
+// 결제 버튼 (상점 버튼 스타일과 동일하게 적용)
 const PurchaseButton = styled.button`
   align-self: center;
   min-width: 220px;
@@ -128,6 +136,7 @@ const PurchaseButton = styled.button`
   }
 `;
 
+// 상점과 동일한 상품 텍스트/구성 사용
 const creditOptions = [
   {
     id: 'CREDIT_10K',
@@ -160,6 +169,7 @@ const CheckoutClient = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [paymentDetails, setPaymentDetails] = useState(null);
 
+  // URL 파라미터에서 선택한 상품id 추출
   useEffect(() => {
     const productId = searchParams.get('productId');
     if (productId) {
@@ -176,6 +186,7 @@ const CheckoutClient = () => {
     }
   }, [searchParams, router]);
 
+  // 상품이 결정되면 백엔드에 결제 정보(주문번호 등) 요청
   useEffect(() => {
     if (!selectedProduct) return;
 
@@ -189,6 +200,7 @@ const CheckoutClient = () => {
       });
   }, [selectedProduct]);
 
+  // Toss 위젯 초기화 (clientKey/customerKey 로딩)
   useEffect(() => {
     if (!paymentDetails) return;
 
@@ -200,6 +212,7 @@ const CheckoutClient = () => {
     });
   }, [paymentDetails]);
 
+  // 결제 금액/방법/동의 UI 렌더링
   useEffect(() => {
     if (widgets == null || selectedProduct == null) return;
 
@@ -209,6 +222,7 @@ const CheckoutClient = () => {
     widgets.renderAgreement({ selector: '#agreement', variantKey: 'AGREEMENT' });
   }, [widgets, selectedProduct]);
 
+  // 결제 버튼 클릭 시 Toss 결제 요청 실행
   const handlePayment = () => {
     if (!widgets || !paymentDetails) return;
 

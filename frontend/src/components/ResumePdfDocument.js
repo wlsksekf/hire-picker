@@ -1,207 +1,143 @@
 // frontend/src/components/ResumePdfDocument.js (수정됨)
 'use client';
 
-import { Page, Text, View, Document, StyleSheet, Font, Image } from '@react-pdf/renderer';
+import React from "react";
+import { Page, Text, View, Document, StyleSheet, Font } from "@react-pdf/renderer";
+import Pretendard from "@/fonts/Pretendard-Regular.ttf";
 
-// 한글 폰트 등록
-try {
-  Font.register({
-    family: 'Pretendard',
-    src: '/fonts/Pretendard-Medium.ttf'
-  });
-} catch (e) {
-  console.warn("PDF 폰트 등록 중 문제 발생:", e);
-}
+// PDF에서도 사이트 스타일을 유지하기 위해 프리텐다드 폰트 등록
+Font.register({ family: "Pretendard", src: Pretendard });
 
-// PDF 전용 스타일
+// 표 레이아웃과 텍스트 정렬을 모든 섹션에서 재사용
 const styles = StyleSheet.create({
-  page: {
-    padding: 30,
-    fontFamily: 'Pretendard',
-    fontSize: 10,
-    color: '#333',
-  },
-  h1: { fontSize: 20, textAlign: 'center', marginBottom: 20, fontFamily: 'Pretendard' },
-  h2: { fontSize: 14, fontFamily: 'Pretendard', marginVertical: 10, paddingBottom: 3, borderBottomWidth: 2, borderBottomColor: '#333' },
-  sectionTitle: { fontSize: 12, fontFamily: 'Pretendard', marginTop: 12, marginBottom: 8, color: '#000' },
-  // --- 테이블 스타일 ---
-  table: { display: 'table', width: 'auto', borderStyle: 'solid', borderWidth: 1, borderColor: '#bfbfbf', marginBottom: 15 },
-  tableRow: { flexDirection: 'row' },
-  tableColHeader: { width: '15%', borderRight: '1px solid #bfbfbf', backgroundColor: '#f2f2f2', padding: 5, fontFamily: 'Pretendard', textAlign: 'center' },
-  tableCol: { padding: 5, borderRight: '1px solid #bfbfbf', textAlign: 'center' },
-  photoBox: {
-    width: 120,
-    height: 160,
-    border: '1px solid #bfbfbf',
-    marginRight: 10,
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center'
-
-  },
-  profileImage: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'contain'
-  },
-  photoPlaceholder: {
-    fontSize: 10,
-    color: '#888',
-  },
-  // 자기소개서용 텍스트
-  bodyText: { fontSize: 10, lineHeight: 1.5, textAlign: 'justify' },
+  page: { padding: 32, fontFamily: "Pretendard", fontSize: 10, color: "#1f2d3d" },
+  section: { marginBottom: 18 },
+  sectionTitle: { fontSize: 14, fontWeight: 700, marginBottom: 8 },
+  table: { display: "table", width: "auto", borderStyle: "solid", borderWidth: 1, borderColor: "#d4d6da", borderRightWidth: 0, borderBottomWidth: 0 },
+  tableRow: { margin: "auto", flexDirection: "row" },
+  tableColHeader: { width: "15%", borderRight: "1px solid #bfbfbf", backgroundColor: "#f2f2f2", padding: 5, fontFamily: "Pretendard", textAlign: "center" },
+  tableCol: { padding: 5, borderRight: "1px solid #bfbfbf", textAlign: "center" },
+  tableCell: { margin: "auto", marginTop: 2 },
+  infoRow: { display: "flex", flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
+  infoBlock: { width: "32%" },
+  infoTitle: { fontSize: 12, fontWeight: 600, marginBottom: 4, textAlign: "center" },
+  infoContent: { fontSize: 11, textAlign: "center" },
 });
 
-// PDF 문서 컴포넌트
-export default function ResumePdfDocument({ formData, imageUrl }) {
-  if (!formData) {
-    return (
-      <Document>
-        <Page size="A4" style={styles.page}>
-          <Text>이력서 데이터를 불러오는 중입니다...</Text>
-        </Page>
-      </Document>
-    );
-  }
-
-  return (
-    <Document>
-      {/* --- 1 페이지: 인적사항, 학력, 경력 등 --- */}
-      <Page size="A4" style={styles.page}>
-        <Text style={styles.h1}>입 사 지 원 서</Text>
-
-        {/* 인적사항 */}
-        <Text style={styles.h2}>[인적사항]</Text>
-        <View style={{ flexDirection: 'row', marginBottom: 15 }}>
-          {/* 사진 영역 */}
-          <View style={styles.photoBox}>
-            {imageUrl ? (
-              <Image src={imageUrl} style={styles.profileImage} />
-            ) : (
-              <Text style={styles.photoPlaceholder}>사진</Text>
-            )}
+const ResumePdfDocument = ({ formData }) => (
+  <Document>
+    <Page size="A4" style={styles.page}>
+      {/* 이력서 기본 정보 */}
+      <View style={styles.section}>
+        <View style={styles.infoRow}>
+          <View style={styles.infoBlock}>
+            <Text style={styles.infoTitle}>이력서 제목</Text>
+            <Text style={styles.infoContent}>{formData.resume_title || ""}</Text>
           </View>
-          {/* 인적사항 테이블 */}
-          <View style={{ flexGrow: 1 }}>
-            <View style={styles.table}>
-              <View style={styles.tableRow}>
-                <Text style={{...styles.tableColHeader}}>성명</Text>
-                <Text style={{...styles.tableCol, width: '35%'}}>{formData.name}</Text>
-                <Text style={{...styles.tableColHeader}}>성별</Text>
-                <Text style={{...styles.tableCol, width: '35%', borderRight: 0}}>{formData.gender}</Text>
-              </View>
-              <View style={styles.tableRow}>
-                <Text style={{...styles.tableColHeader}}>생년월일</Text>
-                <Text style={{...styles.tableCol, width: '35%'}}>{formData.birthdate}</Text>
-                <Text style={{...styles.tableColHeader}}>국적</Text>
-                <Text style={{...styles.tableCol, width: '35%', borderRight: 0}}>{formData.nationality}</Text>
-              </View>
-              <View style={styles.tableRow}>
-                <Text style={{...styles.tableColHeader}}>휴대폰</Text>
-                <Text style={{...styles.tableCol, width: '35%'}}>{formData.phone}</Text>
-                <Text style={{...styles.tableColHeader}}>E-mail</Text>
-                <Text style={{...styles.tableCol, width: '35%', borderRight: 0}}>{formData.email}</Text>
-              </View>
-              <View style={{...styles.tableRow, borderBottom: 0}}>
-                <Text style={{...styles.tableColHeader}}>주소</Text>
-                <Text style={{...styles.tableCol, width: '85%', borderRight: 0, textAlign: 'left'}}>{formData.address}</Text>
-              </View>
+          <View style={styles.infoBlock}>
+            <Text style={styles.infoTitle}>상태</Text>
+            <Text style={styles.infoContent}>{formData.resume_status || ""}</Text>
+          </View>
+          <View style={styles.infoBlock}>
+            <Text style={styles.infoTitle}>학점</Text>
+            <Text style={styles.infoContent}>{formData.gpa || ""}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* 학력 정보: 소재지 컬럼 제거 후 중앙 정렬 */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>학력 정보</Text>
+        <View style={styles.table}>
+          <View style={styles.tableRow}>
+            <Text style={{ ...styles.tableColHeader, width: "25%" }}>기간</Text>
+            <Text style={{ ...styles.tableColHeader, width: "20%" }}>학교명</Text>
+            <Text style={{ ...styles.tableColHeader, width: "20%" }}>학과</Text>
+            <Text style={{ ...styles.tableColHeader, width: "15%" }}>졸업구분</Text>
+            <Text style={{ ...styles.tableColHeader, width: "20%", borderRight: 0 }}>학점</Text>
+          </View>
+          {[1, 2].map((idx) => (
+            <View style={{ ...styles.tableRow }} key={idx}>
+              <Text style={{ ...styles.tableCol, width: "25%" }}>{formData[`edu${idx}_period`] || ""}</Text>
+              <Text style={{ ...styles.tableCol, width: "20%" }}>{formData[`edu${idx}_school`] || ""}</Text>
+              <Text style={{ ...styles.tableCol, width: "20%" }}>{formData[`edu${idx}_major`] || ""}</Text>
+              <Text style={{ ...styles.tableCol, width: "15%" }}>{formData[`edu${idx}_status`] || ""}</Text>
+              <Text style={{ ...styles.tableCol, width: "20%", borderRight: 0 }}>{formData[`edu${idx}_score`] || ""}</Text>
             </View>
-          </View>
+          ))}
         </View>
+      </View>
 
-        {/* 학력사항 */}
-        <Text style={styles.h2}>[학력사항]</Text>
+      {/* 병역 정보 */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>병역 정보</Text>
         <View style={styles.table}>
           <View style={styles.tableRow}>
-              <Text style={{...styles.tableColHeader, width: '25%'}}>기간</Text>
-              <Text style={{...styles.tableColHeader, width: '20%'}}>학교명</Text>
-              <Text style={{...styles.tableColHeader, width: '20%'}}>학과</Text>
-              <Text style={{...styles.tableColHeader, width: '15%'}}>졸업구분</Text>
-              <Text style={{...styles.tableColHeader, width: '20%', borderRight: 0}}>학점</Text>
+            <Text style={{ ...styles.tableColHeader, width: "33%" }}>복무 구분</Text>
+            <Text style={{ ...styles.tableColHeader, width: "33%" }}>군별</Text>
+            <Text style={{ ...styles.tableColHeader, width: "34%", borderRight: 0 }}>계급</Text>
           </View>
-          <View style={{...styles.tableRow}}>
-              <Text style={{...styles.tableCol, width: '25%'}}>{formData.edu1_period}</Text>
-              <Text style={{...styles.tableCol, width: '20%'}}>{formData.edu1_school}</Text>
-              <Text style={{...styles.tableCol, width: '20%'}}>{formData.edu1_major}</Text>
-              <Text style={{...styles.tableCol, width: '15%'}}>{formData.edu1_status}</Text>
-              <Text style={{...styles.tableCol, width: '20%', borderRight: 0}}>{formData.edu1_score}</Text>
-          </View>
-          <View style={{...styles.tableRow, borderBottom: 0}}>
-              <Text style={{...styles.tableCol, width: '25%'}}>{formData.edu2_period}</Text>
-              <Text style={{...styles.tableCol, width: '20%'}}>{formData.edu2_school}</Text>
-              <Text style={{...styles.tableCol, width: '20%'}}>{formData.edu2_major}</Text>
-              <Text style={{...styles.tableCol, width: '15%'}}>{formData.edu2_status}</Text>
-              <Text style={{...styles.tableCol, width: '20%', borderRight: 0}}>{formData.edu2_score}</Text>
+          <View style={styles.tableRow}>
+            <Text style={{ ...styles.tableCol, width: "33%" }}>{formData.military_type || ""}</Text>
+            <Text style={{ ...styles.tableCol, width: "33%" }}>{formData.military_branch || ""}</Text>
+            <Text style={{ ...styles.tableCol, width: "34%", borderRight: 0 }}>{formData.military_rank || ""}</Text>
           </View>
         </View>
+      </View>
 
-        {/* 경력사항 */}
-        <Text style={styles.h2}>[경력사항]</Text>
+      {/* 경력 정보 */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>경력 정보</Text>
         <View style={styles.table}>
           <View style={styles.tableRow}>
-              <Text style={{...styles.tableColHeader, width: '25%'}}>근무기간</Text>
-              <Text style={{...styles.tableColHeader, width: '20%'}}>회사명</Text>
-              <Text style={{...styles.tableColHeader, width: '15%'}}>직위</Text>
-              <Text style={{...styles.tableColHeader, width: '40%', borderRight: 0}}>담당업무</Text>
+            <Text style={{ ...styles.tableColHeader, width: "20%" }}>회사명</Text>
+            <Text style={{ ...styles.tableColHeader, width: "20%" }}>부서</Text>
+            <Text style={{ ...styles.tableColHeader, width: "20%" }}>직책</Text>
+            <Text style={{ ...styles.tableColHeader, width: "20%" }}>근무 기간</Text>
+            <Text style={{ ...styles.tableColHeader, width: "20%", borderRight: 0 }}>주요 업무</Text>
           </View>
-          <View style={{...styles.tableRow}}>
-              <Text style={{...styles.tableCol, width: '25%'}}>{formData.exp1_period}</Text>
-              <Text style={{...styles.tableCol, width: '20%'}}>{formData.exp1_company}</Text>
-              <Text style={{...styles.tableCol, width: '15%'}}>{formData.exp1_position}</Text>
-              <Text style={{...styles.tableCol, width: '40%', borderRight: 0, textAlign: 'left'}}>{formData.exp1_duties}</Text>
-          </View>
-           <View style={{...styles.tableRow, borderBottom: 0}}>
-              <Text style={{...styles.tableCol, width: '25%'}}>{formData.exp2_period}</Text>
-              <Text style={{...styles.tableCol, width: '20%'}}>{formData.exp2_company}</Text>
-              <Text style={{...styles.tableCol, width: '15%'}}>{formData.exp2_position}</Text>
-              <Text style={{...styles.tableCol, width: '40%', borderRight: 0, textAlign: 'left'}}>{formData.exp2_duties}</Text>
-          </View>
+          {[1, 2].map((idx) => (
+            <View style={styles.tableRow} key={idx}>
+              <Text style={{ ...styles.tableCol, width: "20%" }}>{formData[`exp${idx}_company`] || ""}</Text>
+              <Text style={{ ...styles.tableCol, width: "20%" }}>{formData[`exp${idx}_department`] || ""}</Text>
+              <Text style={{ ...styles.tableCol, width: "20%" }}>{formData[`exp${idx}_position`] || ""}</Text>
+              <Text style={{ ...styles.tableCol, width: "20%" }}>{formData[`exp${idx}_period`] || ""}</Text>
+              <Text style={{ ...styles.tableCol, width: "20%", borderRight: 0, textAlign: "left" }}>
+                {formData[`exp${idx}_duties`] || ""}
+              </Text>
+            </View>
+          ))}
         </View>
+      </View>
 
-        {/* 자격증 */}
-        <Text style={styles.h2}>[자격/면허]</Text>
+      {/* 자격증 정보 */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>자격증 정보</Text>
         <View style={styles.table}>
           <View style={styles.tableRow}>
-              <Text style={{...styles.tableColHeader, width: '35%'}}>자격증명</Text>
-              <Text style={{...styles.tableColHeader, width: '25%'}}>등급/점수</Text>
-              <Text style={{...styles.tableColHeader, width: '40%', borderRight: 0}}>발급기관</Text>
+            <Text style={{ ...styles.tableColHeader, width: "50%" }}>자격증명</Text>
+            <Text style={{ ...styles.tableColHeader, width: "50%", borderRight: 0 }}>자격번호</Text>
           </View>
-          <View style={{...styles.tableRow}}>
-              <Text style={{...styles.tableCol, width: '35%'}}>{formData.cert1_name}</Text>
-              <Text style={{...styles.tableCol, width: '25%'}}>{formData.cert1_level}</Text>
-              <Text style={{...styles.tableCol, width: '40%', borderRight: 0}}>{formData.cert1_issuer}</Text>
-          </View>
-          <View style={{...styles.tableRow}}>
-              <Text style={{...styles.tableCol, width: '35%'}}>{formData.cert2_name}</Text>
-              <Text style={{...styles.tableCol, width: '25%'}}>{formData.cert2_level}</Text>
-              <Text style={{...styles.tableCol, width: '40%', borderRight: 0}}>{formData.cert2_issuer}</Text>
-          </View>
-          <View style={{...styles.tableRow, borderBottom: 0}}>
-              <Text style={{...styles.tableCol, width: '35%'}}>{formData.cert3_name}</Text>
-              <Text style={{...styles.tableCol, width: '25%'}}>{formData.cert3_level}</Text>
-              <Text style={{...styles.tableCol, width: '40%', borderRight: 0}}>{formData.cert3_issuer}</Text>
+          {[1, 2, 3].map((idx) => (
+            <View style={styles.tableRow} key={idx}>
+              <Text style={{ ...styles.tableCol, width: "50%" }}>{formData[`cert${idx}_name`] || ""}</Text>
+              <Text style={{ ...styles.tableCol, width: "50%", borderRight: 0 }}>{formData[`cert${idx}_code`] || ""}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* 주소 및 연락처 정보 등 추가 여지가 있는 영역 */}
+      <View style={styles.section}>
+        <View style={styles.table}>
+          <View style={styles.tableRow}>
+            <Text style={styles.tableColHeader}>주소</Text>
+            <Text style={{ ...styles.tableCol, width: "85%", borderRight: 0, textAlign: "left" }}>{formData.address || ""}</Text>
           </View>
         </View>
+      </View>
+    </Page>
+  </Document>
+);
 
-      </Page>
-
-      {/* --- 2 페이지: 자기소개서 --- */}
-      <Page size="A4" style={styles.page}>
-        <Text style={styles.h2}>[자기소개서]</Text>
-
-        <Text style={styles.sectionTitle}>■ 성장과정</Text>
-        <Text style={styles.bodyText}>{formData.selfGrowth}</Text>
-
-        <Text style={styles.sectionTitle}>■ 성격의 장·단점 및 특기</Text>
-        <Text style={styles.bodyText}>{formData.selfStrengths}</Text>
-
-        <Text style={styles.sectionTitle}>■ 지원동기</Text>
-        <Text style={styles.bodyText}>{formData.selfMotivation}</Text>
-
-        <Text style={styles.sectionTitle}>■ 입사 후 포부</Text>
-        <Text style={styles.bodyText}>{formData.selfAspirations}</Text>
-      </Page>
-    </Document>
-  );
-}
+export default ResumePdfDocument;

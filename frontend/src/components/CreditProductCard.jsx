@@ -4,6 +4,7 @@ import React from "react";
 import styled, { css } from "styled-components";
 import CreditCoinIcon from "@/components/CreditCoinIcon";
 
+// 크레딧 상품 카드 컴포넌트: 상점과 결제 페이지에서 재사용
 const CreditProductCard = ({
   badge,
   title,
@@ -18,6 +19,7 @@ const CreditProductCard = ({
   return (
     <StyledWrapper accent={accent} selected={selected} onClick={onClick}>
       <div className="card">
+        {/* 추천/신규 등의 배지 표시 */}
         {badge && <div className="card__badge">{badge}</div>}
         <div className="card__shine" />
         <div className="card__glow" />
@@ -39,6 +41,7 @@ const CreditProductCard = ({
   );
 };
 
+// 카드 전체 스타일 정의 (선택 여부에 따라 테두리/그림자 변경)
 const StyledWrapper = styled.button.withConfig({
   shouldForwardProp: (prop) => !["accent", "selected"].includes(prop),
 }).attrs({ type: "button" })`

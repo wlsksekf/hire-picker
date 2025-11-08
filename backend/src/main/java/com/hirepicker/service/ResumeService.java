@@ -81,6 +81,7 @@ public class ResumeService {
                 .findByPersonalUserOrderByGraduationDateDesc(userId)
                 .stream()
                 .map(a -> {
+                    // 학교 엔티티를 조회해 학교명/캠퍼스 정보를 조합
                     School school = schoolRepository.findById(a.getSchool()).orElse(null);
                     String schoolName = school != null ? school.getSchoolName() : null;
                     String campus = school != null ? school.getCampus() : null;
@@ -268,6 +269,7 @@ public class ResumeService {
     }
 
     // 리플렉션 안전 헬퍼 (더 이상 사용되지 않음)
+    @SuppressWarnings("unused") // 과거 호환성 유지용 메서드
     private static void setField(Object target, String fieldName, Object value) throws Exception {
         // 이 메서드는 더 이상 사용되지 않으므로 비워둡니다.
     }

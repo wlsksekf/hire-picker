@@ -204,9 +204,11 @@ public class ProfileService {
     // 학력 조회(JDBC 사용, 엔티티 PK 불일치 영향 회피)
     @Transactional(readOnly = true)
     public java.util.List<com.hirepicker.dto.AcademicAbilityViewDto> listAcademics(Long userId) {
+        // 학력 + 학교 테이블을 조인하여 캠퍼스 정보까지 함께 가져온다
         String sql = "SELECT a.school_code, s.school_name, s.campus, a.degree, a.major, a.major_score, a.graduation_date " +
                      "FROM academic_ability a LEFT JOIN school s ON s.school_code = a.school_code " +
                      "WHERE a.p_user_idx = ? ORDER BY a.graduation_date DESC";
+        // JDBC 템플릿으로 DTO 매핑, graduation_date는 null 안전 처리
         return jdbcTemplate.query(sql, (rs, i) -> new com.hirepicker.dto.AcademicAbilityViewDto(
                 rs.getObject("school_code") != null ? rs.getLong("school_code") : null,
                 rs.getString("school_name"),
