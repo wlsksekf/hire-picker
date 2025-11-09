@@ -7,6 +7,19 @@ import styled from 'styled-components';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { initiateTossPayment } from '@/api';
 import CreditCoinIcon from '@/components/CreditCoinIcon';
+import theme from '@/theme/theme';
+import { mixRgb, toRgbString, withAlpha } from '@/utils/color';
+
+const PRIMARY = theme.colorSchemes.light.palette.primary.main;
+const PRIMARY_DARK = theme.colorSchemes.light.palette.primary.dark;
+const PRIMARY_RGB = toRgbString(PRIMARY);
+const PRIMARY_DARK_RGB = toRgbString(PRIMARY_DARK);
+const SECONDARY_TEXT = mixRgb(PRIMARY_RGB, '#000000', 0.18);
+const BORDER_TINT = mixRgb(PRIMARY_RGB, '#ffffff', 0.25);
+const DETAIL_BORDER = mixRgb(PRIMARY_RGB, '#ffffff', 0.18);
+const DETAIL_BG = mixRgb(PRIMARY_RGB, '#ffffff', 0.1);
+const CARD_SHADOW = withAlpha(PRIMARY_RGB, 0.16);
+const BUTTON_SHADOW = withAlpha(PRIMARY_RGB, 0.22);
 
 // 배경/정렬을 포함한 전체 페이지 래퍼
 const PageWrapper = styled.div`
@@ -14,8 +27,8 @@ const PageWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 64px 16px;
-  background: #f7f8fb;
+  padding: 72px 16px;
+  background: #ffffff;
 `;
 
 // 결제 카드: 상점 카드와 동일한 톤으로 구성
@@ -23,31 +36,31 @@ const CheckoutCard = styled.div`
   width: min(640px, 100%);
   background: #ffffff;
   border-radius: 24px;
-  border: 1px solid #e5e8ef;
-  box-shadow: 0 20px 40px rgba(28, 42, 74, 0.08);
+  border: 1px solid ${BORDER_TINT};
+  box-shadow: 0 22px 44px ${CARD_SHADOW};
   padding: clamp(28px, 4vw, 40px);
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
 `;
 
 // 카드 상단 타이틀/설명 영역
 const HeaderSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   text-align: center;
 
   h1 {
     margin: 0;
-    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    font-size: clamp(1.9rem, 4vw, 2.4rem);
     font-weight: 800;
-    color: #1c2a4a;
+    color: ${PRIMARY};
   }
 
   p {
     margin: 0;
-    color: #6f7a94;
+    color: ${SECONDARY_TEXT};
     font-size: 1rem;
   }
 `;
@@ -56,27 +69,27 @@ const HeaderSection = styled.div`
 const SummaryCard = styled.div`
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 18px 22px;
+  gap: 20px;
+  padding: 16px 20px;
   border-radius: 18px;
-  border: 1px solid rgba(28, 99, 255, 0.1);
-  background: linear-gradient(135deg, rgba(28, 99, 255, 0.06), rgba(28, 99, 255, 0.12));
+  border: 1px solid ${mixRgb(PRIMARY_RGB, '#ffffff', 0.22)};
+  background: #ffffff;
 `;
 
 // 요약 텍스트 영역
 const SummaryText = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 
   strong {
-    font-size: 1.15rem;
-    color: #1c2a4a;
+    font-size: 1.16rem;
+    color: ${PRIMARY_DARK_RGB};
   }
 
   span {
-    font-size: 0.92rem;
-    color: #4d5978;
+    font-size: 0.94rem;
+    color: ${SECONDARY_TEXT};
   }
 `;
 
@@ -84,11 +97,11 @@ const SummaryText = styled.div`
 const DetailGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-  padding: 16px;
+  gap: 14px;
+  padding: 14px;
   border-radius: 16px;
-  background: #f2f5ff;
-  border: 1px solid #dfe5f5;
+  background: ${DETAIL_BG};
+  border: 1px solid ${DETAIL_BORDER};
 `;
 
 // 각 세부 항목 (라벨 + 값)
@@ -100,12 +113,12 @@ const DetailItem = styled.div`
 
   label {
     font-size: 0.85rem;
-    color: #6f7a94;
+    color: ${SECONDARY_TEXT};
   }
 
   strong {
     font-size: 1.05rem;
-    color: #1c2a4a;
+    color: ${PRIMARY_DARK_RGB};
   }
 `;
 
@@ -113,7 +126,7 @@ const DetailItem = styled.div`
 const PurchaseButton = styled.button`
   align-self: center;
   min-width: 220px;
-  background: #1c63ff;
+  background: ${PRIMARY_RGB};
   color: #ffffff;
   padding: 16px 32px;
   border: none;
@@ -122,15 +135,16 @@ const PurchaseButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-  box-shadow: 0 14px 24px rgba(28, 99, 255, 0.18);
+  box-shadow: 0 18px 32px ${BUTTON_SHADOW};
 
   &:hover:not(:disabled) {
-    transform: translateY(-4px);
-    box-shadow: 0 18px 28px rgba(28, 99, 255, 0.24);
+    transform: translateY(-3px);
+    box-shadow: 0 22px 36px ${withAlpha(PRIMARY_RGB, 0.28)};
+    background: ${PRIMARY_DARK_RGB};
   }
 
   &:disabled {
-    background: #c9d4ef;
+    background: ${mixRgb(PRIMARY_RGB, '#ffffff', 0.3)};
     box-shadow: none;
     cursor: not-allowed;
   }
@@ -169,7 +183,6 @@ const CheckoutClient = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [paymentDetails, setPaymentDetails] = useState(null);
 
-  // URL 파라미터에서 선택한 상품id 추출
   useEffect(() => {
     const productId = searchParams.get('productId');
     if (productId) {
@@ -186,7 +199,6 @@ const CheckoutClient = () => {
     }
   }, [searchParams, router]);
 
-  // 상품이 결정되면 백엔드에 결제 정보(주문번호 등) 요청
   useEffect(() => {
     if (!selectedProduct) return;
 
@@ -200,7 +212,6 @@ const CheckoutClient = () => {
       });
   }, [selectedProduct]);
 
-  // Toss 위젯 초기화 (clientKey/customerKey 로딩)
   useEffect(() => {
     if (!paymentDetails) return;
 
@@ -212,7 +223,6 @@ const CheckoutClient = () => {
     });
   }, [paymentDetails]);
 
-  // 결제 금액/방법/동의 UI 렌더링
   useEffect(() => {
     if (widgets == null || selectedProduct == null) return;
 
@@ -222,7 +232,6 @@ const CheckoutClient = () => {
     widgets.renderAgreement({ selector: '#agreement', variantKey: 'AGREEMENT' });
   }, [widgets, selectedProduct]);
 
-  // 결제 버튼 클릭 시 Toss 결제 요청 실행
   const handlePayment = () => {
     if (!widgets || !paymentDetails) return;
 

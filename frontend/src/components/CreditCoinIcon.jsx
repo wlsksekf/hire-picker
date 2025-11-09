@@ -3,45 +3,35 @@
 import React from "react";
 import styled, { keyframes } from "styled-components";
 
-// 부드럽게 위아래로 움직이는 애니메이션 정의
+// Tailwind `animate-bounce` 대체용 키프레임 정의
 const bounce = keyframes`
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+  50% { transform: translateY(-20%); }
 `;
 
-// 코인 아이콘 전체 래퍼(애니메이션 적용)
-const CoinWrapper = styled.div`
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: ${bounce} 1.6s ease-in-out infinite;
-`;
-
-// 실버 코인 스타일: 테두리, 그림자, 텍스트 모두 중앙 정렬
+// 동전 컨테이너: 기존 Tailwind 클래스(border, rounded, flex 등)와 동일 효과 적용
 const Coin = styled.div`
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
-  background: #d9dce4;
-  border: 2px solid #b5bcc9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #5b6374;
-  font-size: 0.85rem;
+  width: 32px; /* w-8 */
+  height: 32px; /* aspect-square + w-8 */
+  display: flex; /* flex */
+  align-items: center; /* items-center */
+  justify-content: center; /* justify-center */
+  border-radius: 999px; /* rounded-full */
+  border-right: 2px solid #d97706; /* border-r-2 + yellow-500 */
+  border-top: 2px solid #d97706;
+  border-bottom: 2px solid #d97706;
+  border-left: 2px solid #fbbf24;
+  background-color: #facc15; /* bg-yellow-300 */
+  color: #a16207; /* text-yellow-700 */
   font-weight: 700;
-  box-shadow: 0 4px 8px rgba(43, 54, 72, 0.08);
+  animation: ${bounce} 1.5s infinite ease-in-out; /* animate-bounce */
+  position: relative;
+  z-index: 20; /* 조이스틱/카드 위에 표시 */
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16);
 `;
 
-// 크레딧 금액을 시각적으로 보여주는 간단한 코인 아이콘 컴포넌트
 const CreditCoinIcon = () => {
-  return (
-    <CoinWrapper>
-      <Coin>₩</Coin>
-    </CoinWrapper>
-  );
+  return <Coin>C</Coin>;
 };
 
 export default CreditCoinIcon;

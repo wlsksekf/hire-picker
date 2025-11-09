@@ -3,6 +3,10 @@
 import React from "react";
 import styled, { css } from "styled-components";
 import CreditCoinIcon from "@/components/CreditCoinIcon";
+import theme from "@/theme/theme";
+import { mixRgb, toRgbString, withAlpha } from "@/utils/color";
+
+const DEFAULT_ACCENT = theme.colorSchemes.light.palette.primary.main;
 
 // 크레딧 상품 카드 컴포넌트: 상점과 결제 페이지에서 재사용
 const CreditProductCard = ({
@@ -11,7 +15,7 @@ const CreditProductCard = ({
   description,
   credits,
   price,
-  accent = "#1c63ff",
+  accent = DEFAULT_ACCENT,
   imageVariant = "single",
   selected = false,
   onClick,
@@ -46,10 +50,10 @@ const StyledWrapper = styled.button.withConfig({
   shouldForwardProp: (prop) => !["accent", "selected"].includes(prop),
 }).attrs({ type: "button" })`
   --card-bg: #ffffff;
-  --card-text: #1f2d45;
-  --card-muted: #6f7a8f;
-  --card-shadow: 0 14px 24px rgba(28, 42, 74, 0.06);
-  --card-accent: ${({ accent }) => accent};
+  --card-accent: ${({ accent }) => toRgbString(accent)};
+  --card-text: ${({ accent }) => mixRgb(accent, "#000000", 0.35)};
+  --card-muted: ${({ accent }) => mixRgb(accent, "#000000", 0.2)};
+  --card-shadow: ${({ accent }) => `0 14px 24px ${withAlpha(accent, 0.16)}`};
 
   border: none;
   background: transparent;
@@ -69,15 +73,15 @@ const StyledWrapper = styled.button.withConfig({
       box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1),
       border-color 0.45s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: var(--card-shadow);
-    border: 1px solid rgba(28, 99, 255, 0.08);
+    border: 1px solid ${({ accent }) => mixRgb(accent, "#ffffff", 0.24)};
   }
 
-  ${({ selected }) =>
+  ${({ accent, selected }) =>
     selected &&
     css`
       .card {
-        border-color: rgba(28, 99, 255, 0.35);
-        box-shadow: 0 22px 36px rgba(28, 42, 74, 0.12);
+        border-color: ${mixRgb(accent, "#ffffff", 0.36)};
+        box-shadow: 0 24px 38px ${withAlpha(accent, 0.22)};
       }
     `}
 
@@ -97,11 +101,7 @@ const StyledWrapper = styled.button.withConfig({
   .card__glow {
     position: absolute;
     inset: -12px;
-    background: radial-gradient(
-      circle at 50% -10%,
-      rgba(28, 99, 255, 0.18) 0%,
-      rgba(28, 99, 255, 0) 70%
-    );
+    background: ${({ accent }) => `radial-gradient(circle at 50% -10%, ${withAlpha(accent, 0.24)} 0%, rgba(0,0,0,0) 65%)`};
     opacity: 0;
     transition: opacity 0.45s ease;
   }
@@ -120,7 +120,7 @@ const StyledWrapper = styled.button.withConfig({
     position: absolute;
     top: 14px;
     right: 14px;
-    background: rgba(28, 99, 255, 0.1);
+    background: ${({ accent }) => withAlpha(accent, 0.18)};
     color: var(--card-accent);
     padding: 0.32em 0.7em;
     border-radius: 999px;
@@ -135,7 +135,7 @@ const StyledWrapper = styled.button.withConfig({
   .card__image {
     width: 100%;
     height: 110px;
-    background: linear-gradient(135deg, rgba(28, 99, 255, 0.08), rgba(28, 99, 255, 0.18));
+    background: ${({ accent }) => `linear-gradient(135deg, ${mixRgb(accent, "#ffffff", 0.1)}, ${mixRgb(accent, "#ffffff", 0.2)})`};
     border-radius: 14px;
     display: flex;
     align-items: center;
@@ -148,8 +148,7 @@ const StyledWrapper = styled.button.withConfig({
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.12) 0%, transparent 40%),
-      repeating-linear-gradient(45deg, rgba(28, 99, 255, 0.08) 0px, rgba(28, 99, 255, 0.08) 2px, transparent 2px, transparent 4px);
+    background: ${({ accent }) => `radial-gradient(circle at 30% 30%, ${withAlpha(accent, 0.12)} 0%, rgba(0,0,0,0) 40%), repeating-linear-gradient(45deg, ${withAlpha(accent, 0.12)} 0px, ${withAlpha(accent, 0.12)} 2px, transparent 2px, transparent 4px)`};
     opacity: 0.45;
   }
 
@@ -168,7 +167,7 @@ const StyledWrapper = styled.button.withConfig({
   }
 
   .card__description {
-    color: var(--card-muted);
+    color: ${({ accent }) => mixRgb(accent, "#000000", 0.15)};
     font-size: 0.78em;
     margin: 0;
     line-height: 1.4;

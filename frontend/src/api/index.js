@@ -123,6 +123,50 @@ export const getCreditBalance = () => {
 };
 
 /**
+ * [크레딧 기능 추가] 상점에서 사용할 크레딧 상품 목록 + 잔액을 동시 제공
+ * 프론트 카드/결제 페이지가 동일 정보를 활용하도록 정적 상품 목록을 제공하고,
+ * 잔액은 실제 API에서 조회한다.
+ */
+export const getCreditProducts = () => {
+  const products = [
+    {
+      id: 'CREDIT_10K',
+      badge: 'NEW',
+      title: '스타터 코인팩',
+      description: '입문자를 위한 기본 충전',
+      credits: 10000,
+      price: 10000,
+      accent: '#1c63ff',
+      imageVariant: 'single',
+    },
+    {
+      id: 'CREDIT_50K',
+      badge: 'BEST',
+      title: '프로 코인팩',
+      description: '10% 혜택으로 넉넉하게',
+      credits: 50000,
+      price: 45000,
+      accent: '#4f6bff',
+      imageVariant: 'stack',
+    },
+    {
+      id: 'CREDIT_100K',
+      badge: 'HOT',
+      title: '언리미티드 코인팩',
+      description: '가장 많이 찾는 할인 구성',
+      credits: 100000,
+      price: 70000,
+      accent: '#2b4edb',
+      imageVariant: 'bundle',
+    },
+  ];
+
+  return getCreditBalance()
+    .then(balance => ({ products, balance }))
+    .catch(() => ({ products, balance: 0 }));
+};
+
+/**
  * [크레딧 기능 추가] 토스 페이먼츠 결제를 위한 주문을 백엔드에 생성
  * @param {string} packageId - 선택한 상품 ID
  * @returns {Promise<object>} 결제 시작에 필요한 정보 (orderId, orderName, amount 등)
