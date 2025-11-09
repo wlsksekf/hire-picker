@@ -1,5 +1,21 @@
 package com.hirepicker.service;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.core.env.Environment;
+import org.springframework.http.ResponseCookie;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.hirepicker.config.jwt.JwtTokenProvider;
 import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.CompanySignupRequestDto;
@@ -15,24 +31,11 @@ import com.hirepicker.repository.CompanyRepository;
 import com.hirepicker.repository.CompanyUserRepository;
 import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.repository.RefreshTokenRepository;
-import jakarta.servlet.http.HttpServletResponse;
+
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
-import org.springframework.http.ResponseCookie;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -60,7 +63,7 @@ public class AuthService {
      * 4. HttpOnly 쿠키에 토큰 설정
      * 5. ThreadLocal 정리
      *
-     * @param request 로그인 요청 정보 (email/아이디, password, userType)
+     * @param request  로그인 요청 정보 (email/아이디, password, userType)
      * @param response HTTP 응답 (쿠키 설정용)
      */
     @Transactional
@@ -77,8 +80,8 @@ public class AuthService {
                 log.info("Step 1: Authenticating user...");
 
                 // 1-1. 인증 토큰 생성 (username, password)
-                UsernamePasswordAuthenticationToken authenticationToken =
-                        new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
+                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                        request.getEmail(), request.getPassword());
 
                 // 1-2. AuthenticationManager를 통한 인증 실행
                 // 내부적으로 UserDetailsService.loadUserByUsername() 호출
@@ -91,8 +94,8 @@ public class AuthService {
 
                 // ========== 인증된 사용자 정보 추출 ==========
                 CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-                UserType userType = userDetails.getUserType();  // PERSONAL 또는 COMPANY
-                Long userId = userDetails.getId();              // 사용자 PK
+                UserType userType = userDetails.getUserType(); // PERSONAL 또는 COMPANY
+                Long userId = userDetails.getId(); // 사용자 PK
 
                 // ========== 기업회원 승인 상태 체크 ==========
                 if (userType == UserType.COMPANY) {
@@ -139,12 +142,14 @@ public class AuthService {
                 if (userType == UserType.PERSONAL) {
                     // 개인회원의 경우
                     PersonalUser user = personalUserRepository.findById(userId)
-                            .orElseThrow(() -> new IllegalArgumentException("Personal user not found with ID: " + userId));
+                            .orElseThrow(
+                                    () -> new IllegalArgumentException("Personal user not found with ID: " + userId));
                     handleRefreshToken(user, newRefreshTokenValue, userType);
                 } else {
                     // 기업회원의 경우
                     CompanyUser user = companyUserRepository.findById(userId)
-                            .orElseThrow(() -> new IllegalArgumentException("Company user not found with ID: " + userId));
+                            .orElseThrow(
+                                    () -> new IllegalArgumentException("Company user not found with ID: " + userId));
                     handleRefreshToken(user, newRefreshTokenValue, userType);
                 }
 
@@ -172,6 +177,7 @@ public class AuthService {
 
     /**
      * [신규] 이메일 중복 확인
+     *
      * @param email 확인할 이메일
      * @return 중복 여부 (true: 중복, false: 사용 가능)
      */
@@ -182,13 +188,21 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public Long findPersonalUserIdxByEmail(String email) {
-        return personalUserRepository.findByEmail(email)
-                                     .map(PersonalUser::getId)
-                                     .orElse(null);
+        Optional<PersonalUser> optionalUser = personalUserRepository.findByEmail(email);
+
+        // 사용자가 존재하지 않으면 null 반환
+        if (optionalUser.isEmpty()) {
+            return null;
+        }
+
+        // 존재하면 ID 반환
+        PersonalUser user = optionalUser.get();
+        return user.getId();
     }
 
     /**
      * [신규] 개인 회원 가입 처리
+     *
      * @param signupRequest 회원가입 요청 DTO
      * @return 로그인 응답 (JWT 토큰 포함)
      */
@@ -243,6 +257,7 @@ public class AuthService {
 
     /**
      * 기업 회원 가입 처리
+     *
      * @param request 회원가입 요청 DTO
      * @return 로그인 응답 (JWT 토큰 포함)
      */
@@ -296,7 +311,8 @@ public class AuthService {
      * 주의: 자동 로그인하지 않음 (승인 대기 상태이므로)
      */
     @Transactional
-    public void registerCompanyUserWithDocument(CompanySignupRequestDto request, MultipartFile file, HttpServletResponse response) throws IOException {
+    public void registerCompanyUserWithDocument(CompanySignupRequestDto request, MultipartFile file,
+            HttpServletResponse response) throws IOException {
         log.info("기업 회원가입 처리 시작. ID: {}, 파일명: {}", request.getId(), file.getOriginalFilename());
 
         // === STEP 1: 중복 체크 ===
@@ -327,8 +343,8 @@ public class AuthService {
                 .email(request.getEmail())
                 .phoneNumber(request.getPhone_number())
                 .company(company)
-                .verificationFile(fileUrl)               // S3 URL 저장
-                .isApproved(ApprovalStatus.PENDING)      // 승인 대기 상태
+                .verificationFile(fileUrl) // S3 URL 저장
+                .isApproved(ApprovalStatus.PENDING) // 승인 대기 상태
                 .build();
 
         CompanyUser savedUser = companyUserRepository.save(newUser);
@@ -376,10 +392,12 @@ public class AuthService {
 
         if (user instanceof PersonalUser pUser) {
             refreshToken = pUser.getRefreshToken();
-            if (refreshToken == null) isNewUser = true;
+            if (refreshToken == null)
+                isNewUser = true;
         } else if (user instanceof CompanyUser cUser) {
             refreshToken = cUser.getRefreshToken();
-            if (refreshToken == null) isNewUser = true;
+            if (refreshToken == null)
+                isNewUser = true;
         }
 
         if (isNewUser) {
@@ -435,7 +453,8 @@ public class AuthService {
 
     /**
      * 리프레시 토큰을 이용한 액세스 토큰 갱신
-     * @param request HttpServletRequest (리프레시 토큰 쿠키 추출)
+     *
+     * @param request  HttpServletRequest (리프레시 토큰 쿠키 추출)
      * @param response HttpServletResponse (새로운 토큰 쿠키 설정)
      */
     @Transactional
@@ -481,6 +500,7 @@ public class AuthService {
 
     /**
      * 로그아웃 처리: JWT 토큰 쿠키 삭제 및 SecurityContext 초기화
+     *
      * @param response HttpServletResponse (쿠키 삭제)
      */
     public void logout(HttpServletResponse response) {

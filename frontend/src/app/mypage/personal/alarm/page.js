@@ -20,44 +20,20 @@ export default function AlarmPage() {
   const [likedCompanies, setLikedCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const user = useAuthStore((state) => state.user);
-  const [pUserIdx, setPUserIdx] = useState(null); // pUserIdx를 state로 관리
+  const { user, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
-    const fetchUserIdx = async () => {
-      if (user?.email) {
-        try {
-          const response = await api.get("/api/company-alarms/idx-by-email", {
-            params: { email: user.email },
-          });
-          setPUserIdx(response.data.idx);
-        } catch (err) {
-          console.error("Failed to fetch user index:", err);
-          setError("사용자 정보를 가져오는데 실패했습니다.");
-          setLoading(false);
-        }
-      } else if (!user) {
-        setLoading(false);
-        setError("로그인이 필요합니다.");
-      }
-    };
-
-    fetchUserIdx();
-  }, [user]);
-
-  useEffect(() => {
-    if (!pUserIdx) {
-      // pUserIdx가 아직 설정되지 않았으면 로딩 상태를 유지하거나,
-      // user 정보는 있지만 pUserIdx를 받아오지 못한 경우에 대한 처리를 할 수 있습니다.
-      if (user) setLoading(true);
+    if (!isAuthenticated) {
+      setLoading(false);
+      setError("로그인이 필요합니다.");
       return;
     }
 
     const fetchLikedCompanies = async () => {
       setLoading(true);
       try {
-        // 1. p_user_idx로 관심 기업 ID 목록 가져오기
-        const response = await api.get(`/api/company-alarms/user/${pUserIdx}`);
+        // 1. 현재 로그인한 유저의 관심 기업 ID 목록 가져오기
+        const response = await api.get(`/api/company-alarms/me/ids`);
         const companyIds = response.data;
 
         if (companyIds.length === 0) {
@@ -85,7 +61,7 @@ export default function AlarmPage() {
     };
 
     fetchLikedCompanies();
-  }, [pUserIdx, user]);
+  }, [isAuthenticated, user]);
 
   const getLogoUrl = (url) => {
     if (!url) return null;

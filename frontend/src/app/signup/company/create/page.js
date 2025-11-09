@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Button,
   Alert,
@@ -11,11 +11,11 @@ import {
   Autocomplete,
   Chip,
   Box,
-} from '@mui/material';
-import { StyledFormWrapper } from '@/components/StyledForm';
-import styled from 'styled-components';
-import { useTheme } from '@mui/material/styles';
-import axios from 'axios';
+} from "@mui/material";
+import { StyledFormWrapper } from "@/components/StyledForm";
+import styled from "styled-components";
+import { useTheme } from "@mui/material/styles";
+import axios from "axios";
 
 // Debounce hook
 function useDebounce(value, delay) {
@@ -33,46 +33,46 @@ function useDebounce(value, delay) {
 
 // 복지 혜택 옵션 (예시)
 const welfareOptions = [
-  '주택자금 대출',
-  '자녀 학자금 지원',
-  '의료비 지원',
-  '피트니스/운동 지원',
-  '식사 제공/식대 지원',
-  '유연 근무제',
-  '재택 근무',
-  '성과급',
-  '스톡옵션',
-  '경조사 지원',
-  '명절 선물',
-  '생일 선물',
-  '단체 보험',
-  '건강 검진',
-  '사내 동호회',
-  '자기계발비 지원',
-  '도서 구매비 지원',
-  '통신비 지원',
-  '교통비 지원',
-  '차량 유지비 지원',
-  '기숙사/사택 제공',
-  '휴양 시설 지원',
-  '장기근속 포상',
-  '퇴직연금',
+  "주택자금 대출",
+  "자녀 학자금 지원",
+  "의료비 지원",
+  "피트니스/운동 지원",
+  "식사 제공/식대 지원",
+  "유연 근무제",
+  "재택 근무",
+  "성과급",
+  "스톡옵션",
+  "경조사 지원",
+  "명절 선물",
+  "생일 선물",
+  "단체 보험",
+  "건강 검진",
+  "사내 동호회",
+  "자기계발비 지원",
+  "도서 구매비 지원",
+  "통신비 지원",
+  "교통비 지원",
+  "차량 유지비 지원",
+  "기숙사/사택 제공",
+  "휴양 시설 지원",
+  "장기근속 포상",
+  "퇴직연금",
 ];
 
 // 기업 형태 옵션
-const companyTypeOptions = ['대기업', '중견기업', '중소기업', '스타트업'];
+const companyTypeOptions = ["대기업", "중견기업", "중소기업", "스타트업"];
 
 // 필수 필드 목록 (컴포넌트 밖에 선언하여 불필요한 재생성 방지)
 const requiredFields = [
-  'name',
-  'businessNumber',
-  'companyType',
-  'ceoNm',
-  'adres',
-  'employeeCount',
-  'logoUrl',
-  'sales_amount',
-  'welfare_benefits',
+  "name",
+  "businessNumber",
+  "companyType",
+  "ceoNm",
+  "adres",
+  "employeeCount",
+  "logoUrl",
+  "sales_amount",
+  "welfare_benefits",
 ];
 
 const CompanyTypeSelection = styled.div`
@@ -87,13 +87,18 @@ const CompanyTypeBox = styled.div`
   min-width: 80px;
   padding: 10px 15px;
   border: 1px solid
-    ${props => (props.$isSelected ? props.theme.palette.primary.main : props.theme.palette.divider)};
+    ${(props) =>
+      props.$isSelected
+        ? props.theme.palette.primary.main
+        : props.theme.palette.divider};
   border-radius: 4px;
   text-align: center;
   cursor: pointer;
-  background-color: ${props =>
-    props.$isSelected ? props.theme.palette.primary.main : props.theme.palette.background.paper};
-  color: ${props =>
+  background-color: ${(props) =>
+    props.$isSelected
+      ? props.theme.palette.primary.main
+      : props.theme.palette.background.paper};
+  color: ${(props) =>
     props.$isSelected
       ? props.theme.palette.primary.contrastText
       : props.theme.palette.text.primary};
@@ -101,8 +106,10 @@ const CompanyTypeBox = styled.div`
   transition: all 0.2s ease-in-out;
 
   &:hover {
-    background-color: ${props =>
-      props.$isSelected ? props.theme.palette.primary.dark : props.theme.palette.action.hover};
+    background-color: ${(props) =>
+      props.$isSelected
+        ? props.theme.palette.primary.dark
+        : props.theme.palette.action.hover};
   }
 `;
 
@@ -111,26 +118,26 @@ export default function CreateCompanyPage() {
   const theme = useTheme();
 
   const [formData, setFormData] = useState({
-    name: '',
-    summary: '',
-    homepage: '',
-    businessNumber: '',
-    logoUrl: '',
-    companyType: '',
-    ceoNm: '',
-    adres: '',
-    employeeCount: '',
-    sales_amount: '',
+    name: "",
+    summary: "",
+    homepage: "",
+    businessNumber: "",
+    logoUrl: "",
+    companyType: "",
+    ceoNm: "",
+    adres: "",
+    employeeCount: "",
+    sales_amount: "",
     welfare_benefits: [],
   });
 
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
   // Validation errors
-  const [nameError, setNameError] = useState('');
-  const [businessNumberError, setBusinessNumberError] = useState('');
+  const [nameError, setNameError] = useState("");
+  const [businessNumberError, setBusinessNumberError] = useState("");
 
   const [formValid, setFormValid] = useState(false);
 
@@ -139,12 +146,12 @@ export default function CreateCompanyPage() {
 
   // 폼 유효성 검사 함수
   const isFormValid = useCallback(() => {
-    const isRequiredFieldsFilled = requiredFields.every(field => {
+    const isRequiredFieldsFilled = requiredFields.every((field) => {
       const value = formData[field];
       if (Array.isArray(value)) {
         return value.length > 0;
       }
-      return value && value.toString().trim() !== '';
+      return value && value.toString().trim() !== "";
     });
     return isRequiredFieldsFilled && !nameError && !businessNumberError;
   }, [formData, nameError, businessNumberError]);
@@ -159,21 +166,21 @@ export default function CreateCompanyPage() {
     if (debouncedName.trim()) {
       const checkName = async () => {
         try {
-          const response = await axios.get('/signup/company/check-duplicate', {
-            params: { fieldName: 'name', value: debouncedName },
+          const response = await axios.get("/signup/company/check-duplicate", {
+            params: { fieldName: "name", value: debouncedName },
           });
           if (response.data === true) {
-            setNameError('이미 등록된 회사명입니다.');
+            setNameError("이미 등록된 회사명입니다.");
           } else {
-            setNameError('');
+            setNameError("");
           }
         } catch (err) {
-          console.error('회사명 중복 확인 오류:', err);
+          console.error("회사명 중복 확인 오류:", err);
         }
       };
       checkName();
     } else {
-      setNameError('');
+      setNameError("");
     }
   }, [debouncedName]);
 
@@ -181,84 +188,100 @@ export default function CreateCompanyPage() {
     if (debouncedBusinessNumber) {
       // 1. 형식 검사
       if (debouncedBusinessNumber.length !== 10) {
-        setBusinessNumberError('사업자 등록번호는 10자리 숫자여야 합니다.');
+        setBusinessNumberError("사업자 등록번호는 10자리 숫자여야 합니다.");
       } else {
         // 2. 형식이 맞으면 중복 검사
         const checkBusinessNumber = async () => {
           try {
-            const response = await axios.get('/signup/company/check-duplicate', {
-              params: { fieldName: 'businessNumber', value: debouncedBusinessNumber },
-            });
+            const response = await axios.get(
+              "/signup/company/check-duplicate",
+              {
+                params: {
+                  fieldName: "businessNumber",
+                  value: debouncedBusinessNumber,
+                },
+              }
+            );
             if (response.data === true) {
-              setBusinessNumberError('이미 등록된 사업자등록번호입니다.');
+              setBusinessNumberError("이미 등록된 사업자등록번호입니다.");
             } else {
-              setBusinessNumberError(''); // 형식도 맞고, 중복도 아니면 에러 없음
+              setBusinessNumberError(""); // 형식도 맞고, 중복도 아니면 에러 없음
             }
           } catch (err) {
-            console.error('사업자등록번호 중복 확인 오류:', err);
+            console.error("사업자등록번호 중복 확인 오류:", err);
           }
         };
         checkBusinessNumber();
       }
     } else {
       // 필드가 비어있으면 에러 없음
-      setBusinessNumberError('');
+      setBusinessNumberError("");
     }
   }, [debouncedBusinessNumber]);
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
     let cleanedValue = value;
 
     // 숫자 필드는 숫자만 입력되도록 정리
-    if (name === 'businessNumber' || name === 'sales_amount' || name === 'employeeCount') {
-      cleanedValue = value.replace(/[^0-9]/g, '');
+    if (
+      name === "businessNumber" ||
+      name === "sales_amount" ||
+      name === "employeeCount"
+    ) {
+      cleanedValue = value.replace(/[^0-9]/g, "");
     }
 
     // 숫자 타입으로 변환해야 할 필드 처리
-    if (name === 'sales_amount' || name === 'employeeCount') {
-      setFormData(prevData => ({
+    if (name === "sales_amount" || name === "employeeCount") {
+      setFormData((prevData) => ({
         ...prevData,
-        [name]: cleanedValue === '' ? '' : Number(cleanedValue),
+        [name]: cleanedValue === "" ? "" : Number(cleanedValue),
       }));
     } else {
-      setFormData(prevData => ({ ...prevData, [name]: cleanedValue }));
+      setFormData((prevData) => ({ ...prevData, [name]: cleanedValue }));
     }
   };
 
   const handleWelfareChange = (event, newValue) => {
-    setFormData(prevData => ({ ...prevData, welfare_benefits: newValue }));
+    setFormData((prevData) => ({ ...prevData, welfare_benefits: newValue }));
   };
 
-  const handleCompanyTypeChange = type => {
-    setFormData(prevData => ({ ...prevData, companyType: type }));
+  const handleCompanyTypeChange = (type) => {
+    setFormData((prevData) => ({ ...prevData, companyType: type }));
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isFormValid()) {
-      setMessage('모든 필수 항목을 올바르게 작성해주세요.');
+      setMessage("모든 필수 항목을 올바르게 작성해주세요.");
       setIsError(true);
       return;
     }
 
     setLoading(true);
-    setMessage('');
+    setMessage("");
     setIsError(false);
 
     const dataToSend = {
-      ...formData,
-      welfare_benefits: formData.welfare_benefits.join(','),
+      ...formData, //formData 안의 모든 key-value를 그대로 복사
+      welfare_benefits: formData.welfare_benefits.join(","),
     };
 
     try {
-      const response = await axios.post('/signup/company/create-company', dataToSend, {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const response = await axios.post(
+        "/signup/company/create-company",
+        dataToSend,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
       if (response.status === 201) {
         const savedCompany = response.data;
-        setMessage(`'${savedCompany.name}' 기업 등록이 성공적으로 완료되었습니다!`);
+        setMessage(
+          `'${savedCompany.name}' 기업 등록이 성공적으로 완료되었습니다!`
+        );
         setIsError(false);
         // router.push('/'); // 성공 후 바로 이동하지 않고 메시지를 보여주기 위해 주석 처리
       } else {
@@ -269,11 +292,13 @@ export default function CreateCompanyPage() {
       if (error.response) {
         setMessage(
           `기업 등록 실패: ${
-            error.response.data.message || error.response.data || error.response.statusText
+            error.response.data.message ||
+            error.response.data ||
+            error.response.statusText
           }`
         );
       } else if (error.request) {
-        setMessage('서버 응답이 없습니다. 네트워크를 확인해주세요.');
+        setMessage("서버 응답이 없습니다. 네트워크를 확인해주세요.");
       } else {
         setMessage(`요청 중 오류 발생: ${error.message}`);
       }
@@ -286,12 +311,19 @@ export default function CreateCompanyPage() {
   return (
     <StyledFormWrapper>
       <div className="form-container">
-        <Typography variant="h5" component="h2" sx={{ mb: 3, textAlign: 'center', color: '#333' }}>
+        <Typography
+          variant="h5"
+          component="h2"
+          sx={{ mb: 3, textAlign: "center", color: "#333" }}
+        >
           신규 기업 등록
         </Typography>
 
         {message && (
-          <Alert severity={isError ? 'error' : 'success'} sx={{ width: '100%', mt: 2, mb: 2 }}>
+          <Alert
+            severity={isError ? "error" : "success"}
+            sx={{ width: "100%", mt: 2, mb: 2 }}
+          >
             {message}
           </Alert>
         )}
@@ -308,7 +340,11 @@ export default function CreateCompanyPage() {
               required
             />
             {nameError && (
-              <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+              <Typography
+                variant="caption"
+                color="error"
+                sx={{ mt: 1, display: "block" }}
+              >
                 {nameError}
               </Typography>
             )}
@@ -356,7 +392,11 @@ export default function CreateCompanyPage() {
               required
             />
             {businessNumberError && (
-              <Typography variant="caption" color="error" sx={{ mt: 1, display: 'block' }}>
+              <Typography
+                variant="caption"
+                color="error"
+                sx={{ mt: 1, display: "block" }}
+              >
                 {businessNumberError}
               </Typography>
             )}
@@ -365,7 +405,7 @@ export default function CreateCompanyPage() {
           <div className="input-group">
             <label>기업 형태</label>
             <CompanyTypeSelection>
-              {companyTypeOptions.map(type => (
+              {companyTypeOptions.map((type) => (
                 <CompanyTypeBox
                   key={type}
                   $isSelected={formData.companyType === type}
@@ -429,22 +469,28 @@ export default function CreateCompanyPage() {
               multiple
               id="welfare_benefits"
               options={welfareOptions}
-              getOptionLabel={option => option}
+              getOptionLabel={(option) => option}
               value={formData.welfare_benefits}
               onChange={handleWelfareChange}
               disableCloseOnSelect
-              renderInput={params => (
+              renderInput={(params) => (
                 <TextField
                   {...params}
                   variant="outlined"
-                  placeholder={formData.welfare_benefits.length === 0 ? '복지 혜택 선택' : ''}
+                  placeholder={
+                    formData.welfare_benefits.length === 0
+                      ? "복지 혜택 선택"
+                      : ""
+                  }
                   InputProps={{ ...params.InputProps, startAdornment: null }}
                   sx={{ mt: 1, mb: 1 }}
                 />
               )}
             />
             {formData.welfare_benefits.length > 0 && (
-              <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+              <Box
+                sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: "5px" }}
+              >
                 {formData.welfare_benefits.map((option, index) => (
                   <Chip
                     key={index}
@@ -452,13 +498,15 @@ export default function CreateCompanyPage() {
                     onDelete={() =>
                       handleWelfareChange(
                         null,
-                        formData.welfare_benefits.filter(item => item !== option)
+                        formData.welfare_benefits.filter(
+                          (item) => item !== option
+                        )
                       )
                     }
                     sx={{
                       backgroundColor: theme.palette.primary.main,
                       color: theme.palette.primary.contrastText,
-                      '& .MuiChip-deleteIcon': {
+                      "& .MuiChip-deleteIcon": {
                         color: theme.palette.primary.contrastText,
                       },
                     }}
@@ -475,7 +523,11 @@ export default function CreateCompanyPage() {
             disabled={loading || !formValid}
             sx={{ mt: 2, py: 1.5 }}
           >
-            {loading ? <CircularProgress size={24} color="inherit" /> : '기업 등록'}
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "기업 등록"
+            )}
           </Button>
         </form>
       </div>
