@@ -249,6 +249,7 @@ export function updateUserProfile(updateData) {
     });
 }
 
+
 // [마이페이지] 기본정보 확장 업데이트(이메일 제외)
 export function updateUserProfileDetails(updateData) {
   // 이름/성별/전화/주소/닉네임/비밀번호 등 확장 필드
@@ -404,3 +405,4 @@ export function searchCertifications(keyword) {
   return api.get('/api/certifications/search', { params: { keyword } })
     .then(res => Array.isArray(res.data) ? res.data : []);
 }
+

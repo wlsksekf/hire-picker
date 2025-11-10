@@ -27,4 +27,5 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long>, J
     Page<JobPosting> findAll(Pageable pageable);
 
     List<JobPosting> findByPostingIdxIn(List<Long> postingIdxs);
+
 }

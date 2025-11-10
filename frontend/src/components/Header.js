@@ -22,6 +22,7 @@ function Header() {
 
   const handleLogout = () => {
     logout();
+    window.location.reload();
     router.push('/');
   };
 

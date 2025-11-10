@@ -101,8 +101,10 @@ public class SecurityConfig {
                                 "/api/v1/ai-chat",
                                 "/api/v1/ai-search",
                                 "/api/search", "/api/calendar/**",
-                                "/api/company-alarms/**")
+                                "/api/company-alarms/**",
+                                "/api/bookmark/toggle")
                         .permitAll()
+
 
                         // 이미지 업로드 엔드포인트는 인증 없이 허용
                         .requestMatchers(HttpMethod.POST, "/api/ai/upload-image").permitAll()
