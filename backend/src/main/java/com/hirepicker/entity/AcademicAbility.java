@@ -2,6 +2,7 @@ package com.hirepicker.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -17,14 +18,12 @@ public class AcademicAbility {
 
     // PK 구성: p_user_idx + school_code
     @Id
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "p_user_idx", nullable = false)
-    private PersonalUser personalUser; // 개인회원
+    @Column(name = "p_user_idx", nullable = false)
+    private Long personalUser; // 개인회원 ID
 
     @Id
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "school_code", nullable = false)
-    private School school; // 학교
+    @Column(name = "school_code", nullable = false)
+    private Long school; // 학교 코드
 
     @Column(name = "degree", nullable = false, length = 10)
     private String degree; // 학위(고졸/학사/석사/박사)
@@ -37,5 +36,15 @@ public class AcademicAbility {
 
     @Column(name = "graduation_date")
     private LocalDate graduationDate; // 졸업일
-}
 
+    @Builder
+    public AcademicAbility(Long personalUser, Long school, String degree, String major,
+                           java.math.BigDecimal majorScore, LocalDate graduationDate) {
+        this.personalUser = personalUser;
+        this.school = school;
+        this.degree = degree;
+        this.major = major;
+        this.majorScore = majorScore;
+        this.graduationDate = graduationDate;
+    }
+}

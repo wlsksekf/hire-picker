@@ -1,412 +1,404 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import useAuthStore from "@/store/authStore"; // 인증 스토어 사용
-import { api } from "@/api"; // API 클라이언트
-import {
-  getUserProfile,
-  getAcademics,
-  getExperiences,
-  getMilitary,
-  updateUserProfileDetails,
-} from "@/api"; // 프로필/학력/경력/병역 API
-import ResumePdfDocument from "@/components/ResumePdfDocument";
-import { pdf } from "@react-pdf/renderer"; // PDF 생성
 import ResumeForm from "@/components/ResumeForm";
+import { api, getResumeTemplate, createResume, saveResumeCertifications, searchSchools as apiSearchSchools, generateAiFullDraft, generateAiResumeDraft, getCertifications } from "@/api";
 
-// 성별 텍스트 정규화 유틸
-const normalizeGender = (v) => {
-  if (!v) return "male";
-  const s = String(v).toLowerCase();
-  if (["female", "f", "여", "여성", "여자"].some((k) => s.includes(k))) return "female";
-  if (["male", "m", "남", "남성", "남자"].some((k) => s.includes(k))) return "male";
-  return "male";
-};
-
-export default function AiResumePage() {
-  const { isAuthenticated, user } = useAuthStore((state) => state);
-
-  // 로컬 상태
-  const [isLoading, setIsLoading] = useState(false); // 로딩 상태
-  const [selectedImage, setSelectedImage] = useState(null); // 업로드 파일
-  const [previewImage, setPreviewImage] = useState(null); // 미리보기 URL
-
-  // 다이얼로그 상태
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-
-  // 폼 데이터 상태
+export default function WriteResumePage() {
   const [formData, setFormData] = useState({
-    // 기본 정보
+    title: "",
     name: "",
-    nationality: "내국인", // UI 고정 표시
-    gender: "male",
+    gender: "",
     birthdate: "",
     phone: "",
     email: "",
     address: "",
-
-    // 학력 (최대 2개)
+    aiPrompt: "",
+    selfGrowth: "",
+    selfStrengths: "",
+    selfMotivation: "",
+    selfAspirations: "",
+    // 학력 1
     edu1_period: "",
     edu1_school: "",
+    edu1_schoolCode: null,
     edu1_major: "",
     edu1_status: "",
-    edu1_location: "",
     edu1_score: "",
+    // 학력 2
     edu2_period: "",
     edu2_school: "",
+    edu2_schoolCode: null,
     edu2_major: "",
     edu2_status: "",
-    edu2_location: "",
     edu2_score: "",
-
     // 병역
     military_status: "",
     military_branch: "",
     military_rank: "",
     military_period: "",
     military_reason: "",
-
-    // 자격증 (최대 3개)
+    // 자격증 1
     cert1_name: "",
     cert1_level: "",
     cert1_date: "",
     cert1_issuer: "",
+    // 자격증 2
     cert2_name: "",
     cert2_level: "",
     cert2_date: "",
     cert2_issuer: "",
+    // 자격증 3
     cert3_name: "",
     cert3_level: "",
     cert3_date: "",
     cert3_issuer: "",
-
-    // 경력 (최대 2개)
+    // 경력 1
     exp1_period: "",
     exp1_company: "",
     exp1_position: "",
     exp1_duties: "",
     exp1_type: "",
+    // 경력 2
     exp2_period: "",
     exp2_company: "",
     exp2_position: "",
     exp2_duties: "",
     exp2_type: "",
-
-    // 자기소개
-    selfGrowth: "",
-    selfStrengths: "",
-    selfMotivation: "",
-    selfAspirations: "",
-
-    // AI 프롬프트
-    aiPrompt: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [userId, setUserId] = useState(null);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [availableExperiences, setAvailableExperiences] = useState([]); // 선택 가능한 경력 목록
+  const [availableCertifications, setAvailableCertifications] = useState([]); // 선택 가능한 자격증 목록
 
-  // 사용자 기본값 반영
+  // init: load user and template
   useEffect(() => {
-    if (user) {
-      setFormData((prev) => ({
-        ...prev,
-        name: user.name || "",
-        gender: normalizeGender(user.gender),
-        phone: user.phoneNumber || "",
-        email: user.email || "",
-        address: user.address || "",
-      }));
-    }
-  }, [user]);
-
-  // 학력/경력/병역 불러오기
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const [p, a, e, m] = await Promise.allSettled([
-          getUserProfile(),
-          getAcademics(),
-          getExperiences(),
-          getMilitary(),
-        ]);
-
-        if (!mounted) return;
-
-        setFormData((prev) => {
-          const next = { ...prev };
-
-          // 프로필
-          if (p.status === "fulfilled" && p.value) {
-            const prof = p.value;
-            next.name = prof.name ?? next.name;
-            if (prof.gender) next.gender = normalizeGender(prof.gender);
-            next.phone = prof.phoneNumber ?? next.phone;
-            next.email = prof.email ?? next.email;
-            next.address = prof.address ?? next.address;
-            next.birthdate = prof.birthDate ?? next.birthdate;
-          }
-
-          // 학력 (2개까지만 매핑)
-          if (a.status === "fulfilled" && Array.isArray(a.value)) {
-            const list = a.value;
-            const mapAcademic = (src) => ({
-              school: src?.schoolName || "",
-              major: src?.major || "",
-              status: src?.degree || "",
-              score: src?.majorScore != null ? String(src.majorScore) : "",
-              period: "",
-              location: "",
-            });
-            const a1 = list[0] ? mapAcademic(list[0]) : null;
-            const a2 = list[1] ? mapAcademic(list[1]) : null;
-            if (a1) {
-              next.edu1_school = a1.school;
-              next.edu1_major = a1.major;
-              next.edu1_status = a1.status;
-              next.edu1_score = a1.score;
-              next.edu1_period = a1.period;
-              next.edu1_location = a1.location;
-            }
-            if (a2) {
-              next.edu2_school = a2.school;
-              next.edu2_major = a2.major;
-              next.edu2_status = a2.status;
-              next.edu2_score = a2.score;
-              next.edu2_period = a2.period;
-              next.edu2_location = a2.location;
-            }
-          }
-
-          // 경력 (2개까지만 매핑)
-          if (e.status === "fulfilled" && Array.isArray(e.value)) {
-            const list = e.value;
-            const fmt = (it) => {
-              const s = it?.hireDate || "";
-              const t = it?.resignDate || "";
-              return s && t ? `${s} ~ ${t}` : s || t || "";
-            };
-            const e1 = list[0];
-            const e2 = list[1];
-            if (e1) {
-              next.exp1_company = e1.companyName || "";
-              next.exp1_position = e1.position || "";
-              next.exp1_duties = e1.mainDuties || e1.jobDescription || "";
-              next.exp1_period = fmt(e1);
-              next.exp1_type = next.exp1_type || "";
-            }
-            if (e2) {
-              next.exp2_company = e2.companyName || "";
-              next.exp2_position = e2.position || "";
-              next.exp2_duties = e2.mainDuties || e2.jobDescription || "";
-              next.exp2_period = fmt(e2);
-              next.exp2_type = next.exp2_type || "";
-            }
-          }
-
-          // 병역
-          if (m.status === "fulfilled" && m.value) {
-            const ms = m.value;
-            next.military_status = ms.serviceType || next.military_status;
-            next.military_branch = ms.militaryBranch || "";
-            next.military_rank = ms.militaryRank || "";
-            next.military_period = ms.periodOfService || "";
-            next.military_reason = ms.reasonForExemption || "";
-          }
-
-          return next;
-        });
-      } catch (err) {
-        console.error("초기 데이터 로드 실패:", err);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
+    api.get('/api/users/me')
+      .then(res => {
+        const u = res.data || {};
+        setUserId(u.id || null);
+        setFormData(prev => ({
+          ...prev,
+          name: u.name || '',
+          gender: u.gender || '',
+          phone: u.phoneNumber || '',
+          email: u.email || '',
+          address: u.address || ''
+        }));
+      })
+      .catch(() => {});
+    
+    // 저장된 학력/경력/병역 정보 자동 채우기
+    loadResumeTemplate();
   }, []);
 
-  // 공통 입력 핸들러
-  const handleChange = (e) => {
+  // 이력서 템플릿 데이터 로드 및 자동 채우기
+  async function loadResumeTemplate() {
+    try {
+      const template = await getResumeTemplate();
+      if (!template) return;
+
+      const updates = {};
+
+      // 학력 자동 채우기 (최대 2개)
+      if (template.academics && template.academics.length > 0) {
+        const acad1 = template.academics[0];
+        if (acad1) {
+          updates.edu1_school = acad1.schoolName || '';
+          updates.edu1_schoolCode = acad1.schoolCode || null;
+          updates.edu1_major = acad1.major || '';
+          updates.edu1_score = acad1.majorScore ? String(acad1.majorScore) : '';
+          updates.edu1_status = acad1.degree || '';
+          if (acad1.graduationDate) {
+            const gradDate = new Date(acad1.graduationDate);
+            updates.edu1_period = `${gradDate.getFullYear()}.${String(gradDate.getMonth() + 1).padStart(2, '0')}`;
+          }
+        }
+        if (template.academics.length > 1) {
+          const acad2 = template.academics[1];
+          if (acad2) {
+            updates.edu2_school = acad2.schoolName || '';
+            updates.edu2_schoolCode = acad2.schoolCode || null;
+            updates.edu2_major = acad2.major || '';
+            updates.edu2_score = acad2.majorScore ? String(acad2.majorScore) : '';
+            updates.edu2_status = acad2.degree || '';
+            if (acad2.graduationDate) {
+              const gradDate = new Date(acad2.graduationDate);
+              updates.edu2_period = `${gradDate.getFullYear()}.${String(gradDate.getMonth() + 1).padStart(2, '0')}`;
+            }
+          }
+        }
+      }
+
+      // 병역 자동 채우기
+      if (template.military) {
+        updates.military_status = template.military.serviceType || '';
+        updates.military_branch = template.military.militaryBranch || '';
+        updates.military_rank = template.military.militaryRank || '';
+        updates.military_period = template.military.periodOfService || '';
+        updates.military_reason = template.military.reasonForExemption || '';
+      }
+
+      // 경력과 자격증은 선택 가능하도록 목록만 저장 (자동 채우지 않음)
+      // 사용자가 선택할 수 있도록 별도 상태로 관리
+      setAvailableExperiences(template.experiences || []);
+      
+      // 자격증 목록 조회
+      try {
+        const certs = await getCertifications();
+        setAvailableCertifications(certs || []);
+      } catch (err) {
+        console.error('자격증 목록 조회 실패:', err);
+        setAvailableCertifications([]);
+      }
+      
+      setFormData(prev => ({ ...prev, ...updates }));
+    } catch (err) {
+      console.error('템플릿 로드 실패:', err);
+    }
+  }
+
+  const [schoolOptions1, setSchoolOptions1] = useState([]);
+  const [schoolOptions2, setSchoolOptions2] = useState([]);
+  const [schoolLoading1, setSchoolLoading1] = useState(false);
+  const [schoolLoading2, setSchoolLoading2] = useState(false);
+
+  const onChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 이미지 선택 핸들러
-  const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
-    setSelectedImage(file || null);
-  };
-
-  // 이미지 미리보기 생성
-  useEffect(() => {
-    if (selectedImage) {
-      const reader = new FileReader();
-      reader.onloadend = () => setPreviewImage(reader.result);
-      reader.readAsDataURL(selectedImage);
-    } else {
-      setPreviewImage(null);
+  const onImageChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setPreviewImage(URL.createObjectURL(file));
     }
-  }, [selectedImage]);
-
-  // AI 전달용 문자열 생성
-  const serializeUserData = () => {
-    let s = "";
-    s += `이름: ${formData.name}, 성별: ${formData.gender}, 생년월일: ${formData.birthdate}, 연락처: ${formData.phone}, 이메일: ${formData.email}, 주소: ${formData.address}\n`;
-    s += `학력1: ${formData.edu1_period}, ${formData.edu1_school}, ${formData.edu1_major}, ${formData.edu1_status}, ${formData.edu1_score}\n`;
-    s += `학력2: ${formData.edu2_period}, ${formData.edu2_school}, ${formData.edu2_major}, ${formData.edu2_status}, ${formData.edu2_score}\n`;
-    s += `병역: ${formData.military_status}, ${formData.military_branch}, ${formData.military_rank}, ${formData.military_period}\n`;
-    s += `자격증1: ${formData.cert1_name}, ${formData.cert1_level}, ${formData.cert1_date}\n`;
-    s += `자격증2: ${formData.cert2_name}, ${formData.cert2_level}, ${formData.cert2_date}\n`;
-    s += `자격증3: ${formData.cert3_name}, ${formData.cert3_level}, ${formData.cert3_date}\n`;
-    s += `경력1: ${formData.exp1_period}, ${formData.exp1_company}, ${formData.exp1_position}, ${formData.exp1_duties}\n`;
-    s += `경력2: ${formData.exp2_period}, ${formData.exp2_company}, ${formData.exp2_position}, ${formData.exp2_duties}\n`;
-    return s;
   };
 
-  // AI 호출
-  const callAiApi = (mode = "generate") => {
+  const searchSchools = async (query, target = 1) => {
+    if (!query || query.trim().length < 2) {
+      if (target === 1) setSchoolOptions1([]); else setSchoolOptions2([]);
+      return;
+    }
+    try {
+      if (target === 1) setSchoolLoading1(true); else setSchoolLoading2(true);
+      const list = await apiSearchSchools(query.trim());
+      if (target === 1) setSchoolOptions1(list || []);
+      else setSchoolOptions2(list || []);
+    } finally {
+      if (target === 1) setSchoolLoading1(false); else setSchoolLoading2(false);
+    }
+  };
+
+  // AI dialog handlers
+  const onOpenAiDialog = () => setAiDialogOpen(true);
+  const onDialogClose = () => setAiDialogOpen(false);
+
+  const onSchoolSelect = (prefix, option) => {
+    if (!option) return;
+    setFormData((prev) => ({
+      ...prev,
+      [`${prefix}_school`]: option.schoolName,
+      [`${prefix}_schoolCode`]: option.schoolCode,
+    }));
+  };
+
+  // 경력 선택 핸들러
+  const onExperienceSelect = (expIndex, experience) => {
+    if (!experience) {
+      // 선택 해제
+      setFormData((prev) => ({
+        ...prev,
+        [`exp${expIndex}_company`]: '',
+        [`exp${expIndex}_position`]: '',
+        [`exp${expIndex}_duties`]: '',
+        [`exp${expIndex}_period`]: '',
+        [`exp${expIndex}_type`]: '',
+      }));
+      return;
+    }
+
+    // 날짜 포맷팅 헬퍼
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}`;
+    };
+
+    const period = experience.hireDate 
+      ? `${formatDate(experience.hireDate)} ~ ${experience.resignDate ? formatDate(experience.resignDate) : '재직중'}`
+      : '';
+
+    setFormData((prev) => ({
+      ...prev,
+      [`exp${expIndex}_company`]: experience.companyName || '',
+      [`exp${expIndex}_position`]: experience.position || '',
+      [`exp${expIndex}_duties`]: experience.jobDescription || experience.mainDuties || '',
+      [`exp${expIndex}_period`]: period,
+      [`exp${expIndex}_type`]: experience.department || '',
+    }));
+  };
+
+  // 자격증 선택 핸들러
+  const onCertificationSelect = (certIndex, certification) => {
+    if (!certification) {
+      // 선택 해제
+      setFormData((prev) => ({
+        ...prev,
+        [`cert${certIndex}_name`]: '',
+        [`cert${certIndex}_level`]: '',
+        [`cert${certIndex}_date`]: '',
+        [`cert${certIndex}_issuer`]: '',
+      }));
+      return;
+    }
+
+    // 날짜 포맷팅 헬퍼
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
+    };
+
+    setFormData((prev) => ({
+      ...prev,
+      [`cert${certIndex}_name`]: certification.certName || '',
+      [`cert${certIndex}_level`]: '',
+      [`cert${certIndex}_date`]: certification.acquisitionDate ? formatDate(certification.acquisitionDate) : '',
+      [`cert${certIndex}_issuer`]: '',
+    }));
+  };
+
+  // AI draft generate
+  const onAiGenerate = async (arg) => {
+    let prompt = typeof arg === 'string' ? arg.trim() : (formData.aiPrompt || '').trim();
+    if (!prompt) {
+      prompt = [
+        formData.title,
+        formData.selfGrowth,
+        formData.selfStrengths,
+        formData.selfMotivation,
+        formData.selfAspirations,
+      ].filter(Boolean).join('\n');
+    }
+    if (!prompt) { alert('AI 요청 문구를 입력해주세요.'); return; }
+
     setIsLoading(true);
-    setDialogOpen(false);
-    setConfirmDialogOpen(false);
+    try {
+      const res = await generateAiFullDraft(prompt);
+      const { growthProcess, jobCompetencies, prosAndCons, aspirations } = res.data || {};
+      setFormData(prev => ({
+        ...prev,
+        selfGrowth: growthProcess || prev.selfGrowth || '',
+        selfStrengths: jobCompetencies || prev.selfStrengths || '',
+        selfMotivation: prosAndCons || prev.selfMotivation || '',
+        selfAspirations: aspirations || prev.selfAspirations || '',
+      }));
+    } finally { setIsLoading(false); }
+  };
 
-    const userData = serializeUserData();
-    const jobPostingData = formData.aiPrompt || "(채용공고 요약)";
-
-    const requestBody = { userData, jobPostingData };
-    if (mode === "refine") {
-      requestBody.resumeDraft = {
-        growthProcess: formData.selfGrowth,
-        jobCompetencies: formData.selfMotivation,
-        prosAndCons: formData.selfStrengths,
-        aspirations: formData.selfAspirations,
+  // refine
+  const onRefine = async () => {
+    setAiDialogOpen(false);
+    const userData = (formData.aiPrompt || formData.title || '').trim();
+    if (!userData) { alert('AI 요청 문구를 입력해주세요.'); return; }
+    setIsLoading(true);
+    try {
+      const resumeDraft = {
+        growthProcess: formData.selfGrowth || '',
+        jobCompetencies: formData.selfStrengths || '',
+        prosAndCons: formData.selfMotivation || '',
+        aspirations: formData.selfAspirations || '',
       };
-    }
-
-    api
-      .post("/api/ai/resume-draft", requestBody)
-      .then((response) => {
-        const { growthProcess, jobCompetencies, prosAndCons, aspirations } =
-          response.data;
-        setFormData((prev) => ({
-          ...prev,
-          selfGrowth: growthProcess,
-          selfStrengths: prosAndCons,
-          selfMotivation: jobCompetencies,
-          selfAspirations: aspirations,
-        }));
-      })
-      .catch((error) => {
-        console.error("AI 초안/개선 요청 실패:", error);
-        alert("AI 요청 처리 중 오류가 발생했습니다.");
-      })
-      .finally(() => setIsLoading(false));
+      const res = await generateAiResumeDraft({ userData, resumeDraft });
+      const { growthProcess, jobCompetencies, prosAndCons, aspirations } = res.data || {};
+      setFormData(prev => ({
+        ...prev,
+        selfGrowth: growthProcess || prev.selfGrowth || '',
+        selfStrengths: jobCompetencies || prev.selfStrengths || '',
+        selfMotivation: prosAndCons || prev.selfMotivation || '',
+        selfAspirations: aspirations || prev.selfAspirations || '',
+      }));
+    } finally { setIsLoading(false); }
   };
 
-  // AI 생성 버튼
-  const handleAiGenerate = () => {
-    if (!isAuthenticated) {
-      alert("AI 사용을 위해 로그인이 필요합니다.");
-      return;
-    }
-    const hasExisting =
-      formData.selfGrowth ||
-      formData.selfStrengths ||
-      formData.selfMotivation ||
-      formData.selfAspirations;
-    if (hasExisting) setDialogOpen(true);
-    else callAiApi("generate");
+  // start fresh
+  const onStartFresh = async () => {
+    setAiDialogOpen(false);
+    const userData = (formData.aiPrompt || formData.title || '').trim();
+    if (!userData) { alert('AI 요청 문구를 입력해주세요.'); return; }
+    setFormData(prev => ({ ...prev, selfGrowth: '', selfStrengths: '', selfMotivation: '', selfAspirations: '' }));
+    await onAiGenerate(userData);
   };
 
-  // 다이얼로그 핸들러
-  const handleDialogClose = () => setDialogOpen(false);
-  const handleRefine = () => callAiApi("refine");
-  const handleStartFresh = () => {
-    setDialogOpen(false);
-    setConfirmDialogOpen(true);
-  };
-  const handleConfirmDialogClose = () => setConfirmDialogOpen(false);
-  const handleConfirmStartFresh = () => callAiApi("generate");
-
-  // 저장 처리
-  const handleSaveResume = () => {
-    if (!isAuthenticated) {
-      alert("저장을 위해 로그인이 필요합니다.");
-      return;
-    }
-
+  // save
+  const onSave = async () => {
+    if (!userId) { alert('로그인이 필요합니다.'); return; }
     setIsLoading(true);
+    try {
+      const resumeDto = {
+        title: formData.title || (formData.name ? (formData.name + "'s Resume") : 'Resume'),
+        selfGrowth: formData.selfGrowth || '',
+        selfStrengths: formData.selfStrengths || '',
+        selfMotivation: formData.selfMotivation || '',
+        selfAspirations: formData.selfAspirations || '',
+        imageUrl: null,
+        cert: '',
+        credit_cost: 0,
+        status: 'PUBLIC',
+        expIdx: null,
+        p_user_idx: userId,
+        gender: formData.gender || undefined,
+      };
 
-    const submissionData = new FormData();
-    const resumeDto = { ...formData, p_user_idx: user?.puserIdx };
-    submissionData.append(
-      "resumeDto",
-      new Blob([JSON.stringify(resumeDto)], { type: "application/json" })
-    );
-    if (selectedImage) submissionData.append("imageFile", selectedImage);
+      const created = await createResume(resumeDto, imageFile);
+      const resumeIdx = created?.resumeId;
 
-    (async () => {
-      try {
-        // 프로필 업데이트 (선택적)
-        const g = formData.gender ? String(formData.gender).toLowerCase() : "";
-        const mappedGender = g === "female" ? "FEMALE" : g === "male" ? "MALE" : undefined;
-        const profilePayload = {
-          name: formData.name || undefined,
-          gender: mappedGender,
-          phoneNumber: formData.phone || undefined,
-          address: formData.address || undefined,
-          birthdate: formData.birthdate || undefined,
-        };
-        await updateUserProfileDetails(profilePayload);
-      } catch (e) {
-        console.warn("프로필 업데이트 실패(무시 가능)", e);
+      const certNames = Array.isArray(formData.certNames)
+        ? formData.certNames
+        : (formData.cert && typeof formData.cert === 'string' ? formData.cert.split(',').map(s => s.trim()).filter(Boolean) : []);
+      if (resumeIdx && certNames.length > 0) {
+        await saveResumeCertifications(resumeIdx, { certIdxList: [], certNameList: certNames });
       }
 
-      return api
-        .post("/api/resume", submissionData, { headers: {} })
-        .then((response) => {
-          if (response.status === 201) alert("이력서 저장이 완료되었습니다.");
-        })
-        .catch((error) => {
-          console.error("이력서 저장 실패:", error);
-          alert("이력서 저장 중 오류가 발생했습니다.");
-        })
-        .finally(() => setIsLoading(false));
-    })();
+      alert('이력서가 저장되었습니다.');
+    } catch (e) {
+      alert('이력서 저장에 실패했습니다.');
+    } finally { setIsLoading(false); }
   };
 
-  // PDF 다운로드
-  const handleDownload = async () => {
-    try {
-      const blob = await pdf(
-        <ResumePdfDocument formData={formData} imageUrl={previewImage} />
-      ).toBlob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "이력서.pdf";
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("PDF 생성 실패:", error);
-    }
-  };
-
-  // 페이지는 상태/핸들러를 제공하고, UI는 컴포넌트에 위임
   return (
     <ResumeForm
       formData={formData}
-      onChange={handleChange}
+      onChange={onChange}
       previewImage={previewImage}
-      onImageChange={handleImageChange}
+      onImageChange={onImageChange}
       isLoading={isLoading}
-      onAiGenerate={handleAiGenerate}
-      onDownload={handleDownload}
-      onSave={handleSaveResume}
-      dialogOpen={dialogOpen}
-      onDialogClose={handleDialogClose}
-      onStartFresh={handleStartFresh}
-      onRefine={handleRefine}
-      confirmDialogOpen={confirmDialogOpen}
-      onConfirmDialogClose={handleConfirmDialogClose}
-      onConfirmStartFresh={handleConfirmStartFresh}
+      onAiGenerate={onAiGenerate}
+      onOpenAiDialog={onOpenAiDialog}
+      onDownload={() => {}}
+      onSave={onSave}
+      onRefine={onRefine}
+      onStartFresh={onStartFresh}
+      dialogOpen={aiDialogOpen}
+      onDialogClose={onDialogClose}
+      confirmDialogOpen={false}
+      onConfirmDialogClose={() => {}}
+      onConfirmStartFresh={() => {}}
+      searchSchools={searchSchools}
+      onSchoolSelect={onSchoolSelect}
+      schoolOptions1={schoolOptions1}
+      schoolLoading1={schoolLoading1}
+      schoolOptions2={schoolOptions2}
+      schoolLoading2={schoolLoading2}
+      availableExperiences={availableExperiences}
+      availableCertifications={availableCertifications}
+      onExperienceSelect={onExperienceSelect}
+      onCertificationSelect={onCertificationSelect}
     />
   );
 }

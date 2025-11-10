@@ -68,6 +68,9 @@ public class Company {
     @Column(name = "reg_date")
     private Date regDate;
 
+    @Column(name = "mod_date")
+    private Date modDate; // 수정일
+
     @Column(name = "sales_amount")
     private Long salesAmount;
 

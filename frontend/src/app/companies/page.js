@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
+import useAuthStore from "@/store/authStore";
 import {
   Container,
   Typography,
@@ -14,11 +15,16 @@ import {
   useTheme,
   Alert,
   TextField,
-} from '@mui/material';
-import { faLink, faIdBadge } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { api } from '@/api'; // 공용 api 인스턴스 사용
-import Link from 'next/link';
+} from "@mui/material";
+import { blue, pink } from "@mui/material/colors";
+import { faLink, faIdBadge } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { api } from "@/api"; // 공용 api 인스턴스 사용
+import Link from "next/link";
+import { HeartBroken } from "node_modules/@mui/icons-material";
+import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
+import { faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons"; // 이 줄을 추가합니다.
+import axios from "axios";
 
 const PAGE_SIZE = 20; // 페이지 당 불러올 기업 수
 
@@ -31,22 +37,33 @@ function CompaniesPage() {
   const [error, setError] = useState(null); // 에러 상태
   const [hasNextPage, setHasNextPage] = useState(true); // 다음 페이지 존재 여부
 
-  const [searchTerm, setSearchTerm] = useState(''); // 검색어 입력 값
-  const [query, setQuery] = useState(''); // 실제 검색에 사용될 쿼리
+  const [searchTerm, setSearchTerm] = useState(""); // 검색어 입력 값
+  const [query, setQuery] = useState(""); // 실제 검색에 사용될 쿼리
+  const [likedCompanies, setLikedCompanies] = useState(new Set());
+  const [pUserIdx, setPUserIdx] = useState(null); // p_user_idx 상태 추가
+
+  const user = useAuthStore((state) => state.user);
+  console.log("User object:", user);
 
   // 컴포넌트가 마운트되거나 쿼리가 변경될 때 기업 정보를 불러옴
   useEffect(
     function () {
       setLoading(true);
-      const apiUrl = `/api/companies?page=0&size=${PAGE_SIZE}${query ? `&query=${query}` : ''}`;
+      const apiUrl = `/api/companies?page=0&size=${PAGE_SIZE}${
+        query ? `&query=${query}` : ""
+      }`;
 
       api
         .get(apiUrl)
         .then(function (response) {
           const data = response.data;
-          const newCompanies = data._embedded ? data._embedded.companyDtoList : [];
+          const newCompanies = data._embedded
+            ? data._embedded.companyDtoList
+            : [];
           setCompanies(newCompanies);
-          setHasNextPage(data.page && data.page.number < data.page.totalPages - 1);
+          setHasNextPage(
+            data.page && data.page.number < data.page.totalPages - 1
+          );
           setPage(0);
           setError(null);
         })
@@ -57,8 +74,31 @@ function CompaniesPage() {
         .finally(function () {
           setLoading(false);
         });
+
+      if (user?.email) {
+        api
+          .get(`/api/company-alarms/idx-by-email?email=${user.email}`)
+          .then(function (response) {
+            const fetchedIdx = response.data.idx; // 백엔드 응답에서 idx를 가져온다고 가정
+            console.log("Fetched p_user_idx:", fetchedIdx);
+            setPUserIdx(fetchedIdx); // 상태 업데이트
+            if (fetchedIdx) {
+              api
+                .get(`/api/company-alarms/user/${fetchedIdx}`)
+                .then(function (response) {
+                  setLikedCompanies(new Set(response.data));
+                })
+                .catch(function (err) {
+                  console.error("Failed to fetch liked companies:", err);
+                });
+            }
+          })
+          .catch(function (err) {
+            console.error("Failed to fetch user idx by email:", err);
+          });
+      }
     },
-    [query]
+    [query, user, pUserIdx] // user와 pUserIdx를 의존성 배열에 추가
   );
 
   // 다음 페이지의 기업 정보를 불러오는 함수
@@ -66,18 +106,22 @@ function CompaniesPage() {
     const nextPage = page + 1;
     setLoading(true);
     const apiUrl = `/api/companies?page=${nextPage}&size=${PAGE_SIZE}${
-      query ? `&query=${query}` : ''
+      query ? `&query=${query}` : ""
     }`;
 
     api
       .get(apiUrl)
       .then(function (response) {
         const data = response.data;
-        const newCompanies = data._embedded ? data._embedded.companyDtoList : [];
+        const newCompanies = data._embedded
+          ? data._embedded.companyDtoList
+          : [];
         setCompanies(function (prevCompanies) {
           return [...prevCompanies, ...newCompanies];
         });
-        setHasNextPage(data.page && data.page.number < data.page.totalPages - 1);
+        setHasNextPage(
+          data.page && data.page.number < data.page.totalPages - 1
+        );
         setPage(nextPage);
       })
       .catch(function (err) {
@@ -91,7 +135,7 @@ function CompaniesPage() {
   // 로고 URL을 반환하는 함수
   function getLogoUrl(url) {
     if (!url) return null;
-    if (url.startsWith('http')) {
+    if (url.startsWith("http")) {
       return url;
     }
     return `https://www.work.go.kr/images/recruit/${url}`;
@@ -103,35 +147,79 @@ function CompaniesPage() {
     setQuery(searchTerm); // 검색어를 쿼리로 설정하여 데이터 요청 트리거
   }
 
+  // 관심 기업 등록/해제 함수
+  async function toggleLikeCompany(companyIdx) {
+    if (!pUserIdx) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    try {
+      if (likedCompanies.has(companyIdx)) {
+        // 이미 좋아요 상태이면 좋아요 해제 (DELETE 요청)
+        await api.delete(`/api/company-alarms/${pUserIdx}/${companyIdx}`);
+        setLikedCompanies((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(companyIdx);
+          return newSet;
+        });
+        console.log(`Company ${companyIdx} unliked.`);
+      } else {
+        // 좋아요 상태가 아니면 좋아요 등록 (POST 요청)
+        await api.post("/api/company-alarms", {
+          p_user_idx: pUserIdx,
+          company_idx: companyIdx,
+        });
+        setLikedCompanies((prev) => new Set(prev).add(companyIdx));
+        console.log(`Company ${companyIdx} liked.`);
+      }
+    } catch (err) {
+      console.error("Failed to toggle like status:", err);
+      alert("관심 기업 상태 변경에 실패했습니다.");
+    }
+  }
+
   return (
     <Container maxWidth="lg" sx={{ py: 8 }}>
-      <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+      <Typography
+        variant="h4"
+        component="h1"
+        fontWeight="bold"
+        gutterBottom
+        sx={{ mb: 5 }}
+      >
         공채 기업 정보
       </Typography>
 
-      <Box component="form" onSubmit={handleSearchSubmit} sx={{ display: 'flex', gap: 1, mb: 4 }}>
+      <Box
+        component="form"
+        onSubmit={handleSearchSubmit}
+        sx={{ display: "flex", gap: 1, mb: 4 }}
+      >
         <TextField
           fullWidth
           variant="outlined"
           placeholder="원하시는 기업명을 입력해주세요"
           value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <Button type="submit" variant="contained" sx={{ whiteSpace: 'nowrap' }}>
+        <Button type="submit" variant="contained" sx={{ whiteSpace: "nowrap" }}>
           검색
         </Button>
       </Box>
 
       {loading &&
         companies.length === 0 && ( // 초기 로딩 상태
-          <Box sx={{ py: 8, textAlign: 'center' }}>
+          <Box sx={{ py: 8, textAlign: "center" }}>
             <CircularProgress />
             <Typography>기업 정보를 불러오는 중...</Typography>
           </Box>
         )}
 
       {error && ( // 에러 상태
-        <Alert severity="error">공채 기업 정보를 가져오는 데 실패했습니다: {error.message}</Alert>
+        <Alert severity="error">
+          공채 기업 정보를 가져오는 데 실패했습니다: {error.message}
+        </Alert>
       )}
 
       {!loading &&
@@ -141,107 +229,150 @@ function CompaniesPage() {
 
       <Stack spacing={3}>
         {companies.map(function (company, index) {
-          return company.status == 'APPROVED' ? (
+          return company.status == "APPROVED" ? (
             <Link
               href={`/companies/${company.companyIdx}`}
               key={company.companyIdx || index}
-              style={{ textDecoration: 'none', color: 'inherit' }}
+              style={{ textDecoration: "none", color: "inherit" }}
             >
               <Card
                 sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  width: '100%',
-                  borderRadius: '16px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  display: "flex",
+                  alignItems: "center",
+                  width: "100%",
+                  borderRadius: "16px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                   p: 3,
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                  cursor: "pointer",
+                  transition:
+                    "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
                   },
                 }}
               >
-                <Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                    {getLogoUrl(company.logoUrl) ? (
-                      <Box
-                        component="img"
-                        src={getLogoUrl(company.logoUrl)}
-                        alt={`${company.name} logo`}
-                        sx={{
-                          width: 40,
-                          height: 40,
-                          mr: 2,
-                          objectFit: 'contain',
-                          border: `1px solid ${theme.palette.divider}`,
-                          borderRadius: '4px',
-                        }}
-                      />
-                    ) : (
-                      <Box
-                        sx={{
-                          width: 40,
-                          height: 40,
-                          mr: 2,
-                          backgroundColor: '#fff',
-                          border: `1px solid ${theme.palette.divider}`,
-                          borderRadius: '4px',
-                        }}
-                      />
-                    )}
-                    <Typography variant="h6" fontWeight="bold">
-                      {company.name}
-                    </Typography>
-                  </Box>
-                  <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
-                    {company.summary}
-                  </Typography>
-                </Box>
+                {getLogoUrl(company.logoUrl) ? (
+                  <Box
+                    component="img"
+                    src={getLogoUrl(company.logoUrl)}
+                    alt={`${company.name} logo`}
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      mr: 4,
+                      objectFit: "contain",
+                      border: `1px solid ${theme.palette.divider}`,
+                      borderRadius: "8px",
+                    }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      mr: 4,
+                      backgroundColor: "#fff",
+                      border: `1px solid ${theme.palette.divider}`,
+                      borderRadius: "8px",
+                    }}
+                  />
+                )}
                 <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-end',
-                    mt: 2,
-                  }}
+                  sx={{ flexGrow: 1, display: "flex", alignItems: "baseline" }}
                 >
-                  <CardActions sx={{ p: 0, ml: 'auto' }}>
-                    {company.homepage && (
-                      <Button
-                        variant="contained"
-                        onClick={e => {
-                          e.stopPropagation();
-                          const url = company.homepage.startsWith('http')
-                            ? company.homepage
-                            : `http://${company.homepage}`;
-                          window.open(url, '_blank', 'noopener,noreferrer');
-                        }}
-                        startIcon={<FontAwesomeIcon icon={faLink} />}
-                      >
-                        홈페이지
-                      </Button>
-                    )}
-                  </CardActions>
+                  <Typography variant="h6" fontWeight="bold" sx={{ mr: 10 }}>
+                    {company.name}
+                  </Typography>
+                  {/* <Typography variant="body1" color="text.secondary">
+                    {company.summary}
+                  </Typography> */}
                 </Box>
+
+                <CardActions sx={{ p: 0, ml: 2 }}>
+                  <Button
+                    variant="contained"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Link 컴포넌트의 페이지 이동 방지
+                      e.preventDefault(); // 기본 이벤트 방지
+                      toggleLikeCompany(company.companyIdx);
+                    }}
+                    startIcon={
+                      <FontAwesomeIcon
+                        icon={
+                          likedCompanies.has(company.companyIdx)
+                            ? faHeartSolid
+                            : faHeartRegular
+                        }
+                      />
+                    }
+                    style={{
+                      backgroundColor: likedCompanies.has(company.companyIdx)
+                        ? pink[500] // 좋아요 시 메인 색상
+                        : "white",
+                      color: likedCompanies.has(company.companyIdx)
+                        ? "white" // 좋아요 시 흰색
+                        : "gray",
+                    }}
+                    sx={{
+                      border: `1px solid ${
+                        likedCompanies.has(company.companyIdx)
+                          ? pink[500] // 좋아요 시 메인 색상 테두리
+                          : "gray"
+                      }`,
+                      borderRadius: "13px",
+                      "&:hover": {
+                        backgroundColor: likedCompanies.has(company.companyIdx)
+                          ? theme.palette.primary.dark
+                          : theme.palette.grey[100],
+                      },
+                    }}
+                  >
+                    관심기업
+                  </Button>
+                </CardActions>
+
+                <CardActions sx={{ p: 0, ml: 2 }}>
+                  {company.homepage && (
+                    <Button
+                      variant="contained"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const url = company.homepage.startsWith("http")
+                          ? company.homepage
+                          : `http://${company.homepage}`;
+                        window.open(url, "_blank", "noopener,noreferrer");
+                      }}
+                      sx={{
+                        backgroundColor: "#ffffff",
+                        border: "1px, solid gray",
+                      }}
+                      startIcon={<FontAwesomeIcon icon={faLink} />}
+                    >
+                      홈페이지
+                    </Button>
+                  )}
+                </CardActions>
               </Card>
             </Link>
           ) : null;
         })}
       </Stack>
 
-      <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
+      <Box sx={{ display: "flex", justifyContent: "center", my: 5 }}>
         {hasNextPage && (
           <Button onClick={handleLoadMore} disabled={loading}>
-            {loading && companies.length > 0 ? <CircularProgress size={24} /> : '더보기'}
+            {loading && companies.length > 0 ? (
+              <CircularProgress size={24} />
+            ) : (
+              "더보기"
+            )}
           </Button>
         )}
       </Box>
 
       {!hasNextPage && companies.length > 0 && (
-        <Typography textAlign="center" sx={{ mt: 4, color: 'text.secondary' }}>
+        <Typography textAlign="center" sx={{ mt: 4, color: "text.secondary" }}>
           모든 정보를 불러왔습니다.
         </Typography>
       )}

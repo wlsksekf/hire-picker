@@ -6,7 +6,7 @@ server:
   port: 8080
   address: 0.0.0.0
   tomcat:
-    connection-timeout: 90000 # 90초
+    connection-timeout: 300000 # 300초
     max-http-form-post-size: 128MB
     max-swallow-size: 128MB
 
@@ -24,11 +24,10 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 128MB      # 허용할 파일 업로드 최대 크기 (128MB, 필요시 더 크게)
-      max-request-size: 128MB   # 한 번의 요청으로 허용할 최대 크기 (128MB, 필요시 더 크게)
+      max-file-size: 128MB # 허용할 파일 업로드 최대 크기 (128MB, 필요시 더 크게)
+      max-request-size: 128MB # 한 번의 요청으로 허용할 최대 크기 (128MB, 필요시 더 크게)
 
   # 공용 데이터소스 설정
-
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver # MySQL 드라이버
     url: ${DB_URL}
@@ -54,7 +53,7 @@ spring:
         # MySQL 8+ 버전 호환용 Dialect(방언) 설정
         dialect: org.hibernate.dialect.MySQLDialect
 
-# === Spring Security (OAuth2) ===
+  # === Spring Security (OAuth2) ===
   security:
     oauth2:
       client:
@@ -65,7 +64,7 @@ spring:
             scope:
               - profile
               - email
-            redirect-uri: '{baseUrl}/login/oauth2/code/{registrationId}'
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
 
           naver:
             client-id: ${NAVER_OAUTH_CLIENT_ID}
@@ -134,7 +133,7 @@ logging:
     root: INFO
     org.springframework.security: INFO
     # CustomAuthenticationProvider 사용 시 발생하는 UserDetailsService 경고(WARN) 로그 끄기
-    'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer': ERROR
+    "org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer": ERROR
 
 # === 외부 API 키 ===
 # [추가됨] .env 파일의 API 키들을 Spring에서 쉽게 주입받아 사용하기 위한 설정
@@ -142,33 +141,32 @@ api:
   work24:
     key: ${work24_key}
 
-# 학교 정보 API 키 (커리어넷)
-school-key: ${school_key}
+  # 학교 정보 API 키 (커리어넷)
+  school-key: ${school_key}
 
-# 자격증 정보 API 키 (Q-Net)
-certification-key: ${certification_key}
+  # 자격증 정보 API 키 (Q-Net)
+  certification-key: ${certification_key}
 
-payment:
-  toss:
-    widget-secret-key: ${TOSS_WIDGET_SECRET_KEY}
-    api-secret-key: ${TOSS_API_SECRET_KEY}
-    client-key: ${NEXT_PUBLIC_TOSS_CLIENT_KEY}
-    api-url: "https://api.tosspayments.com"
+  payment:
+    toss:
+      widget-secret-key: ${TOSS_WIDGET_SECRET_KEY}
+      api-secret-key: ${TOSS_API_SECRET_KEY}
+      client-key: ${NEXT_PUBLIC_TOSS_CLIENT_KEY}
+      api-url: "https://api.tosspayments.com"
 
-# Gemini API Key
-gemini:
-  api:
-    key: ${GOOGLE_API_KEY}
+  # Gemini API Key
+  gemini:
+    api:
+      key: ${GOOGLE_API_KEY}
 
 management:
   endpoints:
     web:
       exposure:
-        include: '*' # 모든 엔드포인트 노출 (개발용)
+        include: "*" # 모든 엔드포인트 노출 (개발용)
   endpoint:
     health:
       show-details: always # /health 엔드포인트에 세부 정보 표시
-
 
 ---
 # ===================================================================
@@ -177,7 +175,7 @@ management:
 spring:
   config:
     activate:
-      on-profile: 'local'
+      on-profile: "local"
   jpa:
     hibernate:
       ddl-auto: none # local 환경에서는 엔티티 변경 시 DB 테이블 수동 관리 (기존 설정 유지)
@@ -193,7 +191,7 @@ spring:
 spring:
   config:
     activate:
-      on-profile: 'prod'
+      on-profile: "prod"
   data:
     redis:
       repositories:
@@ -210,5 +208,5 @@ spring:
 management:
   metrics:
     binders:
-      'system':
+      "system":
         enabled: false

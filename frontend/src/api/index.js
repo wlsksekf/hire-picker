@@ -95,7 +95,15 @@ export { api };
  * @param {string} prompt - AI에게 전달할 키워드
  */
 export const generateAiFullDraft = (prompt) => {
-    return api.post('/api/ai/generate-full-draft', { prompt });
+    // 백엔드 스펙: POST /api/ai/resume-draft { userData, jobPostingData, resumeDraft }
+    const body = { userData: String(prompt || ''), jobPostingData: null, resumeDraft: null };
+    return api.post('/api/ai/resume-draft', body).then(res => res);
+};
+
+// [AI] 기존 초안을 함께 보내 개선 요청 (refine 모드)
+export const generateAiResumeDraft = ({ userData = '', jobPostingData = null, resumeDraft = null } = {}) => {
+  const body = { userData: String(userData || ''), jobPostingData, resumeDraft };
+  return api.post('/api/ai/resume-draft', body).then(res => res);
 };
 
 /**
@@ -109,6 +117,50 @@ export const getCreditBalance = () => {
       console.error('크레딧 잔액 조회 실패:', error);
       return 0;
     });
+};
+
+/**
+ * [크레딧 기능 추가] 상점에서 사용할 크레딧 상품 목록 + 잔액을 동시 제공
+ * 프론트 카드/결제 페이지가 동일 정보를 활용하도록 정적 상품 목록을 제공하고,
+ * 잔액은 실제 API에서 조회한다.
+ */
+export const getCreditProducts = () => {
+  const products = [
+    {
+      id: 'CREDIT_10K',
+      badge: 'NEW',
+      title: '스타터 코인팩',
+      description: '입문자를 위한 기본 충전',
+      credits: 10000,
+      price: 10000,
+      accent: '#1c63ff',
+      imageVariant: 'single',
+    },
+    {
+      id: 'CREDIT_50K',
+      badge: 'BEST',
+      title: '프로 코인팩',
+      description: '10% 혜택으로 넉넉하게',
+      credits: 50000,
+      price: 45000,
+      accent: '#4f6bff',
+      imageVariant: 'stack',
+    },
+    {
+      id: 'CREDIT_100K',
+      badge: 'HOT',
+      title: '언리미티드 코인팩',
+      description: '가장 많이 찾는 할인 구성',
+      credits: 100000,
+      price: 70000,
+      accent: '#2b4edb',
+      imageVariant: 'bundle',
+    },
+  ];
+
+  return getCreditBalance()
+    .then(balance => ({ products, balance }))
+    .catch(() => ({ products, balance: 0 }));
 };
 
 /**
@@ -216,6 +268,13 @@ export function searchSchools(query) {
     .then(res => res.data);
 }
 
+// [검색] 정확히 일치하는 학교 찾기
+export function findExactSchool(name) {
+  return api.get('/api/schools/find', { params: { name } })
+    .then(res => res.data)
+    .catch(() => null); // 없으면 null 반환
+}
+
 // [마이페이지] 경력 조회/저장
 export function getExperiences() {
   return api.get('/api/users/experiences').then(res => res.data);
@@ -232,7 +291,91 @@ export function saveMilitary(military) {
   return api.put('/api/users/military', military).then(res => res.data);
 }
 
+// [마이페이지] 자격증 조회/저장
+export function getCertifications() {
+  return api
+    .get('/api/users/certifications')
+    .then(res => {
+      const data = res.data;
+      if (Array.isArray(data)) {
+        return data;
+      }
+      if (Array.isArray(data?.certifications)) {
+        return data.certifications;
+      }
+      if (Array.isArray(data?.data)) {
+        return data.data;
+      }
+      return [];
+    })
+    .catch(error => {
+      console.error('자격증 목록 조회 실패:', error);
+      return [];
+    });
+}
+export function saveCertifications({ resumeIdx = null, certIdxList = [], certNameList = [] } = {}) {
+  const payload = {
+    resume_idx: resumeIdx,
+    cert_idx_list: certIdxList,
+    cert_name_list: certNameList,
+  };
+  return api.put('/api/users/certifications', payload).then(res => res.data);
+}
+
 // [이력서] 수정
 export function updateResume(resumeId, payload) {
   return api.put(`/api/resume/${resumeId}`, payload).then(res => res.data);
+}
+
+// [이력서] 자격증 매핑 저장(이력서별)
+// - certIdxList를 알고 있으면 전달, 모르면 certNameList로 전달하면 백엔드가 마스터 생성/매핑 처리
+export function saveResumeCertifications(resumeIdx, { certIdxList = [], certNameList = [] } = {}) {
+  const payload = {
+    resume_idx: resumeIdx,
+    cert_idx_list: certIdxList,
+    cert_name_list: certNameList,
+  };
+  return api.put('/api/users/certifications', payload).then(res => res.data);
+}
+
+// [이력서] 자동채움 데이터(학력/경력/병역) 일괄 조회
+export function getResumeTemplate() {
+  return api.get('/api/resumes/template').then(res => res.data);
+}
+
+/**
+ * [이력서] 로그인 사용자의 이력서 목록을 최신순으로 조회
+ * @returns {Promise<Array>} 이력서 목록
+ */
+export function getMyResumes() {
+  return api
+    .get('/api/resumes')
+    .then(res => {
+      const list = Array.isArray(res.data) ? res.data : [];
+      return list.map(item => ({
+        ...item,
+        creditCost: typeof item.creditCost === 'number' ? item.creditCost : 0,
+      }));
+    })
+    .catch(error => {
+      console.error('이력서 목록 조회 실패:', error);
+      return [];
+    });
+}
+
+// [이력서] 신규 생성 (multipart: resumeDto JSON + imageFile)
+export function createResume(resumeDto, imageFile) {
+  const fd = new FormData();
+  // resumeDto를 JSON Blob으로 첨부
+  fd.append('resumeDto', new Blob([JSON.stringify(resumeDto)], { type: 'application/json' }));
+  if (imageFile) fd.append('imageFile', imageFile);
+  return api.post('/api/resume', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+    .then(res => res.data);
+}
+
+// [공통] 자격증 자동완성 검색
+export function searchCertifications(keyword) {
+  if (!keyword || keyword.trim().length === 0) return Promise.resolve([]);
+  return api.get('/api/certifications/search', { params: { keyword } })
+    .then(res => Array.isArray(res.data) ? res.data : []);
 }
