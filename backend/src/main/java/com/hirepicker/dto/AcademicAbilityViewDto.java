@@ -1,6 +1,7 @@
 package com.hirepicker.dto;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,8 +14,11 @@ import lombok.NoArgsConstructor;
 public class AcademicAbilityViewDto {
     private Long schoolCode;     // 학교 코드
     private String schoolName;   // 학교명
+    private String campus;       // 캠퍼스 정보(선택)
     private String degree;       // 졸업구분(고졸/학사/석사/박사)
     private String major;        // 학과(전공)
     private BigDecimal majorScore; // 학점
+    private LocalDate admissionDate; // 입학일
+    private LocalDate graduationDate; // 졸업일
 }
 

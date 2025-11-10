@@ -8,6 +8,7 @@ import com.hirepicker.entity.ResumeStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -43,8 +44,10 @@ public class ResumeDto {
     @Size(max = 200, message = "자격요약은 최대 200자까지 입력 가능합니다.")
     private String cert;                // 자격요약(200)
 
-    @NotNull(message = "기본 이력서 여부는 필수 입력 항목입니다.")
-    private Boolean isDefault;          // 기본 이력서 여부
+    @JsonProperty("credit_cost")
+    @NotNull(message = "열람 크레딧 비용은 필수 입력 항목입니다.")
+    @Min(value = 0, message = "열람 크레딧 비용은 0 이상이어야 합니다.")
+    private Integer creditCost;         // 열람 시 필요한 크레딧 비용
 
     private String status;              // 공개 상태(문자열: PUBLIC/PRIVATE)
 
@@ -82,7 +85,7 @@ public class ResumeDto {
                 .selfMotivation(selfMotivation)
                 .selfAspirations(selfAspirations)
                 .imageUrl(imageUrl)
-                .isDefault(isDefault != null ? isDefault : false)
+                .creditCost(creditCost != null ? creditCost : 0)
                 .status(statusEnum)
                 .cert(cert)
                 .cancel(null) // cancel 기본 null 유지

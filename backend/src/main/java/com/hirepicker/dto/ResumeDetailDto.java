@@ -20,6 +20,7 @@ public class ResumeDetailDto {
     private final String selfAspirations;// 포부
     private final String status;       // 공개 상태
     private final String cert;         // 자격 요약
+    private final int creditCost;      // 열람 크레딧 비용
     private final java.time.LocalDateTime modifiedDate; // 최종 수정일
     private final Long expIdx;         // 연결 경력 PK(옵션)
 
@@ -40,6 +41,7 @@ public class ResumeDetailDto {
         this.selfAspirations = r.getSelfAspirations();
         this.status = r.getStatus() != null ? r.getStatus().name() : null;
         this.cert = r.getCert();
+        this.creditCost = r.getCreditCost();
         this.modifiedDate = r.getModifiedDate();
         this.expIdx = expIdx;
         this.personal = personal;
@@ -76,6 +78,7 @@ public class ResumeDetailDto {
         private final String degree;       // 학위
         private final String major;        // 전공
         private final BigDecimal majorScore; // 전공 학점
+        private final LocalDate admissionDate; // 입학일
         private final LocalDate graduationDate; // 졸업일
     }
 
@@ -99,7 +102,8 @@ public class ResumeDetailDto {
         private final String serviceType;      // 병역 유형
         private final String militaryBranch;   // 병과
         private final String militaryRank;     // 계급
-        private final String periodOfService;  // 복무 기간
+        private final LocalDate enlistmentDate;  // 입대일
+        private final LocalDate dischargeDate;   // 전역일
         private final String reasonForExemption; // 면제 사유
     }
 }

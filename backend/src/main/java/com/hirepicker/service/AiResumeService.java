@@ -1,17 +1,19 @@
 package com.hirepicker.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.genai.Client;
 import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.Part;
 import com.hirepicker.dto.ai.FullResumeDraftDto;
-import org.json.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
+import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 // AI 이력서 초안 생성을 담당하는 서비스
 @Service
@@ -19,6 +21,7 @@ import java.util.LinkedHashMap;
 public class AiResumeService {
 
     private final Client client;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     // 생성자를 통해 환경변수를 로드하고 Gemini 클라이언트를 초기화
     public AiResumeService() {
@@ -108,23 +111,29 @@ public class AiResumeService {
             }
 
             String jsonString = responseText.substring(startIndex, endIndex + 1);
-            JSONObject jsonResponse = new JSONObject(jsonString);
+            JsonNode rootNode;
+            try {
+                rootNode = OBJECT_MAPPER.readTree(jsonString);
+            } catch (IOException e) {
+                log.error("AI 응답 JSON 파싱 실패: {}", jsonString, e);
+                throw new RuntimeException("AI 응답 JSON 파싱에 실패했습니다.", e);
+            }
 
             // 키 불일치 대비: DB 컬럼명 기반 키와 기존 키를 모두 허용
-            String growth = getFirstNonBlank(jsonResponse,
-                    "background_and_growth", "growthProcess");
-            String personality = getFirstNonBlank(jsonResponse,
-                    "personality", "jobCompetencies");
-            String motivation = getFirstNonBlank(jsonResponse,
-                    "motivation_for_application", "prosAndCons");
-            String aspirations = getFirstNonBlank(jsonResponse,
-                    "future_aspirations", "aspirations");
+            String growth = getFirstNonBlank(rootNode,
+                    "background_and_growth", "growthProcess", "growth_process", "growth");
+            String competencies = getFirstNonBlank(rootNode,
+                    "jobCompetencies", "job_competencies", "personality", "strengths", "skills");
+            String motivation = getFirstNonBlank(rootNode,
+                    "motivation_for_application", "support_motivation", "motivation", "cover_letter");
+            String future = getFirstNonBlank(rootNode,
+                    "future_aspirations", "aspirations", "futurePlan", "future_plan", "plan");
 
             return new FullResumeDraftDto(
                     growth,
-                    personality,
+                    competencies,
                     motivation,
-                    aspirations
+                    future
             );
         } catch (Throwable t) {
             log.error("!!! AiResumeService에서 예측하지 못한 에러 발생 !!!", t);
@@ -137,13 +146,58 @@ public class AiResumeService {
         throw new UnsupportedOperationException("Unimplemented method 'generateFullDraft'");
     }
     // JSON에서 다수 후보 키 중 첫 번째로 존재하고 공백이 아닌 값을 반환하는 헬퍼
-    private static String getFirstNonBlank(org.json.JSONObject json, String... keys) {
+    private static String getFirstNonBlank(JsonNode node, String... keys) {
         for (String k : keys) {
-            if (json.has(k)) {
-                String v = json.optString(k, null);
-                if (v != null && !v.isBlank()) return v;
+            String value = findValue(node, k);
+            if (value != null && !value.isBlank()) {
+                return value.trim();
             }
         }
         return ""; // 모든 후보가 없으면 빈 문자열 반환
+    }
+
+    private static String findValue(JsonNode node, String targetKey) {
+        if (node == null || targetKey == null || node.isMissingNode()) return null;
+        if (node.isObject()) {
+            java.util.Iterator<String> fieldNames = node.fieldNames();
+            while (fieldNames.hasNext()) {
+                String key = fieldNames.next();
+                JsonNode child = node.get(key);
+                if (keyMatches(key, targetKey)) {
+                    String text = nodeToText(child);
+                    if (!text.isBlank()) return text;
+                }
+                String nested = findValue(child, targetKey);
+                if (nested != null && !nested.isBlank()) return nested;
+            }
+        } else if (node.isArray()) {
+            for (JsonNode child : node) {
+                String nested = findValue(child, targetKey);
+                if (nested != null && !nested.isBlank()) return nested;
+            }
+        }
+        return null;
+    }
+
+    private static boolean keyMatches(String actual, String expected) {
+        if (actual == null || expected == null) return false;
+        if (actual.equalsIgnoreCase(expected)) return true;
+        return normalizeKey(actual).equals(normalizeKey(expected));
+    }
+
+    private static String normalizeKey(String key) {
+        return key == null ? "" : key.toLowerCase().replaceAll("[_\\-\\s]", "");
+    }
+
+    private static String nodeToText(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) return "";
+        if (node.isValueNode() || node.isPojo()) {
+            String text = node.asText("");
+            return "null".equalsIgnoreCase(text) ? "" : text.trim();
+        }
+        String text = node.toString();
+        if (text == null) return "";
+        text = text.trim();
+        return "null".equalsIgnoreCase(text) ? "" : text;
     }
 }
