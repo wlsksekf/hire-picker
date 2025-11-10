@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.CompanyReviewDto;
 import com.hirepicker.dto.ReviewRequest;
+import com.hirepicker.dto.ReviewResponseDto;
 import com.hirepicker.entity.ComReview;
 import com.hirepicker.entity.PersonalUser;
 import com.hirepicker.repository.PersonalUserRepository;
@@ -30,6 +31,12 @@ public class ReviewController {
 
     private final ReviewService reviewService;
     private final PersonalUserRepository personalUserRepository;
+
+    @GetMapping("/companies/{companyId}")
+    public ResponseEntity<List<ReviewResponseDto>> getReviewsByCompany(@PathVariable Long companyId) {
+        List<ReviewResponseDto> reviews = reviewService.getReviewsByCompany(companyId);
+        return ResponseEntity.ok(reviews);
+    }
 
     @GetMapping("/companies")
     public ResponseEntity<List<CompanyReviewDto>> getReviewableCompanies(

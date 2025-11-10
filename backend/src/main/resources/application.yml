@@ -28,7 +28,6 @@ spring:
       max-request-size: 128MB # 한 번의 요청으로 허용할 최대 크기 (128MB, 필요시 더 크게)
 
   # 공용 데이터소스 설정
-
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver # MySQL 드라이버
     url: ${DB_URL}
@@ -54,7 +53,7 @@ spring:
         # MySQL 8+ 버전 호환용 Dialect(방언) 설정
         dialect: org.hibernate.dialect.MySQLDialect
 
-# === Spring Security (OAuth2) ===
+  # === Spring Security (OAuth2) ===
   security:
     oauth2:
       client:
@@ -142,23 +141,23 @@ api:
   work24:
     key: ${work24_key}
 
-# 학교 정보 API 키 (커리어넷)
-school-key: ${school_key}
+  # 학교 정보 API 키 (커리어넷)
+  school-key: ${school_key}
 
-# 자격증 정보 API 키 (Q-Net)
-certification-key: ${certification_key}
+  # 자격증 정보 API 키 (Q-Net)
+  certification-key: ${certification_key}
 
-payment:
-  toss:
-    widget-secret-key: ${TOSS_WIDGET_SECRET_KEY}
-    api-secret-key: ${TOSS_API_SECRET_KEY}
-    client-key: ${NEXT_PUBLIC_TOSS_CLIENT_KEY}
-    api-url: "https://api.tosspayments.com"
+  payment:
+    toss:
+      widget-secret-key: ${TOSS_WIDGET_SECRET_KEY}
+      api-secret-key: ${TOSS_API_SECRET_KEY}
+      client-key: ${NEXT_PUBLIC_TOSS_CLIENT_KEY}
+      api-url: "https://api.tosspayments.com"
 
-# Gemini API Key
-gemini:
-  api:
-    key: ${GOOGLE_API_KEY}
+  # Gemini API Key
+  gemini:
+    api:
+      key: ${GOOGLE_API_KEY}
 
 management:
   endpoints:

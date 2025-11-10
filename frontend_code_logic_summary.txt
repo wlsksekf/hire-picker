@@ -1,0 +1,217 @@
+### 1. `frontend/src/app/calendar/page.js`
+
+**목적:** 채용 공고 및 채용 행사를 달력 형태로 표시하며, 사용자가 지역별로 행사를 필터링할 수 있도록 합니다.
+
+**프론트엔드 로직:**
+*   **상태 관리:**
+    *   `jobPostings`: 채용 공고 데이터를 저장합니다.
+    *   `empEvents`: 채용 행사 데이터를 저장합니다.
+    *   `loading`, `error`: UI 로딩 및 오류 상태를 관리합니다.
+    *   `selectedRegions`: 사용자가 채용 행사 필터링을 위해 선택한 지역을 저장합니다.
+    *   `tempSelectedRegions`: Popover 내에서 임시로 지역 선택을 저장합니다.
+    *   `isRegionDialogOpen`, `anchorEl`: 지역 선택 Popover의 가시성과 위치를 제어합니다.
+*   **`useEffect` 훅:**
+    *   컴포넌트가 마운트되거나 `selectedRegions`가 변경될 때 달력 데이터(`jobPostings` 및 `empEvents`)를 가져옵니다.
+*   **`fetchCalendarData` 함수:**
+    *   두 가지 API 호출을 병렬로 수행합니다.
+        *   `/api/calendar/job-postings`: 모든 채용 공고를 가져옵니다.
+        *   `/api/calendar/emp-events`: 쿼리 매개변수로 전달된 `regions`에 따라 필터링된 채용 행사를 가져옵니다.
+*   **`getEventStatus` 함수:**
+    *   이벤트의 시작 및 종료 날짜를 기준으로 이벤트가 "과거", "진행 중", "예정"인지 여부를 결정합니다.
+*   **`events` 배열:**
+    *   `jobPostings`와 `empEvents`를 `CustomCalendar` 컴포넌트에 적합한 형식으로 결합합니다. 각 이벤트에는 `id`, `title`, `start`, `allDay`, `backgroundColor`, `textColor`, `borderColor`, `type`, `extendedProps`(`status` 포함)가 포함됩니다.
+*   **지역 선택 Popover:**
+    *   `availableRegions`: 하드코딩된 지역 목록입니다.
+    *   `handleRegionToggle`, `handleOpenRegionPopover`, `handleCloseRegionPopover`, `handleRegionApply`, `handleRegionCancel`: 지역 선택 및 Popover 상태를 관리하는 함수입니다.
+*   **UI 컴포넌트:**
+    *   `CustomCalendar`: 달력을 렌더링하는 사용자 정의 컴포넌트입니다.
+    *   `Button`: 지역 선택 Popover를 여는 데 사용됩니다.
+    *   `Popover`, `List`, `ListItem`, `Checkbox`: 지역 선택 UI에 사용됩니다.
+
+**백엔드 상호 작용:**
+*   **GET `/api/calendar/job-postings`:** 채용 공고 데이터를 가져옵니다. (예상 응답: `id`, `companyName`, `start`, `end`, `allDay`, `type` 필드를 포함하는 채용 공고 객체 목록).
+*   **GET `/api/calendar/emp-events?regions={region1},{region2}`:** 제공된 지역으로 필터링된 채용 행사 데이터를 가져옵니다. (예상 응답: `id`, `area`, `start`, `end`, `allDay`, `type` 필드를 포함하는 채용 행사 객체 목록).
+
+**데이터 흐름:**
+1.  컴포넌트 마운트 -> `fetchCalendarData` 호출.
+2.  `fetchCalendarData`는 `/api/calendar/job-postings` 및 `/api/calendar/emp-events`에 API 호출을 수행합니다.
+3.  백엔드는 채용 공고 및 채용 행사로 응답합니다.
+4.  프론트엔드는 데이터를 `events` 배열로 처리합니다.
+5.  `CustomCalendar` 컴포넌트가 이벤트를 렌더링합니다.
+6.  사용자가 Popover에서 지역을 선택 -> `selectedRegions` 상태 업데이트.
+7.  `useEffect`는 새 `selectedRegions`로 `fetchCalendarData`를 다시 트리거합니다.
+
+---
+
+### 2. `frontend/src/app/companies/page.js`
+
+**목적:** 승인된 회사 목록을 표시하고, 검색을 허용하며, 사용자가 회사를 "좋아요" (알람 설정)할 수 있도록 합니다.
+
+**프론트엔드 로직:**
+*   **상태 관리:**
+    *   `companies`: 회사 목록을 저장합니다.
+    *   `page`, `hasNextPage`: 페이지네이션을 위한 상태입니다.
+    *   `loading`, `error`: UI 로딩 및 오류 상태를 관리합니다.
+    *   `searchTerm`, `query`: 회사 검색 기능을 위한 상태입니다.
+    *   `likedCompanies`: 좋아요한 회사의 `companyIdx`를 저장하는 `Set`입니다.
+    *   `pUserIdx`: 백엔드에서 가져온 개인 사용자 인덱스를 저장합니다.
+*   **`useEffect` 훅:**
+    *   **초기 데이터 가져오기 및 검색:** 컴포넌트가 마운트되거나 `query`가 변경될 때 `query`를 기반으로 회사를 가져옵니다. 또한 사용자가 로그인한 경우 `pUserIdx` 및 `likedCompanies`를 가져옵니다.
+*   **`handleLoadMore` 함수:**
+    *   "더보기" 버튼을 클릭할 때 다음 페이지의 회사를 가져옵니다.
+*   **`getLogoUrl` 함수:**
+    *   회사 로고의 전체 URL을 구성합니다.
+*   **`handleSearchSubmit` 함수:**
+    *   검색 양식이 제출될 때 `query` 상태를 업데이트하여 새 검색을 트리거합니다.
+*   **`toggleLikeCompany` 함수:**
+    *   회사를 좋아요/좋아요 취소하는 것을 처리합니다. 회사 알람을 추가/제거하기 위해 API 호출을 수행합니다.
+*   **UI 컴포넌트:**
+    *   `TextField`, `Button`: 검색 입력 및 제출을 위한 컴포넌트입니다.
+    *   `Card`, `Box`, `Typography`, `Chip`: 회사 정보를 표시하기 위한 컴포넌트입니다.
+    *   `Link`: 개별 회사 상세 페이지로 이동하기 위한 컴포넌트입니다.
+    *   `FontAwesomeIcon`이 있는 `Button`: "관심기업" 및 "홈페이지" 버튼을 위한 컴포넌트입니다.
+
+**백엔드 상호 작용:**
+*   **GET `/api/companies?page={page}&size={size}&query={query}`:** 검색 쿼리로 선택적으로 필터링된 페이지별 회사 목록을 가져옵니다. (예상 응답: `CompanyDto` 객체의 페이지별 목록).
+*   **GET `/api/company-alarms/idx-by-email?email={user.email}`:** 로그인한 사용자의 `pUserIdx`(개인 사용자 인덱스)를 가져옵니다. (예상 응답: `{ idx: 123 }`과 같은 JSON 객체).
+*   **GET `/api/company-alarms/user/{pUserIdx}`:** 사용자가 좋아요한 `companyIdx` 값 목록을 가져옵니다. (예상 응답: Long 목록).
+*   **POST `/api/company-alarms`:** 사용자의 좋아요 목록에 회사를 추가합니다. (요청 본문: `{ p_user_idx: Long, company_idx: Long }`).
+*   **DELETE `/api/company-alarms/{pUserIdx}/{companyIdx}`:** 사용자의 좋아요 목록에서 회사를 제거합니다.
+
+**데이터 흐름:**
+1.  컴포넌트 마운트 -> 초기 회사 및 사용자 `pUserIdx`(로그인한 경우)를 가져옵니다.
+2.  `pUserIdx`를 사용할 수 있는 경우 `likedCompanies`를 가져옵니다.
+3.  사용자 검색 -> `query` 상태 업데이트 -> `useEffect`가 회사를 다시 가져옵니다.
+4.  사용자가 "더보기"를 클릭 -> `handleLoadMore`가 다음 페이지를 가져옵니다.
+5.  사용자가 "관심기업"을 클릭 -> `toggleLikeCompany`가 백엔드에 POST/DELETE 호출을 수행하고 `likedCompanies` 상태를 업데이트합니다.
+6.  `likedCompanies` 상태를 반영하는 "관심기업" 버튼 상태와 함께 회사 목록이 렌더링됩니다.
+
+---
+
+### 3. `frontend/src/app/mypage/personal/alarm/page.js`
+
+**목적:** 로그인한 개인 사용자가 알람을 설정한(좋아요한) 회사 목록을 표시합니다.
+
+**프론트엔드 로직:**
+*   **상태 관리:**
+    *   `likedCompanies`: 사용자가 좋아요한 회사에 대한 자세한 정보를 저장합니다.
+    *   `loading`, `error`: UI 로딩 및 오류 상태를 관리합니다.
+    *   `user`: 인증 상태 및 이메일을 위해 `useAuthStore`에서 가져옵니다.
+    *   `pUserIdx`: 개인 사용자 인덱스를 저장합니다.
+*   **`useEffect` 훅:**
+    *   **`pUserIdx` 가져오기:** 첫 번째 `useEffect`는 컴포넌트가 마운트되거나 `user`가 변경될 때 사용자 이메일을 사용하여 `pUserIdx`를 가져옵니다.
+    *   **좋아요한 회사 가져오기:** 두 번째 `useEffect`는 `pUserIdx`를 사용하여 좋아요한 각 회사에 대한 자세한 정보를 가져옵니다. 여기에는 두 단계가 포함됩니다.
+        1.  `/api/company-alarms/user/{pUserIdx}`에서 `companyIdx` 목록을 가져옵니다.
+        2.  각 `companyIdx`에 대해 `/api/companies/{companyIdx}`에 별도의 호출을 수행하여 전체 회사 세부 정보를 가져옵니다.
+*   **`getLogoUrl` 함수:**
+    *   회사 로고의 전체 URL을 구성합니다.
+*   **UI 컴포넌트:**
+    *   `Container`, `Typography`, `Divider`: 페이지 레이아웃 및 제목을 위한 컴포넌트입니다.
+    *   `Alert`: 메시지(예: 좋아요한 회사 없음, 오류)를 표시하기 위한 컴포넌트입니다.
+    *   `Grid`, `Card`, `CardContent`, `CardMedia`: 각 좋아요한 회사의 로고와 이름을 그리드 형식으로 표시하기 위한 컴포넌트입니다.
+
+**백엔드 상호 작용:**
+*   **GET `/api/company-alarms/idx-by-email?email={user.email}`:** 로그인한 사용자의 `pUserIdx`를 가져옵니다. (예상 응답: `{ idx: 123 }`과 같은 JSON 객체).
+*   **GET `/api/company-alarms/user/{pUserIdx}`:** 사용자가 좋아요한 `companyIdx` 값 목록을 가져옵니다. (예상 응답: Long 목록).
+*   **GET `/api/companies/{companyIdx}`:** 특정 회사에 대한 자세한 정보를 가져옵니다. (예상 응답: `CompanyDto` 객체).
+
+**데이터 흐름:**
+1.  컴포넌트 마운트 -> `user` 확인.
+2.  `user`가 존재하는 경우 백엔드에서 `pUserIdx`를 가져옵니다.
+3.  `pUserIdx`를 사용할 수 있게 되면 `companyIdx` 값 목록을 가져옵니다.
+4.  각 `companyIdx`에 대해 자세한 회사 정보를 가져옵니다.
+5.  `likedCompanies` 상태가 전체 회사 세부 정보로 업데이트됩니다.
+6.  UI는 `likedCompanies`를 그리드에 렌더링합니다.
+
+---
+
+### 4. `frontend/src/app/mypage/personal/review/page.js`
+
+**목적:** 로그인한 개인 사용자가 지원한 회사에 대한 리뷰를 작성, 조회 및 편집할 수 있도록 합니다.
+
+**프론트엔드 로직:**
+*   **상태 관리:**
+    *   `companies`: 사용자가 리뷰할 수 있는 회사 목록을 저장합니다.
+    *   `selectedCompany`: 현재 리뷰 중인 회사입니다.
+    *   `review`, `reviewerType`, `reviewIdx`: 리뷰 내용, 유형(CURRENT/FORMER), 인덱스를 저장합니다.
+    *   `isEditing`: 리뷰 양식이 편집 모드인지 보기 모드인지 제어합니다.
+    *   `isAuthenticated`, `isLoading`, `user`: 인증을 위해 `useAuthStore`에서 가져옵니다.
+    *   `snackbarOpen`, `snackbarMessage`, `snackbarSeverity`: 피드백 메시지를 표시하기 위한 상태입니다.
+*   **`useEffect` 훅:**
+    *   **인증 확인 및 리뷰 가능한 회사 가져오기:** 컴포넌트가 마운트되거나 인증 상태가 변경될 때 사용자가 인증되었는지 확인합니다. 인증된 경우 사용자가 리뷰할 수 있는 회사 목록(`/api/reviews/companies`)을 가져옵니다.
+*   **`fetchMyReview` 함수:**
+    *   `/api/reviews/{companyId}/my-review`에서 `selectedCompany`에 대한 사용자의 기존 리뷰를 가져옵니다. 리뷰가 없는 경우(404) 새 리뷰를 위한 양식을 준비합니다.
+*   **`handleCompanyClick` / `handleCompanySelectChange` 함수:**
+    *   드롭다운에서 회사를 선택할 때 `selectedCompany`를 업데이트하고 `fetchMyReview`를 트리거합니다.
+*   **`handleSave` 함수:**
+    *   `/api/reviews/{companyId}`에 POST 요청을 보내 리뷰를 저장하거나 업데이트합니다.
+*   **`handleEdit` 함수:**
+    *   `isEditing`을 `true`로 설정하여 기존 리뷰 편집을 활성화합니다.
+*   **UI 컴포넌트:**
+    *   `Container`, `Typography`, `Paper`: 레이아웃 및 콘텐츠 표시를 위한 컴포넌트입니다.
+    *   `FormControl`, `InputLabel`, `Select`, `MenuItem`: 리뷰할 회사를 선택하기 위한 컴포넌트입니다.
+    *   `RadioGroup`, `FormControlLabel`, `Radio`: `reviewerType`을 선택하기 위한 컴포넌트입니다.
+    *   `TextField`: 리뷰 내용을 작성하기 위한 컴포넌트입니다.
+    *   `Button`: 리뷰를 저장, 편집 또는 취소하기 위한 컴포넌트입니다.
+    *   `Snackbar`, `Alert`: 성공/오류 메시지를 표시하기 위한 컴포넌트입니다.
+    *   `RateReviewIcon`: 리뷰 섹션의 아이콘입니다.
+
+**백엔드 상호 작용:**
+*   **GET `/api/reviews/companies`:** 현재 인증된 사용자가 리뷰할 수 있는 회사 목록을 가져옵니다. (예상 응답: `companyIdx` 및 `companyName`을 포함하는 `CompanyReviewDto` 객체 목록).
+*   **GET `/api/reviews/{companyId}/my-review`:** 특정 회사에 대한 인증된 사용자의 리뷰를 가져옵니다. (예상 응답: `ReviewRequest` 객체와 `review`, `reviewerType`, `reviewIdx` 또는 찾을 수 없는 경우 404).
+*   **POST `/api/reviews/{companyId}`:** 회사에 대한 리뷰를 저장하거나 업데이트합니다. (요청 본문: `{ review: String, reviewerType: String, reviewIdx: Long }`).
+
+**데이터 흐름:**
+1.  컴포넌트 마운트 -> 사용자 인증 -> 리뷰 가능한 `companies`를 가져옵니다.
+2.  사용자가 회사를 선택 -> `selectedCompany` 업데이트 -> `fetchMyReview` 호출.
+3.  `fetchMyReview`는 기존 리뷰를 확인 -> 양식을 채우거나 새 리뷰를 준비합니다.
+4.  사용자가 리뷰를 작성/편집 -> `review`, `reviewerType` 상태 업데이트.
+5.  사용자가 "저장"을 클릭 -> `handleSave`가 백엔드에 POST 요청을 보냅니다.
+6.  백엔드는 요청을 처리 -> 프론트엔드는 성공/오류 메시지를 표시합니다.
+
+---
+
+### 5. `frontend/src/app/signup/company/create/page.js`
+
+**목적:** 이름, 사업자 등록 번호, 주소, 복지 혜택 등과 같은 세부 정보를 포함하여 새 회사 프로필을 생성하기 위한 양식을 제공합니다. 클라이언트 측 유효성 검사 및 중복 확인이 포함됩니다.
+
+**프론트엔드 로직:**
+*   **상태 관리:**
+    *   `formData`: 회사 프로필의 모든 입력 값을 저장합니다.
+    *   `loading`, `message`, `isError`: 양식 제출 상태 및 피드백을 관리합니다.
+    *   `nameError`, `businessNumberError`: 특정 필드에 대한 유효성 검사/중복 확인 오류 메시지를 저장합니다.
+    *   `formValid`: 전체 양식 유효성을 나타내는 부울입니다.
+    *   `debouncedName`, `debouncedBusinessNumber`: 서버 과부하를 방지하기 위해 중복 확인을 위한 입력 필드의 디바운스된 버전입니다.
+*   **`useDebounce` 훅:**
+    *   서버에 과부하를 주지 않고 실시간 유효성 검사 및 중복 확인에 유용한 입력 값을 디바운스하는 사용자 정의 훅입니다.
+*   **`useEffect` 훅:**
+    *   **양식 유효성 검사:** `formData` 또는 오류 상태가 변경될 때마다 `formValid` 상태를 업데이트합니다.
+    *   **이름 중복 확인:** `debouncedName`이 변경될 때 `name`에 대한 `/signup/company/check-duplicate`에 API 호출을 트리거합니다.
+    *   **사업자 등록 번호 유효성 검사 및 중복 확인:** 초기 형식 유효성 검사 후 `debouncedBusinessNumber`가 변경될 때 `businessNumber`에 대한 `/signup/company/check-duplicate`에 API 호출을 트리거합니다.
+*   **`handleChange` 함수:**
+    *   사용자가 입력할 때 `formData`를 업데이트하고 특정 필드에 대한 숫자 전용 입력을 처리합니다.
+*   **`handleWelfareChange` 함수:**
+    *   `Autocomplete`를 사용하여 여러 복지 혜택 선택을 관리합니다.
+*   **`handleCompanyTypeChange` 함수:**
+    *   사용자 선택에 따라 `formData`의 `companyType`을 업데이트합니다.
+*   **`handleSubmit` 함수:**
+    *   최종 유효성 검사를 수행합니다.
+    *   회사 데이터와 함께 `/signup/company/create-company`에 POST 요청을 보냅니다.
+    *   성공/오류 메시지를 처리합니다.
+*   **UI 컴포넌트:**
+    *   `StyledFormWrapper`, `CompanyTypeSelection`, `CompanyTypeBox`: 양식 레이아웃을 위한 사용자 정의 스타일 컴포넌트입니다.
+    *   `Typography`, `TextField`, `Autocomplete`, `Chip`, `Button`, `Alert`, `CircularProgress`: 양식 요소 및 피드백을 위한 Material-UI 컴포넌트입니다.
+
+**백엔드 상호 작용:**
+*   **GET `/signup/company/check-duplicate?fieldName=name&value={name}`:** 회사 이름이 이미 존재하는지 확인합니다. (예상 응답: `true` if duplicate, `false` otherwise).
+*   **GET `/signup/company/check-duplicate?fieldName=businessNumber&value={businessNumber}`:** 사업자 등록 번호가 이미 존재하는지 확인합니다. (예상 응답: `true` if duplicate, `false` otherwise).
+*   **POST `/signup/company/create-company`:** 새 회사 프로필을 생성합니다. (요청 본문: `welfare_benefits`가 쉼표로 구분된 문자열인 모든 `formData` 필드를 포함하는 JSON 객체). (예상 응답: `201 Created` with the saved company object on success).
+
+**데이터 흐름:**
+1.  사용자가 양식 필드에 데이터를 입력 -> `formData` 상태 업데이트.
+2.  디바운스된 입력 값은 유효성 검사 및 중복 확인을 위해 `useEffect` 훅을 트리거합니다.
+3.  백엔드 `check-duplicate` 엔드포인트가 호출되고 `nameError`/`businessNumberError` 상태가 업데이트됩니다.
+4.  `formValid` 상태는 모든 유효성 검사 확인을 기반으로 업데이트됩니다.
+5.  사용자가 "기업 등록"을 클릭 -> `handleSubmit` 호출.
+6.  `handleSubmit`은 `/signup/company/create-company`에 POST 요청을 보냅니다.
+7.  백엔드는 요청을 처리 -> 프론트엔드는 성공/오류 메시지를 표시합니다.

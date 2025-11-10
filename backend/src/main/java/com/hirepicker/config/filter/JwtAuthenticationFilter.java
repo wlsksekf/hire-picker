@@ -115,6 +115,7 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
             return bearerToken.substring(BEARER_PREFIX.length());
         }
 
+
         // 2. 쿠키에서 accessToken 추출 시도
         jakarta.servlet.http.Cookie[] cookies = request.getCookies();
         if (cookies != null) {

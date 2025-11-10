@@ -3,7 +3,6 @@ package com.hirepicker.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -233,16 +232,27 @@ public class EmploymentDataImpl implements EmploymentData {
 
     @Override
     public List<CalendarJobPostingDto> getAllJobPostingsForCalendar() {
-        return jobPostingRepository.findAll().stream()
-                .map(CalendarJobPostingDto::fromEntity)
-                .collect(Collectors.toList());
+        List<JobPosting> jobPostings = jobPostingRepository.findAll();
+        List<CalendarJobPostingDto> dtoList = new ArrayList<>();
+
+        for (JobPosting jobPosting : jobPostings) {
+            CalendarJobPostingDto dto = CalendarJobPostingDto.fromEntity(jobPosting);
+            dtoList.add(dto);
+        }
+
+        return dtoList;
     }
 
     @Override
     public List<CalendarEmpEventDto> getAllEmpEventsForCalendar() {
-        return empEventRepository.findAll().stream()
-                .map(CalendarEmpEventDto::fromEntity)
-                .collect(Collectors.toList());
+        List<EmpEvent> empEvents = empEventRepository.findAll();
+        List<CalendarEmpEventDto> dtoList = new ArrayList<>();
+
+        for (EmpEvent empEvent : empEvents) {
+            CalendarEmpEventDto dto = CalendarEmpEventDto.fromEntity(empEvent);
+            dtoList.add(dto);
+        }
+        return dtoList;
     }
 
     @Override
@@ -253,9 +263,12 @@ public class EmploymentDataImpl implements EmploymentData {
         } else {
             empEvents = empEventRepository.findByAreaContainingAnyOf(regions);
         }
-        return empEvents.stream()
-                .map(CalendarEmpEventDto::fromEntity)
-                .collect(Collectors.toList());
+        List<CalendarEmpEventDto> dtoList = new ArrayList<>();
+        for (EmpEvent empEvent : empEvents) {
+            CalendarEmpEventDto dto = CalendarEmpEventDto.fromEntity(empEvent);
+            dtoList.add(dto);
+        }
+        return dtoList;
     }
 
 }

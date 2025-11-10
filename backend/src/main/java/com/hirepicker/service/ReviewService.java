@@ -1,5 +1,6 @@
 package com.hirepicker.service;
 
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hirepicker.dto.CompanyReviewDto;
+import com.hirepicker.dto.ReviewResponseDto;
 import com.hirepicker.entity.ComReview;
 import com.hirepicker.entity.Company;
 import com.hirepicker.entity.JobPosting;
@@ -40,7 +42,7 @@ public class ReviewService {
         log.info("Fetching reviewable companies for userId: {}", userId);
 
         // 1. 사용자 ID(p_user_idx)로 이력서 목록 조회
-        List<Resume> resumes = resumeRepository.findByPersonalUser_Id(userId);
+        List<Resume> resumes = resumeRepository.findByPersonalUserIdOrderByIdDesc(userId);
         log.info("Found {} resumes for userId: {}", resumes.size(), userId);
         if (resumes.isEmpty()) {
             return Collections.emptyList();
@@ -80,6 +82,16 @@ public class ReviewService {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 회사를 찾을 수 없습니다. id=" + companyId));
         return comReviewRepository.findByCompanyAndPersonalUser(company, personalUser);
+    }
+
+    public List<ReviewResponseDto> getReviewsByCompany(Long companyId) {
+        List<ComReview> reviews = comReviewRepository.findByCompanyCompanyIdx(companyId);
+        return reviews.stream()
+                .map(review -> new ReviewResponseDto(
+                        review.getContent(),
+                        review.getReviewerType(),
+                        review.getWriteDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()))
+                .collect(Collectors.toList());
     }
 
     @Transactional

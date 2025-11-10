@@ -15,7 +15,10 @@ import {
   Divider,
   useTheme,
   Stack,
+  IconButton,
+  Modal,
 } from "@mui/material";
+import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBuilding,
@@ -80,9 +83,29 @@ function CompanyDetailPage() {
   const { idx } = useParams();
   const theme = useTheme();
   const [company, setCompany] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [logoError, setLogoError] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [selectedReview, setSelectedReview] = useState(null);
+
+  const reviewsPerPage = 4;
+  const pageCount = Math.ceil(reviews.length / reviewsPerPage);
+
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, pageCount - 1));
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 0));
+  };
+
+  const currentReviews = reviews.slice(
+    currentPage * reviewsPerPage,
+    (currentPage + 1) * reviewsPerPage
+  );
 
   useEffect(() => {
     if (idx) {
@@ -97,6 +120,18 @@ function CompanyDetailPage() {
         .catch((err) => {
           setError(err);
           setLoading(false);
+        });
+
+      setReviewsLoading(true);
+      api
+        .get(`/api/reviews/companies/${idx}`)
+        .then((response) => {
+          setReviews(response.data);
+          setReviewsLoading(false);
+        })
+        .catch((err) => {
+          // It's okay if there are no reviews, so we don't set an error
+          setReviewsLoading(false);
         });
     }
   }, [idx]);
@@ -316,9 +351,133 @@ function CompanyDetailPage() {
                 <WelfareList text={company.welfare_benefits} />
               </Paper>
             )}
+
+            <Paper elevation={0} sx={{ p: 4, borderRadius: 3 }}>
+              <Typography variant="h6" fontWeight={600} gutterBottom>
+                기업 리뷰
+              </Typography>
+              <Divider sx={{ my: 2 }} />
+              {reviewsLoading ? (
+                <CircularProgress size={24} />
+              ) : reviews.length > 0 ? (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <IconButton
+                    onClick={handlePrevPage}
+                    disabled={currentPage === 0}
+                  >
+                    <ArrowBackIos />
+                  </IconButton>
+                  <Grid
+                    container
+                    spacing={2}
+                    alignItems="stretch"
+                    sx={{ flex: 1 }}
+                  >
+                    {currentReviews.map((review, index) => (
+                      <Grid item xs={12} sm={6} md={3} key={index}>
+                        <Paper
+                          onClick={() => setSelectedReview(review)}
+                          sx={{
+                            p: 3,
+                            width: 180, // 고정된 카드 너비
+                            height: 200, // 고정된 카드 높이
+                            // height: "100%",
+                            // minHeight: "200px",
+                            backgroundColor: "#f8f8f8",
+                            borderRadius: 2,
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <div>
+                            <Typography variant="subtitle1" fontWeight="bold">
+                              {review.reviewerType === "CURRENT"
+                                ? "현직원"
+                                : "전직원"}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              color="text.primary"
+                              sx={{
+                                mt: 1.5,
+                                mb: 2,
+                                display: "-webkit-box",
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {review.content}
+                            </Typography>
+                          </div>
+                          <Typography
+                            variant="caption"
+                            color="text.disabled"
+                            sx={{ display: "block", textAlign: "right" }}
+                          >
+                            {new Date(review.writeDate).toLocaleDateString()}
+                          </Typography>
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                  <IconButton
+                    onClick={handleNextPage}
+                    disabled={currentPage >= pageCount - 1}
+                  >
+                    <ArrowForwardIos />
+                  </IconButton>
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  아직 작성된 리뷰가 없습니다.
+                </Typography>
+              )}
+            </Paper>
           </Stack>
         </Grid>
       </Grid>
+
+      {selectedReview && (
+        <Modal
+          open={!!selectedReview}
+          onClose={() => setSelectedReview(null)}
+          aria-labelledby="review-modal-title"
+          aria-describedby="review-modal-description"
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 400,
+              bgcolor: "background.paper",
+              boxShadow: 24,
+              p: 4,
+              borderRadius: 2,
+              outline: 0,
+            }}
+          >
+            <Typography id="review-modal-title" variant="h6" component="h2">
+              {selectedReview.reviewerType === "CURRENT" ? "현직원" : "전직원"}
+            </Typography>
+            <Typography id="review-modal-description" sx={{ mt: 2 }}>
+              {selectedReview.content}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.disabled"
+              sx={{ mt: 2, display: "block", textAlign: "right" }}
+            >
+              {new Date(selectedReview.writeDate).toLocaleDateString()}
+            </Typography>
+          </Box>
+        </Modal>
+      )}
     </Box>
   );
 }
