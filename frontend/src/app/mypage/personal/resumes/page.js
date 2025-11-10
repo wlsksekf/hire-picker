@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Container, Typography, Box, Button, Paper, Link as MuiLink } from '@mui/material';
+import { Container, Typography, Box, Button, Paper, Link as MuiLink, Stack, Chip } from '@mui/material';
 import NextLink from 'next/link';
 import { DataGrid } from '@mui/x-data-grid';
 
@@ -65,7 +65,7 @@ export default function ResumesPage() {
         const mapped = (Array.isArray(data) ? data : []).map((d) => ({
           id: d.id,
           title: d.title || '(제목 없음)',
-          status: mapStatusToLabel(d.status),
+          status: d.status || null,
           lastModified: d.modifiedDate ? new Date(d.modifiedDate).toISOString().slice(0, 10) : '-',
         }));
         setRows(mapped);

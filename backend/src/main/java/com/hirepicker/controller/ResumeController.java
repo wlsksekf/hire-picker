@@ -110,7 +110,9 @@ public class ResumeController {
     @Operation(summary = "이력서 자동채움 데이터", description = "사용자 저장 학력/경력/병역을 한 번에 반환합니다.")
     @GetMapping("/resumes/template")
     public ResponseEntity<ResumeTemplateDto> getResumeTemplate(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        // 인증되지 않은 경우 401 반환
         if (userDetails == null) return ResponseEntity.status(401).build();
+        // 사용자 id 기반으로 자동채움 데이터 조회
         ResumeTemplateDto body = resumeService.getResumeTemplate(userDetails.getId());
         return ResponseEntity.ok(body);
     }

@@ -38,14 +38,22 @@ public class ResumeUpdateController {
         String selfMotivation = (String) body.get("selfMotivation");
         String selfAspirations = (String) body.get("selfAspirations");
         String imageUrl = (String) body.get("imageUrl");
-        Boolean isDefault = body.get("isDefault") instanceof Boolean ? (Boolean) body.get("isDefault") : null;
+        Integer creditCost = null;
+        Object creditCostObj = body.get("creditCost") != null ? body.get("creditCost") : body.get("credit_cost");
+        if (creditCostObj instanceof Number number) {
+            creditCost = number.intValue();
+        } else if (creditCostObj instanceof String str) {
+            try {
+                creditCost = Integer.parseInt(str);
+            } catch (NumberFormatException ignored) { /* 잘못된 값이면 무시 */ }
+        }
         String status = (String) body.get("status");
         String cert = (String) body.get("cert");
         Long expIdx = null;
         Object exp = body.get("expIdx");
         if (exp instanceof Number) expIdx = ((Number) exp).longValue();
 
-        int updated = profileService.updateResume(userDetails.getId(), resumeId, title, selfGrowth, selfStrengths, selfMotivation, selfAspirations, imageUrl, isDefault, status, cert, expIdx);
+        int updated = profileService.updateResume(userDetails.getId(), resumeId, title, selfGrowth, selfStrengths, selfMotivation, selfAspirations, imageUrl, creditCost, status, cert, expIdx);
         if (updated == 0) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "이력서가 없거나 수정할 항목이 없습니다."));
         return ResponseEntity.ok(Map.of("message", "이력서가 수정되었습니다."));
     }

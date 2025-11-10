@@ -20,6 +20,7 @@ public class ResumeDetailDto {
     private final String selfAspirations;// 포부
     private final String status;       // 공개 상태
     private final String cert;         // 자격 요약
+    private final int creditCost;      // 열람 크레딧 비용
     private final java.time.LocalDateTime modifiedDate; // 최종 수정일
     private final Long expIdx;         // 연결 경력 PK(옵션)
 
@@ -40,6 +41,7 @@ public class ResumeDetailDto {
         this.selfAspirations = r.getSelfAspirations();
         this.status = r.getStatus() != null ? r.getStatus().name() : null;
         this.cert = r.getCert();
+        this.creditCost = r.getCreditCost();
         this.modifiedDate = r.getModifiedDate();
         this.expIdx = expIdx;
         this.personal = personal;

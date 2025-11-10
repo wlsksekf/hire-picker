@@ -1,20 +1,6 @@
 package com.hirepicker.entity;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.Lob;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -59,9 +45,9 @@ public class Resume extends BaseEntity {
     @Column(name = "img", length = 255)
     private String imageUrl; // 이미지 경로
 
-    @Column(name = "is_default", nullable = false)
+    @Column(name = "credit_cost", nullable = false)
     @Builder.Default // 빌더 기본값 설정
-    private boolean isDefault = false; // 대표 이력서 여부
+    private int creditCost = 0; // 열람 시 필요한 크레딧 비용
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
@@ -74,15 +60,17 @@ public class Resume extends BaseEntity {
     @Column(name = "cancel")
     private Boolean cancel; // 취소 여부
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
-    @JoinTable(name = "chosen_exp", joinColumns = @JoinColumn(name = "resume_idx"), inverseJoinColumns = @JoinColumn(name = "exp_idx"))
+    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(name = "chosen_exp",
+        joinColumns = @JoinColumn(name = "resume_idx"),
+        inverseJoinColumns = @JoinColumn(name = "exp_idx"))
     private WorkExperience workExperience;
 
     // 모든 필드를 포함하는 생성자 (Lombok @Builder가 사용)
     @Builder
     public Resume(Long id, PersonalUser personalUser, String title, String selfGrowth, String selfStrengths,
-            String selfMotivation, String selfAspirations, String imageUrl, boolean isDefault,
-            ResumeStatus status, String cert, Boolean cancel, WorkExperience workExperience) {
+                  String selfMotivation, String selfAspirations, String imageUrl, int creditCost,
+                  ResumeStatus status, String cert, Boolean cancel, WorkExperience workExperience) {
         this.id = id;
         this.personalUser = personalUser;
         this.title = title;
@@ -91,12 +79,13 @@ public class Resume extends BaseEntity {
         this.selfMotivation = selfMotivation;
         this.selfAspirations = selfAspirations;
         this.imageUrl = imageUrl;
-        this.isDefault = isDefault;
+        this.creditCost = creditCost;
         this.status = status;
         this.cert = cert;
         this.cancel = cancel;
         this.workExperience = workExperience;
     }
+
 
     // 경력 연결을 위한 편의 메서드
     public void attachWorkExperience(WorkExperience workExperience) {

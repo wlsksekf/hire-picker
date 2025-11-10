@@ -96,8 +96,12 @@ public class ProfileController {
     public ResponseEntity<Map<String, String>> saveAcademics(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                             @RequestBody List<AcademicAbilityDto> academics) {
         if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        profileService.replaceAcademics(userDetails.getId(), academics);
-        return ResponseEntity.ok(Map.of("message", "학력 정보가 저장되었습니다."));
+        try {
+            profileService.replaceAcademics(userDetails.getId(), academics);
+            return ResponseEntity.ok(Map.of("message", "학력 정보가 저장되었습니다."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
+        }
     }
 
     // --- 경력 ---
@@ -151,7 +155,15 @@ public class ProfileController {
     }
 
     // --- 자격증(이력서-자격증 매핑) ---
-    @Operation(summary = "자격증 매핑(전체 교체)")
+    @Operation(summary = "자격증 조회 (기본 이력서 기준)")
+    @GetMapping("/certifications")
+    public ResponseEntity<List<Map<String, Object>>> getCertifications(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        var list = profileService.listCertifications(userDetails.getId());
+        return ResponseEntity.ok(list);
+    }
+
+    @Operation(summary = "자격증 매핑(전체 교체, resumeIdx가 null이면 기본 이력서 사용)")
     @PutMapping("/certifications")
     @Transactional
     public ResponseEntity<Map<String, String>> saveCertifications(@AuthenticationPrincipal CustomUserDetails userDetails,
