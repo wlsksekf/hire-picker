@@ -15,10 +15,20 @@ public class CertificationUpdateRequestDto {
     @JsonProperty("resume_idx")
     private Long resumeIdx;              // 대상 이력서 PK
 
-    @JsonProperty("cert_idx_list")
-    private List<Long> certIdxList;      // 자격증 ID 목록(우선 적용)
+    @JsonProperty("certifications")
+    private List<Item> certifications;   // 저장할 자격증 목록
 
-    @JsonProperty("cert_name_list")
-    private List<String> certNameList;   // 자격증 이름 목록(없으면 마스터 생성)
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Item {
+        @JsonProperty("cert_idx")
+        private Long certIdx;            // 기존 자격증 ID (선택)
+
+        @JsonProperty("cert_name")
+        private String certName;         // 신규 자격증명 (선택)
+
+        @JsonProperty("score")
+        private String score;            // 점수/등급 (선택)
+    }
 }
-

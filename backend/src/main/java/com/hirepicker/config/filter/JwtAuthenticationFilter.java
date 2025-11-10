@@ -56,6 +56,7 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
                 "/ws", // /ws, /ws/**
                 "/api/ai/upload-image",
                 "/api/search"
+                
 
         );
 

@@ -78,7 +78,41 @@ public class SecurityConfig {
 
                 // 회사 검색은 공개 (누구나 조회 가능)
                 .requestMatchers(HttpMethod.GET, "/api/companies/search").permitAll()
+                        // 기타 공개 API 및 웹훅, 채팅 관련 엔드포인트는 모두 허용
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/webhooks/**", // 카카오 웹훅 엔드포인트 추가
+                                "/api/work24/**",
+                                "/actuator/**",
+                                "/api/health/**",
+                                "/api/manage/**",
+                                "/confirm/**",
+                                "/confirm-billing",
+                                "/issue-billing-key",
+                                "/callback-auth",
+                                "/fail",
+                                "/swagger-ui/**",
+                                "/api-docs/**",
+                                "/error",
+                                "/api/companies/**",
+                                "/api/dart/**",
+                                "/api/national-pension/**",
+                                "/signup/company/**",
+                                "/api/payment/webhook", // 웹훅 엔드포인트는 모두 허용
+                                "/chat/**",
+                                "/ws",
+                                "/ws/**",
+                                "/chat/history/**",
+                                "/api/v1/ai-chat",
+                                "/api/v1/ai-search",
+                                "/api/search", "/api/calendar/**",
+                                "/api/company-alarms/**",
+                                "/api/bookmark/toggle")
+                        .permitAll()
 
+
+                        // 이미지 업로드 엔드포인트는 인증 없이 허용
+                        .requestMatchers(HttpMethod.POST, "/api/ai/upload-image").permitAll()
                 // 기타 공개 API 및 웹훅, 채팅 관련 엔드포인트는 모두 허용
                 .requestMatchers(
                         "/api/auth/**",

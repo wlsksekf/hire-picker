@@ -1,85 +1,204 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import ResumeForm from "@/components/ResumeForm";
-import { api, getResumeTemplate, createResume, saveResumeCertifications, searchSchools as apiSearchSchools, generateAiFullDraft, generateAiResumeDraft, getCertifications } from "@/api";
+import {
+  api,
+  getResumeTemplate,
+  createResume,
+  saveResumeCertifications,
+  searchSchools as apiSearchSchools,
+  generateAiFullDraft,
+  generateAiResumeDraft,
+  getCertifications,
+  getResumeDetail,
+  updateResume,
+  saveExperiences,
+} from "@/api";
+import { createEmptyResumeForm } from "@/constants/resumeFormDefaults";
+import { Box, CircularProgress } from "@mui/material";
 
-export default function WriteResumePage() {
-  const [formData, setFormData] = useState({
-    title: "",
-    name: "",
-    gender: "",
-    birthdate: "",
-    phone: "",
-    email: "",
-    address: "",
-    aiPrompt: "",
-    selfGrowth: "",
-    selfStrengths: "",
-    selfMotivation: "",
-    selfAspirations: "",
-    // 학력 1
-    edu1_period: "",
-    edu1_school: "",
-    edu1_schoolCode: null,
-    edu1_major: "",
-    edu1_status: "",
-    edu1_score: "",
-    // 학력 2
-    edu2_period: "",
-    edu2_school: "",
-    edu2_schoolCode: null,
-    edu2_major: "",
-    edu2_status: "",
-    edu2_score: "",
-    // 병역
-    military_status: "",
-    military_branch: "",
-    military_rank: "",
-    military_period: "",
-    military_reason: "",
-    // 자격증 1
-    cert1_name: "",
-    cert1_level: "",
-    cert1_date: "",
-    cert1_issuer: "",
-    // 자격증 2
-    cert2_name: "",
-    cert2_level: "",
-    cert2_date: "",
-    cert2_issuer: "",
-    // 자격증 3
-    cert3_name: "",
-    cert3_level: "",
-    cert3_date: "",
-    cert3_issuer: "",
-    // 경력 1
-    exp1_period: "",
-    exp1_company: "",
-    exp1_position: "",
-    exp1_duties: "",
-    exp1_type: "",
-    // 경력 2
-    exp2_period: "",
-    exp2_company: "",
-    exp2_position: "",
-    exp2_duties: "",
-    exp2_type: "",
+function pad2(value = "") {
+  return value.toString().padStart(2, "0");
+}
+
+function normalizeIsoDate(dateStr) {
+  if (!dateStr) return "";
+  const trimmed = String(dateStr).trim();
+  if (!trimmed) return "";
+  const sanitized = trimmed.replace(/\./g, "-");
+  const match = sanitized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (!match) return "";
+  const [, year, month, day] = match;
+  return `${year}-${pad2(month)}-${pad2(day)}`;
+}
+
+function formatDisplayDate(dateStr) {
+  const iso = normalizeIsoDate(dateStr);
+  if (!iso) return "";
+  const [year, month, day] = iso.split("-");
+  return `${year}.${month}.${day}`;
+}
+
+function formatDisplayPeriod(startDate, endDate) {
+  const start = formatDisplayDate(startDate);
+  const end = formatDisplayDate(endDate);
+  if (!start && !end) return "";
+  if (!start) return `~ ${end}`;
+  if (!end) return `${start} ~`;
+  return `${start} ~ ${end}`;
+}
+
+function normalizeDateInput(input) {
+  if (input === undefined || input === null) return "";
+  const trimmed = String(input).trim();
+  if (!trimmed) return "";
+  const sanitized = trimmed.replace(/\s+/g, "").replace(/\./g, "-");
+  const match = sanitized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (!match) return null;
+  const [, year, month, day] = match;
+  return `${year}-${pad2(month)}-${pad2(day)}`;
+}
+
+function parsePeriodInput(value = "") {
+  const [startRaw = "", endRaw = ""] = value.split("~");
+  const start = normalizeDateInput(startRaw);
+  const end = normalizeDateInput(endRaw);
+  return { start, end };
+}
+
+function parseCertSummary(summary) {
+  if (!summary) return [];
+  return summary
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      const match = entry.match(/^(.*?)(?:\((.*?)\))?$/);
+      if (match) {
+        return {
+          name: match[1].trim(),
+          score: match[2] ? match[2].trim() : "",
+        };
+      }
+      return { name: entry, score: "" };
+    });
+}
+
+function mapDetailToForm(detail) {
+  const next = createEmptyResumeForm();
+
+  next.title = detail?.title || "";
+  next.selfGrowth = detail?.selfGrowth || "";
+  next.selfStrengths = detail?.selfStrengths || "";
+  next.selfMotivation = detail?.selfMotivation || "";
+  next.selfAspirations = detail?.selfAspirations || "";
+  next.cert = detail?.cert || "";
+
+  const personal = detail?.personal || {};
+  next.name = personal.name || "";
+  next.gender = personal.gender || "";
+  next.phone = personal.phone || personal.phoneNumber || "";
+  next.email = personal.email || "";
+  next.address = personal.address || "";
+
+  const academics = Array.isArray(detail?.academics) ? detail.academics : [];
+  academics.slice(0, 2).forEach((item, index) => {
+    const idx = index + 1;
+    next[`edu${idx}_school`] = item.schoolName || "";
+    next[`edu${idx}_major`] = item.major || "";
+    next[`edu${idx}_status`] = item.degree || "";
+    next[`edu${idx}_score`] = item.majorScore != null ? String(item.majorScore) : "";
+    next[`edu${idx}_admission`] = normalizeIsoDate(item.admissionDate);
+    next[`edu${idx}_graduation`] = normalizeIsoDate(item.graduationDate);
+    next[`edu${idx}_period`] = formatDisplayPeriod(item.admissionDate, item.graduationDate);
   });
+
+  const experiences = Array.isArray(detail?.experiences) ? detail.experiences : [];
+  experiences.slice(0, 2).forEach((item, index) => {
+    const idx = index + 1;
+    next[`exp${idx}_company`] = item.companyName || "";
+    next[`exp${idx}_position`] = item.position || "";
+    next[`exp${idx}_duties`] = item.mainDuties || item.jobDescription || "";
+    next[`exp${idx}_type`] = item.department || "";
+    next[`exp${idx}_period`] = formatDisplayPeriod(item.hireDate, item.resignDate);
+    next[`exp${idx}_hire`] = normalizeIsoDate(item.hireDate);
+    next[`exp${idx}_resign`] = normalizeIsoDate(item.resignDate);
+  });
+
+  const military = detail?.military || null;
+  if (military) {
+    next.military_status = military.serviceType || "";
+    next.military_branch = military.militaryBranch || "";
+    next.military_rank = military.militaryRank || "";
+    next.military_enlistment = normalizeIsoDate(military.enlistmentDate);
+    next.military_discharge = normalizeIsoDate(military.dischargeDate);
+    next.military_reason = military.reasonForExemption || "";
+    next.military_period = formatDisplayPeriod(military.enlistmentDate, military.dischargeDate);
+  }
+
+  const certs = parseCertSummary(detail?.cert);
+  certs.slice(0, 3).forEach((item, index) => {
+    const idx = index + 1;
+    next[`cert${idx}_name`] = item.name;
+    next[`cert${idx}_score`] = item.score;
+  });
+
+  return next;
+}
+
+function buildExperiencePayload(form) {
+  const items = [];
+  for (let index = 1; index <= 2; index += 1) {
+    const companyName = form[`exp${index}_company`]?.trim() || "";
+    const hireDate = normalizeIsoDate(form[`exp${index}_hire`]);
+    const resignDate = normalizeIsoDate(form[`exp${index}_resign`]);
+    const position = form[`exp${index}_position`]?.trim() || "";
+    const department = form[`exp${index}_type`]?.trim() || "";
+    const duties = form[`exp${index}_duties`]?.trim() || "";
+
+    if (!companyName && !hireDate) {
+      continue;
+    }
+
+    items.push({
+      companyName,
+      department: department || null,
+      position: position || null,
+      hireDate: hireDate || null,
+      resignDate: resignDate || null,
+      jobDescription: duties || null,
+      mainDuties: duties || null,
+    });
+  }
+  return items;
+}
+
+export default function WriteResumePage(props = {}) {
+  const router = useRouter();
+  const rawResumeId = props?.resumeId ?? props?.params?.id ?? null;
+  const resumeId = rawResumeId ? Number(rawResumeId) : null;
+  const isEditing = Boolean(resumeId);
+
+  const [formData, setFormData] = useState(() => createEmptyResumeForm());
   const [isLoading, setIsLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [initialImageUrl, setInitialImageUrl] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [userId, setUserId] = useState(null);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [availableExperiences, setAvailableExperiences] = useState([]); // 선택 가능한 경력 목록
   const [availableCertifications, setAvailableCertifications] = useState([]); // 선택 가능한 자격증 목록
+  const [initializing, setInitializing] = useState(true);
 
   // init: load user and template
   useEffect(() => {
     api.get('/api/users/me')
       .then(res => {
         const u = res.data || {};
-        setUserId(u.id || null);
+        const detectedUserId = u?.p_user_idx ?? u?.pUserIdx ?? u?.id ?? null;
+        setUserId(detectedUserId);
         setFormData(prev => ({
           ...prev,
           name: u.name || '',
@@ -90,13 +209,19 @@ export default function WriteResumePage() {
         }));
       })
       .catch(() => {});
-    
-    // 저장된 학력/경력/병역 정보 자동 채우기
-    loadResumeTemplate();
   }, []);
 
+  useEffect(() => {
+    if (resumeId) {
+      loadResumeDetail(resumeId);
+    } else {
+      loadResumeTemplate(true);
+    }
+  }, [resumeId]);
+
   // 이력서 템플릿 데이터 로드 및 자동 채우기
-  async function loadResumeTemplate() {
+  async function loadResumeTemplate(triggerInitializing = false, mergeIntoForm = true) {
+    if (triggerInitializing) setInitializing(true);
     try {
       const template = await getResumeTemplate();
       if (!template) return;
@@ -112,10 +237,9 @@ export default function WriteResumePage() {
           updates.edu1_major = acad1.major || '';
           updates.edu1_score = acad1.majorScore ? String(acad1.majorScore) : '';
           updates.edu1_status = acad1.degree || '';
-          if (acad1.graduationDate) {
-            const gradDate = new Date(acad1.graduationDate);
-            updates.edu1_period = `${gradDate.getFullYear()}.${String(gradDate.getMonth() + 1).padStart(2, '0')}`;
-          }
+          updates.edu1_admission = normalizeIsoDate(acad1.admissionDate);
+          updates.edu1_graduation = normalizeIsoDate(acad1.graduationDate);
+          updates.edu1_period = formatDisplayPeriod(acad1.admissionDate, acad1.graduationDate);
         }
         if (template.academics.length > 1) {
           const acad2 = template.academics[1];
@@ -125,10 +249,9 @@ export default function WriteResumePage() {
             updates.edu2_major = acad2.major || '';
             updates.edu2_score = acad2.majorScore ? String(acad2.majorScore) : '';
             updates.edu2_status = acad2.degree || '';
-            if (acad2.graduationDate) {
-              const gradDate = new Date(acad2.graduationDate);
-              updates.edu2_period = `${gradDate.getFullYear()}.${String(gradDate.getMonth() + 1).padStart(2, '0')}`;
-            }
+            updates.edu2_admission = normalizeIsoDate(acad2.admissionDate);
+            updates.edu2_graduation = normalizeIsoDate(acad2.graduationDate);
+            updates.edu2_period = formatDisplayPeriod(acad2.admissionDate, acad2.graduationDate);
           }
         }
       }
@@ -138,7 +261,9 @@ export default function WriteResumePage() {
         updates.military_status = template.military.serviceType || '';
         updates.military_branch = template.military.militaryBranch || '';
         updates.military_rank = template.military.militaryRank || '';
-        updates.military_period = template.military.periodOfService || '';
+        updates.military_enlistment = normalizeIsoDate(template.military.enlistmentDate);
+        updates.military_discharge = normalizeIsoDate(template.military.dischargeDate);
+        updates.military_period = formatDisplayPeriod(template.military.enlistmentDate, template.military.dischargeDate);
         updates.military_reason = template.military.reasonForExemption || '';
       }
 
@@ -155,9 +280,35 @@ export default function WriteResumePage() {
         setAvailableCertifications([]);
       }
       
-      setFormData(prev => ({ ...prev, ...updates }));
+      if (mergeIntoForm) {
+        setFormData(prev => ({ ...prev, ...updates }));
+      }
     } catch (err) {
       console.error('템플릿 로드 실패:', err);
+    } finally {
+      if (triggerInitializing) setInitializing(false);
+    }
+  }
+
+  async function loadResumeDetail(targetResumeId) {
+    setInitializing(true);
+    try {
+      const detail = await getResumeDetail(targetResumeId);
+      if (!detail) {
+        throw new Error("이력서 상세 정보를 찾을 수 없습니다.");
+      }
+      const mapped = mapDetailToForm(detail);
+      setFormData(mapped);
+      const imageUrl = detail.imageUrl || detail.img || null;
+      setPreviewImage(imageUrl);
+      setInitialImageUrl(imageUrl);
+      setImageFile(null);
+
+      await loadResumeTemplate(false, false);
+    } catch (err) {
+      console.error("이력서 상세 로드 실패:", err);
+    } finally {
+      setInitializing(false);
     }
   }
 
@@ -168,15 +319,54 @@ export default function WriteResumePage() {
 
   const onChange = (e) => {
     const { name, value } = e.target;
+    const periodMap = {
+      edu1_period: ['edu1_admission', 'edu1_graduation'],
+      edu2_period: ['edu2_admission', 'edu2_graduation'],
+      military_period: ['military_enlistment', 'military_discharge'],
+      exp1_period: ['exp1_hire', 'exp1_resign'],
+      exp2_period: ['exp2_hire', 'exp2_resign'],
+    };
+
+    if (periodMap[name]) {
+      const [startKey, endKey] = periodMap[name];
+      const { start, end } = parsePeriodInput(value);
+      const next = { [name]: value };
+      next[startKey] = start ?? '';
+      next[endKey] = end ?? '';
+
+      const includesOngoing = typeof value === 'string' && value.includes('재직');
+      const startLabel = start ? formatDisplayDate(start) : '';
+      const endLabel = end
+        ? formatDisplayDate(end)
+        : (includesOngoing ? '재직중' : '');
+
+      if (startLabel || endLabel) {
+        next[name] = endLabel
+          ? `${startLabel}${startLabel ? ' ~ ' : ''}${endLabel}`
+          : startLabel;
+      } else if (!value) {
+        next[name] = '';
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        ...next,
+      }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const onImageChange = (e) => {
     const file = e.target.files && e.target.files[0];
-    if (file) {
-      setImageFile(file);
-      setPreviewImage(URL.createObjectURL(file));
+    if (!file) return;
+    if (isEditing) {
+      alert("현재는 이력서 프로필 이미지를 수정할 수 없습니다.");
+      return;
     }
+    setImageFile(file);
+    setPreviewImage(URL.createObjectURL(file));
   };
 
   const searchSchools = async (query, target = 1) => {
@@ -218,41 +408,8 @@ export default function WriteResumePage() {
         [`exp${expIndex}_duties`]: '',
         [`exp${expIndex}_period`]: '',
         [`exp${expIndex}_type`]: '',
-      }));
-      return;
-    }
-
-    // 날짜 포맷팅 헬퍼
-    const formatDate = (dateStr) => {
-      if (!dateStr) return '';
-      const date = new Date(dateStr);
-      return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}`;
-    };
-
-    const period = experience.hireDate 
-      ? `${formatDate(experience.hireDate)} ~ ${experience.resignDate ? formatDate(experience.resignDate) : '재직중'}`
-      : '';
-
-    setFormData((prev) => ({
-      ...prev,
-      [`exp${expIndex}_company`]: experience.companyName || '',
-      [`exp${expIndex}_position`]: experience.position || '',
-      [`exp${expIndex}_duties`]: experience.jobDescription || experience.mainDuties || '',
-      [`exp${expIndex}_period`]: period,
-      [`exp${expIndex}_type`]: experience.department || '',
-    }));
-  };
-
-  // 자격증 선택 핸들러
-  const onCertificationSelect = (certIndex, certification) => {
-    if (!certification) {
-      // 선택 해제
-      setFormData((prev) => ({
-        ...prev,
-        [`cert${certIndex}_name`]: '',
-        [`cert${certIndex}_level`]: '',
-        [`cert${certIndex}_date`]: '',
-        [`cert${certIndex}_issuer`]: '',
+        [`exp${expIndex}_hire`]: '',
+        [`exp${expIndex}_resign`]: '',
       }));
       return;
     }
@@ -264,12 +421,38 @@ export default function WriteResumePage() {
       return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
     };
 
+    const period = experience.hireDate 
+      ? `${formatDate(experience.hireDate)} ~ ${experience.resignDate ? formatDate(experience.resignDate) : '재직중'}`
+      : '';
+
+    setFormData((prev) => ({
+      ...prev,
+      [`exp${expIndex}_company`]: experience.companyName || '',
+      [`exp${expIndex}_position`]: experience.position || '',
+      [`exp${expIndex}_duties`]: experience.mainDuties || experience.jobDescription || '',
+      [`exp${expIndex}_period`]: period,
+      [`exp${expIndex}_type`]: experience.department || '',
+      [`exp${expIndex}_hire`]: experience.hireDate ? normalizeIsoDate(experience.hireDate) : '',
+      [`exp${expIndex}_resign`]: experience.resignDate ? normalizeIsoDate(experience.resignDate) : '',
+    }));
+  };
+
+  // 자격증 선택 핸들러
+  const onCertificationSelect = (certIndex, certification) => {
+    if (!certification) {
+      // 선택 해제
+      setFormData((prev) => ({
+        ...prev,
+        [`cert${certIndex}_name`]: '',
+        [`cert${certIndex}_score`]: '',
+      }));
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [`cert${certIndex}_name`]: certification.certName || '',
-      [`cert${certIndex}_level`]: '',
-      [`cert${certIndex}_date`]: certification.acquisitionDate ? formatDate(certification.acquisitionDate) : '',
-      [`cert${certIndex}_issuer`]: '',
+      [`cert${certIndex}_score`]: certification.score || '',
     }));
   };
 
@@ -294,8 +477,8 @@ export default function WriteResumePage() {
       setFormData(prev => ({
         ...prev,
         selfGrowth: growthProcess || prev.selfGrowth || '',
-        selfStrengths: jobCompetencies || prev.selfStrengths || '',
-        selfMotivation: prosAndCons || prev.selfMotivation || '',
+        selfStrengths: prosAndCons || prev.selfStrengths || '',
+        selfMotivation: jobCompetencies || prev.selfMotivation || '',
         selfAspirations: aspirations || prev.selfAspirations || '',
       }));
     } finally { setIsLoading(false); }
@@ -310,8 +493,8 @@ export default function WriteResumePage() {
     try {
       const resumeDraft = {
         growthProcess: formData.selfGrowth || '',
-        jobCompetencies: formData.selfStrengths || '',
-        prosAndCons: formData.selfMotivation || '',
+        jobCompetencies: formData.selfMotivation || '',
+        prosAndCons: formData.selfStrengths || '',
         aspirations: formData.selfAspirations || '',
       };
       const res = await generateAiResumeDraft({ userData, resumeDraft });
@@ -319,8 +502,8 @@ export default function WriteResumePage() {
       setFormData(prev => ({
         ...prev,
         selfGrowth: growthProcess || prev.selfGrowth || '',
-        selfStrengths: jobCompetencies || prev.selfStrengths || '',
-        selfMotivation: prosAndCons || prev.selfMotivation || '',
+        selfStrengths: prosAndCons || prev.selfStrengths || '',
+        selfMotivation: jobCompetencies || prev.selfMotivation || '',
         selfAspirations: aspirations || prev.selfAspirations || '',
       }));
     } finally { setIsLoading(false); }
@@ -337,9 +520,54 @@ export default function WriteResumePage() {
 
   // save
   const onSave = async () => {
-    if (!userId) { alert('로그인이 필요합니다.'); return; }
+    if (!isEditing && !userId) { alert('로그인이 필요합니다.'); return; }
     setIsLoading(true);
     try {
+      const experiencePayload = buildExperiencePayload(formData);
+      const rawCertifications = [1, 2, 3]
+        .map((index) => {
+          const name = formData[`cert${index}_name`]?.trim();
+          const score = formData[`cert${index}_score`]?.trim();
+          if (!name) return null;
+          return {
+            certName: name,
+            score: score || null,
+          };
+        })
+        .filter(Boolean);
+
+      const resumeCertSummary = rawCertifications.length === 0
+        ? ''
+        : rawCertifications
+            .map(item => item.score ? `${item.certName} (${item.score})` : item.certName)
+            .join(', ');
+
+      if (isEditing) {
+        if (imageFile) {
+          alert('이미지 변경은 아직 지원되지 않습니다. 기존 이미지를 유지합니다.');
+        }
+
+        const updatePayload = {
+          title: formData.title || (formData.name ? `${formData.name} 이력서` : 'Resume'),
+          selfGrowth: formData.selfGrowth || '',
+          selfStrengths: formData.selfStrengths || '',
+          selfMotivation: formData.selfMotivation || '',
+          selfAspirations: formData.selfAspirations || '',
+          imageUrl: initialImageUrl || null,
+          creditCost: 0,
+          status: 'PUBLIC',
+          cert: resumeCertSummary,
+          expIdx: null,
+        };
+
+        await updateResume(resumeId, updatePayload);
+        await saveExperiences(experiencePayload);
+        await saveResumeCertifications(resumeId, { certifications: rawCertifications });
+        alert('이력서를 수정했습니다.');
+        router.push(`/mypage/personal/resumes/${resumeId}`);
+        return;
+      }
+
       const resumeDto = {
         title: formData.title || (formData.name ? (formData.name + "'s Resume") : 'Resume'),
         selfGrowth: formData.selfGrowth || '',
@@ -347,9 +575,9 @@ export default function WriteResumePage() {
         selfMotivation: formData.selfMotivation || '',
         selfAspirations: formData.selfAspirations || '',
         imageUrl: null,
-        cert: '',
+        cert: resumeCertSummary,
         credit_cost: 0,
-        status: 'PUBLIC',
+        status: 'PRIVATE',
         expIdx: null,
         p_user_idx: userId,
         gender: formData.gender || undefined,
@@ -358,18 +586,26 @@ export default function WriteResumePage() {
       const created = await createResume(resumeDto, imageFile);
       const resumeIdx = created?.resumeId;
 
-      const certNames = Array.isArray(formData.certNames)
-        ? formData.certNames
-        : (formData.cert && typeof formData.cert === 'string' ? formData.cert.split(',').map(s => s.trim()).filter(Boolean) : []);
-      if (resumeIdx && certNames.length > 0) {
-        await saveResumeCertifications(resumeIdx, { certIdxList: [], certNameList: certNames });
+      if (resumeIdx) {
+        await saveExperiences(experiencePayload);
+        await saveResumeCertifications(resumeIdx, { certifications: rawCertifications });
+        alert('이력서가 저장되었습니다.');
+        router.push(`/mypage/personal/resumes/${resumeIdx}`);
+      } else {
+        alert('이력서가 저장되었습니다.');
       }
-
-      alert('이력서가 저장되었습니다.');
     } catch (e) {
       alert('이력서 저장에 실패했습니다.');
     } finally { setIsLoading(false); }
   };
+
+  if (initializing) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '70vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <ResumeForm

@@ -30,6 +30,8 @@ import { styled } from "@mui/material/styles";
 import Image from "next/image";
 import Loader from "@/components/Loader"; // 로딩 스피너
 
+const ResumeFormReadOnlyContext = React.createContext(false);
+
 // 테이블 라벨 셀 스타일
 const StyledLabelCell = styled(TableCell)(({ theme }) => ({
   backgroundColor:
@@ -65,9 +67,21 @@ const UndisabledUnderlineTextField = ({ InputProps, sx, ...props }) => (
 
 // 공통 텍스트 입력 래퍼(폼 전용) - 위 표준 입력을 재사용
 // 누락된 컴포넌트로 인한 런타임 오류를 방지하기 위한 최소 정의
-const FormTextField = (props) => (
-  <UndisabledUnderlineTextField {...props} value={props.value ?? ''} />
-);
+const FormTextField = ({ InputProps, disabled, ...props }) => {
+  const readOnly = React.useContext(ResumeFormReadOnlyContext);
+  const mergedInputProps = { ...(InputProps || {}) };
+  if (readOnly) {
+    mergedInputProps.readOnly = true;
+  }
+  return (
+    <UndisabledUnderlineTextField
+      {...props}
+      value={props.value ?? ''}
+      InputProps={mergedInputProps}
+      disabled={readOnly ? true : disabled}
+    />
+  );
+};
 
 // 프리젠테이션 컴포넌트: 이력서 작성 양식
 export default function ResumeForm({
@@ -99,9 +113,11 @@ export default function ResumeForm({
   availableCertifications = [],
   onExperienceSelect,
   onCertificationSelect,
+  readOnly = false,
 }) {
   return (
-    <>
+    <ResumeFormReadOnlyContext.Provider value={readOnly}>
+      <>
       {isLoading && (
         <Box
           sx={{
@@ -139,6 +155,8 @@ export default function ResumeForm({
                 mt: 2,
                 "& .MuiInputBase-input": { textAlign: "center" },
               }} // 상단 마진 추가
+              InputProps={readOnly ? { readOnly: true } : undefined}
+              disabled={readOnly}
             />
 
             {/* 1. 기본 정보 */}
@@ -157,6 +175,7 @@ export default function ResumeForm({
                   flexShrink: 0,
                   position: "relative",
                   overflow: "hidden",
+                  cursor: readOnly ? "default" : "pointer",
                 }}
               >
                 {previewImage ? (
@@ -172,7 +191,7 @@ export default function ResumeForm({
                     color="text.secondary"
                     sx={{ textAlign: "center" }}
                   >
-                    이미지를 클릭해 업로드하세요
+                    {readOnly ? "프로필 이미지가 없습니다" : "이미지를 클릭해 업로드하세요"}
                   </Typography>
                 )}
                 <input
@@ -180,6 +199,7 @@ export default function ResumeForm({
                   accept="image/*"
                   onChange={onImageChange}
                   id="profile-image-upload"
+                  disabled={readOnly}
                   style={{
                     position: "absolute",
                     top: 0,
@@ -187,7 +207,8 @@ export default function ResumeForm({
                     width: "100%",
                     height: "100%",
                     opacity: 0,
-                    cursor: "pointer",
+                    cursor: readOnly ? "default" : "pointer",
+                    pointerEvents: readOnly ? "none" : "auto",
                     zIndex: 1,
                   }}
                 />
@@ -210,9 +231,22 @@ export default function ResumeForm({
                     <TableRow>
                       <StyledLabelCell>성별</StyledLabelCell>
                       <StyledInputCell>
-                        <RadioGroup row name="gender" value={formData.gender} onChange={onChange}>
-                          <FormControlLabel value="male" control={<Radio size="small" />} label="남" />
-                          <FormControlLabel value="female" control={<Radio size="small" />} label="여" />
+                        <RadioGroup
+                          row
+                          name="gender"
+                          value={formData.gender}
+                          onChange={readOnly ? undefined : onChange}
+                        >
+                          <FormControlLabel
+                            value="male"
+                            control={<Radio size="small" disabled={readOnly} />}
+                            label="남"
+                          />
+                          <FormControlLabel
+                            value="female"
+                            control={<Radio size="small" disabled={readOnly} />}
+                            label="여"
+                          />
                         </RadioGroup>
                       </StyledInputCell>
                       <StyledLabelCell>생년월일</StyledLabelCell>
@@ -249,18 +283,15 @@ export default function ResumeForm({
               <Table sx={{ tableLayout: "fixed" }}>
                 <TableHead>
                   <TableRow>
-                    <StyledLabelCell>기간</StyledLabelCell>
                     <StyledLabelCell>학교명</StyledLabelCell>
                     <StyledLabelCell>전공</StyledLabelCell>
                     <StyledLabelCell>상태</StyledLabelCell>
                     <StyledLabelCell>학점</StyledLabelCell>
+                    <StyledLabelCell>기간</StyledLabelCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   <TableRow>
-                    <StyledInputCell>
-                      <FormTextField name="edu1_period" value={formData.edu1_period} onChange={onChange} placeholder="YYYY.MM ~ YYYY.MM" />
-                    </StyledInputCell>
                     <StyledInputCell>
                       <FormTextField name="edu1_school" value={formData.edu1_school} onChange={onChange} placeholder="학교명" />
                     </StyledInputCell>
@@ -273,11 +304,16 @@ export default function ResumeForm({
                     <StyledInputCell>
                       <FormTextField name="edu1_score" value={formData.edu1_score} onChange={onChange} />
                     </StyledInputCell>
+                    <StyledInputCell>
+                      <FormTextField
+                        name="edu1_period"
+                        value={formData.edu1_period ?? ''}
+                        onChange={onChange}
+                        placeholder="YYYY.MM.DD ~ YYYY.MM.DD"
+                      />
+                    </StyledInputCell>
                   </TableRow>
                   <TableRow>
-                    <StyledInputCell>
-                      <FormTextField name="edu2_period" value={formData.edu2_period} onChange={onChange} placeholder="YYYY.MM ~ YYYY.MM" />
-                    </StyledInputCell>
                     <StyledInputCell>
                       <FormTextField name="edu2_school" value={formData.edu2_school} onChange={onChange} placeholder="학교명" />
                     </StyledInputCell>
@@ -289,6 +325,14 @@ export default function ResumeForm({
                     </StyledInputCell>
                     <StyledInputCell>
                       <FormTextField name="edu2_score" value={formData.edu2_score} onChange={onChange} />
+                    </StyledInputCell>
+                    <StyledInputCell>
+                      <FormTextField
+                        name="edu2_period"
+                        value={formData.edu2_period ?? ''}
+                        onChange={onChange}
+                        placeholder="YYYY.MM.DD ~ YYYY.MM.DD"
+                      />
                     </StyledInputCell>
                   </TableRow>
                 </TableBody>
@@ -306,7 +350,7 @@ export default function ResumeForm({
                     <StyledLabelCell>상태</StyledLabelCell>
                     <StyledLabelCell>군별</StyledLabelCell>
                     <StyledLabelCell>계급</StyledLabelCell>
-                    <StyledLabelCell>복무기간</StyledLabelCell>
+                    <StyledLabelCell>기간</StyledLabelCell>
                     <StyledLabelCell>면제사유</StyledLabelCell>
                   </TableRow>
                 </TableHead>
@@ -322,7 +366,12 @@ export default function ResumeForm({
                       <FormTextField name="military_rank" value={formData.military_rank} onChange={onChange} placeholder="계급" />
                     </StyledInputCell>
                     <StyledInputCell>
-                      <FormTextField name="military_period" value={formData.military_period} onChange={onChange} placeholder="YYYY.MM ~ YYYY.MM" />
+                      <FormTextField
+                        name="military_period"
+                        value={formData.military_period ?? ''}
+                        onChange={onChange}
+                        placeholder="YYYY.MM.DD ~ YYYY.MM.DD"
+                      />
                     </StyledInputCell>
                     <StyledInputCell>
                       <FormTextField name="military_reason" value={formData.military_reason} onChange={onChange} placeholder="면제 사유" />
@@ -340,10 +389,8 @@ export default function ResumeForm({
               <Table sx={{ tableLayout: "fixed" }}>
                 <TableHead>
                   <TableRow>
-                    <StyledLabelCell sx={{ width: "25%" }}>자격명</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: "20%" }}>등급/급수</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: "20%" }}>취득일</StyledLabelCell>
-                    <StyledLabelCell sx={{ width: "35%" }}>발급기관</StyledLabelCell>
+                    <StyledLabelCell sx={{ width: "60%" }}>자격명</StyledLabelCell>
+                    <StyledLabelCell sx={{ width: "40%" }}>점수/등급</StyledLabelCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -353,6 +400,7 @@ export default function ResumeForm({
                         <Autocomplete
                           fullWidth
                           freeSolo
+                  disabled={readOnly}
                           options={availableCertifications}
                           getOptionLabel={(option) => (typeof option === 'string' ? option : option.certName || '')}
                           value={availableCertifications.find(c => c.certName === formData.cert1_name) || formData.cert1_name || null}
@@ -375,9 +423,14 @@ export default function ResumeForm({
                         <FormTextField name="cert1_name" value={formData.cert1_name} onChange={onChange} placeholder="자격명" />
                       )}
                     </StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert1_level" value={formData.cert1_level} onChange={onChange} placeholder="등급/급수" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert1_date" value={formData.cert1_date} onChange={onChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert1_issuer" value={formData.cert1_issuer} onChange={onChange} placeholder="발급기관" /></StyledInputCell>
+                    <StyledInputCell>
+                      <FormTextField
+                        name="cert1_score"
+                        value={formData.cert1_score}
+                        onChange={onChange}
+                        placeholder="예: 850점 / 1급 / 합격"
+                      />
+                    </StyledInputCell>
                   </TableRow>
                   <TableRow>
                     <StyledInputCell>
@@ -385,6 +438,7 @@ export default function ResumeForm({
                         <Autocomplete
                           fullWidth
                           freeSolo
+                  disabled={readOnly}
                           options={availableCertifications}
                           getOptionLabel={(option) => (typeof option === 'string' ? option : option.certName || '')}
                           value={availableCertifications.find(c => c.certName === formData.cert2_name) || formData.cert2_name || null}
@@ -407,9 +461,14 @@ export default function ResumeForm({
                         <FormTextField name="cert2_name" value={formData.cert2_name} onChange={onChange} placeholder="자격명" />
                       )}
                     </StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert2_level" value={formData.cert2_level} onChange={onChange} placeholder="등급/급수" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert2_date" value={formData.cert2_date} onChange={onChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert2_issuer" value={formData.cert2_issuer} onChange={onChange} placeholder="발급기관" /></StyledInputCell>
+                    <StyledInputCell>
+                      <FormTextField
+                        name="cert2_score"
+                        value={formData.cert2_score}
+                        onChange={onChange}
+                        placeholder="예: 850점 / 1급 / 합격"
+                      />
+                    </StyledInputCell>
                   </TableRow>
                   <TableRow>
                     <StyledInputCell>
@@ -417,6 +476,7 @@ export default function ResumeForm({
                         <Autocomplete
                           fullWidth
                           freeSolo
+                  disabled={readOnly}
                           options={availableCertifications}
                           getOptionLabel={(option) => (typeof option === 'string' ? option : option.certName || '')}
                           value={availableCertifications.find(c => c.certName === formData.cert3_name) || formData.cert3_name || null}
@@ -439,9 +499,14 @@ export default function ResumeForm({
                         <FormTextField name="cert3_name" value={formData.cert3_name} onChange={onChange} placeholder="자격명" />
                       )}
                     </StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert3_level" value={formData.cert3_level} onChange={onChange} placeholder="등급/급수" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert3_date" value={formData.cert3_date} onChange={onChange} placeholder="YYYY.MM.DD" /></StyledInputCell>
-                    <StyledInputCell><FormTextField name="cert3_issuer" value={formData.cert3_issuer} onChange={onChange} placeholder="발급기관" /></StyledInputCell>
+                    <StyledInputCell>
+                      <FormTextField
+                        name="cert3_score"
+                        value={formData.cert3_score}
+                        onChange={onChange}
+                        placeholder="예: 850점 / 1급 / 합격"
+                      />
+                    </StyledInputCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -452,7 +517,7 @@ export default function ResumeForm({
               <Typography variant="h6" sx={{ fontWeight: "bold" }}>
                 [경력]
               </Typography>
-              {availableExperiences.length > 0 && onExperienceSelect && (
+              {!readOnly && availableExperiences.length > 0 && onExperienceSelect && (
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <Autocomplete
                     size="small"
@@ -494,14 +559,28 @@ export default function ResumeForm({
                 </TableHead>
                 <TableBody>
                   <TableRow>
-                    <StyledInputCell><FormTextField name="exp1_period" value={formData.exp1_period} onChange={onChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
+                    <StyledInputCell>
+                      <FormTextField
+                        name="exp1_period"
+                        value={formData.exp1_period}
+                        onChange={onChange}
+                        placeholder="YYYY.MM.DD ~ YYYY.MM.DD (또는 재직중)"
+                      />
+                    </StyledInputCell>
                     <StyledInputCell><FormTextField name="exp1_company" value={formData.exp1_company} onChange={onChange} placeholder="회사명" /></StyledInputCell>
                     <StyledInputCell><FormTextField name="exp1_position" value={formData.exp1_position} onChange={onChange} placeholder="직위" /></StyledInputCell>
                     <StyledInputCell><FormTextField name="exp1_duties" value={formData.exp1_duties} onChange={onChange} placeholder="담당업무" /></StyledInputCell>
                     <StyledInputCell><FormTextField name="exp1_type" value={formData.exp1_type} onChange={onChange} placeholder="형태" /></StyledInputCell>
                   </TableRow>
                   <TableRow>
-                    <StyledInputCell><FormTextField name="exp2_period" value={formData.exp2_period} onChange={onChange} placeholder="YYYY.MM ~ YYYY.MM" /></StyledInputCell>
+                    <StyledInputCell>
+                      <FormTextField
+                        name="exp2_period"
+                        value={formData.exp2_period}
+                        onChange={onChange}
+                        placeholder="YYYY.MM.DD ~ YYYY.MM.DD (또는 재직중)"
+                      />
+                    </StyledInputCell>
                     <StyledInputCell><FormTextField name="exp2_company" value={formData.exp2_company} onChange={onChange} placeholder="회사명" /></StyledInputCell>
                     <StyledInputCell><FormTextField name="exp2_position" value={formData.exp2_position} onChange={onChange} placeholder="직위" /></StyledInputCell>
                     <StyledInputCell><FormTextField name="exp2_duties" value={formData.exp2_duties} onChange={onChange} placeholder="담당업무" /></StyledInputCell>
@@ -526,6 +605,8 @@ export default function ResumeForm({
                 onChange={onChange}
                 variant="outlined"
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: 0 } }}
+              InputProps={readOnly ? { readOnly: true } : undefined}
+              disabled={readOnly}
               />
             </Box>
             <Box sx={{ mb: 2 }}>
@@ -539,6 +620,8 @@ export default function ResumeForm({
                 onChange={onChange}
                 variant="outlined"
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: 0 } }}
+              InputProps={readOnly ? { readOnly: true } : undefined}
+              disabled={readOnly}
               />
             </Box>
             <Box sx={{ mb: 2 }}>
@@ -552,6 +635,8 @@ export default function ResumeForm({
                 onChange={onChange}
                 variant="outlined"
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: 0 } }}
+              InputProps={readOnly ? { readOnly: true } : undefined}
+              disabled={readOnly}
               />
             </Box>
             <Box sx={{ mb: 2 }}>
@@ -565,83 +650,94 @@ export default function ResumeForm({
                 onChange={onChange}
                 variant="outlined"
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: 0 } }}
+              InputProps={readOnly ? { readOnly: true } : undefined}
+              disabled={readOnly}
               />
             </Box>
 
             <Divider sx={{ my: 4 }} />
 
-            {/* 7. AI 보조 */}
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1 }}>
-              <Image src="/picky.png" alt="Picky" width={32} height={32} />
-              <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold", color: "primary.main" }}>
-                AI 자기소개서 초안 쓰기/개선하기
-              </Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              ai 이력서 작성 비서 픽키에게 정보를 입력해 주세요.
-            </Typography>
-            <TextField
-              fullWidth
-              multiline
-              minRows={3}
-              name="aiPrompt"
-              value={formData.aiPrompt}
-              onChange={onChange}
-              placeholder="예) 회사 소개, 직무 요구사항, 우대사항 등 핵심만 요약하여 입력하세요."
-            />
+            {!readOnly && (
+              <>
+                {/* 7. AI 보조 */}
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1 }}>
+                  <Image src="/picky.png" alt="Picky" width={32} height={32} />
+                  <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold", color: "primary.main" }}>
+                    AI 자기소개서 초안 쓰기/개선하기
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  ai 이력서 작성 비서 픽키에게 정보를 입력해 주세요.
+                </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={3}
+                  name="aiPrompt"
+                  value={formData.aiPrompt}
+                  onChange={onChange}
+                  placeholder="예) 회사 소개, 직무 요구사항, 우대사항 등 핵심만 요약하여 입력하세요."
+                />
 
-            {/* 버튼 영역 */}
-            <Box sx={{ display: "flex", gap: 1, mt: 2, justifyContent: "flex-end" }}>
-              <Button
-                variant="outlined"
-                onClick={() => (typeof onOpenAiDialog === 'function' ? onOpenAiDialog() : onAiGenerate())}
-                disabled={isLoading}
-              >
-                {isLoading ? <CircularProgress size={18} /> : "AI 초안 생성"}
-              </Button>
-              <Button variant="outlined" onClick={onDownload}>PDF 다운로드</Button>
-              <Button variant="contained" onClick={onSave}>저장</Button>
-            </Box>
+                {/* 버튼 영역 */}
+                <Box sx={{ display: "flex", gap: 1, mt: 2, justifyContent: "flex-end" }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => (typeof onOpenAiDialog === 'function' ? onOpenAiDialog() : onAiGenerate())}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <CircularProgress size={18} /> : "AI 초안 생성"}
+                  </Button>
+                  <Button variant="outlined" onClick={onDownload}>PDF 다운로드</Button>
+                  <Button variant="contained" onClick={onSave}>저장</Button>
+                </Box>
+              </>
+            )}
           </Box>
         </Paper>
 
-        {/* 다이얼로그: 선택 안내 */}
-        <Dialog
-          open={dialogOpen}
-          onClose={onDialogClose}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-          <DialogTitle id="alert-dialog-title">내용을 어떻게 할까요?</DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              기존 작성된 자기소개서가 있습니다. 새로 생성하거나 개선을 선택하세요.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={onDialogClose}>취소</Button>
-            <Button onClick={onStartFresh} color="error">새로 생성</Button>
-            <Button onClick={onRefine} variant="contained" autoFocus>
-              개선하기
-            </Button>
-          </DialogActions>
-        </Dialog>
+        {!readOnly && (
+          <>
+            {/* 다이얼로그: 선택 안내 */}
+            <Dialog
+              open={dialogOpen}
+              onClose={onDialogClose}
+              aria-labelledby="alert-dialog-title"
+              aria-describedby="alert-dialog-description"
+            >
+              <DialogTitle id="alert-dialog-title">내용을 어떻게 할까요?</DialogTitle>
+              <DialogContent>
+                <DialogContentText id="alert-dialog-description">
+                  기존 작성된 자기소개서가 있습니다. 새로 생성하거나 개선을 선택하세요.
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={onDialogClose}>취소</Button>
+                <Button onClick={onStartFresh} color="error">새로 생성</Button>
+                <Button onClick={onRefine} variant="contained" autoFocus>
+                  개선하기
+                </Button>
+              </DialogActions>
+            </Dialog>
 
-        {/* 다이얼로그: 새로 생성 확인 */}
-        <Dialog open={confirmDialogOpen} onClose={onConfirmDialogClose}>
-          <DialogTitle>정말 새로 생성할까요?</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              기존 내용이 덮어써집니다. 계속하시겠습니까?
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={onConfirmDialogClose}>취소</Button>
-            <Button onClick={onConfirmStartFresh} color="error">새로 생성</Button>
-          </DialogActions>
-        </Dialog>
+            {/* 다이얼로그: 새로 생성 확인 */}
+            <Dialog open={confirmDialogOpen} onClose={onConfirmDialogClose}>
+              <DialogTitle>정말 새로 생성할까요?</DialogTitle>
+              <DialogContent>
+                <DialogContentText>
+                  기존 내용이 덮어써집니다. 계속하시겠습니까?
+                </DialogContentText>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={onConfirmDialogClose}>취소</Button>
+                <Button onClick={onConfirmStartFresh} color="error">새로 생성</Button>
+              </DialogActions>
+            </Dialog>
+          </>
+        )}
       </Container>
     </>
+    </ResumeFormReadOnlyContext.Provider>
   );
 }
 
