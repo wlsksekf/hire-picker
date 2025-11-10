@@ -170,4 +170,15 @@ public class CompanyApiController {
         List<CalendarEmpEventDto> empEvents = employmentData.getAllEmpEventsForCalendarByRegions(regions);
         return ResponseEntity.ok(empEvents);
     }
+
+    @Operation(summary = "특정 기업의 채용 공고 목록 조회", description = "company_idx를 이용하여 특정 기업의 채용 공고 목록을 조회합니다.")
+    @GetMapping("/companies/{companyIdx}/job-postings")
+    public ResponseEntity<List<JobDto>> getJobPostingsByCompanyIdx(@PathVariable("companyIdx") Long companyIdx) {
+        List<JobDto> jobPostings = employmentData.getJobPostingsByCompanyIdx(companyIdx);
+        if (jobPostings.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(jobPostings);
+    }
+
 }

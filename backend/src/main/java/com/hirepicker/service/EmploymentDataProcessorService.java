@@ -50,10 +50,14 @@ public class EmploymentDataProcessorService {
                     p.setLocation(dto.location());
                     jobPostingRepository.save(p);
                 },
-                () -> jobPostingRepository.save(JobPosting.builder().postingId(dto.id()).company(company)
-                        .title(dto.title()).employmentType(dto.employmentType()).location(dto.location()).build()) // 새로운
-                                                                                                                   // 공고이면
-                                                                                                                   // 저장
+                () -> jobPostingRepository.save(JobPosting.builder()
+                        .postingId(dto.id()) // Populate id
+                        .postingIdx(dto.postingIdx()) // Populate postingIdx
+                        .company(company)
+                        .title(dto.title())
+                        .employmentType(dto.employmentType())
+                        .location(dto.location())
+                        .build()) // 새로운 공고이면 저장
         );
     }
 

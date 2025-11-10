@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import useAuthStore from "@/store/authStore";
 import {
@@ -108,69 +109,80 @@ export default function AlarmPage() {
         <Grid container columnSpacing={2} rowSpacing={1.5}>
           {likedCompanies.map((company) => (
             <Grid item key={company.companyIdx} xs={3} sm={3} md={3} lg={3}>
-              <Card
-                sx={{
-                  width: 260, // 고정된 카드 너비
-                  height: 100, // 고정된 카드 높이
-                  display: "flex",
-                  flexDirection: "column",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                  borderRadius: "12px",
-                }}
+              <Link
+                href={`/companies/${company.companyIdx}`}
+                passHref
+                style={{ textDecoration: "none", color: "inherit" }}
               >
-                <CardContent
+                <Card
                   sx={{
-                    p: 0.5,
-                    paddingBottom: 0,
+                    width: 260, // 고정된 카드 너비
+                    height: 100, // 고정된 카드 높이
                     display: "flex",
                     flexDirection: "column",
-                    justifyContent: "flex-start",
-                    alignItems: "center",
-                    flexGrow: 1,
-                    pt: 2.3,
-                    "&:last-child": {
-                      paddingBottom: 0,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                    borderRadius: "12px",
+                    cursor: "pointer", // 클릭 가능한 요소임을 나타냄
+                    "&:hover": {
+                      transform: "translateY(-2px)", // 호버 시 약간 위로 이동
+                      boxShadow: "0 6px 16px rgba(0,0,0,0.12)", // 호버 시 그림자 강화
                     },
                   }}
                 >
-                  <Box
+                  <CardContent
                     sx={{
+                      p: 0.5,
+                      paddingBottom: 0,
                       display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "flex-start",
                       alignItems: "center",
-                      justifyContent: "center",
+                      flexGrow: 1,
+                      pt: 2.3,
+                      "&:last-child": {
+                        paddingBottom: 0,
+                      },
                     }}
                   >
-                    <CardMedia
-                      component="img"
+                    <Box
                       sx={{
-                        width: 60,
-                        height: 60,
-                        borderRadius: "50%",
-                        objectFit: "contain", // 로고 내용이 잘리지 않도록 contain으로 변경
-                        mr: 1,
-                      }}
-                      image={getLogoUrl(company.logoUrl)}
-                      alt={`${company.name} 로고`}
-                    />
-                    <Typography
-                      variant="subtitle1"
-                      component="div"
-                      sx={{
-                        flexShrink: 1, // 필요시 축소
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        fontWeight: "bold", // 회사명 폰트 두껍게
-                        lineHeight: 1, // 세로 중앙 정렬을 위해 줄 높이 제거
-                        margin: 0, // 모든 마진 제거
-                        padding: 0, // 모든 패딩 제거
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
-                      {company.name}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
+                      <CardMedia
+                        component="img"
+                        sx={{
+                          width: 60,
+                          height: 60,
+                          borderRadius: "50%",
+                          objectFit: "contain", // 로고 내용이 잘리지 않도록 contain으로 변경
+                          mr: 1,
+                        }}
+                        image={getLogoUrl(company.logoUrl)}
+                        alt={`${company.name} 로고`}
+                      />
+                      <Typography
+                        variant="subtitle1"
+                        component="div"
+                        sx={{
+                          flexShrink: 1, // 필요시 축소
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          fontWeight: "bold", // 회사명 폰트 두껍게
+                          lineHeight: 1, // 세로 중앙 정렬을 위해 줄 높이 제거
+                          margin: 0, // 모든 마진 제거
+                          padding: 0, // 모든 패딩 제거
+                        }}
+                      >
+                        {company.name}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Link>
             </Grid>
           ))}
         </Grid>

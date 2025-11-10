@@ -33,4 +33,13 @@ public interface EmploymentData {
 
     // 캘린더용 채용 행사 목록 조회 (지역 필터링)
     List<CalendarEmpEventDto> getAllEmpEventsForCalendarByRegions(List<String> regions);
+
+    // 특정 기업의 채용 공고 목록 조회
+    List<JobDto> getJobPostingsByCompanyIdx(Long companyIdx);
+
+    // 특정 채용 공고 상세 정보 조회 (ID 기준)
+    JobDto getJobPostingById(String postingId);
+
+    // 특정 채용 공고 상세 정보 조회 (인덱스 기준)
+    JobDto getJobPostingByPostingIdx(Long postingIdx);
 }

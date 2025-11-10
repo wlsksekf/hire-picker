@@ -12,7 +12,8 @@ import lombok.Builder;
 @JsonIgnoreProperties(ignoreUnknown = true) // JSON 역직렬화 시 알 수 없는 속성 무시
 @Builder // 빌더 패턴을 사용하여 객체 생성
 public record JobDto(
-    String id, // 공고 ID
+    String id, // 공고 ID (기존)
+    Long postingIdx, // 공고 인덱스 (Primary Key)
     String companyName, // 회사명
     String title, // 공고 제목
     String employmentType, // 고용 형태
@@ -22,6 +23,9 @@ public record JobDto(
     String companyType,
     Map<String, List<String>> filters,
     String experience_level, // 학력
-    String jobType
+    String jobType,
+    String description, // 상세 내용
+    String deadline, // 마감일
+    Long companyIdx // 회사 인덱스 추가
 
 ) {}

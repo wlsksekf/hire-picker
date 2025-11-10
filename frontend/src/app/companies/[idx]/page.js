@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import {
   Container,
   Typography,
@@ -91,6 +92,10 @@ function CompanyDetailPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedReview, setSelectedReview] = useState(null);
 
+  const [jobPostings, setJobPostings] = useState([]);
+  const [jobPostingsLoading, setJobPostingsLoading] = useState(true);
+  const [jobPostingsError, setJobPostingsError] = useState(null);
+
   const reviewsPerPage = 4;
   const pageCount = Math.ceil(reviews.length / reviewsPerPage);
 
@@ -131,6 +136,18 @@ function CompanyDetailPage() {
         })
         .catch((err) => {
           setReviewsLoading(false);
+        });
+
+      setJobPostingsLoading(true);
+      api
+        .get(`/api/companies/${idx}/job-postings`)
+        .then((response) => {
+          setJobPostings(response.data);
+          setJobPostingsLoading(false);
+        })
+        .catch((err) => {
+          setJobPostingsError(err);
+          setJobPostingsLoading(false);
         });
     }
   }, [idx]);
@@ -433,6 +450,56 @@ function CompanyDetailPage() {
               ) : (
                 <Typography variant="body2" color="text.secondary">
                   아직 작성된 리뷰가 없습니다.
+                </Typography>
+              )}
+            </Paper>
+
+            {/* Job Postings Section */}
+            <Paper elevation={0} sx={{ p: 4, borderRadius: 3, mt: 4 }}>
+              <Typography variant="h6" fontWeight={600} gutterBottom>
+                채용 공고
+              </Typography>
+              <Divider sx={{ my: 2 }} />
+              {jobPostingsLoading ? (
+                <CircularProgress size={24} />
+              ) : jobPostingsError ? (
+                <Alert severity="error">
+                  채용 공고를 불러오는 데 실패했습니다:{" "}
+                  {jobPostingsError.message}
+                </Alert>
+              ) : jobPostings.length > 0 ? (
+                <Grid container spacing={2}>
+                  {jobPostings.map((jobPosting) => (
+                    <Grid item xs={12} sm={6} md={4} key={jobPosting.id}>
+                      <Link
+                        href={`/postings/${jobPosting.id}`}
+                        passHref
+                        style={{ textDecoration: "none" }}
+                      >
+                        <Paper
+                          variant="outlined"
+                          sx={{
+                            p: 2,
+                            height: "100%",
+                            cursor: "pointer",
+                            width: 280,
+                          }}
+                        >
+                          <Typography variant="subtitle1" fontWeight="bold">
+                            {jobPosting.title}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {jobPosting.companyName}
+                          </Typography>
+                          {/* Add more job posting details as needed */}
+                        </Paper>
+                      </Link>
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  현재 진행 중인 채용 공고가 없습니다.
                 </Typography>
               )}
             </Paper>

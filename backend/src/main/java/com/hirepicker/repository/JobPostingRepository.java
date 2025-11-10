@@ -17,6 +17,9 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long>, J
     // 공고 ID로 채용 공고를 찾는 메서드
     Optional<JobPosting> findByPostingId(String postingId);
 
+    // 공고 인덱스로 채용 공고를 찾는 메서드
+    Optional<JobPosting> findByPostingIdx(Long postingIdx);
+
     // AI 챗봇에서 키워드와 지역으로 채용 공고를 검색하는 메소드 추가
     List<JobPosting> findByTitleContaining(String keyword); // 키워드로만 검색
     List<JobPosting> findByTitleContainingAndLocation(String keyword, String location);
@@ -27,5 +30,7 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long>, J
     Page<JobPosting> findAll(Pageable pageable);
 
     List<JobPosting> findByPostingIdxIn(List<Long> postingIdxs);
+
+    List<JobPosting> findByCompany_CompanyIdx(Long companyIdx);
 
 }

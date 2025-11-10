@@ -20,11 +20,15 @@ import ChatRoom from '@/components/ChatRoom';
 import SearchFilterBar from '@/components/SearchFilterBar';
 import Bookmark from '@/components/BookMark';
 import JobDetailModal from '@/components/JobDetailModal';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const PAGE_SIZE = 18;
 
-function MainPage() {
+function HomePage() {
   const theme = useTheme();
+  const router = useRouter();
+
   const [jobs, setJobs] = useState([]);
   const [page, setPage] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(true);
@@ -84,23 +88,20 @@ function MainPage() {
 
   useEffect(function () {
     fetchJobs(0, appliedSearchTerm, appliedFilters);
-  }, []);
+  }, []); // Initial fetch on component mount
 
-  function handleSearchAndFilter(term, filters, responseData) {
-    setAppliedSearchTerm(term);
-    setAppliedFilters(filters);
-    setPage(0);
-
-    if (responseData && responseData.content) {
-      setJobs(responseData.content);
-      setHasNextPage(responseData.last === false);
-      setStatus('success');
-    } else {
-      setJobs([]);
-      setHasNextPage(false);
-      setStatus('success');
+  const handleSearchAndFilter = (term, filters) => {
+    // When search/filter is applied on the home page, navigate to the postings page
+    // and pass the search/filter parameters as query params.
+    const queryParams = new URLSearchParams();
+    if (term) queryParams.append('searchTerm', term);
+    for (const filterType in filters) {
+      if (filters[filterType] && filters[filterType].length > 0) {
+        queryParams.append(filterType, filters[filterType].join(','));
+      }
     }
-  }
+    router.push(`/postings?${queryParams.toString()}`);
+  };
 
   function fetchNextPage() {
     const nextPage = page + 1;
@@ -148,81 +149,82 @@ function MainPage() {
           {jobs.map(function (job) {
             return (
               <Grid key={job.id || `${job.companyName}-${job.title}`} size={{ xs: 12, sm: 6, md: 4 }}>
-                <Card
-                   sx={{
-                    borderRadius: '16px',
-                    height: '100%',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s, box-shadow 0.2s', // 부드럽게
-                    '&:hover': {
-                      backgroundColor: theme.palette.action.hover, // 살짝 빛나는 느낌
-                      boxShadow: '0 6px 16px rgba(0,0,0,0.1)', // 약간 그림자 강조
-                    },
-                  }}
-                  onClick={() => setSelectedJob(job)} // 카드 클릭 시 상세 모달
-                >
-                  <Box sx={{
-                    height: '180px',
-                    backgroundImage: job.imgUrl ? `url(/${job.imgUrl})` : 'none',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    backgroundColor: theme.palette.grey[200],
-                  }} />
-                  <Box sx={{
-                    p: 3,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    height: 'calc(100% - 180px)'
-                  }}>
-                    <Typography color="text.secondary" noWrap>
-                      {job.companyName}
-                    </Typography>
-                    <Typography variant="h5" fontWeight="bold" sx={{
-                      mb: 2,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
+                <Link href={`/postings/${job.id}`} passHref style={{ textDecoration: 'none' }}>
+                  <Card
+                     sx={{
+                      borderRadius: '16px',
+                      height: '100%',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s, box-shadow 0.2s', // 부드럽게
+                      '&:hover': {
+                        backgroundColor: theme.palette.action.hover, // 살짝 빛나는 느낌
+                        boxShadow: '0 6px 16px rgba(0,0,0,0.1)', // 약간 그림자 강조
+                      },
+                    }}
+                  >
+                    <Box sx={{
+                      height: '180px',
+                      backgroundImage: job.imgUrl ? `url(/${job.imgUrl})` : 'none',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      backgroundColor: theme.palette.grey[200],
+                    }} />
+                    <Box sx={{
+                      p: 3,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      height: 'calc(100% - 180px)'
                     }}>
-                      {job.title}
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {job.employmentType && <Chip label={job.employmentType} />}
-                      {job.location && <Chip label={job.location} />}
-                      {job.experience_level && <Chip label={job.experience_level} />}
-                      {job.companyType && <Chip label={job.companyType} />}
-                      {job.jobType && <Chip label={job.jobType} />}
-                      {job.startDate && job.endDate && (
-                        <Chip
-                          icon={<FontAwesomeIcon icon={faCalendar} />}
-                          label={`${job.startDate} ~ ${job.endDate}`}
-                        />
-                      )}
+                      <Typography color="text.secondary" noWrap>
+                        {job.companyName}
+                      </Typography>
+                      <Typography variant="h5" fontWeight="bold" sx={{
+                        mb: 2,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                      }}>
+                        {job.title}
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {job.employmentType && <Chip label={job.employmentType} />}
+                        {job.location && <Chip label={job.location} />}
+                        {job.experience_level && <Chip label={job.experience_level} />}
+                        {job.companyType && <Chip label={job.companyType} />}
+                        {job.jobType && <Chip label={job.jobType} />}
+                        {job.startDate && job.endDate && (
+                          <Chip
+                            icon={<FontAwesomeIcon icon={faCalendar} />}
+                            label={`${job.startDate} ~ ${job.endDate}`}
+                          />
+                        )}
+                      </Box>
+                      <CardActions sx={{ mt: 2, justifyContent: 'flex-end' }}>
+                          <Box onClick={(e) => e.stopPropagation()}>
+                          <Bookmark jobId={job.id} />
+                          </Box>
+                        <Button
+                          variant="outlined"
+                          onClick={(e) => { e.stopPropagation(); setSelectedPost(job); }} // 채팅 독립
+                        >
+                          실시간 채팅
+                        </Button>
+                        <Button
+                          variant="contained"
+                          href={job.homepageUrl}
+                          target="_blank"
+                          disabled={!job.homepageUrl}
+                          onClick={(e) => e.stopPropagation()} // 지원하기 독립
+                        >
+                          지원하기
+                        </Button>
+                      </CardActions>
                     </Box>
-                    <CardActions sx={{ mt: 2, justifyContent: 'flex-end' }}>
-                        <Box onClick={(e) => e.stopPropagation()}>
-                        <Bookmark jobId={job.id} />
-                        </Box>
-                      <Button
-                        variant="outlined"
-                        onClick={(e) => { e.stopPropagation(); setSelectedPost(job); }} // 채팅 독립
-                      >
-                        실시간 채팅
-                      </Button>
-                      <Button
-                        variant="contained"
-                        href={job.homepageUrl}
-                        target="_blank"
-                        disabled={!job.homepageUrl}
-                        onClick={(e) => e.stopPropagation()} // 지원하기 독립
-                      >
-                        지원하기
-                      </Button>
-                    </CardActions>
-                  </Box>
-                </Card>
+                  </Card>
+                </Link>
               </Grid>
             );
           })}
@@ -248,4 +250,4 @@ function MainPage() {
   );
 }
 
-export default MainPage;
+export default HomePage;

@@ -34,12 +34,10 @@ public class EmploymentDataImpl implements EmploymentData {
     private final EmpEventRepository empEventRepository; // 채용 행사 리포지토리
     private final CompanyRepository companyRepository; // 기업 리포지토리
 
-
     public JobPosting findByPostingId(String postingId) {
-    return jobPostingRepository.findByPostingId(postingId)
-            .orElseThrow(() -> new IllegalArgumentException("해당 posting_id에 해당하는 공고를 찾을 수 없습니다."));
-}
-
+        return jobPostingRepository.findByPostingId(postingId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 posting_id에 해당하는 공고를 찾을 수 없습니다."));
+    }
 
     // 채용 공고 목록 조회
     @Override
@@ -56,7 +54,8 @@ public class EmploymentDataImpl implements EmploymentData {
             }
 
             JobDto jobDto = JobDto.builder()
-                    .id(job.getPostingId())
+                    .id(job.getPostingId()) // Populate id
+                    .postingIdx(job.getPostingIdx()) // Populate postingIdx
                     .companyName(companyName)
                     .title(job.getTitle())
                     .employmentType(job.getEmploymentType())
@@ -222,7 +221,8 @@ public class EmploymentDataImpl implements EmploymentData {
             }
 
             jobDtos.add(JobDto.builder()
-                    .id(job.getPostingId())
+                    .id(job.getPostingId()) // Populate id
+                    .postingIdx(job.getPostingIdx()) // Populate postingIdx
                     .companyName(companyName)
                     .title(job.getTitle())
                     .employmentType(job.getEmploymentType())
@@ -278,6 +278,92 @@ public class EmploymentDataImpl implements EmploymentData {
         return dtoList;
     }
 
+    @Override
+    public List<JobDto> getJobPostingsByCompanyIdx(Long companyIdx) {
+        List<JobPosting> jobPostings = jobPostingRepository.findByCompany_CompanyIdx(companyIdx);
+        List<JobDto> jobDtos = new ArrayList<>();
 
+        for (JobPosting job : jobPostings) {
+            String companyName = "";
+            String imgUrl = null;
+            if (job.getCompany() != null) {
+                companyName = job.getCompany().getCompanyName();
+                imgUrl = job.getCompany().getImgPath();
+            }
+
+            jobDtos.add(JobDto.builder()
+                    .id(job.getPostingId()) // Populate id
+                    .postingIdx(job.getPostingIdx()) // Populate postingIdx
+                    .companyName(companyName)
+                    .title(job.getTitle())
+                    .employmentType(job.getEmploymentType())
+                    .location(job.getCompany().getAddress())
+                    .imgUrl(imgUrl)
+                    .experience_level(job.getExperienceLevel())
+                    .companyType(job.getLocation())
+                    .jobType(job.getJobType())
+                    .companyIdx(job.getCompany() != null ? job.getCompany().getCompanyIdx() : null) // Populate companyIdx
+                    .build());
+        }
+        return jobDtos;
+    }
+
+    @Override
+    public JobDto getJobPostingById(String postingId) {
+        JobPosting jobPosting = jobPostingRepository.findByPostingId(postingId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 posting_id에 해당하는 공고를 찾을 수 없습니다."));
+
+        String companyName = "";
+        String imgUrl = null;
+        if (jobPosting.getCompany() != null) {
+            companyName = jobPosting.getCompany().getCompanyName();
+            imgUrl = jobPosting.getCompany().getImgPath();
+        }
+
+        return JobDto.builder()
+                .id(jobPosting.getPostingId())
+                .postingIdx(jobPosting.getPostingIdx()) // Populate postingIdx
+                .companyName(companyName)
+                .title(jobPosting.getTitle())
+                .employmentType(jobPosting.getEmploymentType())
+                .location(jobPosting.getCompany().getAddress())
+                .imgUrl(imgUrl)
+                .experience_level(jobPosting.getExperienceLevel())
+                .companyType(jobPosting.getLocation())
+                .jobType(jobPosting.getJobType())
+                .description(jobPosting.getDescription())
+                .deadline(jobPosting.getEndDate() != null ? jobPosting.getEndDate().toString() : null)
+                .companyIdx(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyIdx() : null)
+                .build();
+    }
+
+    @Override
+    public JobDto getJobPostingByPostingIdx(Long postingIdx) {
+        JobPosting jobPosting = jobPostingRepository.findByPostingIdx(postingIdx)
+                .orElseThrow(() -> new IllegalArgumentException("해당 posting_idx에 해당하는 공고를 찾을 수 없습니다."));
+
+        String companyName = "";
+        String imgUrl = null;
+        if (jobPosting.getCompany() != null) {
+            companyName = jobPosting.getCompany().getCompanyName();
+            imgUrl = jobPosting.getCompany().getImgPath();
+        }
+
+        return JobDto.builder()
+                .id(jobPosting.getPostingId()) // Populate id
+                .postingIdx(jobPosting.getPostingIdx()) // Populate postingIdx
+                .companyName(companyName)
+                .title(jobPosting.getTitle())
+                .employmentType(jobPosting.getEmploymentType())
+                .location(jobPosting.getCompany().getAddress())
+                .imgUrl(imgUrl)
+                .experience_level(jobPosting.getExperienceLevel())
+                .companyType(jobPosting.getLocation())
+                .jobType(jobPosting.getJobType())
+                .description(jobPosting.getDescription())
+                .deadline(jobPosting.getEndDate() != null ? jobPosting.getEndDate().toString() : null)
+                .companyIdx(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyIdx() : null)
+                .build();
+    }
 
 }

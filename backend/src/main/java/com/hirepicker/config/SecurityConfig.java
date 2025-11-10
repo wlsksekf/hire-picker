@@ -92,6 +92,7 @@ public class SecurityConfig {
                                 "/api/companies/**",
                                 "/api/dart/**",
                                 "/api/national-pension/**",
+                                "/api/job-postings/**",
                                 "/signup/company/**",
                                 "/api/payment/webhook", // 웹훅 엔드포인트는 모두 허용
                                 "/chat/**",
@@ -102,9 +103,9 @@ public class SecurityConfig {
                                 "/api/v1/ai-search",
                                 "/api/search", "/api/calendar/**",
                                 "/api/company-alarms/**",
-                                "/api/bookmark/toggle")
+                                "/api/bookmark/toggle",
+                                "/api/bookmark/check")
                         .permitAll()
-
 
                         // 이미지 업로드 엔드포인트는 인증 없이 허용
                         .requestMatchers(HttpMethod.POST, "/api/ai/upload-image").permitAll()
