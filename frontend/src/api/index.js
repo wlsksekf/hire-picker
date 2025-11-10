@@ -296,10 +296,33 @@ export function saveMilitary(military) {
 
 // [마이페이지] 자격증 조회/저장
 export function getCertifications() {
-  return api.get('/api/users/certifications').then(res => res.data || []);
+  return api
+    .get('/api/users/certifications')
+    .then(res => {
+      const data = res.data;
+      if (Array.isArray(data)) {
+        return data;
+      }
+      if (Array.isArray(data?.certifications)) {
+        return data.certifications;
+      }
+      if (Array.isArray(data?.data)) {
+        return data.data;
+      }
+      return [];
+    })
+    .catch(error => {
+      console.error('자격증 목록 조회 실패:', error);
+      return [];
+    });
 }
-export function saveCertifications({ certIdxList = [], certNameList = [] } = {}) {
-  return api.put('/api/users/certifications', { resumeIdx: null, certIdxList, certNameList }).then(res => res.data);
+export function saveCertifications({ resumeIdx = null, certIdxList = [], certNameList = [] } = {}) {
+  const payload = {
+    resume_idx: resumeIdx,
+    cert_idx_list: certIdxList,
+    cert_name_list: certNameList,
+  };
+  return api.put('/api/users/certifications', payload).then(res => res.data);
 }
 
 // [이력서] 수정
@@ -310,14 +333,37 @@ export function updateResume(resumeId, payload) {
 // [이력서] 자격증 매핑 저장(이력서별)
 // - certIdxList를 알고 있으면 전달, 모르면 certNameList로 전달하면 백엔드가 마스터 생성/매핑 처리
 export function saveResumeCertifications(resumeIdx, { certIdxList = [], certNameList = [] } = {}) {
-  return api
-    .put('/api/users/certifications', { resumeIdx, certIdxList, certNameList })
-    .then(res => res.data);
+  const payload = {
+    resume_idx: resumeIdx,
+    cert_idx_list: certIdxList,
+    cert_name_list: certNameList,
+  };
+  return api.put('/api/users/certifications', payload).then(res => res.data);
 }
 
 // [이력서] 자동채움 데이터(학력/경력/병역) 일괄 조회
 export function getResumeTemplate() {
   return api.get('/api/resumes/template').then(res => res.data);
+}
+
+/**
+ * [이력서] 로그인 사용자의 이력서 목록을 최신순으로 조회
+ * @returns {Promise<Array>} 이력서 목록
+ */
+export function getMyResumes() {
+  return api
+    .get('/api/resumes')
+    .then(res => {
+      const list = Array.isArray(res.data) ? res.data : [];
+      return list.map(item => ({
+        ...item,
+        creditCost: typeof item.creditCost === 'number' ? item.creditCost : 0,
+      }));
+    })
+    .catch(error => {
+      console.error('이력서 목록 조회 실패:', error);
+      return [];
+    });
 }
 
 // [이력서] 신규 생성 (multipart: resumeDto JSON + imageFile)

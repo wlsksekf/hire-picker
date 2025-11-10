@@ -4,19 +4,28 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  TextField,
   Button,
   IconButton,
   Alert,
   CircularProgress,
   Card,
   CardContent,
-  Divider
+  Divider,
+  Tooltip,
+  Chip,
+  Stack,
 } from '@mui/material';
-import { AddCircleOutline, DeleteOutline, WorkspacePremium } from '@mui/icons-material';
-import { getCertifications, saveCertifications, searchCertifications } from '@/api';
+import {
+  AddCircleOutline,
+  DeleteOutline,
+  WorkspacePremium,
+  LocalOffer,
+} from '@mui/icons-material';
+import { getCertifications, saveCertifications, searchCertifications, getMyResumes } from '@/api';
 import Autocomplete from '@mui/material/Autocomplete';
-import { StyledCard, StyledTextField, StyledButton } from './FormStyles';
+import TextField from '@mui/material/TextField';
+import { StyledCard, StyledButton } from './FormStyles';
+import debounce from 'lodash/debounce';
 
 export default function CertificationInfoForm() {
   const [certifications, setCertifications] = useState([]);
@@ -26,10 +35,44 @@ export default function CertificationInfoForm() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [searchOptions, setSearchOptions] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [targetResumeId, setTargetResumeId] = useState(null);
+  const [resumeNotice, setResumeNotice] = useState(null);
 
   // 초기 로드: 자격증 조회
   useEffect(() => {
     loadCertifications();
+  }, []);
+
+  useEffect(() => {
+    (async function resolveResumeTarget() {
+      try {
+        const list = await getMyResumes();
+        const resumes = Array.isArray(list) ? list : [];
+        if (resumes.length === 0) {
+          setResumeNotice('자격증을 저장하려면 먼저 이력서를 작성해주세요.');
+          setTargetResumeId(null);
+          return;
+        }
+        const sorted = [...resumes].sort((a, b) => {
+          const timeA = a.modifiedDate ? new Date(a.modifiedDate).getTime() : 0;
+          const timeB = b.modifiedDate ? new Date(b.modifiedDate).getTime() : 0;
+          if (timeA === timeB) {
+            const idA = a.id ?? a.resumeIdx ?? 0;
+            const idB = b.id ?? b.resumeIdx ?? 0;
+            return idB - idA;
+          }
+          return timeB - timeA;
+        });
+        const chosen = sorted[0];
+        setResumeNotice(null);
+        setTargetResumeId(chosen?.id ?? chosen?.resumeIdx ?? null);
+      } catch (err) {
+        console.error('이력서 목록 조회 실패:', err);
+        setResumeNotice('이력서 정보를 불러오지 못했습니다. 새로고침 후 다시 시도하세요.');
+        setTargetResumeId(null);
+      }
+    })();
   }, []);
 
   async function loadCertifications() {
@@ -37,10 +80,12 @@ export default function CertificationInfoForm() {
       setLoading(true);
       setError(null);
       const list = await getCertifications();
-      const mapped = (list || []).map((c, idx) => ({
+      const normalized = Array.isArray(list) ? list : [];
+      const mapped = normalized.map((c, idx) => ({
         id: idx + 1,
         certIdx: c.certIdx,
-        certName: c.certName || ''
+        certName: c.certName || '',
+        isRegistered: true,
       }));
       setCertifications(mapped);
     } catch (err) {
@@ -53,7 +98,10 @@ export default function CertificationInfoForm() {
   }
 
   function handleAddRow() {
-    setCertifications([...certifications, { id: Date.now(), certIdx: null, certName: '' }]);
+    setCertifications([
+      ...certifications,
+      { id: Date.now(), certIdx: null, certName: '', isRegistered: false },
+    ]);
   }
 
   function handleRemoveRow(id) {
@@ -62,10 +110,20 @@ export default function CertificationInfoForm() {
 
   function handleChange(e, id) {
     const { name, value } = e.target;
-    const updated = certifications.map(item => (item.id === id ? { ...item, [name]: value } : item));
+    const updated = certifications.map(item => {
+      if (item.id !== id) return item;
+      if (name === 'certName') {
+        return {
+          ...item,
+          certName: value,
+          certIdx: null,
+          isRegistered: false,
+        };
+      }
+      return { ...item, [name]: value };
+    });
     setCertifications(updated);
-    
-    // 실시간 유효성 검사
+
     const cert = updated.find(item => item.id === id);
     if (cert) {
       validateCertification(cert, id);
@@ -89,26 +147,57 @@ export default function CertificationInfoForm() {
     setErrors(newErrors);
   }
 
-  async function handleSearchCertification(inputValue, id) {
-    if (!inputValue || inputValue.length < 2) {
-      setSearchOptions([]);
-      return;
-    }
-    try {
-      const results = await searchCertifications(inputValue);
-      setSearchOptions(results || []);
-    } catch (err) {
-      console.error('자격증 검색 실패:', err);
-      setSearchOptions([]);
-    }
-  }
+  const debouncedSearch = React.useMemo(
+    () =>
+      debounce(async (inputValue) => {
+        if (!inputValue || inputValue.length < 2) {
+          setSearchOptions([]);
+          setSearchLoading(false);
+          return;
+        }
+        try {
+          setSearchLoading(true);
+          const results = await searchCertifications(inputValue);
+          setSearchOptions(results || []);
+        } catch (err) {
+          console.error('자격증 검색 실패:', err);
+          setSearchOptions([]);
+        } finally {
+          setSearchLoading(false);
+        }
+      }, 250),
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   function handleCertificationSelect(option, id) {
-    if (option && option.certIdx) {
-      const e1 = { target: { name: 'certIdx', value: String(option.certIdx) } };
-      const e2 = { target: { name: 'certName', value: option.certName } };
-      handleChange(e1, id);
-      handleChange(e2, id);
+    if (!option) return;
+    const updated = certifications.map(item => {
+      if (item.id !== id) return item;
+      if (typeof option === 'string') {
+        return {
+          ...item,
+          certName: option,
+          certIdx: null,
+          isRegistered: false,
+        };
+      }
+      return {
+        ...item,
+        certName: option.certName,
+        certIdx: option.certIdx ? String(option.certIdx) : null,
+        isRegistered: Boolean(option.certIdx),
+      };
+    });
+    setCertifications(updated);
+    const cert = updated.find(item => item.id === id);
+    if (cert) {
+      validateCertification(cert, id);
     }
   }
 
@@ -141,19 +230,26 @@ export default function CertificationInfoForm() {
       }
 
       // 자격증명 목록 추출
+      const certIdxList = certifications
+        .filter(c => c.certIdx)
+        .map(c => Number(c.certIdx));
       const certNameList = certifications
-        .filter(c => c.certName && c.certName.trim())
+        .filter(c => !c.certIdx && c.certName && c.certName.trim())
         .map(c => c.certName.trim());
 
-      if (certNameList.length === 0) {
-        // 빈 목록도 저장 가능 (모두 삭제)
-        await saveCertifications({ certNameList: [] });
+      if (!targetResumeId) {
+        setError('자격증을 저장할 이력서를 찾을 수 없습니다. 기본 이력서를 먼저 등록해주세요.');
+        return;
+      }
+
+      if (certIdxList.length === 0 && certNameList.length === 0) {
+        await saveCertifications({ resumeIdx: targetResumeId, certIdxList: [], certNameList: [] });
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
         return;
       }
 
-      await saveCertifications({ certNameList });
+      await saveCertifications({ resumeIdx: targetResumeId, certIdxList, certNameList });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       // 저장 후 다시 조회
@@ -203,6 +299,16 @@ export default function CertificationInfoForm() {
         </Alert>
       )}
 
+      {resumeNotice && (
+        <Alert
+          severity={targetResumeId ? 'info' : 'warning'}
+          sx={{ mb: 3, borderRadius: '12px' }}
+          onClose={() => setResumeNotice(null)}
+        >
+          {resumeNotice}
+        </Alert>
+      )}
+
       {certifications.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 6, color: '#9e9e9e' }}>
           <WorkspacePremium sx={{ fontSize: 48, mb: 2, opacity: 0.3 }} />
@@ -214,13 +320,26 @@ export default function CertificationInfoForm() {
             <StyledCard key={cert.id}>
               <CardContent sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                  <Typography variant="subtitle2" sx={{ color: '#757575', fontWeight: 600 }}>
-                    자격증 {index + 1}
-                  </Typography>
-                  <IconButton 
-                    size="small" 
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="subtitle2" sx={{ color: '#757575', fontWeight: 600 }}>
+                      자격증 {index + 1}
+                    </Typography>
+                    {cert.isRegistered && (
+                      <Tooltip title="기존에 등록된 자격증">
+                        <Chip
+                          size="small"
+                          label="등록됨"
+                          color="primary"
+                          icon={<LocalOffer fontSize="inherit" />}
+                          sx={{ height: 22 }}
+                        />
+                      </Tooltip>
+                    )}
+                  </Stack>
+                  <IconButton
+                    size="small"
                     onClick={() => handleRemoveRow(cert.id)}
-                    sx={{ 
+                    sx={{
                       color: '#f44336',
                       '&:hover': { backgroundColor: '#ffebee' }
                     }}
@@ -235,21 +354,49 @@ export default function CertificationInfoForm() {
                 <Autocomplete
                   freeSolo
                   value={cert.certName}
-                  onInputChange={(_, val) => {
-                    handleChange({ target: { name: 'certName', value: val } }, cert.id);
-                    handleSearchCertification(val, cert.id);
+                  loading={searchLoading}
+                  onInputChange={(_, val, reason) => {
+                    if (reason === 'input') {
+                      handleChange({ target: { name: 'certName', value: val } }, cert.id);
+                      debouncedSearch(val);
+                    } else if (reason === 'clear') {
+                      handleChange({ target: { name: 'certName', value: '' } }, cert.id);
+                      setSearchOptions([]);
+                    }
                   }}
                   onChange={(_, option) => {
                     handleCertificationSelect(option, cert.id);
                   }}
                   options={searchOptions}
                   getOptionLabel={(o) => (typeof o === 'string' ? o : o.certName || '')}
+                  loadingText="검색 중..."
+                  noOptionsText="검색 결과가 없습니다"
+                  renderOption={(props, option) => {
+                    const label = typeof option === 'string' ? option : option.certName || '';
+                    const code = typeof option === 'string' ? null : option.certIdx;
+                    const { key, ...restProps } = props;
+                    return (
+                      <Box
+                        key={key}
+                        component="li"
+                        {...restProps}
+                        sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}
+                      >
+                        <Typography>{label}</Typography>
+                        {code && (
+                          <Typography variant="caption" sx={{ color: '#9e9e9e' }}>
+                            코드 #{code}
+                          </Typography>
+                        )}
+                      </Box>
+                    );
+                  }}
                   renderInput={(params) => (
-                    <StyledTextField
+                    <TextField
                       {...params}
                       placeholder="자격증명을 입력하거나 검색하세요"
                       fullWidth
-                      error={errors.get(cert.id)?.certName ? true : false}
+                      error={Boolean(errors.get(cert.id)?.certName)}
                       helperText={errors.get(cert.id)?.certName || ''}
                     />
                   )}

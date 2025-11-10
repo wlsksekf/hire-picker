@@ -348,7 +348,7 @@ export default function WriteResumePage() {
         selfAspirations: formData.selfAspirations || '',
         imageUrl: null,
         cert: '',
-        isDefault: false,
+        credit_cost: 0,
         status: 'PUBLIC',
         expIdx: null,
         p_user_idx: userId,

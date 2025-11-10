@@ -135,11 +135,11 @@ public class ProfileService {
         // resumeId가 null이면 기본 이력서 자동 조회
         Long targetResumeId = resumeId;
         if (targetResumeId == null) {
-            java.util.Optional<Resume> defaultResume = resumeRepository.findByPersonalUserIdAndIsDefaultTrue(userId);
-            if (defaultResume.isEmpty()) {
-                throw new IllegalArgumentException("기본 이력서가 없습니다. 먼저 이력서를 생성해주세요.");
+            java.util.Optional<Resume> latestResume = resumeRepository.findTopByPersonalUserIdOrderByIdDesc(userId);
+            if (latestResume.isEmpty()) {
+                return; // 등록된 이력서가 없으면 아무 작업도 수행하지 않는다.
             }
-            targetResumeId = defaultResume.get().getId();
+            targetResumeId = latestResume.get().getId();
         }
         
         // 이력서 소유자 검증
@@ -181,11 +181,11 @@ public class ProfileService {
     @Transactional(readOnly = true)
     public java.util.List<java.util.Map<String, Object>> listCertifications(Long userId) {
         // 기본 이력서 조회
-        java.util.Optional<Resume> defaultResume = resumeRepository.findByPersonalUserIdAndIsDefaultTrue(userId);
-        if (defaultResume.isEmpty()) {
-            return java.util.List.of(); // 기본 이력서가 없으면 빈 목록 반환
+        java.util.Optional<Resume> resumeOpt = resumeRepository.findTopByPersonalUserIdOrderByIdDesc(userId);
+        if (resumeOpt.isEmpty()) {
+            return java.util.List.of(); // 등록된 이력서가 없으면 빈 목록 반환
         }
-        Long resumeId = defaultResume.get().getId();
+        Long resumeId = resumeOpt.get().getId();
         
         // 자격증 조회 (have_certification + certification 조인)
         String sql = "SELECT c.cert_idx, c.cert_name " +
@@ -225,7 +225,7 @@ public class ProfileService {
     public int updateResume(Long userId, Long resumeId,
                             String title, String selfGrowth, String selfStrengths,
                             String selfMotivation, String selfAspirations,
-                            String imageUrl, Boolean isDefault, String status,
+                            String imageUrl, Integer creditCost, String status,
                             String cert, Long expIdx) {
         StringBuilder sql = new StringBuilder("UPDATE resumes SET ");
         java.util.List<Object> params = new java.util.ArrayList<>();
@@ -237,7 +237,11 @@ public class ProfileService {
         if (selfMotivation != null) { sql.append("motivation_for_application=?,"); params.add(selfMotivation); }
         if (selfAspirations != null) { sql.append("future_aspirations=?,"); params.add(selfAspirations); }
         if (imageUrl != null) { sql.append("img=?,"); params.add(imageUrl); }
-        if (isDefault != null) { sql.append("is_default=?,"); params.add(isDefault ? 1 : 0); }
+        if (creditCost != null) {
+            int sanitizedCost = Math.max(0, creditCost);
+            sql.append("credit_cost=?,");
+            params.add(sanitizedCost);
+        }
         if (status != null) { sql.append("status=?,"); params.add(status); }
         if (cert != null) { sql.append("cert=?,"); params.add(cert); }
         // DB 스키마에는 resumes.exp_idx 컬럼이 없으므로 조인 테이블(chosen_exp)로 별도 처리
