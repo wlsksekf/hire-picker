@@ -73,8 +73,20 @@ public class ProfileService {
                 throw new IllegalArgumentException("degree 값이 유효하지 않습니다.");
             }
             if (schoolCode == null) throw new IllegalArgumentException("school_code는 필수입니다.");
-            if (d.getMajor() == null || d.getMajor().isBlank()) throw new IllegalArgumentException("major는 필수입니다.");
-            if (d.getMajorScore() == null) throw new IllegalArgumentException("major_score는 필수입니다.");
+
+            boolean isHighSchool = "고졸".equals(degree);
+            String major = d.getMajor() != null ? d.getMajor().trim() : null;
+            java.math.BigDecimal majorScore = d.getMajorScore();
+
+            if (!isHighSchool) {
+                if (major == null || major.isEmpty()) throw new IllegalArgumentException("major는 필수입니다.");
+                if (majorScore == null) throw new IllegalArgumentException("major_score는 필수입니다.");
+            } else {
+                if (major != null && major.isEmpty()) {
+                    major = null;
+                }
+            }
+
             // 동일 school_code 중복 삽입 방지(PK 충돌 사전 차단)
             if (!seenSchoolCodes.add(schoolCode)) continue;
 
@@ -82,8 +94,8 @@ public class ProfileService {
                 userId,
                 schoolCode,
                 degree,
-                d.getMajor(),
-                d.getMajorScore(),
+                major,
+                majorScore,
                 d.getAdmissionDate() != null ? Date.valueOf(d.getAdmissionDate()) : null,
                 d.getGraduationDate() != null ? Date.valueOf(d.getGraduationDate()) : null
             );

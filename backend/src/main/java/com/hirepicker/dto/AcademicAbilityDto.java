@@ -30,11 +30,9 @@ public class AcademicAbilityDto {
     @Size(max = 10, message = "학위는 최대 10자까지 입력 가능합니다.")
     private String degree;        // 학위(문자열)
 
-    @NotBlank(message = "전공은 필수 입력 항목입니다.")
     @Size(max = 100, message = "전공은 최대 100자까지 입력 가능합니다.")
     private String major;         // 전공
 
-    @NotNull(message = "전공 점수는 필수 입력 항목입니다.")
     @DecimalMin(value = "0.0", message = "전공 점수는 0.0 이상이어야 합니다.")
     @DecimalMax(value = "5.0", message = "전공 점수는 5.0 이하여야 합니다.")
     private BigDecimal majorScore;// 전공 점수(2,1)

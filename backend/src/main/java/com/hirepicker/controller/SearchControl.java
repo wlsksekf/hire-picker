@@ -5,15 +5,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -21,8 +18,6 @@ import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.JobDto;
 import com.hirepicker.dto.SearchFilterDTO;
 import com.hirepicker.entity.JobPosting;
-import com.hirepicker.entity.PersonalUser;
-import com.hirepicker.repository.JobPostingRepository;
 import com.hirepicker.service.BookMarkService;
 import com.hirepicker.service.EmploymentDataImpl;
 
@@ -48,12 +43,15 @@ public class SearchControl {
         }
 
         String keyword = dto.getSearchTerm();
-        var filters = dto.getFilters();
+        Map<String, List<String>> filters = dto.getFilters() == null
+                ? Map.of()
+                : dto.getFilters();
         List<String> locations = filters.get("location");
         List<String> jobTypes = filters.get("jobType");
         List<String> employmentTypes = filters.get("employmentType");
         List<String> experienceLevels = filters.get("experienceLevel");
         List<String> companyTypes = filters.get("companyType");
+        List<String> sources = filters.get("source");
 
         System.out.println("===== 🔍 검색 요청 도착 =====");
         System.out.println("검색어: " + keyword);
@@ -62,6 +60,7 @@ public class SearchControl {
         System.out.println("고용형태: " + employmentTypes);
         System.out.println("학력: " + experienceLevels);
         System.out.println("기업형태: " + companyTypes);
+        System.out.println("공고 출처: " + sources);
         System.out.println("============================");
 
         return employmentDataImpl.jobFilter(dto, pageable);
