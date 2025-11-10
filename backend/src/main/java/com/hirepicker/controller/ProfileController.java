@@ -141,7 +141,15 @@ public class ProfileController {
         var opt = militaryServiceRepository.findTopByPersonalUserIdOrderByIdDesc(userDetails.getId());
         if (opt.isEmpty()) return ResponseEntity.ok(null);
         var m = opt.get();
-        return ResponseEntity.ok(new MilitaryServiceDto(null, m.getServiceType(), m.getMilitaryBranch(), m.getMilitaryRank(), m.getPeriodOfService(), m.getReasonForExemption()));
+        return ResponseEntity.ok(new MilitaryServiceDto(
+                null,
+                m.getServiceType(),
+                m.getMilitaryBranch(),
+                m.getMilitaryRank(),
+                m.getEnlistmentDate(),
+                m.getDischargeDate(),
+                m.getReasonForExemption()
+        ));
     }
 
     @Operation(summary = "병역 저장/갱신")
@@ -169,7 +177,7 @@ public class ProfileController {
     public ResponseEntity<Map<String, String>> saveCertifications(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                                 @RequestBody CertificationUpdateRequestDto req) {
         if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        profileService.replaceResumeCertifications(userDetails.getId(), req.getResumeIdx(), req.getCertIdxList(), req.getCertNameList());
+        profileService.replaceResumeCertifications(userDetails.getId(), req.getResumeIdx(), req.getCertifications());
         return ResponseEntity.ok(Map.of("message", "자격증 정보가 저장되었습니다."));
     }
 }

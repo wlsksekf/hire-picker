@@ -18,6 +18,7 @@ public class AcademicAbilityViewDto {
     private String degree;       // 졸업구분(고졸/학사/석사/박사)
     private String major;        // 학과(전공)
     private BigDecimal majorScore; // 학점
+    private LocalDate admissionDate; // 입학일
     private LocalDate graduationDate; // 졸업일
 }
 

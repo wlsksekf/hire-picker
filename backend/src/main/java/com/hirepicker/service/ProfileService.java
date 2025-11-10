@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hirepicker.dto.AcademicAbilityDto;
+import com.hirepicker.dto.CertificationUpdateRequestDto;
 import com.hirepicker.dto.MilitaryServiceDto;
 import com.hirepicker.dto.WorkExperienceDto;
 import com.hirepicker.entity.Certification;
@@ -62,7 +63,7 @@ public class ProfileService {
         jdbcTemplate.update("DELETE FROM academic_ability WHERE p_user_idx=?", userId);
         if (list == null || list.isEmpty()) return;
         java.util.Set<Long> seenSchoolCodes = new java.util.LinkedHashSet<>(); // 동일 학교 중복 방지
-        String sql = "INSERT INTO academic_ability (p_user_idx, school_code, degree, major, major_score, graduation_date) VALUES (?,?,?,?,?,?)";
+        String sql = "INSERT INTO academic_ability (p_user_idx, school_code, degree, major, major_score, admission_date, graduation_date) VALUES (?,?,?,?,?,?,?)";
         for (AcademicAbilityDto d : list) {
             if (d == null) continue;
             Long schoolCode = d.getSchoolCode();
@@ -83,6 +84,7 @@ public class ProfileService {
                 degree,
                 d.getMajor(),
                 d.getMajorScore(),
+                d.getAdmissionDate() != null ? Date.valueOf(d.getAdmissionDate()) : null,
                 d.getGraduationDate() != null ? Date.valueOf(d.getGraduationDate()) : null
             );
         }
@@ -114,15 +116,16 @@ public class ProfileService {
         jdbcTemplate.update("DELETE FROM military_service WHERE p_user_idx=?", userId);
         if (d == null) return;
         boolean hasAny = !isBlank(d.getServiceType()) || !isBlank(d.getMilitaryBranch()) || !isBlank(d.getMilitaryRank())
-                || !isBlank(d.getPeriodOfService()) || !isBlank(d.getReasonForExemption());
+                || d.getEnlistmentDate() != null || d.getDischargeDate() != null || !isBlank(d.getReasonForExemption());
         if (!hasAny) return;
         jdbcTemplate.update(
-            "INSERT INTO military_service (p_user_idx, service_type, military_branch, military_rank, period_of_service, reason_for_exemption) VALUES (?,?,?,?,?,?)",
+            "INSERT INTO military_service (p_user_idx, service_type, military_branch, military_rank, enlistment_date, discharge_date, reason_for_exemption) VALUES (?,?,?,?,?,?,?)",
             userId,
             d.getServiceType(),
             d.getMilitaryBranch(),
             d.getMilitaryRank(),
-            d.getPeriodOfService(),
+            d.getEnlistmentDate() != null ? Date.valueOf(d.getEnlistmentDate()) : null,
+            d.getDischargeDate() != null ? Date.valueOf(d.getDischargeDate()) : null,
             d.getReasonForExemption()
         );
     }
@@ -130,8 +133,7 @@ public class ProfileService {
     // 자격증 매핑 전체 교체: have_certification (resume_idx, cert_idx)
     @Transactional
     public void replaceResumeCertifications(Long userId, Long resumeId,
-                                            List<Long> certIdxList,
-                                            List<String> certNameList) {
+                                            List<CertificationUpdateRequestDto.Item> items) {
         // resumeId가 null이면 기본 이력서 자동 조회
         Long targetResumeId = resumeId;
         if (targetResumeId == null) {
@@ -149,31 +151,37 @@ public class ProfileService {
         if (owns == null || owns == 0) throw new IllegalArgumentException("본인 이력서가 아닙니다.");
 
         // 최종 certIdx 목록 구성
-        java.util.LinkedHashSet<Long> finalIds = new java.util.LinkedHashSet<>();
-        if (certIdxList != null) {
-            for (Long id : certIdxList) { if (id != null) finalIds.add(id); }
-        }
-        if ((finalIds.isEmpty()) && certNameList != null) {
-            for (String name : certNameList) {
-                if (name == null || name.isBlank()) continue;
-                Long id = certificationRepository
-                        .findByCertName(name.trim())
-                        .map(Certification::getCertIdx)
-                        .orElseGet(() -> {
-                            // 마스터가 없으면 생성
-                            Certification c = Certification.builder().certName(name.trim()).build();
-                            return certificationRepository.save(c).getCertIdx();
-                        });
-                finalIds.add(id);
+        java.util.LinkedHashMap<Long, String> finalEntries = new java.util.LinkedHashMap<>();
+        if (items != null) {
+            for (CertificationUpdateRequestDto.Item item : items) {
+                if (item == null) continue;
+                Long certIdx = item.getCertIdx();
+                String certName = item.getCertName();
+                if (certIdx == null) {
+                    if (certName == null || certName.isBlank()) continue;
+                    certIdx = certificationRepository
+                            .findByCertName(certName.trim())
+                            .map(Certification::getCertIdx)
+                            .orElseGet(() -> certificationRepository.save(
+                                    Certification.builder().certName(certName.trim()).build()
+                            ).getCertIdx());
+                }
+                if (certIdx == null) continue;
+                String score = item.getScore();
+                String sanitizedScore = (score != null && !score.isBlank()) ? score.trim() : null;
+                if (sanitizedScore != null && sanitizedScore.length() > 20) {
+                    sanitizedScore = sanitizedScore.substring(0, 20);
+                }
+                finalEntries.put(certIdx, sanitizedScore);
             }
         }
 
         // 매핑 전체 삭제 후 삽입
         jdbcTemplate.update("DELETE FROM have_certification WHERE resume_idx=?", targetResumeId);
-        if (finalIds.isEmpty()) return; // 입력 없으면 비움
-        String insertSql = "INSERT INTO have_certification (resume_idx, cert_idx) VALUES (?,?)";
-        for (Long id : finalIds) {
-            jdbcTemplate.update(insertSql, targetResumeId, id);
+        if (finalEntries.isEmpty()) return; // 입력 없으면 비움
+        String insertSql = "INSERT INTO have_certification (resume_idx, cert_idx, score) VALUES (?,?,?)";
+        for (java.util.Map.Entry<Long, String> entry : finalEntries.entrySet()) {
+            jdbcTemplate.update(insertSql, targetResumeId, entry.getKey(), entry.getValue());
         }
     }
 
@@ -188,7 +196,7 @@ public class ProfileService {
         Long resumeId = resumeOpt.get().getId();
         
         // 자격증 조회 (have_certification + certification 조인)
-        String sql = "SELECT c.cert_idx, c.cert_name " +
+        String sql = "SELECT c.cert_idx, c.cert_name, hc.score " +
                      "FROM have_certification hc " +
                      "INNER JOIN certification c ON c.cert_idx = hc.cert_idx " +
                      "WHERE hc.resume_idx = ? " +
@@ -197,6 +205,7 @@ public class ProfileService {
             java.util.Map<String, Object> map = new java.util.HashMap<>();
             map.put("certIdx", rs.getLong("cert_idx"));
             map.put("certName", rs.getString("cert_name"));
+            map.put("score", rs.getString("score"));
             return map;
         }, resumeId);
     }
@@ -205,7 +214,7 @@ public class ProfileService {
     @Transactional(readOnly = true)
     public java.util.List<com.hirepicker.dto.AcademicAbilityViewDto> listAcademics(Long userId) {
         // 학력 + 학교 테이블을 조인하여 캠퍼스 정보까지 함께 가져온다
-        String sql = "SELECT a.school_code, s.school_name, s.campus, a.degree, a.major, a.major_score, a.graduation_date " +
+        String sql = "SELECT a.school_code, s.school_name, s.campus, a.degree, a.major, a.major_score, a.admission_date, a.graduation_date " +
                      "FROM academic_ability a LEFT JOIN school s ON s.school_code = a.school_code " +
                      "WHERE a.p_user_idx = ? ORDER BY a.graduation_date DESC";
         // JDBC 템플릿으로 DTO 매핑, graduation_date는 null 안전 처리
@@ -216,6 +225,7 @@ public class ProfileService {
                 rs.getString("degree"),
                 rs.getString("major"),
                 rs.getBigDecimal("major_score"),
+                rs.getDate("admission_date") != null ? rs.getDate("admission_date").toLocalDate() : null,
                 rs.getDate("graduation_date") != null ? rs.getDate("graduation_date").toLocalDate() : null
         ), userId);
     }
@@ -264,6 +274,22 @@ public class ProfileService {
         }
 
         return rows;
+    }
+
+    @Transactional
+    public boolean deleteResume(Long userId, Long resumeId) {
+        // 본인 이력서인지 검증한다.
+        Resume resume = resumeRepository.findById(resumeId).orElse(null);
+        if (resume == null) return false;
+        if (!resume.getPersonalUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("본인 이력서만 삭제할 수 있습니다.");
+        }
+        // FK 정리를 위해 관련 매핑을 먼저 삭제한다.
+        jdbcTemplate.update("DELETE FROM have_certification WHERE resume_idx=?", resumeId);
+        jdbcTemplate.update("DELETE FROM chosen_exp WHERE resume_idx=?", resumeId);
+        jdbcTemplate.update("DELETE FROM applications WHERE resume_idx=?", resumeId);
+        resumeRepository.delete(resume);
+        return true;
     }
 
     private static boolean isBlank(String s) { return s == null || s.isBlank(); }
