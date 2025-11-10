@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.CompanyalarmsResponseDto; // DTO 임포트 추가
 import com.hirepicker.entity.Companyalarms;
-import com.hirepicker.service.AuthService;
 import com.hirepicker.service.CompanyalarmsService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,7 +26,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CompanyalarmsController {
     private final CompanyalarmsService companyalarmsService;
-    
 
     @PostMapping
     public ResponseEntity<?> addCompanyAlarm(@RequestBody Map<String, Long> payload,

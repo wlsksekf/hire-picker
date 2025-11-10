@@ -35,7 +35,6 @@ public class CompanyDataUpdateService {
         try {
             if (!Files.exists(dataDirPath)) {
                 Files.createDirectories(dataDirPath);
-                log.info("Created data directory at: {}", dataDirPath);
             }
         } catch (IOException e) {
             log.error("Failed to create data directory", e);
@@ -66,7 +65,7 @@ public class CompanyDataUpdateService {
 
     /** CSV를 읽어 DB 업데이트, 중간 진행상황 저장 */
     public int updateCompanyDataFromCsv() throws Exception {
-        log.info("CSV 파일에서 회사 데이터 업데이트를 시작합니다. 파일 경로: {}", csvFilePath);
+
         if (!Files.exists(csvFilePath)) {
             log.error("CSV 파일을 찾을 수 없습니다: {}", csvFilePath);
             throw new IOException("지정된 경로에 company_data.csv 파일이 없습니다.");
@@ -103,12 +102,9 @@ public class CompanyDataUpdateService {
 
                 if ("1".equals(status)) {
                     // 회사명으로 DB에서 찾기 (중복 레코드가 있을 수 있으므로 안전하게 처리)
-                    java.util.List<Company> matches = companyRepository.findAllByCompanyName(companyName);
+                    List<Company> matches = companyRepository.findAllByCompanyName(companyName);
                     if (!matches.isEmpty()) {
-                        if (matches.size() > 1) {
-                            log.warn("Multiple companies found with name='{}'. Using first match.", companyName);
-                        }
-                        Company company = matches.get(0);
+                        Company company = matches.get(0); // 중복 레코드 중 첫 번째 선택
                         updateCompanyInfo(company, employeeCount, roadAddress, jibunAddress, industryCategory);
                         companiesToUpdate.add(company); // 업데이트할 회사 정보 모으기
                     } else {

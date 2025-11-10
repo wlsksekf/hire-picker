@@ -130,7 +130,6 @@ function CompanyDetailPage() {
           setReviewsLoading(false);
         })
         .catch((err) => {
-          // It's okay if there are no reviews, so we don't set an error
           setReviewsLoading(false);
         });
     }
