@@ -39,6 +39,8 @@ public class AcademicAbilityDto {
     @DecimalMax(value = "5.0", message = "전공 점수는 5.0 이하여야 합니다.")
     private BigDecimal majorScore;// 전공 점수(2,1)
 
-    @NotNull(message = "졸업일은 필수 입력 항목입니다.")
+    @JsonProperty("admissionDate")
+    private LocalDate admissionDate; // 입학일
+
     private LocalDate graduationDate; // 졸업일
 }

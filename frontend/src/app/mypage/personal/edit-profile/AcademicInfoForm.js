@@ -66,6 +66,7 @@ export default function AcademicInfoForm() {
         degree: a.degree || '',
         major: a.major || '',
         gpa: a.majorScore != null ? String(a.majorScore) : '',
+        admissionDate: a.admissionDate || '',
         graduationDate: a.graduationDate || '' // 졸업일 추가
       }));
       setAcademics(mapped);
@@ -104,7 +105,7 @@ export default function AcademicInfoForm() {
 
   function handleAddRow() {
     const newId = Date.now();
-    setAcademics([...academics, { id: newId, schoolCode: '', schoolName: '', campus: '', degree: '', major: '', gpa: '', graduationDate: '' }]);
+    setAcademics([...academics, { id: newId, schoolCode: '', schoolName: '', campus: '', degree: '', major: '', gpa: '', admissionDate: '', graduationDate: '' }]);
     // 새 행의 입력값 초기화
     setInputValues(prev => {
       const newMap = new Map(prev);
@@ -303,6 +304,7 @@ export default function AcademicInfoForm() {
           degree: a.degree,
           major: a.major,
           majorScore: Number(a.gpa),
+          admissionDate: a.admissionDate || null,
           graduationDate: a.graduationDate || null
         }));
 
@@ -512,6 +514,19 @@ export default function AcademicInfoForm() {
                       fullWidth
                       error={errors.get(academic.id)?.gpa ? true : false}
                       helperText={errors.get(academic.id)?.gpa || ''}
+                    />
+                  </Grid>
+                  <Grid size={12}>
+                    <Typography variant="caption" sx={{ color: '#757575', mb: 0.5, display: 'block' }}>
+                      입학일
+                    </Typography>
+                    <StyledTextField
+                      name="admissionDate"
+                      type="date"
+                      value={academic.admissionDate}
+                      onChange={e => handleChange(e, academic.id)}
+                      InputLabelProps={{ shrink: true }}
+                      fullWidth
                     />
                   </Grid>
                   <Grid size={12}>

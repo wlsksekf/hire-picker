@@ -92,6 +92,7 @@ public class ResumeService {
                             a.getDegree(),
                             a.getMajor(),
                             a.getMajorScore(),
+                            a.getAdmissionDate(),
                             a.getGraduationDate()
                     );
                 }).toList();
@@ -118,7 +119,8 @@ public class ResumeService {
                         m.getServiceType(),
                         m.getMilitaryBranch(),
                         m.getMilitaryRank(),
-                        m.getPeriodOfService(),
+                        m.getEnlistmentDate(),
+                        m.getDischargeDate(),
                         m.getReasonForExemption()
                 ))
                 .orElse(null);
@@ -155,7 +157,8 @@ public class ResumeService {
                             .orElse(null);
                     return new ResumeDetailDto.Academic(
                             schoolName,
-                            a.getDegree(), a.getMajor(), a.getMajorScore(), a.getGraduationDate()
+                            a.getDegree(), a.getMajor(), a.getMajorScore(),
+                            a.getAdmissionDate(), a.getGraduationDate()
                     );
                 }).toList();
 
@@ -172,7 +175,7 @@ public class ResumeService {
         var militaryOpt = militaryServiceRepository.findTopByPersonalUserIdOrderByIdDesc(user.getId());
         ResumeDetailDto.Military military = militaryOpt.map(m -> new ResumeDetailDto.Military(
                 m.getServiceType(), m.getMilitaryBranch(), m.getMilitaryRank(),
-                m.getPeriodOfService(), m.getReasonForExemption()
+                m.getEnlistmentDate(), m.getDischargeDate(), m.getReasonForExemption()
         )).orElse(null);
 
         return ResumeDetailDto.builder()
@@ -238,6 +241,7 @@ public class ResumeService {
                 .degree(dto.getDegree())
                 .major(dto.getMajor())
                 .majorScore(dto.getMajorScore())
+                .admissionDate(dto.getAdmissionDate())
                 .graduationDate(dto.getGraduationDate())
                 .build();
     }
@@ -263,7 +267,8 @@ public class ResumeService {
                 .serviceType(dto.getServiceType())
                 .militaryBranch(dto.getMilitaryBranch())
                 .militaryRank(dto.getMilitaryRank())
-                .periodOfService(dto.getPeriodOfService())
+                .enlistmentDate(dto.getEnlistmentDate())
+                .dischargeDate(dto.getDischargeDate())
                 .reasonForExemption(dto.getReasonForExemption())
                 .build();
     }

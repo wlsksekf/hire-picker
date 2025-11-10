@@ -6,9 +6,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hirepicker.config.security.CustomUserDetails;
@@ -19,12 +21,13 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/api")
 public class ResumeUpdateController {
 
     private final ProfileService profileService;
 
     @Operation(summary = "이력서 수정")
-    @PutMapping("/api/resume/{id}")
+    @PutMapping("/resume/{id}")
     @Transactional
     public ResponseEntity<Map<String, String>> updateResume(
             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -56,6 +59,24 @@ public class ResumeUpdateController {
         int updated = profileService.updateResume(userDetails.getId(), resumeId, title, selfGrowth, selfStrengths, selfMotivation, selfAspirations, imageUrl, creditCost, status, cert, expIdx);
         if (updated == 0) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "이력서가 없거나 수정할 항목이 없습니다."));
         return ResponseEntity.ok(Map.of("message", "이력서가 수정되었습니다."));
+    }
+
+    @Operation(summary = "이력서 삭제")
+    @DeleteMapping("/resume/{id}")
+    @Transactional
+    public ResponseEntity<Map<String, String>> deleteResume(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable("id") Long resumeId) {
+        if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            boolean deleted = profileService.deleteResume(userDetails.getId(), resumeId);
+            if (!deleted) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "이력서를 찾을 수 없습니다."));
+            }
+            return ResponseEntity.ok(Map.of("message", "이력서가 삭제되었습니다."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
+        }
     }
 }
 

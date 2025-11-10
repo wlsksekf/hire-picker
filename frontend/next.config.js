@@ -14,6 +14,15 @@ const nextConfig = {
     NEXT_PUBLIC_KAKAO_REST_API_KEY: process.env.KAKAO_OAUTH_CLIENT_ID, // 카카오 REST API 키 추가
   },
 
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'hirepicker-storage.s3.ap-northeast-2.amazonaws.com',
+      },
+    ],
+  },
+
   // Next.js의 rewrites 설정을 통해 API 요청을 프록시
   async rewrites() {
     return [

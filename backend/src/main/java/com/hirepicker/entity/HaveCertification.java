@@ -25,5 +25,8 @@ public class HaveCertification {
     @Id
     @Column(name = "cert_idx")
     private Long certIdx; // 자격증 ID (FK: certification)
+
+    @Column(name = "score")
+    private String score; // 자격증 점수/등급
 }
 

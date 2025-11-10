@@ -31,22 +31,26 @@ public class MilitaryService {
     @Column(name = "military_rank", length = 10)
     private String militaryRank; // 계급
 
-    @Column(name = "period_of_service", length = 20)
-    private String periodOfService; // 복무 기간
+    @Column(name = "enlistment_date")
+    private java.time.LocalDate enlistmentDate; // 입대일
+
+    @Column(name = "discharge_date")
+    private java.time.LocalDate dischargeDate; // 전역일
 
     @Column(name = "reason_for_exemption", length = 20)
     private String reasonForExemption; // 면제 사유
 
     @Builder
     public MilitaryService(Long id, PersonalUser personalUser, String serviceType,
-                           String militaryBranch, String militaryRank, String periodOfService,
-                           String reasonForExemption) {
+                           String militaryBranch, String militaryRank, java.time.LocalDate enlistmentDate,
+                           java.time.LocalDate dischargeDate, String reasonForExemption) {
         this.id = id;
         this.personalUser = personalUser;
         this.serviceType = serviceType;
         this.militaryBranch = militaryBranch;
         this.militaryRank = militaryRank;
-        this.periodOfService = periodOfService;
+        this.enlistmentDate = enlistmentDate;
+        this.dischargeDate = dischargeDate;
         this.reasonForExemption = reasonForExemption;
     }
 }
