@@ -6,13 +6,16 @@ import { faStar as solidStar } from '@fortawesome/free-solid-svg-icons';
 import { faStar as regularStar } from '@fortawesome/free-regular-svg-icons';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import { amET } from 'node_modules/@mui/material/locale';
 
 export default function Bookmark(props) {
   var jobId = props.jobId;
   var [isBookmarked, setIsBookmarked] = useState(false);
   var [isLoggedIn, setIsLoggedIn] = useState(false);
+  var [isLoading, setIsLoading] = useState(false); // API 요청 중 상태
 
   const checkurl="/api/bookmark/check"
+  const toggleurl="/api/bookmark/toggle"
 
   // 로그인 여부 확인
   useEffect(function(){
@@ -29,9 +32,38 @@ export default function Bookmark(props) {
   function handleClick(){
     if(!isLoggedIn){
       alert("로그인이 필요합니다")
+      return;
     }
-    return;
+
+    if (isLoading) {
+      return;    
+    }
+
+     // 3. 로그인 된 경우: 토글 로직 실행
+    setIsLoading(true);
+
+  axios.post(toggleurl, { jobId: jobId }, { withCredentials: true })
+      .then(function (res) {
+        // 백엔드로부터 받은 최신 상태로 UI 업데이트
+        if(res.data.Bookmarked){
+        setIsBookmarked(res.data.Bookmarked);
+        alert("즐겨찾기 등록되었다.")
+      }
+        else{
+        setIsBookmarked(res.data.Bookmarked);
+        alert("즐겨찾기 해제 되었다.")}
+
+
+      })
+      .catch(function (error) {
+        alert("북마크 처리에 실패했다..");
+      })
+      .finally(function () {
+        setIsLoading(false); // 로딩 종료 (성공/실패 여부와 관계없이)
+      });
+
   }
+
 
 
 

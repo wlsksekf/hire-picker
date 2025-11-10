@@ -14,10 +14,15 @@ import jakarta.persistence.IdClass;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @IdClass(PostingBookMarkId.class)
 @Table(name = "posting_bookmark")
+@Getter@Setter@AllArgsConstructor@NoArgsConstructor
 public class PostingBookMark {
 
     @Id
