@@ -265,45 +265,47 @@ function CompaniesPage() {
                 </Box>
 
                 <CardActions sx={{ p: 0, ml: 2 }}>
-                  <Button
-                    variant="contained"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Link 컴포넌트의 페이지 이동 방지
-                      e.preventDefault(); // 기본 이벤트 방지
-                      toggleLikeCompany(company.companyIdx);
-                    }}
-                    startIcon={
-                      <FontAwesomeIcon
-                        icon={
+                  {isAuthenticated && user && user.userType === "PERSONAL" && (
+                    <Button
+                      variant="contained"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Link 컴포넌트의 페이지 이동 방지
+                        e.preventDefault(); // 기본 이벤트 방지
+                        toggleLikeCompany(company.companyIdx);
+                      }}
+                      startIcon={
+                        <FontAwesomeIcon
+                          icon={
+                            likedCompanies.has(company.companyIdx)
+                              ? faHeartSolid
+                              : faHeartRegular
+                          }
+                          style={{
+                            color: likedCompanies.has(company.companyIdx)
+                              ? pink[500] // 좋아요 시 핑크색
+                              : "gray", // 기본 회색
+                          }}
+                        />
+                      }
+                      style={{
+                        backgroundColor: "white", // 항상 흰색 배경
+                        color: "black", // 항상 검은색 글자
+                      }}
+                      sx={{
+                        border: `1px solid ${
                           likedCompanies.has(company.companyIdx)
-                            ? faHeartSolid
-                            : faHeartRegular
-                        }
-                        style={{
-                          color: likedCompanies.has(company.companyIdx)
-                            ? pink[500] // 좋아요 시 핑크색
-                            : "gray", // 기본 회색
-                        }}
-                      />
-                    }
-                    style={{
-                      backgroundColor: "white", // 항상 흰색 배경
-                      color: "black", // 항상 검은색 글자
-                    }}
-                    sx={{
-                      border: `1px solid ${
-                        likedCompanies.has(company.companyIdx)
-                          ? pink[500] // 좋아요 시 핑크색 테두리
-                          : "gray" // 좋아요 해제 시 회색 테두리
-                      }`,
-                      borderRadius: "13px",
-                      "&:hover": {
-                        backgroundColor: theme.palette.grey[100], // 호버 시 연한 회색
-                      },
-                    }}
-                  >
-                    관심기업
-                  </Button>
+                            ? pink[500] // 좋아요 시 핑크색 테두리
+                            : "gray" // 좋아요 해제 시 회색 테두리
+                        }`,
+                        borderRadius: "13px",
+                        "&:hover": {
+                          backgroundColor: theme.palette.grey[100], // 호버 시 연한 회색
+                        },
+                      }}
+                    >
+                      관심기업
+                    </Button>
+                  )}
                 </CardActions>
 
                 <CardActions sx={{ p: 0, ml: 2 }}>
