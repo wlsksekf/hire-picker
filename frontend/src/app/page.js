@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import {
   Container,
@@ -41,14 +41,19 @@ function MainPage() {
     employmentType: [],
     experienceLevel: [],
     companyType: [],
+    source: [],
   });
 
-  function fetchJobs(pageNum, searchTerm, filters) {
-    if (pageNum === 0) {
-      setStatus('pending');
-      setJobs([]);
-    } else {
-      setIsFetchingNextPage(true);
+  const fetchJobs = useCallback((pageNum, searchTerm, filters, options = {}) => {
+    const silent = options.silent === true;
+
+    if (!silent) {
+      if (pageNum === 0) {
+        setStatus('pending');
+        setJobs([]);
+      } else {
+        setIsFetchingNextPage(true);
+      }
     }
 
     const requestbody = {
@@ -71,20 +76,44 @@ function MainPage() {
 
         const isLast = data.page ? data.page.number >= data.page.totalPages - 1 : false;
         setHasNextPage(!isLast);
-        setStatus('success');
+        if (!silent) {
+          setStatus('success');
+        }
       })
       .catch(function (err) {
         setError(err);
-        setStatus('error');
+        if (!silent) {
+          setStatus('error');
+        }
       })
       .finally(function () {
-        setIsFetchingNextPage(false);
+        if (!silent) {
+          setIsFetchingNextPage(false);
+        }
       });
-  }
+  }, []);
 
   useEffect(function () {
     fetchJobs(0, appliedSearchTerm, appliedFilters);
-  }, []);
+  }, [fetchJobs]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const eventSource = new EventSource('/api/postings/stream', { withCredentials: true });
+
+    const handleEvent = () => {
+      fetchJobs(0, appliedSearchTerm, appliedFilters, { silent: true });
+    };
+
+    eventSource.addEventListener('cUserChanged', handleEvent);
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.removeEventListener('cUserChanged', handleEvent);
+      eventSource.close();
+    };
+  }, [fetchJobs, appliedSearchTerm, appliedFilters]);
 
   function handleSearchAndFilter(term, filters, responseData) {
     setAppliedSearchTerm(term);
@@ -106,6 +135,17 @@ function MainPage() {
     const nextPage = page + 1;
     setPage(nextPage);
     fetchJobs(nextPage, appliedSearchTerm, appliedFilters);
+  }
+
+  function handleApplyClick(job, event) {
+    event.stopPropagation();
+    if (job.internal) {
+      setSelectedJob(job);
+      return;
+    }
+    if (job.applyUrl) {
+      window.open(job.applyUrl, '_blank', 'noopener,noreferrer');
+    }
   }
 
   if (status === 'pending' && jobs.length === 0) {
@@ -213,10 +253,8 @@ function MainPage() {
                       </Button>
                       <Button
                         variant="contained"
-                        href={job.homepageUrl}
-                        target="_blank"
-                        disabled={!job.homepageUrl}
-                        onClick={(e) => e.stopPropagation()} // 지원하기 독립
+                        disabled={!job.internal && !job.applyUrl}
+                        onClick={(e) => handleApplyClick(job, e)}
                       >
                         지원하기
                       </Button>

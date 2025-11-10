@@ -2,19 +2,23 @@ package com.hirepicker.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.PostLoad;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -106,4 +110,23 @@ public class JobPosting {
 
     @Column(name = "end_date") // 모집 마감일
     private LocalDate endDate;
+
+    @Transient
+    private Long previousCUserIdx;
+
+    @PostLoad
+    private void recordPreviousCUserIdx() {
+        this.previousCUserIdx = this.cUserIdx;
+    }
+
+    @PreUpdate
+    private void detectCUserIdxChange() {
+        if (!Objects.equals(previousCUserIdx, this.cUserIdx)) {
+            com.hirepicker.realtime.JobPostingUpdateNotifier.notifyChange(
+                    this.postingId,
+                    previousCUserIdx,
+                    this.cUserIdx);
+        }
+        this.previousCUserIdx = this.cUserIdx;
+    }
 }
