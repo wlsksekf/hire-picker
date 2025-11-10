@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/schools")
@@ -20,7 +21,16 @@ public class SchoolController {
 
     @GetMapping("/search")
     public ResponseEntity<List<SchoolDto>> searchSchools(@RequestParam String name) {
+        // 학교명 검색(부분 일치) 결과 반환
         List<SchoolDto> schools = schoolService.searchSchoolsByName(name);
         return ResponseEntity.ok(schools);
+    }
+
+    @GetMapping("/find")
+    public ResponseEntity<SchoolDto> findExactSchool(@RequestParam String name) {
+        // 완전 일치하는 학교 정보 조회(없으면 404)
+        Optional<SchoolDto> school = schoolService.findExactSchoolByName(name);
+        return school.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

@@ -45,9 +45,9 @@ public class Resume extends BaseEntity {
     @Column(name = "img", length = 255)
     private String imageUrl; // 이미지 경로
 
-    @Column(name = "is_default", nullable = false)
+    @Column(name = "credit_cost", nullable = false)
     @Builder.Default // 빌더 기본값 설정
-    private boolean isDefault = false; // 대표 이력서 여부
+    private int creditCost = 0; // 열람 시 필요한 크레딧 비용
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
@@ -69,7 +69,7 @@ public class Resume extends BaseEntity {
     // 모든 필드를 포함하는 생성자 (Lombok @Builder가 사용)
     @Builder
     public Resume(Long id, PersonalUser personalUser, String title, String selfGrowth, String selfStrengths,
-                  String selfMotivation, String selfAspirations, String imageUrl, boolean isDefault,
+                  String selfMotivation, String selfAspirations, String imageUrl, int creditCost,
                   ResumeStatus status, String cert, Boolean cancel, WorkExperience workExperience) {
         this.id = id;
         this.personalUser = personalUser;
@@ -79,7 +79,7 @@ public class Resume extends BaseEntity {
         this.selfMotivation = selfMotivation;
         this.selfAspirations = selfAspirations;
         this.imageUrl = imageUrl;
-        this.isDefault = isDefault;
+        this.creditCost = creditCost;
         this.status = status;
         this.cert = cert;
         this.cancel = cancel;

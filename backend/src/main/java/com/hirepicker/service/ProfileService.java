@@ -11,7 +11,9 @@ import com.hirepicker.dto.AcademicAbilityDto;
 import com.hirepicker.dto.MilitaryServiceDto;
 import com.hirepicker.dto.WorkExperienceDto;
 import com.hirepicker.entity.Certification;
+import com.hirepicker.entity.Resume;
 import com.hirepicker.repository.CertificationRepository;
+import com.hirepicker.repository.ResumeRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +23,7 @@ public class ProfileService {
 
     private final JdbcTemplate jdbcTemplate;
     private final CertificationRepository certificationRepository; // 자격증 마스터 조회/생성용
+    private final ResumeRepository resumeRepository; // 이력서 조회용
 
     // 개인회원 기본정보 업데이트 (비밀번호 제외)
     @Transactional
@@ -124,16 +127,25 @@ public class ProfileService {
         );
     }
 
-    // 자격증 매핑 전체 교체: ehave_certification (resume_idx, cert_idx)
+    // 자격증 매핑 전체 교체: have_certification (resume_idx, cert_idx)
     @Transactional
     public void replaceResumeCertifications(Long userId, Long resumeId,
                                             List<Long> certIdxList,
                                             List<String> certNameList) {
-        if (resumeId == null) throw new IllegalArgumentException("resume_idx는 필수입니다.");
+        // resumeId가 null이면 기본 이력서 자동 조회
+        Long targetResumeId = resumeId;
+        if (targetResumeId == null) {
+            java.util.Optional<Resume> latestResume = resumeRepository.findTopByPersonalUserIdOrderByIdDesc(userId);
+            if (latestResume.isEmpty()) {
+                return; // 등록된 이력서가 없으면 아무 작업도 수행하지 않는다.
+            }
+            targetResumeId = latestResume.get().getId();
+        }
+        
         // 이력서 소유자 검증
         Integer owns = jdbcTemplate.queryForObject(
                 "SELECT COUNT(1) FROM resumes WHERE resume_idx=? AND p_user_idx=?",
-                Integer.class, resumeId, userId);
+                Integer.class, targetResumeId, userId);
         if (owns == null || owns == 0) throw new IllegalArgumentException("본인 이력서가 아닙니다.");
 
         // 최종 certIdx 목록 구성
@@ -157,26 +169,54 @@ public class ProfileService {
         }
 
         // 매핑 전체 삭제 후 삽입
-        jdbcTemplate.update("DELETE FROM have_certification WHERE resume_idx=?", resumeId);
+        jdbcTemplate.update("DELETE FROM have_certification WHERE resume_idx=?", targetResumeId);
         if (finalIds.isEmpty()) return; // 입력 없으면 비움
         String insertSql = "INSERT INTO have_certification (resume_idx, cert_idx) VALUES (?,?)";
         for (Long id : finalIds) {
-            jdbcTemplate.update(insertSql, resumeId, id);
+            jdbcTemplate.update(insertSql, targetResumeId, id);
         }
+    }
+
+    // 자격증 조회 (기본 이력서 기준)
+    @Transactional(readOnly = true)
+    public java.util.List<java.util.Map<String, Object>> listCertifications(Long userId) {
+        // 기본 이력서 조회
+        java.util.Optional<Resume> resumeOpt = resumeRepository.findTopByPersonalUserIdOrderByIdDesc(userId);
+        if (resumeOpt.isEmpty()) {
+            return java.util.List.of(); // 등록된 이력서가 없으면 빈 목록 반환
+        }
+        Long resumeId = resumeOpt.get().getId();
+        
+        // 자격증 조회 (have_certification + certification 조인)
+        String sql = "SELECT c.cert_idx, c.cert_name " +
+                     "FROM have_certification hc " +
+                     "INNER JOIN certification c ON c.cert_idx = hc.cert_idx " +
+                     "WHERE hc.resume_idx = ? " +
+                     "ORDER BY c.cert_name ASC";
+        return jdbcTemplate.query(sql, (rs, i) -> {
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("certIdx", rs.getLong("cert_idx"));
+            map.put("certName", rs.getString("cert_name"));
+            return map;
+        }, resumeId);
     }
 
     // 학력 조회(JDBC 사용, 엔티티 PK 불일치 영향 회피)
     @Transactional(readOnly = true)
     public java.util.List<com.hirepicker.dto.AcademicAbilityViewDto> listAcademics(Long userId) {
-        String sql = "SELECT a.school_code, s.school_name, a.degree, a.major, a.major_score " +
+        // 학력 + 학교 테이블을 조인하여 캠퍼스 정보까지 함께 가져온다
+        String sql = "SELECT a.school_code, s.school_name, s.campus, a.degree, a.major, a.major_score, a.graduation_date " +
                      "FROM academic_ability a LEFT JOIN school s ON s.school_code = a.school_code " +
                      "WHERE a.p_user_idx = ? ORDER BY a.graduation_date DESC";
+        // JDBC 템플릿으로 DTO 매핑, graduation_date는 null 안전 처리
         return jdbcTemplate.query(sql, (rs, i) -> new com.hirepicker.dto.AcademicAbilityViewDto(
                 rs.getObject("school_code") != null ? rs.getLong("school_code") : null,
                 rs.getString("school_name"),
+                rs.getString("campus"),
                 rs.getString("degree"),
                 rs.getString("major"),
-                rs.getBigDecimal("major_score")
+                rs.getBigDecimal("major_score"),
+                rs.getDate("graduation_date") != null ? rs.getDate("graduation_date").toLocalDate() : null
         ), userId);
     }
 
@@ -185,7 +225,7 @@ public class ProfileService {
     public int updateResume(Long userId, Long resumeId,
                             String title, String selfGrowth, String selfStrengths,
                             String selfMotivation, String selfAspirations,
-                            String imageUrl, Boolean isDefault, String status,
+                            String imageUrl, Integer creditCost, String status,
                             String cert, Long expIdx) {
         StringBuilder sql = new StringBuilder("UPDATE resumes SET ");
         java.util.List<Object> params = new java.util.ArrayList<>();
@@ -197,7 +237,11 @@ public class ProfileService {
         if (selfMotivation != null) { sql.append("motivation_for_application=?,"); params.add(selfMotivation); }
         if (selfAspirations != null) { sql.append("future_aspirations=?,"); params.add(selfAspirations); }
         if (imageUrl != null) { sql.append("img=?,"); params.add(imageUrl); }
-        if (isDefault != null) { sql.append("is_default=?,"); params.add(isDefault ? 1 : 0); }
+        if (creditCost != null) {
+            int sanitizedCost = Math.max(0, creditCost);
+            sql.append("credit_cost=?,");
+            params.add(sanitizedCost);
+        }
         if (status != null) { sql.append("status=?,"); params.add(status); }
         if (cert != null) { sql.append("cert=?,"); params.add(cert); }
         // DB 스키마에는 resumes.exp_idx 컬럼이 없으므로 조인 테이블(chosen_exp)로 별도 처리

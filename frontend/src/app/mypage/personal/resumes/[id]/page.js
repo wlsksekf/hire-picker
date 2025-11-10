@@ -46,7 +46,7 @@ export default function ResumeDetailPage() {
         {error && <Typography color="error">{error}</Typography>}
         {data && (
           <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
               <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{data.title || '이력서'}</Typography>
               <Typography variant="body2" color="text.secondary">
                 최종 수정일: {data.modifiedDate ? new Date(data.modifiedDate).toISOString().slice(0,10) : '-'}
