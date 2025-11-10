@@ -92,6 +92,19 @@ function ExpandableCard({ exp, index, onRemove, onChange, errors }) {
               fullWidth
             />
           </Grid>
+          <Grid size={{ xs: 12 }}>
+            <Typography variant="caption" sx={{ color: '#757575', mb: 0.5, display: 'block' }}>
+              주요 직무
+            </Typography>
+            <StyledTextField
+              name="mainDuties"
+              value={exp.mainDuties}
+              onChange={e => onChange(e, exp.id)}
+              placeholder="예: 백엔드 개발 / 고객 상담 지원"
+              fullWidth
+              inputProps={{ maxLength: 20 }}
+            />
+          </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" sx={{ color: '#757575', mb: 0.5, display: 'block' }}>
               입사일 *
@@ -141,18 +154,6 @@ function ExpandableCard({ exp, index, onRemove, onChange, errors }) {
                   fullWidth
                   multiline
                   rows={4}
-                />
-              </Grid>
-              <Grid size={12}>
-                <Typography variant="caption" sx={{ color: '#757575', mb: 0.5, display: 'block' }}>
-                  주요 직무
-                </Typography>
-                <StyledTextField
-                  name="mainDuties"
-                  value={exp.mainDuties}
-                  onChange={e => onChange(e, exp.id)}
-                  placeholder="주요 직무를 입력하세요"
-                  fullWidth
                 />
               </Grid>
             </Grid>

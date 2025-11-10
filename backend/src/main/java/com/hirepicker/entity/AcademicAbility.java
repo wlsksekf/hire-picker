@@ -34,17 +34,21 @@ public class AcademicAbility {
     @Column(name = "major_score", precision = 2, scale = 1, nullable = false)
     private java.math.BigDecimal majorScore; // 전공 점수(2,1)
 
+    @Column(name = "admission_date")
+    private LocalDate admissionDate; // 입학일
+
     @Column(name = "graduation_date")
     private LocalDate graduationDate; // 졸업일
 
     @Builder
     public AcademicAbility(Long personalUser, Long school, String degree, String major,
-                           java.math.BigDecimal majorScore, LocalDate graduationDate) {
+                           java.math.BigDecimal majorScore, LocalDate admissionDate, LocalDate graduationDate) {
         this.personalUser = personalUser;
         this.school = school;
         this.degree = degree;
         this.major = major;
         this.majorScore = majorScore;
+        this.admissionDate = admissionDate;
         this.graduationDate = graduationDate;
     }
 }

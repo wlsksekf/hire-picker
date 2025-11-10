@@ -24,7 +24,8 @@ export default function MilitaryInfoForm() {
     serviceType: '',
     militaryBranch: '',
     militaryRank: '',
-    periodOfService: '',
+    enlistmentDate: '',
+    dischargeDate: '',
     reasonForExemption: ''
   });
   const [loading, setLoading] = useState(true);
@@ -47,7 +48,8 @@ export default function MilitaryInfoForm() {
           serviceType: m.serviceType || '',
           militaryBranch: m.militaryBranch || '',
           militaryRank: m.militaryRank || '',
-          periodOfService: m.periodOfService || '',
+          enlistmentDate: m.enlistmentDate || '',
+          dischargeDate: m.dischargeDate || '',
           reasonForExemption: m.reasonForExemption || ''
         });
       }
@@ -79,8 +81,11 @@ export default function MilitaryInfoForm() {
       if (!info.militaryRank || info.militaryRank.trim() === '') {
         errors.militaryRank = '계급을 입력해주세요.';
       }
-      if (!info.periodOfService || info.periodOfService.trim() === '') {
-        errors.periodOfService = '복무기간을 입력해주세요.';
+      if (!info.enlistmentDate) {
+        errors.enlistmentDate = '입대일을 입력해주세요.';
+      }
+      if (!info.dischargeDate) {
+        errors.dischargeDate = '전역일을 입력해주세요.';
       }
     } else if (info.serviceType === '면제') {
       if (!info.reasonForExemption || info.reasonForExemption.trim() === '') {
@@ -110,8 +115,11 @@ export default function MilitaryInfoForm() {
         if (!militaryInfo.militaryRank || militaryInfo.militaryRank.trim() === '') {
           errors.militaryRank = '계급을 입력해주세요.';
         }
-        if (!militaryInfo.periodOfService || militaryInfo.periodOfService.trim() === '') {
-          errors.periodOfService = '복무기간을 입력해주세요.';
+      if (!militaryInfo.enlistmentDate) {
+        errors.enlistmentDate = '입대일을 입력해주세요.';
+      }
+      if (!militaryInfo.dischargeDate) {
+        errors.dischargeDate = '전역일을 입력해주세요.';
         }
       } else if (militaryInfo.serviceType === '면제') {
         if (!militaryInfo.reasonForExemption || militaryInfo.reasonForExemption.trim() === '') {
@@ -236,18 +244,33 @@ export default function MilitaryInfoForm() {
                 disabled={militaryInfo.serviceType !== '병역'}
               />
             </Grid>
-            <Grid size={12}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Typography variant="caption" sx={{ color: '#757575', mb: 0.5, display: 'block' }}>
-                복무기간 {militaryInfo.serviceType === '병역' && '*'}
+                입대일 {militaryInfo.serviceType === '병역' && '*'}
               </Typography>
               <StyledTextField 
-                name="periodOfService" 
-                value={militaryInfo.periodOfService} 
+                name="enlistmentDate" 
+                type="date"
+                value={militaryInfo.enlistmentDate}
                 onChange={handleChange}
-                placeholder="복무기간을 입력하세요"
                 fullWidth
-                error={fieldErrors.periodOfService ? true : false}
-                helperText={fieldErrors.periodOfService || ''}
+                error={Boolean(fieldErrors.enlistmentDate)}
+                helperText={fieldErrors.enlistmentDate || ''}
+                disabled={militaryInfo.serviceType !== '병역'}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <Typography variant="caption" sx={{ color: '#757575', mb: 0.5, display: 'block' }}>
+                전역일 {militaryInfo.serviceType === '병역' && '*'}
+              </Typography>
+              <StyledTextField 
+                name="dischargeDate" 
+                type="date"
+                value={militaryInfo.dischargeDate}
+                onChange={handleChange}
+                fullWidth
+                error={Boolean(fieldErrors.dischargeDate)}
+                helperText={fieldErrors.dischargeDate || ''}
                 disabled={militaryInfo.serviceType !== '병역'}
               />
             </Grid>

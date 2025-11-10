@@ -316,11 +316,15 @@ export function getCertifications() {
       return [];
     });
 }
-export function saveCertifications({ resumeIdx = null, certIdxList = [], certNameList = [] } = {}) {
+export function saveCertifications({ resumeIdx = null, certifications = [] } = {}) {
+  const normalized = Array.isArray(certifications) ? certifications : [];
   const payload = {
     resume_idx: resumeIdx,
-    cert_idx_list: certIdxList,
-    cert_name_list: certNameList,
+    certifications: normalized.map(item => ({
+      cert_idx: item?.certIdx ?? item?.cert_idx ?? null,
+      cert_name: item?.certName ?? item?.cert_name ?? null,
+      score: item?.score ?? null,
+    })),
   };
   return api.put('/api/users/certifications', payload).then(res => res.data);
 }
@@ -332,11 +336,15 @@ export function updateResume(resumeId, payload) {
 
 // [이력서] 자격증 매핑 저장(이력서별)
 // - certIdxList를 알고 있으면 전달, 모르면 certNameList로 전달하면 백엔드가 마스터 생성/매핑 처리
-export function saveResumeCertifications(resumeIdx, { certIdxList = [], certNameList = [] } = {}) {
+export function saveResumeCertifications(resumeIdx, { certifications = [] } = {}) {
+  const normalized = Array.isArray(certifications) ? certifications : [];
   const payload = {
     resume_idx: resumeIdx,
-    cert_idx_list: certIdxList,
-    cert_name_list: certNameList,
+    certifications: normalized.map(item => ({
+      cert_idx: item?.certIdx ?? item?.cert_idx ?? null,
+      cert_name: item?.certName ?? item?.cert_name ?? null,
+      score: item?.score ?? null,
+    })),
   };
   return api.put('/api/users/certifications', payload).then(res => res.data);
 }
@@ -374,6 +382,20 @@ export function createResume(resumeDto, imageFile) {
   if (imageFile) fd.append('imageFile', imageFile);
   return api.post('/api/resume', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
     .then(res => res.data);
+}
+
+export function getResumeDetail(resumeId) {
+  return api.get(`/api/resume/${resumeId}`).then(res => res.data);
+}
+
+// [이력서] 삭제 처리
+export function deleteResume(resumeId) {
+  return api.delete(`/api/resume/${resumeId}`).then(res => res.data);
+}
+
+// [이력서] 공개 상태 변경
+export function updateResumeStatus(resumeId, status) {
+  return api.put(`/api/resume/${resumeId}`, { status }).then(res => res.data);
 }
 
 // [공통] 자격증 자동완성 검색

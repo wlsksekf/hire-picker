@@ -85,6 +85,7 @@ export default function CertificationInfoForm() {
         id: idx + 1,
         certIdx: c.certIdx,
         certName: c.certName || '',
+        score: c.score || '',
         isRegistered: true,
       }));
       setCertifications(mapped);
@@ -100,7 +101,7 @@ export default function CertificationInfoForm() {
   function handleAddRow() {
     setCertifications([
       ...certifications,
-      { id: Date.now(), certIdx: null, certName: '', isRegistered: false },
+      { id: Date.now(), certIdx: null, certName: '', score: '', isRegistered: false },
     ]);
   }
 
@@ -120,6 +121,9 @@ export default function CertificationInfoForm() {
           isRegistered: false,
         };
       }
+      if (name === 'score') {
+        return { ...item, score: value };
+      }
       return { ...item, [name]: value };
     });
     setCertifications(updated);
@@ -137,6 +141,10 @@ export default function CertificationInfoForm() {
     // 자격증명이 입력되었지만 너무 짧으면 경고
     if (cert.certName && cert.certName.trim().length > 0 && cert.certName.trim().length < 2) {
       fieldErrors.certName = '자격증명은 2자 이상 입력해주세요.';
+    }
+
+    if (cert.score && cert.score.trim().length > 20) {
+      fieldErrors.score = '점수/등급은 20자 이하로 입력해주세요.';
     }
 
     if (Object.keys(fieldErrors).length > 0) {
@@ -184,6 +192,7 @@ export default function CertificationInfoForm() {
           ...item,
           certName: option,
           certIdx: null,
+          score: item.score || '',
           isRegistered: false,
         };
       }
@@ -191,6 +200,7 @@ export default function CertificationInfoForm() {
         ...item,
         certName: option.certName,
         certIdx: option.certIdx ? String(option.certIdx) : null,
+        score: option.score || item.score || '',
         isRegistered: Boolean(option.certIdx),
       };
     });
@@ -216,6 +226,9 @@ export default function CertificationInfoForm() {
         if (cert.certName && cert.certName.trim().length > 0 && cert.certName.trim().length < 2) {
           fieldErrors.certName = '자격증명은 2자 이상 입력해주세요.';
         }
+        if (cert.score && cert.score.trim().length > 20) {
+          fieldErrors.score = '점수/등급은 20자 이하로 입력해주세요.';
+        }
         
         if (Object.keys(fieldErrors).length > 0) {
           allErrors.set(cert.id, fieldErrors);
@@ -230,26 +243,32 @@ export default function CertificationInfoForm() {
       }
 
       // 자격증명 목록 추출
-      const certIdxList = certifications
-        .filter(c => c.certIdx)
-        .map(c => Number(c.certIdx));
-      const certNameList = certifications
-        .filter(c => !c.certIdx && c.certName && c.certName.trim())
-        .map(c => c.certName.trim());
-
       if (!targetResumeId) {
         setError('자격증을 저장할 이력서를 찾을 수 없습니다. 기본 이력서를 먼저 등록해주세요.');
         return;
       }
 
-      if (certIdxList.length === 0 && certNameList.length === 0) {
-        await saveCertifications({ resumeIdx: targetResumeId, certIdxList: [], certNameList: [] });
+      const payload = certifications
+        .map(c => {
+          const trimmedName = c.certName ? c.certName.trim() : '';
+          const sanitizedScore = c.score ? c.score.trim() : '';
+          if (!c.certIdx && !trimmedName) return null;
+          return {
+            certIdx: c.certIdx ? Number(c.certIdx) : null,
+            certName: trimmedName || null,
+            score: sanitizedScore || null,
+          };
+        })
+        .filter(Boolean);
+
+      if (payload.length === 0) {
+        await saveCertifications({ resumeIdx: targetResumeId, certifications: [] });
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
         return;
       }
 
-      await saveCertifications({ resumeIdx: targetResumeId, certIdxList, certNameList });
+      await saveCertifications({ resumeIdx: targetResumeId, certifications: payload });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       // 저장 후 다시 조회
@@ -400,6 +419,20 @@ export default function CertificationInfoForm() {
                       helperText={errors.get(cert.id)?.certName || ''}
                     />
                   )}
+                />
+                <Typography variant="caption" sx={{ color: '#757575', mt: 2, mb: 0.5, display: 'block' }}>
+                  점수/등급
+                </Typography>
+                <TextField
+                  name="score"
+                  value={cert.score}
+                  onChange={e => handleChange(e, cert.id)}
+                  placeholder="예: 850점 / 1급 / 합격"
+                  fullWidth
+                  inputProps={{ maxLength: 20 }}
+                  error={Boolean(errors.get(cert.id)?.score)}
+                  helperText={errors.get(cert.id)?.score || ''}
+                  sx={{ mt: 0.5 }}
                 />
               </CardContent>
             </StyledCard>

@@ -3,10 +3,8 @@
 
 import React from "react";
 import { Page, Text, View, Document, StyleSheet, Font } from "@react-pdf/renderer";
-import Pretendard from "@/fonts/Pretendard-Regular.ttf";
-
-// PDF에서도 사이트 스타일을 유지하기 위해 프리텐다드 폰트 등록
-Font.register({ family: "Pretendard", src: Pretendard });
+// PDF에서도 사이트 스타일을 유지하기 위해 프리텐다드 폰트 등록 (public/fonts 경로 사용)
+Font.register({ family: "Pretendard", src: "/fonts/Pretendard-Medium.ttf" });
 
 // 표 레이아웃과 텍스트 정렬을 모든 섹션에서 재사용
 const styles = StyleSheet.create({
