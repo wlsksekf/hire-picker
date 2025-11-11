@@ -92,7 +92,6 @@ public class ProfileController {
 
     @Operation(summary = "학력 저장(전체 교체)")
     @PutMapping("/academics")
-    @Transactional
     public ResponseEntity<Map<String, String>> saveAcademics(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                             @RequestBody List<AcademicAbilityDto> academics) {
         if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
