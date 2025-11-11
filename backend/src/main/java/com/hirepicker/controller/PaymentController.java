@@ -87,8 +87,8 @@ public class PaymentController {
     }
 
     @GetMapping("/fail")
-    public ResponseEntity<String> failPayment(@RequestParam(required = false) String code,
-                                                @RequestParam(required = false) String message) {
+    public ResponseEntity<String> failPayment(@RequestParam(value = "code", required = false) String code,
+                                                @RequestParam(value = "message", required = false) String message) {
         log.error("Payment failed. Code: {}, Message: {}", code, message);
         return ResponseEntity.status(500).body("결제 실패: " + (message != null ? message : "알 수 없는 오류"));
     }
