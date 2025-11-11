@@ -1,9 +1,12 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
-    "ignoreDeprecations": "5.0",
+    // 이 부분을 변경하거나 추가하여 경고를 무시하고 현재 설정을 계속 사용할 수 있게 합니다.
+    "ignoreDeprecations": "6.0",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   }
 }
