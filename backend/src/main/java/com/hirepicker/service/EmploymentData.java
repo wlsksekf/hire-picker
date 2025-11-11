@@ -44,5 +44,8 @@ public interface EmploymentData {
     // 특정 채용 공고 상세 정보 조회 (인덱스 기준)
     JobDto getJobPostingByPostingIdx(Long postingIdx);
 
+    // 관심 기업 ID 목록으로 채용 공고 목록 조회
+    List<JobDto> getJobPostingsByCompanyIds(List<Long> companyIds); // 새로 추가
+
     JobPosting findByPostingIdx(Long postingIdx);
 }

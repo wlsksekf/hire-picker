@@ -3,6 +3,7 @@ package com.hirepicker.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors; // Collectors 임포트 추가
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -40,7 +41,6 @@ public class EmploymentDataImpl implements EmploymentData {
                 .orElseThrow(() -> new IllegalArgumentException("해당 posting_idx에 해당하는 공고를 찾을 수 없습니다."));
     }
 
-    
     // 채용 공고 목록 조회
     @Override
     public Page<JobDto> getJobs(Pageable pageable) {
@@ -395,4 +395,40 @@ public class EmploymentDataImpl implements EmploymentData {
                 .build();
     }
 
+    @Override
+    public List<JobDto> getJobPostingsByCompanyIds(List<Long> companyIds) {
+        if (companyIds == null || companyIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<JobPosting> jobPostings = jobPostingRepository.findByCompany_CompanyIdxIn(companyIds);
+        return jobPostings.stream()
+                .map(jobPosting -> {
+                    String companyName = "";
+                    String imgUrl = null;
+                    if (jobPosting.getCompany() != null) {
+                        companyName = jobPosting.getCompany().getCompanyName();
+                        imgUrl = jobPosting.getCompany().getImgPath();
+                    }
+                    return JobDto.builder()
+                            .id(jobPosting.getPostingId())
+                            .postingIdx(jobPosting.getPostingIdx())
+                            .companyName(companyName)
+                            .title(jobPosting.getTitle())
+                            .employmentType(jobPosting.getEmploymentType())
+                            .location(jobPosting.getLocation())
+                            .imgUrl(imgUrl)
+                            .experience_level(jobPosting.getExperienceLevel())
+                            .companyType(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyType() : null)
+                            .jobType(jobPosting.getJobType())
+                            .companyIdx(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyIdx() : null)
+                            .welfare(jobPosting.getWelfare())
+                            .experience_level(jobPosting.getExperienceLevel())
+                            .required_qualifications(jobPosting.getRequiredQualifications())
+                            .preferred_qualifications(jobPosting.getPreferredQualifications())
+                            .salaryInfo(jobPosting.getSalaryInfo())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
 }
+

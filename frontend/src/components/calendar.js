@@ -18,8 +18,10 @@ import {
   faCalendarCheck,
   faClock,
   faBullhorn,
+  faHeart, // faHeart 임포트 추가
 } from "@fortawesome/free-solid-svg-icons";
 import { faCalendar as faCalendarRegular } from "@fortawesome/free-regular-svg-icons";
+import { pink } from "@mui/material/colors"; // pink 색상 임포트 추가
 
 export default function CustomCalendar({ events }) {
   const calendarRef = useRef();
@@ -32,7 +34,7 @@ export default function CustomCalendar({ events }) {
   // Custom event content rendering function
   const renderEventContent = (eventInfo) => {
     const status = eventInfo.event.extendedProps.status;
-    const type = eventInfo.event.extendedProps.type;
+    const type = eventInfo.event.type; // eventInfo.event.extendedProps.type 대신 eventInfo.event.type 사용
     let iconComponent;
     let iconColorHex;
 
@@ -50,8 +52,13 @@ export default function CustomCalendar({ events }) {
       }
     };
 
-    if (type === "empEvent") {
+    if (type === "likedJob") {
+      // likedJob 타입인 경우 하트 아이콘 표시
+      iconComponent = faHeart;
+      iconColorHex = pink[500]; // 핑크색 하트
+    } else if (type === "empEvent") {
       iconComponent = faBullhorn;
+      iconColorHex = getColor(status); // 기존 색상 로직 유지
     } else {
       switch (status) {
         case "past":
@@ -66,8 +73,8 @@ export default function CustomCalendar({ events }) {
         default:
           iconComponent = faCalendarRegular;
       }
+      iconColorHex = getColor(status);
     }
-    iconColorHex = getColor(status);
 
     return (
       <div

@@ -34,4 +34,5 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long>, J
 
     List<JobPosting> findByCompany_CompanyIdx(Long companyIdx);
 
+    List<JobPosting> findByCompany_CompanyIdxIn(List<Long> companyIdxs); // 새로 추가
 }

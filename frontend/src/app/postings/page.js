@@ -148,8 +148,6 @@ function PostingsPage() {
 
   return (
     <Container maxWidth="xl">
-      {/* Removed "Just Pick." section */}
-
       <Box sx={{ pb: 3 }}>
         <SearchFilterBar
           onSearchAndFilter={handleSearchAndFilter}
@@ -157,110 +155,152 @@ function PostingsPage() {
           initialFilters={appliedFilters}
         />
 
-        <Grid container spacing={3}>
+        {/* Grid container로 3열 설정 */}
+        <Grid container rowSpacing={3} columnSpacing={3} alignItems="stretch">
+          {" "}
+          {/* alignItems="stretch" 명시 */}
           {jobs.map(function (job) {
             return (
               <Grid
                 key={job.postingIdx || `${job.companyName}-${job.title}`}
-                item xs={12} sm={6} md={4}
+                size={{ xs: 12, sm: 6, md: 4 }}
               >
                 <Card
-                    sx={{
-                      borderRadius: "16px",
-                      height: "100%",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                      cursor: "pointer",
-                      transition: "background-color 0.2s, box-shadow 0.2s", // 부드럽게
-                      "&:hover": {
-                        backgroundColor: theme.palette.action.hover, // 살짝 빛나는 느낌
-                        boxShadow: "0 6px 16px rgba(0,0,0,0.1)", // 약간 그림자 강조
-                      },
-                    }}
-                    onClick={() => router.push(`/postings/${job.postingIdx}`)}
+                  sx={{
+                    borderRadius: "16px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                    cursor: "pointer",
+                    transition: "background-color 0.2s, box-shadow 0.2s",
+                    "&:hover": {
+                      backgroundColor: theme.palette.action.hover, // 살짝 빛나는 느낌
+                      boxShadow: "0 6px 16px rgba(0,0,0,0.1)", // 약간 그림자 강조
+                    },
+                    display: "flex", // Card를 flex 컨테이너로 만들고
+                    flexDirection: "column", // 내부 콘텐츠를 세로로 배치
+                    height: "100%", // Card가 Grid 아이템의 높이를 꽉 채우도록
+                  }}
+                >
+                  {/* 이미지 부분은 Flex로 설정하여 크기를 유지 */}
+                  <Link
+                    href={`/postings/${job.postingIdx}`}
+                    passHref
+                    style={{ textDecoration: "none" }}
                   >
                     <Box
                       sx={{
-                        height: "180px",
+                        height: "180px", // 이미지 높이를 고정
                         backgroundImage: job.imgUrl
                           ? `url(/${job.imgUrl})`
                           : "none",
                         backgroundSize: "cover",
                         backgroundPosition: "center",
                         backgroundColor: theme.palette.grey[200],
+                        flexShrink: 0, // 이미지 부분이 줄어들지 않도록
                       }}
                     />
-                    <Box
-                      sx={{
-                        p: 3,
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        height: "calc(100% - 180px)",
-                      }}
-                    >
+                  </Link>
+
+                  {/* 카드 본문 부분 */}
+                  <Box
+                    sx={{
+                      p: 3,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      flexGrow: 1, // 남은 공간을 채우도록 설정
+                      overflow: "hidden", // 콘텐츠가 넘칠 경우 숨김
+                    }}
+                  >
+                    <Link href={`/postings/${job.postingIdx}`} passHref>
                       <Typography color="text.secondary" noWrap>
                         {job.companyName}
                       </Typography>
-                      <Typography
-                        variant="h5"
-                        fontWeight="bold"
-                        sx={{
-                          mb: 2,
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
+                    </Link>
+
+                    <Typography
+                      variant="h5"
+                      fontWeight="bold"
+                      sx={{
+                        mb: 2,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        flexShrink: 0, // 타이틀이 줄어들지 않도록
+                      }}
+                    >
+                      {job.title}
+                    </Typography>
+
+                    {/* Chip 리스트 */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 1,
+                        mb: 2,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {" "}
+                      {/* Chip 리스트도 줄어들지 않도록 */}
+                      {job.employmentType && (
+                        <Chip label={job.employmentType} />
+                      )}
+                      {job.location && <Chip label={job.location} />}
+                      {job.experience_level && (
+                        <Chip label={job.experience_level} />
+                      )}
+                      {job.companyType && <Chip label={job.companyType} />}
+                      {job.jobType && <Chip label={job.jobType} />}
+                      {job.startDate && job.endDate && (
+                        <Chip
+                          icon={<FontAwesomeIcon icon={faCalendar} />}
+                          label={`${job.startDate} ~ ${job.endDate}`}
+                        />
+                      )}
+                    </Box>
+
+                    {/* 카드 하단 버튼들 */}
+                    <CardActions
+                      sx={{
+                        mt: "auto",
+                        justifyContent: "flex-end",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {" "}
+                      {/* mt: "auto"로 하단에 붙이고, 줄어들지 않도록 */}
+                      <Box onClick={(e) => e.stopPropagation()}>
+                        <Bookmark jobId={job.postingIdx} />
+                      </Box>
+                      <Button
+                        variant="outlined"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPost(job);
                         }}
                       >
-                        {job.title}
-                      </Typography>
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                        {job.employmentType && (
-                          <Chip label={job.employmentType} />
-                        )}
-                        {job.location && <Chip label={job.location} />}
-                        {job.experience_level && (
-                          <Chip label={job.experience_level} />
-                        )}
-                        {job.companyType && <Chip label={job.companyType} />}
-                        {job.jobType && <Chip label={job.jobType} />}
-                        {job.startDate && job.endDate && (
-                          <Chip
-                            icon={<FontAwesomeIcon icon={faCalendar} />}
-                            label={`${job.startDate} ~ ${job.endDate}`}
-                          />
-                        )}
-                      </Box>
-                      <CardActions sx={{ mt: 2, justifyContent: "flex-end" }}>
-                        <Box onClick={(e) => e.stopPropagation()}>
-                          <Bookmark jobId={job.postingIdx} />
-                        </Box>
-                        <Button
-                          variant="outlined"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedPost(job);
-                          }} // 채팅 독립
-                        >
-                          실시간 채팅
-                        </Button>
-                        <Button
-                          variant="contained"
-                          href={job.homepageUrl}
-                          target="_blank"
-                          disabled={!job.homepageUrl}
-                          onClick={(e) => e.stopPropagation()} // 지원하기 독립
-                        >
-                          지원하기
-                        </Button>
-                      </CardActions>
-                    </Box>
-                  </Card>
+                        실시간 채팅
+                      </Button>
+                      <Button
+                        variant="contained"
+                        href={job.homepageUrl}
+                        target="_blank"
+                        disabled={!job.homepageUrl}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        지원하기
+                      </Button>
+                    </CardActions>
+                  </Box>
+                </Card>
               </Grid>
             );
           })}
         </Grid>
 
+        {/* 페이지네이션 */}
         <Box sx={{ display: "flex", justifyContent: "center", my: 5 }}>
           {hasNextPage && (
             <Button onClick={fetchNextPage} disabled={isFetchingNextPage}>

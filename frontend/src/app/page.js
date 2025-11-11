@@ -156,9 +156,14 @@ function HomePage() {
             return (
               <Grid
                 key={job.id || `${job.companyName}-${job.title}`}
-                item xs={12} sm={6} md={4}
+                size={{ xs: 12, sm: 6, md: 4 }}
               >
-                <Card
+                <Link
+                  href={`/postings/${job.postingIdx}`}
+                  passHref
+                  style={{ textDecoration: "none" }}
+                >
+                  <Card
                     sx={{
                       borderRadius: "16px",
                       height: "100%",
@@ -170,7 +175,6 @@ function HomePage() {
                         boxShadow: "0 6px 16px rgba(0,0,0,0.1)", // 약간 그림자 강조
                       },
                     }}
-                    onClick={() => router.push(`/postings/${job.postingIdx}`)}
                   >
                     <Box
                       sx={{
@@ -250,6 +254,7 @@ function HomePage() {
                       </CardActions>
                     </Box>
                   </Card>
+                </Link>
               </Grid>
             );
           })}

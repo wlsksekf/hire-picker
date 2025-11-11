@@ -52,14 +52,12 @@ function JobPostingDetailClient({ posting_idx }) {
   const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
-    console.log("JobPostingDetailClient: posting_idx prop received:", posting_idx);
     if (posting_idx) {
       setLoading(true);
       setLogoError(false);
       api
         .get(`/api/job-postings/idx/${posting_idx}`)
         .then((response) => {
-          console.log("JobPostingDetailClient: API response data:", response.data);
           setJobPosting(response.data);
           setLoading(false);
 
@@ -68,17 +66,14 @@ function JobPostingDetailClient({ posting_idx }) {
             api
               .get(`/api/companies/${response.data.companyIdx}`)
               .then((companyResponse) => {
-                console.log("JobPostingDetailClient: Company API response data:", companyResponse.data);
                 setCompany(companyResponse.data);
                 setCompanyLoading(false);
               })
               .catch((companyErr) => {
-                console.error("JobPostingDetailClient: Company API error:", companyErr);
                 setCompanyError(companyErr);
                 setCompanyLoading(false);
               });
           } else {
-            console.log("JobPostingDetailClient: No companyIdx found in job posting data.");
             setCompanyLoading(false);
           }
         })
@@ -166,12 +161,12 @@ function JobPostingDetailClient({ posting_idx }) {
           {/* Header */}
           <Paper
             elevation={0}
-            variant="outlined"
+            // variant="outlined"
             sx={{ p: { xs: 2, md: 4 }, borderRadius: 3 }}
           >
             <Typography
               variant="h4"
-              component="h1"
+              component="h3"
               fontWeight="bold"
               gutterBottom
             >
@@ -231,7 +226,7 @@ function JobPostingDetailClient({ posting_idx }) {
                           <Stack
                             direction="row"
                             spacing={1.5}
-                            alignItems="center"
+                            alignItems="flex-start" // 아이콘과 텍스트의 세로 정렬을 위해 변경
                             key={item.label}
                           >
                             <FontAwesomeIcon
@@ -239,17 +234,20 @@ function JobPostingDetailClient({ posting_idx }) {
                               style={{
                                 color: theme.palette.text.secondary,
                                 width: "18px",
+                                marginTop: "4px", // 아이콘과 텍스트의 세로 정렬을 위해 추가
                               }}
                             />
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="baseline"
-                            >
+                            <Box sx={{ display: "flex", flexGrow: 1 }}>
+                              {" "}
+                              {/* 라벨과 값을 감싸는 Box 추가 */}
                               <Typography
                                 variant="body2"
                                 color="text.secondary"
-                                sx={{ flexShrink: 0 }}
+                                sx={{
+                                  flexShrink: 0,
+                                  width: "150px",
+                                  noWrap: true,
+                                }} // 라벨 너비 150px로 늘리고 noWrap 추가
                               >
                                 {item.label}
                               </Typography>
@@ -266,6 +264,7 @@ function JobPostingDetailClient({ posting_idx }) {
                                   sx={{
                                     fontWeight: 500,
                                     wordBreak: "break-all",
+                                    flexGrow: 1, // 값이 남은 공간 채우도록
                                   }}
                                 >
                                   {item.value}
@@ -273,12 +272,16 @@ function JobPostingDetailClient({ posting_idx }) {
                               ) : (
                                 <Typography
                                   variant="body1"
-                                  sx={{ fontWeight: 500 }}
+                                  sx={{
+                                    fontWeight: 500,
+                                    flexGrow: 1,
+                                    wordBreak: "break-all",
+                                  }} // 값이 남은 공간 채우도록
                                 >
                                   {item.value}
                                 </Typography>
                               )}
-                            </Stack>
+                            </Box>
                           </Stack>
                         ))}
                       </Stack>
@@ -289,7 +292,7 @@ function JobPostingDetailClient({ posting_idx }) {
                           <Stack
                             direction="row"
                             spacing={1.5}
-                            alignItems="center"
+                            alignItems="flex-start" // 아이콘과 텍스트의 세로 정렬을 위해 변경
                             key={item.label}
                           >
                             <FontAwesomeIcon
@@ -297,17 +300,20 @@ function JobPostingDetailClient({ posting_idx }) {
                               style={{
                                 color: theme.palette.text.secondary,
                                 width: "18px",
+                                marginTop: "4px", // 아이콘과 텍스트의 세로 정렬을 위해 추가
                               }}
                             />
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="baseline"
-                            >
+                            <Box sx={{ display: "flex", flexGrow: 1 }}>
+                              {" "}
+                              {/* 라벨과 값을 감싸는 Box 추가 */}
                               <Typography
                                 variant="body2"
                                 color="text.secondary"
-                                sx={{ flexShrink: 0 }}
+                                sx={{
+                                  flexShrink: 0,
+                                  width: "150px",
+                                  noWrap: true,
+                                }} // 라벨 너비 150px로 늘리고 noWrap 추가
                               >
                                 {item.label}
                               </Typography>
@@ -324,6 +330,7 @@ function JobPostingDetailClient({ posting_idx }) {
                                   sx={{
                                     fontWeight: 500,
                                     wordBreak: "break-all",
+                                    flexGrow: 1, // 값이 남은 공간 채우도록
                                   }}
                                 >
                                   {item.value}
@@ -331,12 +338,16 @@ function JobPostingDetailClient({ posting_idx }) {
                               ) : (
                                 <Typography
                                   variant="body1"
-                                  sx={{ fontWeight: 500 }}
+                                  sx={{
+                                    fontWeight: 500,
+                                    flexGrow: 1,
+                                    wordBreak: "break-all",
+                                  }} // 값이 남은 공간 채우도록
                                 >
                                   {item.value}
                                 </Typography>
                               )}
-                            </Stack>
+                            </Box>
                           </Stack>
                         ))}
                       </Stack>
@@ -461,10 +472,19 @@ function JobPostingDetailClient({ posting_idx }) {
                                     marginTop: "4px",
                                   }}
                                 />
-                                <Box>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexGrow: 1,
+                                    flexDirection: "column",
+                                  }}
+                                >
+                                  {" "}
+                                  {/* 라벨과 값을 감싸는 Box 추가, 세로 정렬 */}
                                   <Typography
                                     variant="body2"
                                     color="text.secondary"
+                                    sx={{ flexShrink: 0, width: "80px" }} // 라벨 너비 고정 (조정 가능)
                                   >
                                     {item.label}
                                   </Typography>
@@ -479,14 +499,22 @@ function JobPostingDetailClient({ posting_idx }) {
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       variant="body1"
-                                      sx={{ fontWeight: 500 }}
+                                      sx={{
+                                        fontWeight: 500,
+                                        wordBreak: "break-all",
+                                        flexGrow: 1,
+                                      }} // 값이 남은 공간 채우도록
                                     >
                                       {item.value}
                                     </MuiLink>
                                   ) : (
                                     <Typography
                                       variant="body1"
-                                      sx={{ fontWeight: 500 }}
+                                      sx={{
+                                        fontWeight: 500,
+                                        flexGrow: 1,
+                                        wordBreak: "break-all",
+                                      }} // 값이 남은 공간 채우도록
                                     >
                                       {item.value}
                                     </Typography>
