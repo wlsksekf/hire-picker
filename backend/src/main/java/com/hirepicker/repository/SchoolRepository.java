@@ -15,5 +15,7 @@ public interface SchoolRepository extends JpaRepository<School, Long> {
     List<School> findBySchoolNameContaining(String schoolName);
 
     // 학교 이름 정확 일치(대소문자 무시)
+    Optional<School> findBySchoolNameAndCampus(String schoolName, String campus);
+
     Optional<School> findFirstBySchoolNameIgnoreCase(String schoolName);
 }
