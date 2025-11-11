@@ -21,22 +21,18 @@ public class JobPostingController {
 
     private final EmploymentData employmentData;
 
-    @Operation(summary = "테스트 엔드포인트", description = "컨트롤러 작동 여부 확인용 테스트 엔드포인트입니다.")
-    @GetMapping("/test")
-    public ResponseEntity<String> testEndpoint() {
-        return ResponseEntity.ok("JobPostingController is working!");
-    }
-
-    @Operation(summary = "특정 채용 공고 상세 정보 조회", description = "postingId를 이용하여 특정 채용 공고의 상세 정보를 조회합니다.")
-    @GetMapping("/{id}")
-    public ResponseEntity<JobDto> getJobPostingById(@PathVariable("id") String id) {
-        try {
-            JobDto jobPosting = employmentData.getJobPostingById(id);
-            return ResponseEntity.ok(jobPosting);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
+    // @Operation(summary = "특정 채용 공고 상세 정보 조회", description = "postingId를 이용하여 특정
+    // 채용 공고의 상세 정보를 조회합니다.")
+    // @GetMapping("/{id}")
+    // public ResponseEntity<JobDto> getJobPostingById(@PathVariable("id") String
+    // id) {
+    // try {
+    // JobDto jobPosting = employmentData.getJobPostingById(id);
+    // return ResponseEntity.ok(jobPosting);
+    // } catch (IllegalArgumentException e) {
+    // return ResponseEntity.notFound().build();
+    // }
+    // }
 
     @Operation(summary = "특정 채용 공고 상세 정보 조회 (인덱스 기준)", description = "posting_idx를 이용하여 특정 채용 공고의 상세 정보를 조회합니다.")
     @GetMapping("/idx/{posting_idx}") // Changed path to avoid conflict with /id

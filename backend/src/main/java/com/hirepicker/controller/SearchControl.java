@@ -68,19 +68,28 @@ public class SearchControl {
         // 로그인 안된 경우
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
             m.put("LoggedIn", false);
-            m.put("bookmark", false); // 북마크 여부 기본값 (예: 로그인 안 되어 있으면 false)
+            m.put("Bookmarked", false); // 북마크 여부 기본값 (예: 로그인 안 되어 있으면 false)
             System.out.println("❌ 로그인 안 된 상태");
             return m;
         }
 
-        JobPosting posting = employmentDataImpl.findByPostingId(String.valueOf(body.get("jobId")));
+        // 로그인 된 경우
+        Object jobIdObj = body.get("jobId");
+        if (jobIdObj == null) {
+            m.put("success", false);
+            m.put("message", "jobId가 요청에 없습니다.");
+            return m;
+        }
 
+        JobPosting posting = employmentDataImpl.findByPostingIdx(Long.valueOf(String.valueOf(jobIdObj)));
         String postIdx = String.valueOf(posting.getPostingIdx());
 
         CustomUserDetails p_user = (CustomUserDetails) auth.getPrincipal();
         String userIdx = String.valueOf(p_user.getId());
+
         System.out.println(postIdx + "IIDIDIDIDIDIDIDIDIDIDIIDIDID");
         System.out.println(userIdx + "IDXDIXDIXDIXIDXIDXIDXIDIXDIXDIXDIDX");
+
         boolean isBookmarked = bookMarkService.isBookmarked(userIdx, postIdx);
 
         System.out.println(isBookmarked + "트루야펄스냐트루냐펄스냐트루냐펄스냐");
@@ -104,12 +113,13 @@ public class SearchControl {
 
         try {
             // 2. 사용자 ID 및 게시물 ID 추출
-            JobPosting posting = employmentDataImpl.findByPostingId(String.valueOf(body.get("jobId")));
-            if (posting == null) {
+            Object jobIdObj = body.get("jobId");
+            if (jobIdObj == null) {
                 m.put("success", false);
-                m.put("message", "해당 채용 공고를 찾을 수 없습니다.");
-                return m; // Map을 바로 반환
+                m.put("message", "jobId가 요청에 없습니다.");
+                return m;
             }
+            JobPosting posting = employmentDataImpl.findByPostingIdx(Long.valueOf(String.valueOf(jobIdObj)));
 
             String postIdx = String.valueOf(posting.getPostingIdx());
             CustomUserDetails p_user = (CustomUserDetails) auth.getPrincipal();

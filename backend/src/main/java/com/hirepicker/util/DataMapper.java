@@ -28,8 +28,14 @@ public class DataMapper {
                 null, // experience_level
                 null, // jobType
                 null, // description
-                null, // deadline
-                null // companyIdx
+                null, // endDate
+                null, // startDate
+                null, // welfare
+                null, // required_qualifications
+                null, // preferred_qualifications
+                null, // experienceLevel
+                null, // salaryInfo
+                null // salaryInfo
         );
     }
 

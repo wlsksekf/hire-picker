@@ -34,11 +34,13 @@ public class EmploymentDataImpl implements EmploymentData {
     private final EmpEventRepository empEventRepository; // 채용 행사 리포지토리
     private final CompanyRepository companyRepository; // 기업 리포지토리
 
-    public JobPosting findByPostingId(String postingId) {
-        return jobPostingRepository.findByPostingId(postingId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 posting_id에 해당하는 공고를 찾을 수 없습니다."));
+    @Override
+    public JobPosting findByPostingIdx(Long postingIdx) {
+        return jobPostingRepository.findByPostingIdx(postingIdx)
+                .orElseThrow(() -> new IllegalArgumentException("해당 posting_idx에 해당하는 공고를 찾을 수 없습니다."));
     }
 
+    
     // 채용 공고 목록 조회
     @Override
     public Page<JobDto> getJobs(Pageable pageable) {
@@ -61,6 +63,11 @@ public class EmploymentDataImpl implements EmploymentData {
                     .employmentType(job.getEmploymentType())
                     .location(job.getLocation())
                     .imgUrl(job.getCompany().getImgPath())
+                    .welfare(job.getWelfare())
+                    .experience_level(job.getExperienceLevel())
+                    .required_qualifications(job.getRequiredQualifications())
+                    .preferred_qualifications(job.getPreferredQualifications())
+                    .salaryInfo(job.getSalaryInfo())
                     .build();
 
             jobDtos.add(jobDto);
@@ -226,11 +233,16 @@ public class EmploymentDataImpl implements EmploymentData {
                     .companyName(companyName)
                     .title(job.getTitle())
                     .employmentType(job.getEmploymentType())
-                    .location(job.getCompany().getAddress())
+                    .location(job.getLocation())
                     .imgUrl(imgUrl)
                     .experience_level(job.getExperienceLevel())
-                    .companyType(job.getLocation())
+                    .companyType(job.getCompany() != null ? job.getCompany().getCompanyType() : null)
                     .jobType(job.getJobType())
+                    .welfare(job.getWelfare())
+                    .experience_level(job.getExperienceLevel())
+                    .required_qualifications(job.getRequiredQualifications())
+                    .preferred_qualifications(job.getPreferredQualifications())
+                    .salaryInfo(job.getSalaryInfo())
                     .build());
         }
 
@@ -297,12 +309,17 @@ public class EmploymentDataImpl implements EmploymentData {
                     .companyName(companyName)
                     .title(job.getTitle())
                     .employmentType(job.getEmploymentType())
-                    .location(job.getCompany().getAddress())
+                    .location(job.getLocation())
                     .imgUrl(imgUrl)
                     .experience_level(job.getExperienceLevel())
-                    .companyType(job.getLocation())
+                    .companyType(job.getCompany() != null ? job.getCompany().getCompanyType() : null)
                     .jobType(job.getJobType())
-                    .companyIdx(job.getCompany() != null ? job.getCompany().getCompanyIdx() : null) // Populate companyIdx
+                    .companyIdx(job.getCompany() != null ? job.getCompany().getCompanyIdx() : null)
+                    .welfare(job.getWelfare())
+                    .experience_level(job.getExperienceLevel())
+                    .required_qualifications(job.getRequiredQualifications())
+                    .preferred_qualifications(job.getPreferredQualifications())
+                    .salaryInfo(job.getSalaryInfo())
                     .build());
         }
         return jobDtos;
@@ -326,14 +343,20 @@ public class EmploymentDataImpl implements EmploymentData {
                 .companyName(companyName)
                 .title(jobPosting.getTitle())
                 .employmentType(jobPosting.getEmploymentType())
-                .location(jobPosting.getCompany().getAddress())
+                .location(jobPosting.getLocation())
                 .imgUrl(imgUrl)
                 .experience_level(jobPosting.getExperienceLevel())
-                .companyType(jobPosting.getLocation())
+                .companyType(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyType() : null)
                 .jobType(jobPosting.getJobType())
                 .description(jobPosting.getDescription())
-                .deadline(jobPosting.getEndDate() != null ? jobPosting.getEndDate().toString() : null)
+                .endDate(jobPosting.getEndDate() != null ? jobPosting.getEndDate().toString() : null)
+                .startDate(jobPosting.getStartDate() != null ? jobPosting.getStartDate().toString() : null)
                 .companyIdx(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyIdx() : null)
+                .welfare(jobPosting.getWelfare())
+                .experience_level(jobPosting.getExperienceLevel())
+                .required_qualifications(jobPosting.getRequiredQualifications())
+                .preferred_qualifications(jobPosting.getPreferredQualifications())
+                .salaryInfo(jobPosting.getSalaryInfo())
                 .build();
     }
 
@@ -355,14 +378,20 @@ public class EmploymentDataImpl implements EmploymentData {
                 .companyName(companyName)
                 .title(jobPosting.getTitle())
                 .employmentType(jobPosting.getEmploymentType())
-                .location(jobPosting.getCompany().getAddress())
+                .location(jobPosting.getLocation())
                 .imgUrl(imgUrl)
                 .experience_level(jobPosting.getExperienceLevel())
-                .companyType(jobPosting.getLocation())
+                .companyType(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyType() : null)
                 .jobType(jobPosting.getJobType())
                 .description(jobPosting.getDescription())
-                .deadline(jobPosting.getEndDate() != null ? jobPosting.getEndDate().toString() : null)
+                .endDate(jobPosting.getEndDate() != null ? jobPosting.getEndDate().toString() : null)
+                .startDate(jobPosting.getStartDate() != null ? jobPosting.getStartDate().toString() : null)
                 .companyIdx(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyIdx() : null)
+                .welfare(jobPosting.getWelfare())
+                .experience_level(jobPosting.getExperienceLevel())
+                .required_qualifications(jobPosting.getRequiredQualifications())
+                .preferred_qualifications(jobPosting.getPreferredQualifications())
+                .salaryInfo(jobPosting.getSalaryInfo())
                 .build();
     }
 

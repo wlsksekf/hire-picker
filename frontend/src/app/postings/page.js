@@ -21,13 +21,14 @@ import SearchFilterBar from "@/components/SearchFilterBar";
 import Bookmark from "@/components/BookMark";
 import JobDetailModal from "@/components/JobDetailModal";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation"; // Import useSearchParams
+import { useSearchParams, useRouter } from "next/navigation"; // Import useSearchParams and useRouter
 
 const PAGE_SIZE = 18;
 
 function PostingsPage() {
   const theme = useTheme();
   const searchParams = useSearchParams(); // Initialize useSearchParams
+  const router = useRouter();
 
   const [jobs, setJobs] = useState([]);
   const [page, setPage] = useState(0);
@@ -161,14 +162,9 @@ function PostingsPage() {
             return (
               <Grid
                 key={job.postingIdx || `${job.companyName}-${job.title}`}
-                size={{ xs: 12, sm: 6, md: 4 }}
+                item xs={12} sm={6} md={4}
               >
-                <Link
-                  href={`/postings/${job.postingIdx}`}
-                  passHref
-                  style={{ textDecoration: "none" }}
-                >
-                  <Card
+                <Card
                     sx={{
                       borderRadius: "16px",
                       height: "100%",
@@ -180,6 +176,7 @@ function PostingsPage() {
                         boxShadow: "0 6px 16px rgba(0,0,0,0.1)", // 약간 그림자 강조
                       },
                     }}
+                    onClick={() => router.push(`/postings/${job.postingIdx}`)}
                   >
                     <Box
                       sx={{
@@ -259,7 +256,6 @@ function PostingsPage() {
                       </CardActions>
                     </Box>
                   </Card>
-                </Link>
               </Grid>
             );
           })}

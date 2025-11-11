@@ -101,7 +101,7 @@ public class SecurityConfig {
                                 "/chat/history/**",
                                 "/api/v1/ai-chat",
                                 "/api/v1/ai-search",
-                                "/api/search", "/api/calendar/**",
+                                "/api/search/**", "/api/calendar/**",
                                 "/api/company-alarms/**",
                                 "/api/bookmark/toggle",
                                 "/api/bookmark/check")

@@ -1,6 +1,6 @@
-'use client';
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+"use client";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Container,
   Box,
@@ -11,17 +11,17 @@ import {
   Button,
   Chip,
   Card,
-  CardActions
-} from '@mui/material';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendar } from '@fortawesome/free-solid-svg-icons';
-import { useTheme } from '@mui/material/styles';
-import ChatRoom from '@/components/ChatRoom';
-import SearchFilterBar from '@/components/SearchFilterBar';
-import Bookmark from '@/components/BookMark';
-import JobDetailModal from '@/components/JobDetailModal';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+  CardActions,
+} from "@mui/material";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCalendar } from "@fortawesome/free-solid-svg-icons";
+import { useTheme } from "@mui/material/styles";
+import ChatRoom from "@/components/ChatRoom";
+import SearchFilterBar from "@/components/SearchFilterBar";
+import Bookmark from "@/components/BookMark";
+import JobDetailModal from "@/components/JobDetailModal";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const PAGE_SIZE = 18;
 
@@ -33,12 +33,12 @@ function HomePage() {
   const [page, setPage] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
-  const [status, setStatus] = useState('pending');
+  const [status, setStatus] = useState("pending");
   const [error, setError] = useState(null);
   const [selectedPost, setSelectedPost] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null); // 상세 공고 모달용
 
-  const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [appliedFilters, setAppliedFilters] = useState({
     jobType: [],
     location: [],
@@ -49,37 +49,43 @@ function HomePage() {
 
   function fetchJobs(pageNum, searchTerm, filters) {
     if (pageNum === 0) {
-      setStatus('pending');
+      setStatus("pending");
       setJobs([]);
     } else {
       setIsFetchingNextPage(true);
     }
 
     const requestbody = {
-      searchTerm: searchTerm || '',
-      filters: filters
+      searchTerm: searchTerm || "",
+      filters: filters,
     };
 
-    axios.post(`/api/search?page=${pageNum}&size=${PAGE_SIZE}`, requestbody)
+    axios
+      .post(`/api/search?page=${pageNum}&size=${PAGE_SIZE}`, requestbody)
       .then(function (res) {
         const data = res.data;
-        const newJobs = data._embedded ? data._embedded.jobDtoList : (data.content || []);
+        const newJobs = data._embedded
+          ? data._embedded.jobDtoList
+          : data.content || [];
 
         setJobs(function (prev) {
           const merged = pageNum === 0 ? newJobs : [...prev, ...newJobs];
-          const unique = merged.filter((job, index, self) =>
-            index === self.findIndex(j => j.id === job.id)
+          const unique = merged.filter(
+            (job, index, self) =>
+              index === self.findIndex((j) => j.id === job.id)
           );
           return unique;
         });
 
-        const isLast = data.page ? data.page.number >= data.page.totalPages - 1 : false;
+        const isLast = data.page
+          ? data.page.number >= data.page.totalPages - 1
+          : false;
         setHasNextPage(!isLast);
-        setStatus('success');
+        setStatus("success");
       })
       .catch(function (err) {
         setError(err);
-        setStatus('error');
+        setStatus("error");
       })
       .finally(function () {
         setIsFetchingNextPage(false);
@@ -94,10 +100,10 @@ function HomePage() {
     // When search/filter is applied on the home page, navigate to the postings page
     // and pass the search/filter parameters as query params.
     const queryParams = new URLSearchParams();
-    if (term) queryParams.append('searchTerm', term);
+    if (term) queryParams.append("searchTerm", term);
     for (const filterType in filters) {
       if (filters[filterType] && filters[filterType].length > 0) {
-        queryParams.append(filterType, filters[filterType].join(','));
+        queryParams.append(filterType, filters[filterType].join(","));
       }
     }
     router.push(`/postings?${queryParams.toString()}`);
@@ -109,9 +115,9 @@ function HomePage() {
     fetchJobs(nextPage, appliedSearchTerm, appliedFilters);
   }
 
-  if (status === 'pending' && jobs.length === 0) {
+  if (status === "pending" && jobs.length === 0) {
     return (
-      <Container sx={{ py: 8, textAlign: 'center' }}>
+      <Container sx={{ py: 8, textAlign: "center" }}>
         <CircularProgress />
         <Typography>채용 정보를 불러오는 중...</Typography>
       </Container>
@@ -130,7 +136,7 @@ function HomePage() {
 
   return (
     <Container maxWidth="xl">
-      <Box sx={{ py: 8, textAlign: 'center' }}>
+      <Box sx={{ py: 8, textAlign: "center" }}>
         <Typography variant="h2" fontWeight="bold" gutterBottom>
           Just Pick.
         </Typography>
@@ -148,51 +154,68 @@ function HomePage() {
         <Grid container spacing={3}>
           {jobs.map(function (job) {
             return (
-              <Grid key={job.id || `${job.companyName}-${job.title}`} size={{ xs: 12, sm: 6, md: 4 }}>
-                <Link href={`/postings/${job.id}`} passHref style={{ textDecoration: 'none' }}>
-                  <Card
-                     sx={{
-                      borderRadius: '16px',
-                      height: '100%',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s, box-shadow 0.2s', // 부드럽게
-                      '&:hover': {
+              <Grid
+                key={job.id || `${job.companyName}-${job.title}`}
+                item xs={12} sm={6} md={4}
+              >
+                <Card
+                    sx={{
+                      borderRadius: "16px",
+                      height: "100%",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s, box-shadow 0.2s", // 부드럽게
+                      "&:hover": {
                         backgroundColor: theme.palette.action.hover, // 살짝 빛나는 느낌
-                        boxShadow: '0 6px 16px rgba(0,0,0,0.1)', // 약간 그림자 강조
+                        boxShadow: "0 6px 16px rgba(0,0,0,0.1)", // 약간 그림자 강조
                       },
                     }}
+                    onClick={() => router.push(`/postings/${job.postingIdx}`)}
                   >
-                    <Box sx={{
-                      height: '180px',
-                      backgroundImage: job.imgUrl ? `url(/${job.imgUrl})` : 'none',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      backgroundColor: theme.palette.grey[200],
-                    }} />
-                    <Box sx={{
-                      p: 3,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      height: 'calc(100% - 180px)'
-                    }}>
+                    <Box
+                      sx={{
+                        height: "180px",
+                        backgroundImage: job.imgUrl
+                          ? `url(/${job.imgUrl})`
+                          : "none",
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        backgroundColor: theme.palette.grey[200],
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        p: 3,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        height: "calc(100% - 180px)",
+                      }}
+                    >
                       <Typography color="text.secondary" noWrap>
                         {job.companyName}
                       </Typography>
-                      <Typography variant="h5" fontWeight="bold" sx={{
-                        mb: 2,
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }}>
+                      <Typography
+                        variant="h5"
+                        fontWeight="bold"
+                        sx={{
+                          mb: 2,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
                         {job.title}
                       </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        {job.employmentType && <Chip label={job.employmentType} />}
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                        {job.employmentType && (
+                          <Chip label={job.employmentType} />
+                        )}
                         {job.location && <Chip label={job.location} />}
-                        {job.experience_level && <Chip label={job.experience_level} />}
+                        {job.experience_level && (
+                          <Chip label={job.experience_level} />
+                        )}
                         {job.companyType && <Chip label={job.companyType} />}
                         {job.jobType && <Chip label={job.jobType} />}
                         {job.startDate && job.endDate && (
@@ -202,13 +225,16 @@ function HomePage() {
                           />
                         )}
                       </Box>
-                      <CardActions sx={{ mt: 2, justifyContent: 'flex-end' }}>
-                          <Box onClick={(e) => e.stopPropagation()}>
-                          <Bookmark jobId={job.id} />
-                          </Box>
+                      <CardActions sx={{ mt: 2, justifyContent: "flex-end" }}>
+                        <Box onClick={(e) => e.stopPropagation()}>
+                          <Bookmark jobId={job.postingIdx} />
+                        </Box>
                         <Button
                           variant="outlined"
-                          onClick={(e) => { e.stopPropagation(); setSelectedPost(job); }} // 채팅 독립
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPost(job);
+                          }} // 채팅 독립
                         >
                           실시간 채팅
                         </Button>
@@ -224,16 +250,15 @@ function HomePage() {
                       </CardActions>
                     </Box>
                   </Card>
-                </Link>
               </Grid>
             );
           })}
         </Grid>
 
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", my: 5 }}>
           {hasNextPage && (
             <Button onClick={fetchNextPage} disabled={isFetchingNextPage}>
-              {isFetchingNextPage ? <CircularProgress size={24} /> : '더보기'}
+              {isFetchingNextPage ? <CircularProgress size={24} /> : "더보기"}
             </Button>
           )}
         </Box>
@@ -244,7 +269,10 @@ function HomePage() {
       )}
 
       {selectedJob && (
-        <JobDetailModal job={selectedJob} onClose={() => setSelectedJob(null)} />
+        <JobDetailModal
+          job={selectedJob}
+          onClose={() => setSelectedJob(null)}
+        />
       )}
     </Container>
   );

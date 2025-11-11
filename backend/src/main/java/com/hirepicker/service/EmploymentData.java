@@ -10,6 +10,7 @@ import com.hirepicker.dto.CalendarJobPostingDto;
 import com.hirepicker.dto.CompanyDto;
 import com.hirepicker.dto.EventDto;
 import com.hirepicker.dto.JobDto;
+import com.hirepicker.entity.JobPosting;
 
 // 채용 데이터 관련 비즈니스 로직을 정의하는 인터페이스
 public interface EmploymentData {
@@ -42,4 +43,6 @@ public interface EmploymentData {
 
     // 특정 채용 공고 상세 정보 조회 (인덱스 기준)
     JobDto getJobPostingByPostingIdx(Long postingIdx);
+
+    JobPosting findByPostingIdx(Long postingIdx);
 }
