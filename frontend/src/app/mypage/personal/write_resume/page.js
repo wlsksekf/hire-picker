@@ -162,6 +162,8 @@ function mapDetailToForm(detail) {
   next.selfMotivation = detail?.selfMotivation || "";
   next.selfAspirations = detail?.selfAspirations || "";
   next.cert = detail?.cert || "";
+  next.creditCost = typeof detail?.creditCost === 'number' ? detail.creditCost : Number(detail?.credit_cost ?? 0) || 0;
+  next.resumeStatus = detail?.status || "PRIVATE";
 
   const personal = detail?.personal || {};
   next.name = personal.name || "";
@@ -632,6 +634,10 @@ export default function WriteResumePage(props = {}) {
             .map(item => item.score ? `${item.certName} (${item.score})` : item.certName)
             .join(', ');
 
+      const parsedCreditCost = Number(formData.creditCost);
+      const creditCostValue = Number.isFinite(parsedCreditCost) ? Math.max(0, Math.floor(parsedCreditCost)) : 0;
+      const resumeStatus = formData.resumeStatus === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE';
+
       if (isEditing) {
         if (imageFile) {
           alert('이미지 변경은 아직 지원되지 않습니다. 기존 이미지를 유지합니다.');
@@ -644,8 +650,8 @@ export default function WriteResumePage(props = {}) {
           selfMotivation: formData.selfMotivation || '',
           selfAspirations: formData.selfAspirations || '',
           imageUrl: initialImageUrl || null,
-          creditCost: 0,
-          status: 'PUBLIC',
+          creditCost: creditCostValue,
+          status: resumeStatus,
           cert: resumeCertSummary,
           expIdx: null,
         };
@@ -666,8 +672,8 @@ export default function WriteResumePage(props = {}) {
         selfAspirations: formData.selfAspirations || '',
         imageUrl: null,
         cert: resumeCertSummary,
-        credit_cost: 0,
-        status: 'PRIVATE',
+        credit_cost: creditCostValue,
+        status: resumeStatus,
         expIdx: null,
         p_user_idx: userId,
         gender: formData.gender || undefined,

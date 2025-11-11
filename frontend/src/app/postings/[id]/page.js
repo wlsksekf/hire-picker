@@ -12,11 +12,13 @@ import {
   Avatar,
   Chip,
   Button,
-  Link as MuiLink
+  Snackbar,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCalendar, faMapMarkerAlt, faBriefcase, faBuilding, faMoneyBillWave } from '@fortawesome/free-solid-svg-icons';
+import { faCalendar, faMapMarkerAlt, faBriefcase, faMoneyBillWave } from '@fortawesome/free-solid-svg-icons';
 import { api } from '@/api'; // 공용 api 인스턴스 사용
+import ResumeApplyDialog from '@/components/ResumeApplyDialog';
+import useAuthStore from '@/store/authStore';
 
 // 채용 공고 상세 페이지 컴포넌트
 function PostingDetailPage() {
@@ -24,6 +26,12 @@ function PostingDetailPage() {
   const [posting, setPosting] = useState(null); // 채용 공고 정보
   const [loading, setLoading] = useState(true); // 로딩 상태
   const [error, setError] = useState(null); // 에러 상태
+
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const disableAuth = process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true';
+  const [applyDialogOpen, setApplyDialogOpen] = useState(false);
+  const [applyTarget, setApplyTarget] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   // 컴포넌트가 마운트되거나 ID가 변경될 때 채용 공고 정보를 불러옴
   useEffect(function() {
@@ -40,6 +48,59 @@ function PostingDetailPage() {
         });
     }
   }, [id]);
+
+  const normalizedPostingIdx = (data) => {
+    if (!data) return null;
+    return data.postingIdx ?? data.posting_idx ?? null;
+  };
+
+  function handleApplyAction() {
+    if (!posting) return;
+    const isInternal = Boolean(posting.internal || posting.cUserIdx);
+    if (isInternal) {
+      if (!disableAuth && !isAuthenticated) {
+        setSnackbar({ open: true, message: '로그인이 필요합니다.', severity: 'warning' });
+        window.location.href = '/login';
+        return;
+      }
+      const postingIdx = normalizedPostingIdx(posting);
+      if (!postingIdx) {
+        setSnackbar({ open: true, message: '지원 정보를 찾을 수 없습니다.', severity: 'error' });
+        return;
+      }
+      setApplyTarget({ ...posting, postingIdx });
+      setApplyDialogOpen(true);
+      return;
+    }
+
+    const url = posting.applyUrl || posting.homepageUrl;
+    if (url) {
+      const resolved = url.startsWith('http') ? url : `http://${url}`;
+      window.open(resolved, '_blank', 'noopener,noreferrer');
+    } else {
+      setSnackbar({ open: true, message: '지원 링크가 제공되지 않았습니다.', severity: 'info' });
+    }
+  }
+
+  function handleApplyDialogClose() {
+    setApplyDialogOpen(false);
+    setApplyTarget(null);
+  }
+
+  function handleApplySuccess(result) {
+    if (result?.message) {
+      setSnackbar({
+        open: true,
+        message: result.message,
+        severity: result.success === false ? 'error' : 'success',
+      });
+    }
+  }
+
+  function handleSnackbarClose(event, reason) {
+    if (reason === 'clickaway') return;
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  }
 
   // 로딩 상태일 때
   if (loading) {
@@ -129,19 +190,32 @@ function PostingDetailPage() {
           {posting.description}
         </Typography>
 
-        {posting.homepageUrl && (
+        {(posting.internal || posting.cUserIdx || posting.applyUrl || posting.homepageUrl) && (
           <Box sx={{ mt: 3, textAlign: 'right' }}>
-            <Button 
-              variant="contained"
-              href={posting.homepageUrl.startsWith('http') ? posting.homepageUrl : `http://${posting.homepageUrl}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <Button variant="contained" onClick={handleApplyAction}>
               지원하기
             </Button>
           </Box>
         )}
       </Paper>
+
+      <ResumeApplyDialog
+        open={applyDialogOpen}
+        job={applyTarget}
+        onClose={handleApplyDialogClose}
+        onSuccess={handleApplySuccess}
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={5000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }

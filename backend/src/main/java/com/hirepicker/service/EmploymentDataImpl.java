@@ -65,6 +65,8 @@ public class EmploymentDataImpl implements EmploymentData {
                     .imgUrl(imgPath)
                     .internal(internal)
                     .applyUrl(internal ? null : applyUrl)
+                    .postingIdx(job.getPostingIdx())
+                    .country(job.getCountry())
                     .build();
 
             jobDtos.add(jobDto);
@@ -214,16 +216,35 @@ public class EmploymentDataImpl implements EmploymentData {
                 predicates.add(root.get("location").in(filters.get("companyType")));
             }
 
-            // 🔁 공고 출처 (우리 공고 / 외부 공고)
+            // 🔁 공고 필터: 내부 지원 가능 공고 여부
             List<String> sources = filters.get("source");
             if (sources != null && !sources.isEmpty()) {
-                boolean includeInternal = sources.contains("우리 공고");
-                boolean includeExternal = sources.contains("API 공고");
+                boolean includeInternal = sources.contains("내부 지원 가능 공고");
+                boolean includeExternal = sources.contains("외부 공고");
 
                 if (includeInternal && !includeExternal) {
-                    predicates.add(cb.isNotNull(root.get("cUserIdx"))); // 우리 사이트 공고만
+                    predicates.add(cb.isNotNull(root.get("cUserIdx")));
                 } else if (!includeInternal && includeExternal) {
-                    predicates.add(cb.isNull(root.get("cUserIdx"))); // 외부 API 공고만
+                    predicates.add(cb.isNull(root.get("cUserIdx")));
+                }
+            }
+
+            // 🌍 해외 공고 필터 (country가 South Korea가 아닌 경우)
+            List<String> overseasFilters = filters.get("overseas");
+            if (overseasFilters != null && !overseasFilters.isEmpty()) {
+                boolean includeDomestic = overseasFilters.contains("국내 공고");
+                boolean includeOverseas = overseasFilters.contains("해외 공고");
+
+                if (includeDomestic && !includeOverseas) {
+                    predicates.add(cb.or(
+                            cb.isNull(root.get("country")),
+                            cb.equal(cb.lower(root.get("country")), "south korea")
+                    ));
+                } else if (!includeDomestic && includeOverseas) {
+                    predicates.add(cb.and(
+                            cb.isNotNull(root.get("country")),
+                            cb.notEqual(cb.lower(root.get("country")), "south korea")
+                    ));
                 }
             }
 
@@ -253,6 +274,8 @@ public class EmploymentDataImpl implements EmploymentData {
                     .jobType(job.getJobType())
                     .internal(internal)
                     .applyUrl(internal ? null : applyUrl)
+                    .postingIdx(job.getPostingIdx())
+                    .country(job.getCountry())
                     .build());
         }
 

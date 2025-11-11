@@ -39,28 +39,28 @@ const SUMMARY_CARDS = [
     value: '1,248명',
     change: '+12.4%',
     icon: <Groups2RoundedIcon />,
-    gradient: 'linear-gradient(135deg, #5eead4 0%, #14b8a6 100%)',
+    gradient: '#ffffff',
   },
   {
     title: '서류 합격률',
     value: '38.5%',
     change: '+4.1%',
     icon: <InsightsRoundedIcon />,
-    gradient: 'linear-gradient(135deg, #bbf7d0 0%, #22c55e 100%)',
+    gradient: '#ffffff',
   },
   {
     title: '이번 주 조회수',
     value: '8,932회',
     change: '+21.7%',
     icon: <WorkHistoryRoundedIcon />,
-    gradient: 'linear-gradient(135deg, #fbcfe8 0%, #f472b6 100%)',
+    gradient: '#ffffff',
   },
   {
     title: '캠페인 메시지',
     value: '312건',
     change: '+8.6%',
     icon: <CampaignRoundedIcon />,
-    gradient: 'linear-gradient(135deg, #bae6fd 0%, #0ea5e9 100%)',
+    gradient: '#ffffff',
   },
 ];
 
@@ -72,7 +72,7 @@ const NAV_TABS = [
   { label: '1:1 문의', icon: <ForumRoundedIcon /> },
 ];
 
-const MINT_MAIN = '#0f766e';
+const MINT_MAIN = '#1f2937';
 
 const CREDIT_SERIES = [
   { month: '1월', amount: 4200, refunds: 180 },
@@ -148,21 +148,21 @@ const AdminDashboardPage = () => {
             borderRadius: 2,
             py: 1.4,
             px: 2,
-            color: MINT_MAIN,
+            color: '#4b5563',
             '&:hover': {
-              bgcolor: 'rgba(15,118,110,0.08)',
+              bgcolor: 'rgba(17,24,39,0.05)',
             },
           },
           '& .Mui-selected': {
-            bgcolor: 'rgba(15,118,110,0.16)',
-            color: '#0f172a !important',
+            bgcolor: 'rgba(17,24,39,0.08)',
+            color: '#111827 !important',
           },
         }}
       >
         {NAV_TABS.map((tab, index) => (
           <ListItem key={tab.label} disablePadding>
             <ListItemButton selected={activeTab === index} onClick={() => handleMenuSelect(index)}>
-              <ListItemIcon sx={{ minWidth: 36, color: activeTab === index ? '#0f172a' : MINT_MAIN }}>
+              <ListItemIcon sx={{ minWidth: 36, color: activeTab === index ? '#111827' : '#9ca3af' }}>
                 {tab.icon}
               </ListItemIcon>
               <ListItemText primaryTypographyProps={{ fontWeight: 600 }} primary={tab.label} />
@@ -186,9 +186,10 @@ const AdminDashboardPage = () => {
                       p: 3,
                       borderRadius: 3,
                       height: '100%',
-                      boxShadow: '0 16px 32px -20px rgba(15, 118, 110, 0.25)',
+                      boxShadow: '0 10px 24px -20px rgba(17,24,39,0.25)',
                       background: card.gradient,
-                      color: '#0f172a',
+                      border: '1px solid rgba(17,24,39,0.06)',
+                      color: '#111827',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: 2,
@@ -199,18 +200,18 @@ const AdminDashboardPage = () => {
                         sx={{
                           width: 48,
                           height: 48,
-                          bgcolor: 'rgba(255,255,255,0.35)',
-                          color: MINT_MAIN,
+                          bgcolor: '#f3f4f6',
+                          color: '#1f2937',
                           fontWeight: 700,
                         }}
                       >
                         {card.icon}
                       </Avatar>
                       <Box>
-                        <Typography variant="body2" sx={{ color: '#0f172a', opacity: 0.8 }}>
+                        <Typography variant="body2" sx={{ color: '#4b5563' }}>
                           {card.title}
                         </Typography>
-                        <Typography variant="h5" fontWeight={700} color="#0f172a">
+                        <Typography variant="h5" fontWeight={700} color="#111827">
                           {card.value}
                         </Typography>
                       </Box>
@@ -220,8 +221,8 @@ const AdminDashboardPage = () => {
                       size="small"
                       sx={{
                         alignSelf: 'flex-start',
-                        backgroundColor: 'rgba(15,118,110,0.15)',
-                        color: '#0f172a',
+                        backgroundColor: '#f3f4f6',
+                        color: '#1f2937',
                         fontWeight: 600,
                       }}
                     />
@@ -238,21 +239,21 @@ const AdminDashboardPage = () => {
                     p: { xs: 3, md: 4 },
                     borderRadius: 4,
                     background: '#ffffff',
-                    border: '1px solid rgba(15,118,110,0.08)',
-                    boxShadow: '0 24px 40px -32px rgba(15, 118, 110, 0.35)',
+                    border: '1px solid rgba(17,24,39,0.06)',
+                    boxShadow: '0 18px 32px -28px rgba(17,24,39,0.35)',
                   }}
                 >
                   <Stack spacing={4}>
                     <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
                       <Box>
-                        <Typography variant="h5" fontWeight={800} color="#0f172a">
+                        <Typography variant="h5" fontWeight={800} color="#111827">
                           크레딧 결제 내역 통계
                         </Typography>
-                        <Typography variant="body2" color="#0f766e">
+                        <Typography variant="body2" color="#6b7280">
                           최근 6개월간 결제 실적과 환불 동향입니다.
                         </Typography>
                       </Box>
-                      <Chip label="실시간 동기화" size="small" sx={{ fontWeight: 600, bgcolor: '#ccfbf1', color: MINT_MAIN }} />
+                      <Chip label="실시간 동기화" size="small" sx={{ fontWeight: 600, bgcolor: '#eef2f7', color: '#1f2937' }} />
                     </Stack>
                     <Box
                       sx={{
@@ -269,8 +270,8 @@ const AdminDashboardPage = () => {
                               width: '70%',
                               height: `${item.amount / 45}px`,
                               borderRadius: 3,
-                              background: 'linear-gradient(180deg, rgba(45,212,191,0.9) 0%, rgba(20,184,166,0.3) 100%)',
-                              boxShadow: '0 16px 22px -18px rgba(15, 118, 110, 0.4)',
+                              background: '#d1d5db',
+                              boxShadow: '0 12px 20px -18px rgba(17,24,39,0.3)',
                               position: 'relative',
                             }}
                           >
@@ -283,43 +284,43 @@ const AdminDashboardPage = () => {
                                 width: '55%',
                                 height: `${item.refunds / 8}px`,
                                 borderRadius: 3,
-                                background: 'linear-gradient(180deg, rgba(248,113,113,0.75) 0%, rgba(248,113,113,0.2) 100%)',
+                                background: '#9ca3af',
                               }}
                             />
                           </Box>
-                          <Typography variant="caption" color="#0f766e">
+                          <Typography variant="caption" color="#6b7280">
                             {item.month}
                           </Typography>
                         </Stack>
                       ))}
                     </Box>
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
-                      <Box sx={{ flex: 1, p: 2.5, borderRadius: 3, bgcolor: '#d1fae5' }}>
-                        <Typography variant="body2" color={MINT_MAIN} fontWeight={700}>
+                      <Box sx={{ flex: 1, p: 2.5, borderRadius: 3, bgcolor: '#f3f4f6' }}>
+                        <Typography variant="body2" color="#1f2937" fontWeight={700}>
                           이번 달 결제 총액
                         </Typography>
-                        <Typography variant="h4" fontWeight={800} mt={0.5}>
+                        <Typography variant="h4" fontWeight={800} mt={0.5} color="#111827">
                           ₩ 6,600,000
                         </Typography>
-                        <Chip label="+18% vs 지난달" size="small" sx={{ mt: 1, bgcolor: '#a7f3d0', color: '#047857', fontWeight: 600 }} />
+                        <Chip label="+18% vs 지난달" size="small" sx={{ mt: 1, bgcolor: '#e5e7eb', color: '#1f2937', fontWeight: 600 }} />
                       </Box>
-                      <Box sx={{ flex: 1, p: 2.5, borderRadius: 3, bgcolor: '#fee2e2' }}>
-                        <Typography variant="body2" color="#b91c1c" fontWeight={700}>
+                      <Box sx={{ flex: 1, p: 2.5, borderRadius: 3, bgcolor: '#f3f4f6' }}>
+                        <Typography variant="body2" color="#1f2937" fontWeight={700}>
                           환불 비율
                         </Typography>
-                        <Typography variant="h4" fontWeight={800} mt={0.5}>
+                        <Typography variant="h4" fontWeight={800} mt={0.5} color="#111827">
                           3.2%
                         </Typography>
-                        <Chip label="-1.1% vs 지난달" size="small" sx={{ mt: 1, bgcolor: '#fecaca', color: '#b91c1c', fontWeight: 600 }} />
+                        <Chip label="-1.1% vs 지난달" size="small" sx={{ mt: 1, bgcolor: '#e5e7eb', color: '#1f2937', fontWeight: 600 }} />
                       </Box>
                     </Stack>
-                    <Divider flexItem sx={{ borderStyle: 'dashed', borderColor: 'rgba(15,118,110,0.15)' }} />
+                    <Divider flexItem sx={{ borderStyle: 'dashed', borderColor: 'rgba(17,24,39,0.08)' }} />
                     <Stack spacing={1.5}>
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
+                        <Typography variant="subtitle1" fontWeight={700} color="#111827">
                           최근 결제 활동
                         </Typography>
-                        <Button size="small" sx={{ textTransform: 'none', fontWeight: 600, color: MINT_MAIN }}>
+                        <Button size="small" sx={{ textTransform: 'none', fontWeight: 600, color: '#1f2937' }}>
                           결제 관리 바로가기
                         </Button>
                       </Stack>
@@ -332,7 +333,7 @@ const AdminDashboardPage = () => {
                               borderRadius: 3,
                               px: 3,
                               py: 2,
-                              borderColor: 'rgba(15,118,110,0.12)',
+                              borderColor: 'rgba(17,24,39,0.08)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
@@ -340,10 +341,10 @@ const AdminDashboardPage = () => {
                             }}
                           >
                             <Stack>
-                              <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+                              <Typography variant="subtitle2" fontWeight={700} color="#111827">
                                 {activity.title}
                               </Typography>
-                              <Typography variant="body2" color="#0f766e">
+                              <Typography variant="body2" color="#6b7280">
                                 {activity.buyer}
                               </Typography>
                             </Stack>
@@ -351,11 +352,11 @@ const AdminDashboardPage = () => {
                               <Typography
                                 variant="subtitle2"
                                 fontWeight={700}
-                                color={activity.amount.startsWith('+') ? '#047857' : '#b91c1c'}
+                                color={activity.amount.startsWith('+') ? '#166534' : '#991b1b'}
                               >
                                 {activity.amount}
                               </Typography>
-                              <Typography variant="caption" color="#0f766e">
+                              <Typography variant="caption" color="#6b7280">
                                 {activity.time}
                               </Typography>
                             </Stack>
@@ -373,47 +374,47 @@ const AdminDashboardPage = () => {
                     sx={{
                       p: { xs: 3, md: 4 },
                       borderRadius: 4,
-                      boxShadow: '0 24px 40px -32px rgba(15, 118, 110, 0.3)',
+                      boxShadow: '0 18px 32px -30px rgba(17,24,39,0.35)',
                       background: '#ffffff',
-                      border: '1px solid rgba(15,118,110,0.08)',
+                      border: '1px solid rgba(17,24,39,0.06)',
                     }}
                   >
                     <Stack spacing={3}>
-                      <Typography variant="h6" fontWeight={700} color="#0f172a">
+                      <Typography variant="h6" fontWeight={700} color="#111827">
                         결제 KPI
                       </Typography>
                       <Stack spacing={0.5}>
-                        <Typography variant="body2" color="#0f766e">
+                        <Typography variant="body2" color="#6b7280">
                           평균 결제 단가
                         </Typography>
-                        <Typography variant="h4" fontWeight={800}>
+                        <Typography variant="h4" fontWeight={800} color="#111827">
                           ₩ 82,500
                         </Typography>
-                        <Chip label="+6.5% vs 지난 분기" size="small" sx={{ bgcolor: '#ccfbf1', color: MINT_MAIN, fontWeight: 600 }} />
+                        <Chip label="+6.5% vs 지난 분기" size="small" sx={{ bgcolor: '#e5e7eb', color: '#1f2937', fontWeight: 600 }} />
                       </Stack>
                       <Divider />
                       <Stack spacing={1.5}>
                         <Box>
-                          <Typography variant="body2" color="#0f766e">
+                          <Typography variant="body2" color="#6b7280">
                             재구매율
                           </Typography>
                           <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography variant="h5" fontWeight={700}>
+                            <Typography variant="h5" fontWeight={700} color="#111827">
                               41%
                             </Typography>
-                            <TrendingUpIcon sx={{ color: '#16a34a', fontSize: 18 }} />
+                            <TrendingUpIcon sx={{ color: '#1f2937', fontSize: 18 }} />
                           </Stack>
                           <LinearProgress variant="determinate" value={41} sx={{ mt: 1, height: 10, borderRadius: 5 }} color="success" />
                         </Box>
                         <Box>
-                          <Typography variant="body2" color="#0f766e">
+                          <Typography variant="body2" color="#6b7280">
                             첫 결제 → 프리미엄 전환
                           </Typography>
                           <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography variant="h5" fontWeight={700}>
+                            <Typography variant="h5" fontWeight={700} color="#111827">
                               27%
                             </Typography>
-                            <TrendingUpIcon sx={{ color: '#f97316', fontSize: 18 }} />
+                            <TrendingUpIcon sx={{ color: '#1f2937', fontSize: 18 }} />
                           </Stack>
                           <LinearProgress variant="determinate" value={27} sx={{ mt: 1, height: 10, borderRadius: 5 }} color="warning" />
                         </Box>
@@ -425,9 +426,10 @@ const AdminDashboardPage = () => {
                     sx={{
                       p: 3,
                       borderRadius: 4,
-                      boxShadow: '0 24px 40px -32px rgba(15, 118, 110, 0.3)',
-                      background: 'linear-gradient(135deg, #14b8a6 0%, #0f766e 100%)',
-                      color: '#ecfdf5',
+                      boxShadow: '0 18px 32px -30px rgba(17,24,39,0.3)',
+                      background: '#f9fafb',
+                      border: '1px solid rgba(17,24,39,0.06)',
+                      color: '#111827',
                     }}
                   >
                     <Stack spacing={2}>
@@ -460,22 +462,22 @@ const AdminDashboardPage = () => {
             sx={{
               p: { xs: 3, md: 4 },
               borderRadius: 4,
-              boxShadow: '0 20px 34px -28px rgba(15, 118, 110, 0.3)',
+              boxShadow: '0 18px 32px -30px rgba(17,24,39,0.3)',
               background: '#ffffff',
-              border: '1px solid rgba(15,118,110,0.08)',
+              border: '1px solid rgba(17,24,39,0.06)',
             }}
           >
             <Stack spacing={3}>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="h6" fontWeight={700} color="#0f172a">
+                <Typography variant="h6" fontWeight={700} color="#111827">
                   커뮤니티 회원 관리
                 </Typography>
-                <Button size="small" sx={{ textTransform: 'none', color: MINT_MAIN, fontWeight: 600 }}>
+                <Button size="small" sx={{ textTransform: 'none', color: '#1f2937', fontWeight: 600 }}>
                   커뮤니티 센터 이동
                 </Button>
               </Stack>
               <Stack spacing={2}>
-                {COMMUNITY_MEMBERS.map((member, idx) => (
+                {COMMUNITY_MEMBERS.map((member) => (
                   <Paper
                     key={member.name}
                     variant="outlined"
@@ -487,7 +489,7 @@ const AdminDashboardPage = () => {
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       gap: 2,
-                      borderColor: 'rgba(15,118,110,0.12)',
+                      borderColor: 'rgba(17,24,39,0.08)',
                     }}
                   >
                     <Stack direction="row" spacing={2} alignItems="center">
@@ -495,18 +497,18 @@ const AdminDashboardPage = () => {
                         sx={{
                           width: 44,
                           height: 44,
-                          bgcolor: ['#ccfbf1', '#d1fae5', '#bae6fd'][idx % 3],
-                          color: ['#0f766e', '#047857', '#0ea5e9'][idx % 3],
+                          bgcolor: '#f3f4f6',
+                          color: '#1f2937',
                           fontWeight: 700,
                         }}
                       >
                         {member.avatar}
                       </Avatar>
                       <Box>
-                        <Typography variant="subtitle1" fontWeight={700}>
+                        <Typography variant="subtitle1" fontWeight={700} color="#111827">
                           {member.name}
                         </Typography>
-                        <Typography variant="body2" color="#0f766e">
+                        <Typography variant="body2" color="#6b7280">
                           {member.role} · {member.activity}
                         </Typography>
                       </Box>
@@ -525,17 +527,17 @@ const AdminDashboardPage = () => {
             sx={{
               p: { xs: 3, md: 4 },
               borderRadius: 4,
-              boxShadow: '0 20px 34px -28px rgba(15, 118, 110, 0.3)',
+              boxShadow: '0 18px 32px -30px rgba(17,24,39,0.3)',
               background: '#ffffff',
-              border: '1px solid rgba(15,118,110,0.08)',
+              border: '1px solid rgba(17,24,39,0.06)',
             }}
           >
             <Stack spacing={3}>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="h6" fontWeight={700} color="#0f172a">
+                <Typography variant="h6" fontWeight={700} color="#111827">
                   기업회원 가입 승인
                 </Typography>
-                <Button size="small" sx={{ textTransform: 'none', color: MINT_MAIN, fontWeight: 600 }}>
+                <Button size="small" sx={{ textTransform: 'none', color: '#1f2937', fontWeight: 600 }}>
                   전체 신청 보기
                 </Button>
               </Stack>
@@ -548,15 +550,15 @@ const AdminDashboardPage = () => {
                       borderRadius: 3,
                       px: 3,
                       py: 2.5,
-                      borderColor: 'rgba(15,118,110,0.12)',
+                      borderColor: 'rgba(17,24,39,0.08)',
                     }}
                   >
-                    <Stack direction="row" justifyContent="space_between" alignItems="center" gap={2}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2}>
                       <Stack spacing={0.5}>
-                        <Typography variant="subtitle1" fontWeight={700}>
+                        <Typography variant="subtitle1" fontWeight={700} color="#111827">
                           {item.company}
                         </Typography>
-                        <Typography variant="body2" color="#0f766e">
+                        <Typography variant="body2" color="#6b7280">
                           담당자 {item.contact} · 접수일 {item.submitted}
                         </Typography>
                       </Stack>
@@ -564,10 +566,10 @@ const AdminDashboardPage = () => {
                         <Chip
                           label={item.status}
                           size="small"
-                          sx={{ bgcolor: '#ccfbf1', fontWeight: 600, borderRadius: 2, color: MINT_MAIN }}
+                          sx={{ bgcolor: '#e5e7eb', fontWeight: 600, borderRadius: 2, color: '#1f2937' }}
                           icon={<PendingActionsRoundedIcon fontSize="small" />}
                         />
-                        <Button variant="outlined" size="small" sx={{ textTransform: 'none', borderRadius: 2, color: MINT_MAIN }}>
+                        <Button variant="outlined" size="small" sx={{ textTransform: 'none', borderRadius: 2, color: '#1f2937' }}>
                           검토
                         </Button>
                       </Stack>
@@ -585,17 +587,17 @@ const AdminDashboardPage = () => {
             sx={{
               p: { xs: 3, md: 4 },
               borderRadius: 4,
-              boxShadow: '0 20px 34px -28px rgba(15, 118, 110, 0.3)',
+              boxShadow: '0 18px 32px -30px rgba(17,24,39,0.3)',
               background: '#ffffff',
-              border: '1px solid rgba(15,118,110,0.08)',
+              border: '1px solid rgba(17,24,39,0.06)',
             }}
           >
             <Stack spacing={3}>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="h6" fontWeight={700} color="#0f172a">
+                <Typography variant="h6" fontWeight={700} color="#111827">
                   공고 관리
                 </Typography>
-                <Button size="small" sx={{ textTransform: 'none', color: MINT_MAIN, fontWeight: 600 }}>
+                <Button size="small" sx={{ textTransform: 'none', color: '#1f2937', fontWeight: 600 }}>
                   공고 새로 만들기
                 </Button>
               </Stack>
@@ -608,23 +610,23 @@ const AdminDashboardPage = () => {
                       borderRadius: 3,
                       px: 3,
                       py: 2.5,
-                      borderColor: 'rgba(15,118,110,0.12)',
+                      borderColor: 'rgba(17,24,39,0.08)',
                     }}
                   >
                     <Stack spacing={1}>
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="subtitle1" fontWeight={700}>
+                        <Typography variant="subtitle1" fontWeight={700} color="#111827">
                           {job.title}
                         </Typography>
-                        <Chip label={job.due} size="small" sx={{ fontWeight: 600, bgcolor: '#ccfbf1', color: MINT_MAIN }} />
+                        <Chip label={job.due} size="small" sx={{ fontWeight: 600, bgcolor: '#e5e7eb', color: '#1f2937' }} />
                       </Stack>
-                      <Typography variant="body2" color="#0f766e">
+                      <Typography variant="body2" color="#6b7280">
                         {job.company} · 지원자 {job.applicants}명
                       </Typography>
                       <LinearProgress variant="determinate" value={Math.min(job.applicants * 2, 100)} sx={{ height: 8, borderRadius: 4 }} color="success" />
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Chip label={job.status} size="small" sx={{ bgcolor: '#f1f5f9', fontWeight: 600, borderRadius: 2 }} />
-                        <Button size="small" sx={{ textTransform: 'none', color: MINT_MAIN }}>
+                        <Chip label={job.status} size="small" sx={{ bgcolor: '#f3f4f6', fontWeight: 600, borderRadius: 2, color: '#1f2937' }} />
+                        <Button size="small" sx={{ textTransform: 'none', color: '#1f2937' }}>
                           세부 관리
                         </Button>
                       </Stack>
@@ -643,17 +645,17 @@ const AdminDashboardPage = () => {
             sx={{
               p: { xs: 3, md: 4 },
               borderRadius: 4,
-              boxShadow: '0 20px 34px -28px rgba(15, 118, 110, 0.3)',
+              boxShadow: '0 18px 32px -30px rgba(17,24,39,0.3)',
               background: '#ffffff',
-              border: '1px solid rgba(15,118,110,0.08)',
+              border: '1px solid rgba(17,24,39,0.06)',
             }}
           >
             <Stack spacing={3}>
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Typography variant="h6" fontWeight={700} color="#0f172a">
+                <Typography variant="h6" fontWeight={700} color="#111827">
                   1:1 문의 관리
                 </Typography>
-                <Button size="small" sx={{ textTransform: 'none', color: MINT_MAIN, fontWeight: 600 }}>
+                <Button size="small" sx={{ textTransform: 'none', color: '#1f2937', fontWeight: 600 }}>
                   문의함 열기
                 </Button>
               </Stack>
@@ -666,18 +668,18 @@ const AdminDashboardPage = () => {
                       borderRadius: 3,
                       px: 3,
                       py: 2.5,
-                      borderColor: 'rgba(15,118,110,0.12)',
+                      borderColor: 'rgba(17,24,39,0.08)',
                     }}
                   >
                     <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2}>
                       <Stack spacing={0.5}>
-                        <Typography variant="subtitle1" fontWeight={700}>
+                        <Typography variant="subtitle1" fontWeight={700} color="#111827">
                           {item.from}
                         </Typography>
-                        <Typography variant="body2" color="#0f766e">
+                        <Typography variant="body2" color="#6b7280">
                           {item.topic}
                         </Typography>
-                        <Typography variant="caption" color="#0f766e">
+                        <Typography variant="caption" color="#9ca3af">
                           {item.time}
                         </Typography>
                       </Stack>
@@ -688,7 +690,7 @@ const AdminDashboardPage = () => {
                           color={item.priority === '높음' ? 'error' : item.priority === '보통' ? 'warning' : 'default'}
                           sx={{ fontWeight: 600 }}
                         />
-                        <Button size="small" variant="outlined" sx={{ textTransform: 'none', borderRadius: 2, color: MINT_MAIN }}>
+                        <Button size="small" variant="outlined" sx={{ textTransform: 'none', borderRadius: 2, color: '#1f2937' }}>
                           응답 작성
                         </Button>
                       </Stack>

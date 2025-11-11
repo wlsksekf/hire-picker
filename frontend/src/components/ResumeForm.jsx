@@ -22,6 +22,10 @@ import {
   DialogContentText,
   DialogTitle,
   Autocomplete, // Autocomplete 임포트
+  Switch,
+  FormControlLabel,
+  InputAdornment,
+  Tooltip,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import Image from "next/image";
@@ -112,6 +116,24 @@ export default function ResumeForm({
   onCertificationSelect,
   readOnly = false,
 }) {
+  const handleStatusToggle = (event) => {
+    const nextValue = event.target.checked ? 'PUBLIC' : 'PRIVATE';
+    onChange({ target: { name: 'resumeStatus', value: nextValue } });
+  };
+
+  const handleCreditChange = (event) => {
+    const rawValue = event.target.value;
+    if (rawValue === '') {
+      onChange({ target: { name: 'creditCost', value: '' } });
+      return;
+    }
+    if (Number(rawValue) < 0) {
+      onChange({ target: { name: 'creditCost', value: 0 } });
+      return;
+    }
+    onChange({ target: { name: 'creditCost', value: rawValue } });
+  };
+
   return (
     <ResumeFormReadOnlyContext.Provider value={readOnly}>
       <>
@@ -155,6 +177,49 @@ export default function ResumeForm({
               InputProps={readOnly ? { readOnly: true } : undefined}
               disabled={readOnly}
             />
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', md: 'row' },
+                gap: 2,
+                alignItems: { xs: 'flex-start', md: 'center' },
+                mb: 4,
+              }}
+            >
+              <TextField
+                label="열람 크레딧 비용"
+                name="creditCost"
+                type="number"
+                value={formData.creditCost ?? 0}
+                onChange={handleCreditChange}
+                InputProps={{
+                  readOnly: readOnly,
+                  endAdornment: <InputAdornment position="end">C</InputAdornment>,
+                  inputProps: { min: 0, step: 10 },
+                }}
+                helperText="이력서를 구매할 때 차감될 크레딧"
+                disabled={readOnly}
+              />
+              <Tooltip
+                title="공개 상태일 때만 이력서 거래소에서 노출됩니다."
+              >
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={(formData.resumeStatus || 'PRIVATE') === 'PUBLIC'}
+                      onChange={handleStatusToggle}
+                      disabled={readOnly}
+                    />
+                  }
+                  label={
+                    (formData.resumeStatus || 'PRIVATE') === 'PUBLIC'
+                      ? '거래소 공개'
+                      : '비공개'
+                  }
+                />
+              </Tooltip>
+            </Box>
 
             {/* 1. 기본 정보 */}
             <Box sx={{ display: "flex", gap: 2, mb: 4 }}>

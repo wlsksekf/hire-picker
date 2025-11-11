@@ -151,6 +151,7 @@ export default function ResumesPage() {
           id: d.id,
           title: d.title || '(제목 없음)',
           status: d.status || null,
+          creditCost: typeof d.creditCost === 'number' ? d.creditCost : Number(d.credit_cost ?? 0) || 0,
           lastModified: d.modifiedDate || d.updatedAt || null,
         }));
         setRows(mapped);
@@ -429,6 +430,9 @@ export default function ResumesPage() {
 
                       <Typography sx={{ color: '#64748b', fontSize: 14 }}>
                         마지막 수정일 · {formatDateLabel(resume.lastModified)}
+                      </Typography>
+                      <Typography sx={{ color: '#1f2937', fontSize: 14, fontWeight: 600, mt: 0.5 }}>
+                        열람가 {Number(resume.creditCost || 0).toLocaleString()} C
                       </Typography>
                     </Box>
 
