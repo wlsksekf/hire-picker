@@ -45,6 +45,12 @@ public class JobPosting {
     @Column(name = "posting_id", unique = true) // 유니크한 "posting_id" 컬럼과 매핑
     private String postingId;
 
+    @Column(name = "external_id", length = 255) // 외부 API 고유 식별자
+    private String externalId;
+
+    @Column(name = "source_api", length = 50) // 데이터 출처 식별자
+    private String sourceApi;
+
     @ManyToOne // 다대일 관계
     @JoinColumn(name = "company_idx", nullable = false) // "company_idx" 컬럼을 통해 Company 엔티티와 조인
     private Company company;
@@ -78,11 +84,23 @@ public class JobPosting {
     @Column(name = "experience_level", length = 20) // 경력 수준
     private String experienceLevel;
 
-    @Column(name = "salary_info", length = 100) // 급여 정보
+    @Column(name = "salary_info", length = 1000) // 급여 정보
     private String salaryInfo;
+
+    @Column(name = "salary_min") // 급여 하한 (숫자)
+    private Integer salaryMin;
+
+    @Column(name = "salary_max") // 급여 상한 (숫자)
+    private Integer salaryMax;
+
+    @Column(name = "salary_unit", length = 20) // 급여 단위 (연봉/월급 등)
+    private String salaryUnit;
 
     @Column(name = "location", length = 100) // "location" 컬럼과 매핑
     private String location;
+
+    @Column(name = "country", length = 100) // 국가명
+    private String country;
 
     @Column(name = "job_type", length = 30) // 직무 유형
     private String jobType;
@@ -102,7 +120,10 @@ public class JobPosting {
     @Column(name = "hire_count") // 채용 인원
     private Integer hireCount;
 
-    @Column(name = "image_path", length = 255) // 이미지 경로
+    @Column(name = "apply_url", length = 500) // 지원 링크
+    private String applyUrl;
+
+    @Column(name = "image_path", length = 1000) // 이미지 경로
     private String imagePath;
 
     @Column(name = "start_date") // 모집 시작일

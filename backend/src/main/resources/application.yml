@@ -127,6 +127,14 @@ info:
   description: 구인구직 사이트 Hire-Picker 프로젝트 API 명세서
   version: v1.0.0
 
+rapidapi:
+  jobsdb:
+    key: ${RAPIDAPI_JOBSDB_KEY:}
+    host: ${RAPIDAPI_JOBSDB_HOST:active-jobs-db.p.rapidapi.com}
+    limit: ${RAPIDAPI_JOBSDB_LIMIT}
+    offset: ${RAPIDAPI_JOBSDB_OFFSET}
+    title-filter: ${RAPIDAPI_JOBSDB_TITLE_FILTER:"\"Data Engineer\""}
+    location-filter: ${RAPIDAPI_JOBSDB_LOCATION_FILTER:"\"United States\" OR \"United Kingdom\""}
 # === 로깅 설정 ===
 logging:
   level:

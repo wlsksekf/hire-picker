@@ -4,15 +4,19 @@ import com.hirepicker.config.jwt.JwtTokenProvider;
 import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.CompanySignupRequestDto;
 import com.hirepicker.dto.LoginRequest;
+import com.hirepicker.dto.ManageLoginRequest;
+import com.hirepicker.dto.ManageLoginResponse;
 import com.hirepicker.dto.SignupRequestDto;
 import com.hirepicker.entity.ApprovalStatus;
 import com.hirepicker.entity.Company;
 import com.hirepicker.entity.CompanyUser;
 import com.hirepicker.entity.PersonalUser;
+import com.hirepicker.entity.ManageUser;
 import com.hirepicker.entity.RefreshToken;
 import com.hirepicker.entity.UserType;
 import com.hirepicker.repository.CompanyRepository;
 import com.hirepicker.repository.CompanyUserRepository;
+import com.hirepicker.repository.ManageUserRepository;
 import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.repository.RefreshTokenRepository;
 import jakarta.servlet.http.HttpServletResponse;
@@ -42,6 +46,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final PersonalUserRepository personalUserRepository;
     private final CompanyUserRepository companyUserRepository;
+    private final ManageUserRepository manageUserRepository;
     private final CompanyRepository companyRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
@@ -137,14 +142,16 @@ public class AuthService {
 
                 // userType에 따라 해당 사용자 엔티티를 가져와서 Refresh Token 저장
                 if (userType == UserType.PERSONAL) {
-                    // 개인회원의 경우
                     PersonalUser user = personalUserRepository.findById(userId)
                             .orElseThrow(() -> new IllegalArgumentException("Personal user not found with ID: " + userId));
                     handleRefreshToken(user, newRefreshTokenValue, userType);
-                } else {
-                    // 기업회원의 경우
+                } else if (userType == UserType.COMPANY) {
                     CompanyUser user = companyUserRepository.findById(userId)
                             .orElseThrow(() -> new IllegalArgumentException("Company user not found with ID: " + userId));
+                    handleRefreshToken(user, newRefreshTokenValue, userType);
+                } else if (userType == UserType.MANAGE) {
+                    ManageUser user = manageUserRepository.findById(userId)
+                            .orElseThrow(() -> new IllegalArgumentException("Manage user not found with ID: " + userId));
                     handleRefreshToken(user, newRefreshTokenValue, userType);
                 }
 
@@ -167,6 +174,53 @@ public class AuthService {
             // 예외 발생 시에도 ThreadLocal 정리 (메모리 누수 방지)
             UserDetailsServiceImpl.clearUserType();
             throw t;
+        }
+    }
+
+    /**
+     * 관리자 로그인 처리 (MANAGE 전용)
+     *
+     * @param request 관리자 로그인 요청
+     * @param response HttpOnly 쿠키 설정용 응답 객체
+     * @return 관리자 기본 정보
+     */
+    @Transactional
+    public ManageLoginResponse loginManage(ManageLoginRequest request, HttpServletResponse response) {
+        log.info("[ManageLogin] 로그인 시도: {}", request.getId());
+        try {
+            UserDetailsServiceImpl.setUserType(UserType.MANAGE);
+
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getId(), request.getPassword()));
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            if (userDetails.getUserType() != UserType.MANAGE) {
+                throw new IllegalStateException("관리자 계정이 아닙니다.");
+            }
+
+            Long userId = userDetails.getId();
+
+            String refreshTokenValue = jwtTokenProvider.createRefreshToken(authentication);
+            String accessToken = jwtTokenProvider.createAccessToken(authentication);
+
+            ManageUser manageUser = manageUserRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("관리자 정보를 찾을 수 없습니다."));
+            handleRefreshToken(manageUser, refreshTokenValue, UserType.MANAGE);
+
+            addTokensToCookie(response, accessToken, refreshTokenValue);
+
+            return ManageLoginResponse.builder()
+                    .mUserIdx(manageUser.getId())
+                    .refreshIdx(manageUser.getRefreshToken() != null ? manageUser.getRefreshToken().getId() : null)
+                    .id(manageUser.getLoginId())
+                    .password(null) // 보안상 비밀번호는 내려주지 않음
+                    .name(manageUser.getName())
+                    .phoneNumber(manageUser.getPhoneNumber())
+                    .authority(manageUser.getAuthority())
+                    .build();
+        } finally {
+            UserDetailsServiceImpl.clearUserType();
         }
     }
 
@@ -380,6 +434,9 @@ public class AuthService {
         } else if (user instanceof CompanyUser cUser) {
             refreshToken = cUser.getRefreshToken();
             if (refreshToken == null) isNewUser = true;
+        } else if (user instanceof ManageUser mUser) {
+            refreshToken = mUser.getRefreshToken();
+            if (refreshToken == null) isNewUser = true;
         }
 
         if (isNewUser) {
@@ -396,6 +453,9 @@ public class AuthService {
             } else if (user instanceof CompanyUser cUser) {
                 cUser.setRefreshToken(savedToken);
                 companyUserRepository.save(cUser);
+            } else if (user instanceof ManageUser mUser) {
+                mUser.setRefreshToken(savedToken);
+                manageUserRepository.save(mUser);
             }
             log.info("New RefreshToken saved and user updated.");
         } else {
