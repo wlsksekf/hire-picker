@@ -7,9 +7,6 @@ import {
   Box,
   Typography,
   TextField,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
   Button,
   Table,
   TableBody,
@@ -231,23 +228,12 @@ export default function ResumeForm({
                     <TableRow>
                       <StyledLabelCell>성별</StyledLabelCell>
                       <StyledInputCell>
-                        <RadioGroup
-                          row
+                        <FormTextField
                           name="gender"
                           value={formData.gender}
-                          onChange={readOnly ? undefined : onChange}
-                        >
-                          <FormControlLabel
-                            value="male"
-                            control={<Radio size="small" disabled={readOnly} />}
-                            label="남"
-                          />
-                          <FormControlLabel
-                            value="female"
-                            control={<Radio size="small" disabled={readOnly} />}
-                            label="여"
-                          />
-                        </RadioGroup>
+                          onChange={onChange}
+                          placeholder="남성 / 여성"
+                        />
                       </StyledInputCell>
                       <StyledLabelCell>생년월일</StyledLabelCell>
                       <StyledInputCell>

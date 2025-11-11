@@ -3,6 +3,7 @@ package com.hirepicker.service;
 import java.sql.Date;
 import java.util.List;
 
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,18 +64,46 @@ public class ProfileService {
         jdbcTemplate.update("DELETE FROM academic_ability WHERE p_user_idx=?", userId);
         if (list == null || list.isEmpty()) return;
         java.util.Set<Long> seenSchoolCodes = new java.util.LinkedHashSet<>(); // 동일 학교 중복 방지
+        java.util.Map<Long, Boolean> highSchoolCache = new java.util.HashMap<>(); // 학교 유형 캐시로 중복 조회 절감
         String sql = "INSERT INTO academic_ability (p_user_idx, school_code, degree, major, major_score, admission_date, graduation_date) VALUES (?,?,?,?,?,?,?)";
         for (AcademicAbilityDto d : list) {
             if (d == null) continue;
             Long schoolCode = d.getSchoolCode();
-            String degree = d.getDegree();
-            // degree ENUM 간단 검증(고졸/학사/석사/박사)
-            if (degree == null || degree.isBlank() || !("고졸".equals(degree) || "학사".equals(degree) || "석사".equals(degree) || "박사".equals(degree))) {
-                throw new IllegalArgumentException("degree 값이 유효하지 않습니다.");
-            }
             if (schoolCode == null) throw new IllegalArgumentException("school_code는 필수입니다.");
 
-            boolean isHighSchool = "고졸".equals(degree);
+            Boolean cachedHighSchool = highSchoolCache.get(schoolCode);
+            boolean isHighSchool;
+            if (cachedHighSchool != null) {
+                isHighSchool = cachedHighSchool;
+            } else {
+                boolean detectedHighSchool;
+                try {
+                    java.util.Map<String, Object> schoolRecord = jdbcTemplate.queryForMap(
+                            "SELECT school_type, school_name FROM school WHERE school_code=?",
+                            schoolCode
+                    );
+                    String schoolType = schoolRecord.get("school_type") != null ? schoolRecord.get("school_type").toString() : null;
+                    String schoolName = schoolRecord.get("school_name") != null ? schoolRecord.get("school_name").toString() : null;
+                    detectedHighSchool = containsHighSchoolKeyword(schoolType) || containsHighSchoolKeyword(schoolName); // 학교 유형/명으로 고등학교 여부 판단
+                } catch (EmptyResultDataAccessException e) {
+                    throw new IllegalArgumentException("존재하지 않는 학교 코드입니다.");
+                }
+                highSchoolCache.put(schoolCode, detectedHighSchool);
+                isHighSchool = detectedHighSchool;
+            }
+
+            String degree = d.getDegree() != null ? d.getDegree().trim() : null;
+            if (degree == null || degree.isBlank()) {
+                if (isHighSchool) {
+                    degree = "고졸"; // 고등학교면 기본 학위를 고졸로 지정
+                } else {
+                    throw new IllegalArgumentException("degree 값이 유효하지 않습니다.");
+                }
+            }
+            if (!("고졸".equals(degree) || "학사".equals(degree) || "석사".equals(degree) || "박사".equals(degree))) {
+                throw new IllegalArgumentException("degree 값이 유효하지 않습니다.");
+            }
+
             String major = d.getMajor() != null ? d.getMajor().trim() : null;
             java.math.BigDecimal majorScore = d.getMajorScore();
 
@@ -305,5 +334,10 @@ public class ProfileService {
     }
 
     private static boolean isBlank(String s) { return s == null || s.isBlank(); }
+
+    private static boolean containsHighSchoolKeyword(String value) {
+        if (value == null) return false;
+        return value.contains("고등") || value.contains("여고") || value.contains("상고");
+    }
 }
 

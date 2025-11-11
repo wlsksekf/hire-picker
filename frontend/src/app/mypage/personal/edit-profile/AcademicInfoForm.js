@@ -22,6 +22,14 @@ import { StyledCard, StyledTextField, StyledButton } from './FormStyles';
 
 const HIGH_SCHOOL_DEGREE = '고졸';
 const isHighSchoolDegree = degree => degree === HIGH_SCHOOL_DEGREE;
+const hasHighSchoolKeyword = (text = '') => {
+  if (!text) return false;
+  return text.includes('고등학교') || text.includes('고등') || text.includes('여고') || text.includes('상고');
+};
+const isHighSchoolType = (schoolType = '') => schoolType && schoolType.includes('고등'); // 고등학교 유형 판별
+const isHighSchoolAcademic = academic =>
+  isHighSchoolDegree(academic?.degree) || isHighSchoolType(academic?.schoolType) || hasHighSchoolKeyword(academic?.schoolName); // 학력 레코드가 고등학교인지 확인
+const normalizeSchoolName = (name = '') => name.replace(/\s+/g, '').toLowerCase();
 
 // 학력 편집 폼 (학교코드 기반 저장)
 export default function AcademicInfoForm() {
@@ -66,6 +74,7 @@ export default function AcademicInfoForm() {
         schoolCode: a.schoolCode || '', // 저장용(숨김)
         schoolName: a.schoolName || '', // 표시용
         campus: a.campus || '', // 캠퍼스 정보
+        schoolType: a.schoolType || (hasHighSchoolKeyword(a.schoolName) ? '고등' : ''), // 학교 유형(고등 여부 판별용)
         degree: a.degree || '',
         major: a.major || '',
         gpa: a.majorScore != null ? String(a.majorScore) : '',
@@ -88,7 +97,8 @@ export default function AcademicInfoForm() {
                 {
                   schoolCode: Number(academic.schoolCode),
                   schoolName: academic.schoolName,
-                  campus: academic.campus
+                  campus: academic.campus,
+                  schoolType: academic.schoolType || (hasHighSchoolKeyword(academic.schoolName) ? '고등' : '')
                 }
               ]);
             }
@@ -108,7 +118,7 @@ export default function AcademicInfoForm() {
 
   function handleAddRow() {
     const newId = Date.now();
-    setAcademics([...academics, { id: newId, schoolCode: '', schoolName: '', campus: '', degree: '', major: '', gpa: '', admissionDate: '', graduationDate: '' }]);
+    setAcademics([...academics, { id: newId, schoolCode: '', schoolName: '', campus: '', schoolType: '', degree: '', major: '', gpa: '', admissionDate: '', graduationDate: '' }]);
     // 새 행의 입력값 초기화
     setInputValues(prev => {
       const newMap = new Map(prev);
@@ -133,32 +143,70 @@ export default function AcademicInfoForm() {
     });
   }
 
-  function handleChange(e, id) {
+  function handleChange(e, id, meta = {}) {
     const { name, value } = e.target;
-    const updated = academics.map(item => {
-      if (item.id !== id) return item;
-      const next = { ...item, [name]: value };
-      if (name === 'degree') {
-        if (isHighSchoolDegree(value)) {
+    let updatedAcademic = null;
+
+    setAcademics(prevAcademics => {
+      const nextAcademics = prevAcademics.map(item => {
+        if (item.id !== id) return item;
+        const next = { ...item, [name]: value };
+
+        if (name === 'schoolName') {
+          const trimmed = value ? value.trim() : '';
+          if (!trimmed) {
+            // 학교명을 비우면 연동된 코드와 학위도 초기화
+            next.schoolCode = '';
+            next.schoolType = '';
+            if (isHighSchoolDegree(next.degree)) {
+              next.degree = '';
+            }
+          } else if (meta.typing) {
+            // 사용자가 직접 타이핑 중이면 선택된 학교 초기화
+            next.schoolCode = '';
+            next.campus = '';
+            next.schoolType = '';
+          }
+        }
+
+        if (name === 'schoolType' && isHighSchoolType(next.schoolType)) {
+          // 고등학교 선택 시 학위/학점은 자동으로 초기화
+          next.degree = HIGH_SCHOOL_DEGREE;
           next.major = '';
           next.gpa = '';
         }
-      }
-      return next;
+
+        if (name === 'degree' && isHighSchoolDegree(next.degree)) {
+          next.major = '';
+          next.gpa = '';
+          if (!isHighSchoolType(next.schoolType)) {
+            next.schoolType = next.schoolType || ''; // 고졸 직접 선택 시 기존 유형 유지
+          }
+        }
+
+        if (isHighSchoolAcademic(next)) {
+          if (!isHighSchoolDegree(next.degree)) {
+            next.degree = HIGH_SCHOOL_DEGREE;
+          }
+          next.major = '';
+          next.gpa = '';
+        }
+
+        updatedAcademic = next;
+        return next;
+      });
+      return nextAcademics;
     });
-    setAcademics(updated);
-    
-    // 실시간 유효성 검사
-    const academic = updated.find(item => item.id === id);
-    if (academic) {
-      validateAcademic(academic, id);
+
+    if (updatedAcademic) {
+      validateAcademic(updatedAcademic, id);
     }
   }
 
   function validateAcademic(academic, id) {
     const newErrors = new Map(errors);
     const fieldErrors = {};
-    const isHighSchool = isHighSchoolDegree(academic.degree);
+    const isHighSchool = isHighSchoolAcademic(academic);
 
     // 학교명 검증
     // schoolName이 없으면 에러
@@ -177,7 +225,9 @@ export default function AcademicInfoForm() {
 
     // 졸업구분 검증
     if (!academic.degree || academic.degree.trim() === '') {
-      fieldErrors.degree = '졸업구분을 선택해주세요.';
+      if (!isHighSchool) {
+        fieldErrors.degree = '졸업구분을 선택해주세요.';
+      }
     }
 
     // 학점 검증
@@ -212,57 +262,6 @@ export default function AcademicInfoForm() {
       setSuccess(false);
 
       // 모든 항목에 대해 유효성 검사 실행 및 에러 수집
-      const allErrors = new Map();
-      academics.forEach(academic => {
-        const fieldErrors = {};
-        const isHighSchool = isHighSchoolDegree(academic.degree);
-        
-        // 학교명 검증
-        if (!academic.schoolName || academic.schoolName.trim() === '') {
-          fieldErrors.schoolName = '학교명을 입력해주세요.';
-        }
-        
-        // 학과 검증
-        if (!isHighSchool) {
-          if (!academic.major || academic.major.trim() === '') {
-            fieldErrors.major = '학과를 입력해주세요.';
-          }
-        }
-        
-        // 졸업구분 검증
-        if (!academic.degree || academic.degree.trim() === '') {
-          fieldErrors.degree = '졸업구분을 선택해주세요.';
-        }
-        
-        // 학점 검증
-        if (!isHighSchool) {
-          if (!academic.gpa || academic.gpa.trim() === '') {
-            fieldErrors.gpa = '학점을 입력해주세요.';
-          } else {
-            const gpaNum = parseFloat(academic.gpa);
-            if (isNaN(gpaNum) || gpaNum < 0 || gpaNum > 5) {
-              fieldErrors.gpa = '학점은 0.0 ~ 5.0 사이의 값이어야 합니다.';
-            }
-          }
-        } else if (academic.gpa && academic.gpa.trim() !== '') {
-          const gpaNum = parseFloat(academic.gpa);
-          if (isNaN(gpaNum) || gpaNum < 0 || gpaNum > 5) {
-            fieldErrors.gpa = '학점은 0.0 ~ 5.0 사이의 값이어야 합니다.';
-          }
-        }
-        
-        if (Object.keys(fieldErrors).length > 0) {
-          allErrors.set(academic.id, fieldErrors);
-        }
-      });
-
-      // 에러가 있으면 UI에 표시하고 저장 중단
-      if (allErrors.size > 0) {
-        setErrors(allErrors);
-        setError('입력한 정보를 확인해주세요.');
-        return;
-      }
-
       // schoolName은 있지만 schoolCode가 없는 경우, 학교명으로 검색해서 schoolCode 찾기
       const academicsWithCode = await Promise.all(academics.map(async (a) => {
         // 이미 schoolCode가 있으면 그대로 사용
@@ -285,7 +284,8 @@ export default function AcademicInfoForm() {
               ...a,
               schoolCode: exactMatch.schoolCode,
               campus: exactMatch.campus || a.campus,
-              schoolName: exactMatch.schoolName
+              schoolName: exactMatch.schoolName,
+              schoolType: exactMatch.schoolType || a.schoolType
             };
           }
           
@@ -298,20 +298,25 @@ export default function AcademicInfoForm() {
           }
           
           // 부분 일치 결과에서 정확히 일치하는 학교 찾기
-          let matched = searchResults.find(s => s.schoolName === a.schoolName.trim());
-          
-          // 여전히 없으면 첫 번째 결과 사용
-          if (!matched && searchResults.length > 0) {
-            matched = searchResults[0];
-            console.warn(`정확히 일치하는 학교를 찾지 못해 첫 번째 결과 사용: ${a.schoolName} -> ${matched.schoolName}`);
+          // 동일 이름이 여러 개이면 campus까지 비교
+        const normalizedInput = normalizeSchoolName(a.schoolName.trim());
+        const normalizedCampus = normalizeSchoolName(a.campus || '');
+        let matched = searchResults.find(s => {
+          const sameName = normalizeSchoolName(s.schoolName) === normalizedInput;
+          if (!sameName) return false;
+          if (normalizedCampus) {
+            return normalizeSchoolName(s.campus || '') === normalizedCampus;
           }
-          
-          if (matched) {
+          return true;
+        });
+        
+        if (matched) {
             return {
               ...a,
               schoolCode: matched.schoolCode,
               campus: matched.campus || a.campus,
-              schoolName: matched.schoolName
+              schoolName: matched.schoolName,
+              schoolType: matched.schoolType || a.schoolType
             };
           }
         } catch (err) {
@@ -322,22 +327,32 @@ export default function AcademicInfoForm() {
       }));
 
       // 필수 필드 검증
-      const invalidItems = academicsWithCode.filter(a => {
-        const degree = a.degree;
-        const isHighSchool = isHighSchoolDegree(degree);
+      // 저장 전에 고등학교 학력은 기본 학위를 채워준다
+      const academicsNormalized = academicsWithCode.map(a => {
+        const isHighSchool = isHighSchoolAcademic(a);
+        const degreeValue =
+          a.degree && a.degree.trim() !== '' ? a.degree.trim() : (isHighSchool ? HIGH_SCHOOL_DEGREE : '');
+        return {
+          ...a,
+          degree: degreeValue
+        };
+      });
+
+      const invalidItems = academicsNormalized.filter(a => {
+        const isHighSchool = isHighSchoolAcademic(a);
         const hasMajor = a.major && a.major.trim() !== '';
         const hasGpa = a.gpa && a.gpa.trim() !== '';
-        return !a.schoolCode || !degree || (!isHighSchool && (!hasMajor || !hasGpa));
+      return !a.schoolCode || !a.degree || (!isHighSchool && (!hasMajor || !hasGpa));
       });
       if (invalidItems.length > 0) {
         setError('학교명을 선택하고, 졸업구분을 입력해주세요. 학과와 학점은 고졸이 아닌 경우에만 필수입니다.');
         return;
       }
 
-      const payload = academicsWithCode
+      const payload = academicsNormalized
         .filter(a => {
           if (!a.schoolCode || !a.degree) return false;
-          if (isHighSchoolDegree(a.degree)) return true;
+          if (isHighSchoolAcademic(a)) return true;
           return a.major && a.major.trim() !== '' && a.gpa && a.gpa.trim() !== '';
         }) // 유효한 항목만
         .map(a => ({
@@ -406,7 +421,7 @@ export default function AcademicInfoForm() {
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {academics.map((academic, index) => {
-            const isHighSchool = isHighSchoolDegree(academic.degree);
+            const isHighSchool = isHighSchoolAcademic(academic);
             return (
               <StyledCard key={academic.id}>
                 <CardContent sx={{ p: 3 }}>
@@ -432,14 +447,13 @@ export default function AcademicInfoForm() {
                         학교명 *
                       </Typography>
                       <Autocomplete
-                        freeSolo
                         value={academic.schoolName || ''}
                         onInputChange={async (_, val, reason) => {
                           if (reason !== 'input') {
                             return;
                           }
 
-                          handleChange({ target: { name: 'schoolName', value: val } }, academic.id);
+                          handleChange({ target: { name: 'schoolName', value: val } }, academic.id, { typing: true });
 
                           if (academic.schoolCode && val && val !== academic.schoolName) {
                             handleChange({ target: { name: 'schoolCode', value: '' } }, academic.id);
@@ -448,9 +462,13 @@ export default function AcademicInfoForm() {
 
                           if (val && val.length >= 2) {
                             const res = await searchSchools(val);
+                            const normalized = (res || []).map(item => ({
+                              ...item,
+                              schoolType: item.schoolType || (hasHighSchoolKeyword(item.schoolName) ? '고등' : '')
+                            }));
                             setOptionsMap(prev => {
                               const newMap = new Map(prev);
-                              newMap.set(academic.id, res || []);
+                              newMap.set(academic.id, normalized);
                               return newMap;
                             });
                           } else {
@@ -462,14 +480,22 @@ export default function AcademicInfoForm() {
                           }
                         }}
                         onChange={(_, option) => {
-                          if (option && option.schoolCode) {
-                            handleChange({ target: { name: 'schoolCode', value: String(option.schoolCode) } }, academic.id);
-                            handleChange({ target: { name: 'schoolName', value: option.schoolName } }, academic.id);
-                            handleChange({ target: { name: 'campus', value: option.campus || '' } }, academic.id);
+                          const options = optionsMap.get(academic.id) || [];
+                          let resolved = option;
+                          if (option && typeof option === 'string') {
+                            resolved = options.find(opt => normalizeSchoolName(opt.schoolName) === normalizeSchoolName(option));
+                          }
+                          if (resolved && resolved.schoolCode) {
+                            handleChange({ target: { name: 'schoolCode', value: String(resolved.schoolCode) } }, academic.id);
+                            handleChange({ target: { name: 'schoolName', value: resolved.schoolName } }, academic.id);
+                            handleChange({ target: { name: 'campus', value: resolved.campus || '' } }, academic.id);
+                            const derivedType = resolved.schoolType || (hasHighSchoolKeyword(resolved.schoolName) ? '고등' : '');
+                            handleChange({ target: { name: 'schoolType', value: derivedType } }, academic.id);
                           } else if (!option) {
                             handleChange({ target: { name: 'schoolCode', value: '' } }, academic.id);
                             handleChange({ target: { name: 'schoolName', value: '' } }, academic.id);
                             handleChange({ target: { name: 'campus', value: '' } }, academic.id);
+                            handleChange({ target: { name: 'schoolType', value: '' } }, academic.id);
                           }
                         }}
                         options={optionsMap.get(academic.id) || []}
@@ -518,7 +544,7 @@ export default function AcademicInfoForm() {
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <Typography variant="caption" sx={{ color: '#757575', mb: 0.5, display: 'block' }}>
-                        졸업구분 *
+                        졸업구분 {isHighSchool ? '' : '*'}
                       </Typography>
                       <StyledTextField
                         select
@@ -526,8 +552,12 @@ export default function AcademicInfoForm() {
                         value={academic.degree}
                         onChange={e => handleChange(e, academic.id)}
                         fullWidth
+                        disabled={isHighSchoolType(academic.schoolType) || hasHighSchoolKeyword(academic.schoolName)}
                         error={errors.get(academic.id)?.degree ? true : false}
-                        helperText={errors.get(academic.id)?.degree || ''}
+                        helperText={
+                          errors.get(academic.id)?.degree ||
+                          (isHighSchool ? '선택한 학교는 고등학교로 고졸이 자동 설정됩니다.' : '')
+                        }
                       >
                         <MenuItem value="">선택하세요</MenuItem>
                         <MenuItem value="고졸">고졸</MenuItem>
