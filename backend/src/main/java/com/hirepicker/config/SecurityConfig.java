@@ -85,7 +85,6 @@ public class SecurityConfig {
                                 "/api/work24/**",
                                 "/actuator/**",
                                 "/api/health/**",
-                                "/api/manage/**",
                                 "/confirm/**",
                                 "/confirm-billing",
                                 "/issue-billing-key",
@@ -120,7 +119,6 @@ public class SecurityConfig {
                         "/api/work24/**",
                         "/actuator/**",
                         "/api/health/**",
-                        "/api/manage/**",
                         "/confirm/**",
                         "/confirm-billing",
                         "/issue-billing-key",
@@ -147,6 +145,14 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/ai/upload-image").permitAll()
 
                 // 결제, AI, 크레딧 관련 API는 인증 필요
+                .requestMatchers("/api/manage/auth/login").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/api/manage/job-postings/import/rapid").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/manage/job-postings/import/rapid").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/api/work24/sync/rapid-jobs").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/work24/sync/rapid-jobs").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/api/work24/sync/jsearch-jobs").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/work24/sync/jsearch-jobs").permitAll()
+                .requestMatchers("/api/manage/**").hasAuthority("ROLE_MANAGE")
                 .requestMatchers("/api/payment/**").authenticated()
                 .requestMatchers("/api/ai/**").authenticated() // [AI 기능 추가] AI 관련 API는 인증된 사용자만 접근 가능
                 .requestMatchers("/api/credits/**").authenticated() // [크레딧 기능 추가] 크레딧 관련 API는 인증된 사용자만 접근 가능

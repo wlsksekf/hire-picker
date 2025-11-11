@@ -86,6 +86,8 @@ export const signupCompany = (signupData) => {
     return api.post('/api/auth/signup/company', signupData);
 };
 
+export const loginManage = (payload) => api.post('/api/manage/auth/login', payload);
+
 
 // `api` 변수를 기본 내보내기로 설정
 export { api };
