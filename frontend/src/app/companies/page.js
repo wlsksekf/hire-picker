@@ -40,66 +40,45 @@ function CompaniesPage() {
   const [searchTerm, setSearchTerm] = useState(""); // 검색어 입력 값
   const [query, setQuery] = useState(""); // 실제 검색에 사용될 쿼리
   const [likedCompanies, setLikedCompanies] = useState(new Set());
-  const [pUserIdx, setPUserIdx] = useState(null); // p_user_idx 상태 추가
 
-  const user = useAuthStore((state) => state.user);
+  const { user, isAuthenticated } = useAuthStore();
   console.log("User object:", user);
 
-  // 컴포넌트가 마운트되거나 쿼리가 변경될 때 기업 정보를 불러옴
-  useEffect(
-    function () {
-      setLoading(true);
-      const apiUrl = `/api/companies?page=0&size=${PAGE_SIZE}${
-        query ? `&query=${query}` : ""
-      }`;
+  // 기업 목록 전용 useEffect
+  useEffect(() => {
+    setLoading(true);
+    api
+      .get(
+        `/api/companies?page=0&size=${PAGE_SIZE}${
+          query ? `&query=${query}` : ""
+        }`
+      )
+      .then((res) => {
+        const data = res.data;
+        setCompanies(data._embedded ? data._embedded.companyDtoList : []);
+        setHasNextPage(
+          data.page && data.page.number < data.page.totalPages - 1
+        );
+        setPage(0);
+        setError(null);
+      })
+      .catch((err) => setError(err))
+      .finally(() => setLoading(false));
+  }, [query]); // user나 pUserIdx 의존성 제거
 
+  // 관심기업 전용 useEffect
+  useEffect(() => {
+    if (isAuthenticated) {
       api
-        .get(apiUrl)
-        .then(function (response) {
-          const data = response.data;
-          const newCompanies = data._embedded
-            ? data._embedded.companyDtoList
-            : [];
-          setCompanies(newCompanies);
-          setHasNextPage(
-            data.page && data.page.number < data.page.totalPages - 1
-          );
-          setPage(0);
-          setError(null);
+        .get("/api/company-alarms/me/ids")
+        .then((res) => {
+          setLikedCompanies(new Set(res.data));
         })
-        .catch(function (err) {
-          setError(err);
-          setCompanies([]);
-        })
-        .finally(function () {
-          setLoading(false);
-        });
-
-      if (user?.email) {
-        api
-          .get(`/api/company-alarms/idx-by-email?email=${user.email}`)
-          .then(function (response) {
-            const fetchedIdx = response.data.idx; // 백엔드 응답에서 idx를 가져온다고 가정
-            console.log("Fetched p_user_idx:", fetchedIdx);
-            setPUserIdx(fetchedIdx); // 상태 업데이트
-            if (fetchedIdx) {
-              api
-                .get(`/api/company-alarms/user/${fetchedIdx}`)
-                .then(function (response) {
-                  setLikedCompanies(new Set(response.data));
-                })
-                .catch(function (err) {
-                  console.error("Failed to fetch liked companies:", err);
-                });
-            }
-          })
-          .catch(function (err) {
-            console.error("Failed to fetch user idx by email:", err);
-          });
-      }
-    },
-    [query, user, pUserIdx] // user와 pUserIdx를 의존성 배열에 추가
-  );
+        .catch((err) => console.error("Failed to fetch liked companies:", err));
+    } else {
+      setLikedCompanies(new Set());
+    }
+  }, [isAuthenticated]);
 
   // 다음 페이지의 기업 정보를 불러오는 함수
   function handleLoadMore() {
@@ -149,7 +128,7 @@ function CompaniesPage() {
 
   // 관심 기업 등록/해제 함수
   async function toggleLikeCompany(companyIdx) {
-    if (!pUserIdx) {
+    if (!isAuthenticated) {
       alert("로그인이 필요합니다.");
       return;
     }
@@ -157,7 +136,7 @@ function CompaniesPage() {
     try {
       if (likedCompanies.has(companyIdx)) {
         // 이미 좋아요 상태이면 좋아요 해제 (DELETE 요청)
-        await api.delete(`/api/company-alarms/${pUserIdx}/${companyIdx}`);
+        await api.delete(`/api/company-alarms/companies/${companyIdx}`);
         setLikedCompanies((prev) => {
           const newSet = new Set(prev);
           newSet.delete(companyIdx);
@@ -167,7 +146,6 @@ function CompaniesPage() {
       } else {
         // 좋아요 상태가 아니면 좋아요 등록 (POST 요청)
         await api.post("/api/company-alarms", {
-          p_user_idx: pUserIdx,
           company_idx: companyIdx,
         });
         setLikedCompanies((prev) => new Set(prev).add(companyIdx));
@@ -284,52 +262,50 @@ function CompaniesPage() {
                   <Typography variant="h6" fontWeight="bold" sx={{ mr: 10 }}>
                     {company.name}
                   </Typography>
-                  {/* <Typography variant="body1" color="text.secondary">
-                    {company.summary}
-                  </Typography> */}
                 </Box>
 
                 <CardActions sx={{ p: 0, ml: 2 }}>
-                  <Button
-                    variant="contained"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Link 컴포넌트의 페이지 이동 방지
-                      e.preventDefault(); // 기본 이벤트 방지
-                      toggleLikeCompany(company.companyIdx);
-                    }}
-                    startIcon={
-                      <FontAwesomeIcon
-                        icon={
+                  {isAuthenticated && user && user.userType === "PERSONAL" && (
+                    <Button
+                      variant="contained"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Link 컴포넌트의 페이지 이동 방지
+                        e.preventDefault(); // 기본 이벤트 방지
+                        toggleLikeCompany(company.companyIdx);
+                      }}
+                      startIcon={
+                        <FontAwesomeIcon
+                          icon={
+                            likedCompanies.has(company.companyIdx)
+                              ? faHeartSolid
+                              : faHeartRegular
+                          }
+                          style={{
+                            color: likedCompanies.has(company.companyIdx)
+                              ? pink[500] // 좋아요 시 핑크색
+                              : "gray", // 기본 회색
+                          }}
+                        />
+                      }
+                      style={{
+                        backgroundColor: "white", // 항상 흰색 배경
+                        color: "black", // 항상 검은색 글자
+                      }}
+                      sx={{
+                        border: `1px solid ${
                           likedCompanies.has(company.companyIdx)
-                            ? faHeartSolid
-                            : faHeartRegular
-                        }
-                      />
-                    }
-                    style={{
-                      backgroundColor: likedCompanies.has(company.companyIdx)
-                        ? pink[500] // 좋아요 시 메인 색상
-                        : "white",
-                      color: likedCompanies.has(company.companyIdx)
-                        ? "white" // 좋아요 시 흰색
-                        : "gray",
-                    }}
-                    sx={{
-                      border: `1px solid ${
-                        likedCompanies.has(company.companyIdx)
-                          ? pink[500] // 좋아요 시 메인 색상 테두리
-                          : "gray"
-                      }`,
-                      borderRadius: "13px",
-                      "&:hover": {
-                        backgroundColor: likedCompanies.has(company.companyIdx)
-                          ? theme.palette.primary.dark
-                          : theme.palette.grey[100],
-                      },
-                    }}
-                  >
-                    관심기업
-                  </Button>
+                            ? pink[500] // 좋아요 시 핑크색 테두리
+                            : "gray" // 좋아요 해제 시 회색 테두리
+                        }`,
+                        borderRadius: "13px",
+                        "&:hover": {
+                          backgroundColor: theme.palette.grey[100], // 호버 시 연한 회색
+                        },
+                      }}
+                    >
+                      관심기업
+                    </Button>
+                  )}
                 </CardActions>
 
                 <CardActions sx={{ p: 0, ml: 2 }}>

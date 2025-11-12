@@ -1,8 +1,8 @@
 package com.hirepicker.service;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,11 +33,14 @@ public class CompanyService {
     public List<CompanySearchResponseDto> searchByName(String name) {
         // 자동완성을 위해 상위 10개 결과만 가져옴
         Pageable pageable = PageRequest.of(0, 10);
-        return companyRepository.findByCompanyNameContainingIgnoreCase(name, pageable)
-                .getContent()
-                .stream()
-                .map(CompanySearchResponseDto::fromEntity)
-                .collect(Collectors.toList());
+        List<Company> companies = companyRepository.findByCompanyNameContainingIgnoreCase(name, pageable).getContent();
+
+        List<CompanySearchResponseDto> result = new ArrayList<>();
+        for (Company company : companies) {
+            result.add(CompanySearchResponseDto.fromEntity(company));
+        }
+
+        return result;
     }
 
     @Transactional

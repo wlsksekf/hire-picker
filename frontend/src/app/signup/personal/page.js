@@ -17,7 +17,6 @@ const genders = [
 export default function SignupPage() {
     const router = useRouter();
 
-
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -164,6 +163,25 @@ export default function SignupPage() {
             });
     };
 
+    const renderAddressInput = () => {
+        // AppProviders의 LoadScript로 이미 로드되므로 바로 사용 가능
+        return (
+            <Autocomplete
+                onLoad={handleAutocompleteLoad}
+                onPlaceChanged={handlePlaceChanged}
+            >
+                <TextField
+                    id="address"
+                    name="address"
+                    fullWidth
+                    value={formData.address}
+                    onChange={handleAddressChange}
+                    disabled={!isCodeConfirmed}
+                />
+            </Autocomplete>
+        );
+    };
+
     return (
         <StyledFormWrapper>
             <div className="form-container">
@@ -306,19 +324,7 @@ export default function SignupPage() {
 
                     <div className="input-group">
                         <label htmlFor="address">주소</label>
-                        <Autocomplete
-                            onLoad={handleAutocompleteLoad}
-                            onPlaceChanged={handlePlaceChanged}
-                        >
-                            <TextField
-                                id="address"
-                                name="address"
-                                fullWidth
-                                value={formData.address}
-                                onChange={handleAddressChange}
-                                disabled={!isCodeConfirmed}
-                            />
-                        </Autocomplete>
+                        {renderAddressInput()}
                     </div>
                     <button type="submit" className="sign" disabled={!isCodeConfirmed || loading}>
                         {loading ? <CircularProgress size={24} color="inherit" /> : '가입하기'}

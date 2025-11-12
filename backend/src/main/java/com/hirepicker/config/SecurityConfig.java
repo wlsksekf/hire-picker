@@ -66,6 +66,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/users/signup").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
+                        .requestMatchers("/api/comments/**").authenticated()
 
                         // OAuth2 관련 엔드포인트는 모두 허용
                         .requestMatchers("/api/oauth2/**", "/login/oauth2/code/**").permitAll()
@@ -96,6 +98,7 @@ public class SecurityConfig {
                                 "/api/companies/**",
                                 "/api/dart/**",
                                 "/api/national-pension/**",
+                                "/api/job-postings/**",
                                 "/signup/company/**",
                                 "/api/payment/webhook", // 웹훅 엔드포인트는 모두 허용
                                 "/chat/**",
@@ -104,14 +107,15 @@ public class SecurityConfig {
                                 "/chat/history/**",
                                 "/api/v1/ai-chat",
                                 "/api/v1/ai-search",
-                                "/api/search", "/api/calendar/**",
+                                "/api/search/**", "/api/calendar/**",
                                 "/api/company-alarms/**",
                                 "/api/bookmark/toggle",
                                 "/api/inquiry/submit",
                                 "/api/inquiries",
-                                "/inquiries/{inquiryIdx}/answer")
-                        .permitAll()
+                                "/inquiries/{inquiryIdx}/answer",
+                                "/api/bookmark/check")
 
+                        .permitAll()
 
                         // 이미지 업로드 엔드포인트는 인증 없이 허용
                         .requestMatchers(HttpMethod.POST, "/api/ai/upload-image").permitAll()

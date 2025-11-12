@@ -108,14 +108,46 @@ export default function AppProviders({ children }) {
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith('/hirepicker7338/admin');
 
-  // 컴포넌트 마운트 시 인증 상태 초기화
+  // 컴포넌트 마운트 시 인증 상태 초기화 (새로고침 시 항상 실행)
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true') {
+    console.log("AppProviders: useEffect triggered for auth initialization");
+    console.log("AppProviders: window.location.href =", window.location.href);
+    console.log("AppProviders: NEXT_PUBLIC_DISABLE_AUTH =", process.env.NEXT_PUBLIC_DISABLE_AUTH);
+    
+    // 환경 변수 확인 (문자열 'true'가 아닌 경우 인증 활성화)
+    const isAuthDisabled = process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true' || 
+                           process.env.NEXT_PUBLIC_DISABLE_AUTH === true;
+    
+    if (isAuthDisabled) {
+      console.log("AppProviders: Auth disabled via env var, setting state to unauthenticated");
       useAuthStore.setState({ isAuthenticated: false, user: null, isLoading: false });
       return;
     }
-    initializeAuth();
-  }, [initializeAuth]);
+    
+    // 새로고침 시 항상 인증 상태 확인
+    const currentState = useAuthStore.getState();
+    console.log("AppProviders: Current auth state:", { 
+      isLoading: currentState.isLoading, 
+      isAuthenticated: currentState.isAuthenticated,
+      user: currentState.user ? 'present' : 'null'
+    });
+    
+    // 초기화 실행 (항상 실행하여 새로고침 시 인증 상태 확인)
+    console.log("AppProviders: Calling initializeAuth");
+    const initPromise = initializeAuth();
+    if (initPromise && typeof initPromise.then === 'function') {
+      initPromise
+        .then((userData) => {
+          console.log("AppProviders: initializeAuth completed successfully", userData ? "with user data" : "without user data");
+        })
+        .catch((error) => {
+          console.error("AppProviders: initializeAuth failed:", error);
+        });
+    } else {
+      console.warn("AppProviders: initializeAuth did not return a promise");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 빈 의존성 배열로 마운트 시 한 번만 실행
 
   // 테마 모드가 변경될 때만 테마를 다시 생성
   const theme = useMemo(function() { return getTheme(mode) }, [mode]);
