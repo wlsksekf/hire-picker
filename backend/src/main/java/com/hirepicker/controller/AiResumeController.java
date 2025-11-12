@@ -35,7 +35,7 @@ public class AiResumeController {
     private final AiResumeService aiResumeService;
     private final S3UploadService s3UploadService;
     private final CreditService creditService;
-    private static final long AI_RESUME_CREDIT_COST = 1000L; // AI 생성 시 차감할 크레딧
+    private static final long AI_RESUME_CREDIT_COST = 500L; // AI 생성 시 차감할 크레딧
 
     @Operation(summary = "AI 이력서 초안 생성/수정", description = "AI를 사용하여 이력서 초안 전체를 생성하거나 기존 초안을 수정합니다.")
     @ApiResponses(value = {
@@ -57,7 +57,7 @@ public class AiResumeController {
         // 현재 잔액이 부족하면 사전 안내
         Long currentBalance = creditService.getCreditBalance(userDetails);
         if (currentBalance < AI_RESUME_CREDIT_COST) {
-            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED, "AI 이력서 작성에는 1000크레딧이 필요합니다.");
+            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED, "AI 이력서 작성에는 500크레딧이 필요합니다.");
         }
 
         FullResumeDraftDto resumeDraft = aiResumeService.generateFullResumeDraft(
