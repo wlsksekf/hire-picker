@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import {
   Box,
@@ -54,6 +54,8 @@ export default function CalendarPage() {
   const [tempSelectedRegions, setTempSelectedRegions] = useState([]); // Popover 내 임시 선택 지역
   const [anchorEl, setAnchorEl] = useState(null); // Popover를 띄울 기준 요소
   const [showLikedCompanies, setShowLikedCompanies] = useState(false); // 관심기업 표시 여부 상태 추가
+  const calendarRef = useRef(null); // FullCalendar 인스턴스에 접근하기 위한 ref 추가
+  const [currentCalendarDate, setCurrentCalendarDate] = useState(null); // 현재 캘린더 날짜를 저장할 상태 추가
 
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuthStore(); // useAuthStore에서 user, isAuthenticated, isAuthLoading 가져오기
 
@@ -133,15 +135,34 @@ export default function CalendarPage() {
   // "관심기업" 버튼 클릭 핸들러
   const handleToggleLikedCompanies = () => {
     if (!isAuthenticated) {
-      // 로그인 상태가 아니면 경고 메시지 표시
       setError("관심 기업 정보를 보려면 로그인해야 합니다.");
       return;
     }
-    if (!showLikedCompanies) {
-      fetchLikedCompanyJobPostings(); // 관심기업 공고 불러오기
+
+    // 현재 캘린더의 날짜를 저장
+    if (calendarRef.current) {
+      setCurrentCalendarDate(calendarRef.current.getApi().getDate());
     }
-    setShowLikedCompanies(!showLikedCompanies); // 상태 토글
+
+    if (!showLikedCompanies) {
+      fetchLikedCompanyJobPostings();
+    }
+    setShowLikedCompanies(!showLikedCompanies);
   };
+
+  // showLikedCompanies 상태 변경 및 likedJobPostings 로드 후 캘린더 뷰를 유지
+  useEffect(() => {
+    if (currentCalendarDate && calendarRef.current && !loading) {
+      calendarRef.current.getApi().gotoDate(currentCalendarDate);
+      setCurrentCalendarDate(null); // 사용 후 초기화
+    }
+  }, [
+    showLikedCompanies,
+    likedJobPostings,
+    currentCalendarDate,
+    loading,
+    selectedRegions,
+  ]);
 
   // Helper function to determine event status based on dates
   const getEventStatus = (startDate, endDate) => {
@@ -161,43 +182,69 @@ export default function CalendarPage() {
 
   // FullCalendar 이벤트 형식으로 데이터 변환
   const events = [
-    ...jobPostings.map((job) => ({
-      id: `job-${job.id}`,
-      title: job.companyName,
-      start: job.start,
-      allDay: job.allDay,
-      backgroundColor: "transparent",
-      textColor: "#000000",
-      borderColor: "transparent",
-      type: job.type,
-      extendedProps: { status: getEventStatus(job.start, job.end) }, // Add status for icon rendering
-    })),
+    ...jobPostings.map((job) => {
+      const isLiked =
+        showLikedCompanies &&
+        likedJobPostings.some(
+          (likedJob) => likedJob.companyName === job.companyName
+        );
+      const event = {
+        id: job.id, // job-${job.id} 대신 job.id 사용
+        title: job.companyName,
+        start: job.start,
+        allDay: job.allDay,
+        backgroundColor: "transparent",
+        textColor: "#000000",
+        borderColor: "transparent",
+        extendedProps: {
+          status: getEventStatus(job.start, job.end),
+          isLiked: isLiked,
+          customType: "jobPosting", // customType으로 변경
+          start: job.start,
+          end: job.end,
+        },
+      };
+      return event;
+    }),
     ...(selectedRegions.length > 0
-      ? empEvents.map((event) => ({
-          id: `event-${event.id}`,
-          title: event.area,
-          start: event.start,
-          allDay: event.allDay,
-          backgroundColor: "transparent",
-          textColor: "#000000",
-          borderColor: "transparent",
-          type: event.type,
-          extendedProps: { status: getEventStatus(event.start, event.end) }, // Add status for icon rendering
-        }))
+      ? empEvents.map((event) => {
+          const empEvent = {
+            id: `event-${event.id}`,
+            title: event.area,
+            start: event.start,
+            allDay: event.allDay,
+            backgroundColor: "transparent",
+            textColor: "#000000",
+            borderColor: "transparent",
+            extendedProps: {
+              status: getEventStatus(event.start, event.end),
+              customType: event.type,
+              start: job.start,
+              end: job.end,
+            }, // customType으로 변경
+          };
+          return empEvent;
+        })
       : []),
     ...(showLikedCompanies // 관심기업 표시 상태가 true일 때만 추가
-      ? likedJobPostings.map((job) => ({
-          id: `liked-job-${job.id}`,
-          title: `❤️ ${job.companyName}`, // 하트 아이콘 추가
-          start: job.startDate, // 백엔드에서 startDate로 넘어온다고 가정
-          end: job.endDate, // 백엔드에서 endDate로 넘어온다고 가정
-          allDay: true, // 필요에 따라 조정
-          backgroundColor: pink[500], // 하트 색상
-          textColor: "#ffffff", // 텍스트 색상
-          borderColor: pink[500], // 테두리 색상
-          type: "likedJob",
-          extendedProps: { status: getEventStatus(job.startDate, job.endDate) },
-        }))
+      ? likedJobPostings.map((job) => {
+          const likedJobEvent = {
+            id: job.id, // liked-job-${job.id} 대신 job.id 사용
+            title: job.companyName, // 하트 아이콘 제거
+            start: job.startDate, // 백엔드에서 startDate로 넘어온다고 가정
+            end: job.endDate, // 백엔드에서 endDate로 넘어간다고 가정
+            allDay: true, // allDay 속성 복원
+            backgroundColor: pink[500], // 배경색 핑크로 복원
+            textColor: "#ffffff", // 텍스트 색상 흰색으로 복원
+            borderColor: pink[500], // 테두리 색상 핑크로 복원
+            extendedProps: {
+              status: getEventStatus(job.startDate, job.endDate),
+              isLiked: true,
+              customType: "likedJob",
+            },
+          };
+          return likedJobEvent;
+        })
       : []),
   ];
 
@@ -225,6 +272,10 @@ export default function CalendarPage() {
   };
 
   const handleRegionApply = () => {
+    // 현재 캘린더의 날짜를 저장
+    if (calendarRef.current) {
+      setCurrentCalendarDate(calendarRef.current.getApi().getDate());
+    }
     setSelectedRegions(tempSelectedRegions);
     setIsRegionDialogOpen(false);
   };
@@ -355,7 +406,7 @@ export default function CalendarPage() {
         </Paper>
       </Popover>
 
-      <CustomCalendar events={events} />
+      <CustomCalendar events={events} calendarRef={calendarRef} />
     </Box>
   );
 }

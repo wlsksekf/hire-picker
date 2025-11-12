@@ -16,6 +16,7 @@ import {
   Divider,
 } from "@mui/material";
 import { api } from "@/api"; // 공용 api 인스턴스 사용
+import FallbackImage from "@/components/FallbackImage"; // FallbackImage 컴포넌트 임포트
 
 export default function AlarmPage() {
   const [likedCompanies, setLikedCompanies] = useState([]);
@@ -64,11 +65,17 @@ export default function AlarmPage() {
     fetchLikedCompanies();
   }, [isAuthenticated, user]);
 
+  // Base64로 인코딩된 1x1 흰색 투명 GIF 이미지
+  const whitePixel =
+    "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
   const getLogoUrl = (url) => {
-    if (!url) return null;
+    if (!url) return whitePixel; // URL이 없으면 흰색 픽셀 반환
     if (url.startsWith("http")) {
       return url;
     }
+    // work.go.kr 로고 URL이 유효하지 않을 경우를 대비하여 whitePixel 반환
+    // 실제 이미지 로드 실패는 FallbackImage에서 처리
     return `https://www.work.go.kr/images/recruit/${url}`;
   };
 
@@ -151,8 +158,7 @@ export default function AlarmPage() {
                         justifyContent: "center",
                       }}
                     >
-                      <CardMedia
-                        component="img"
+                      <FallbackImage
                         sx={{
                           width: 60,
                           height: 60,
@@ -160,7 +166,7 @@ export default function AlarmPage() {
                           objectFit: "contain", // 로고 내용이 잘리지 않도록 contain으로 변경
                           mr: 1,
                         }}
-                        image={getLogoUrl(company.logoUrl)}
+                        src={getLogoUrl(company.logoUrl)}
                         alt={`${company.name} 로고`}
                       />
                       <Typography

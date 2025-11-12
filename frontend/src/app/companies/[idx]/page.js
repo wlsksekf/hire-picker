@@ -570,7 +570,7 @@ function CompanyDetailPage() {
                   {jobPostings.map((jobPosting) => (
                     <Grid item xs={12} sm={6} md={4} key={jobPosting.id}>
                       <Link
-                        href={`/postings/${jobPosting.id}`}
+                        href={`/postings/${jobPosting.postingIdx}`}
                         passHref
                         style={{ textDecoration: "none" }}
                       >
