@@ -69,6 +69,8 @@ public class EmploymentDataImpl implements EmploymentData {
                     .required_qualifications(job.getRequiredQualifications())
                     .preferred_qualifications(job.getPreferredQualifications())
                     .salaryInfo(job.getSalaryInfo())
+                    .internal(internal) // 내부 지원 가능 여부
+                    .applyUrl(applyUrl) // 외부 지원 링크
                     .build();
 
             jobDtos.add(jobDto);
@@ -278,6 +280,8 @@ public class EmploymentDataImpl implements EmploymentData {
                     .required_qualifications(job.getRequiredQualifications())
                     .preferred_qualifications(job.getPreferredQualifications())
                     .salaryInfo(job.getSalaryInfo())
+                    .internal(internal) // 내부 지원 가능 여부
+                    .applyUrl(applyUrl) // 외부 지원 링크
                     .build());
         }
 

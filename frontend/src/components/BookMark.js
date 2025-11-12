@@ -21,7 +21,7 @@ export default function Bookmark(props) {
   useEffect(function(){
     axios.post(checkurl,{jobId:jobId},{withCredentials:true, timeout:90000})
     .then(function(res){
-      console.log(res.data)
+      // console.log(res.data)
       setIsLoggedIn(res.data.LoggedIn)
       setIsBookmarked(res.data.Bookmarked)
     }).catch(function(){
@@ -31,7 +31,7 @@ export default function Bookmark(props) {
 
   function handleClick(){
     if(!isLoggedIn){
-      alert("로그인이 필요합니다")
+      alert("로그인이 필요합니다.")
       return;
     }
 

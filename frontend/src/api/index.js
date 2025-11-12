@@ -9,31 +9,91 @@ const api = axios.create({
   timeout: 90000, // 90초 타임아웃 설정 (밀리초 단위)
 });
 
+// 리프레시 토큰 갱신 중 플래그 (동시 요청 방지)
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // 응답 인터셉터: 401 Unauthorized 에러 처리 (토큰 갱신)
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // 성공한 요청 시 로그아웃 타이머 리셋
+    if (response.config.url && !response.config.url.includes('/api/auth/')) {
+      const authStore = useAuthStore.getState();
+      if (authStore.isAuthenticated) {
+        authStore.resetLogoutTimer();
+      }
+    }
+    return response;
+  },
   (error) => {
     const originalRequest = error.config;
+
+    // error.response가 없는 경우 (네트워크 에러 등)
+    if (!error.response) {
+      return Promise.reject(error);
+    }
+
     // 401 에러이고, 이미 재시도한 요청이 아니며, 로그인/회원가입/토큰 갱신 요청이 아닌 경우
-    if (error.response.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/api/auth/') && !originalRequest.url.includes('/api/users/my-profile')) {
-      originalRequest._retry = true; // 재시도 플래그 설정
+    // /api/users/me는 initializeAuth에서 직접 처리하므로 인터셉터에서 제외
+    if (error.response.status === 401 && 
+        !originalRequest._retry && 
+        originalRequest.url && 
+        !originalRequest.url.includes('/api/auth/') && 
+        !originalRequest.url.includes('/api/users/my-profile') &&
+        !originalRequest.url.includes('/api/users/me')) {
+      
+      // 이미 리프레시 중이면 대기열에 추가
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(() => {
+          return api(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+      
       console.log('Axios Interceptor: Attempting token refresh for', originalRequest.url);
 
-      // Promise 체이닝 방식으로 변경
-      return api.post('/api/auth/refresh').then((refreshResponse) => {
-        console.log('Axios Interceptor: Token refresh successful.', refreshResponse.status);
-        console.log('Axios Interceptor: Response headers:', refreshResponse.headers);
-
-        // 원래 요청을 재시도 (initializeAuth는 나중에)
-        console.log('Axios Interceptor: Retrying original request:', originalRequest.url);
-        return api(originalRequest); // 원래 요청 재시도
-      }).catch((refreshError) => {
-        // 리프레시 토큰 갱신 실패 시
-        console.error('Axios Interceptor: Token refresh failed.', refreshError.response?.status);
-
-        // 로그아웃시키지 말고 그냥 에러만 반환
-        return Promise.reject(refreshError);
-      });
+      return api.post('/api/auth/refresh')
+        .then((refreshResponse) => {
+          console.log('Axios Interceptor: Token refresh successful.', refreshResponse.status);
+          isRefreshing = false;
+          processQueue(null, refreshResponse);
+          
+          // 원래 요청을 재시도
+          console.log('Axios Interceptor: Retrying original request:', originalRequest.url);
+          return api(originalRequest);
+        })
+        .catch((refreshError) => {
+          // 리프레시 토큰 갱신 실패 시
+          console.error('Axios Interceptor: Token refresh failed.', refreshError.response?.status);
+          isRefreshing = false;
+          
+          // 리프레시 실패 시 로그아웃 처리
+          const authStore = useAuthStore.getState();
+          if (authStore.isAuthenticated) {
+            console.log('Axios Interceptor: Logging out due to refresh failure');
+            authStore.logout();
+          }
+          
+          processQueue(refreshError, null);
+          return Promise.reject(refreshError);
+        });
     }
 
     return Promise.reject(error);
@@ -351,6 +411,13 @@ export function saveResumeCertifications(resumeIdx, { certifications = [] } = {}
   };
   return api.put('/api/users/certifications', payload).then(res => res.data);
 }
+
+/**
+ * 관리자 페이지 - 결제 통계 조회
+ */
+export const getAdminPaymentStatistics = () => {
+  return api.get('/api/admin/payments/statistics').then(res => res.data);
+};
 
 // [이력서] 자동채움 데이터(학력/경력/병역) 일괄 조회
 export function getResumeTemplate() {

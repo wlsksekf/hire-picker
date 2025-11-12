@@ -507,12 +507,15 @@ public class AuthService {
         // 현재 활성 프로필을 확인하여 secure 속성 동적 설정
         boolean isProduction = Arrays.asList(environment.getActiveProfiles()).contains("prod");
 
+        // 개발 환경에서는 SameSite=Lax로 설정하여 쿠키 전송 보장
+        String sameSite = isProduction ? "Strict" : "Lax";
+        
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
                 .httpOnly(true)
                 .secure(isProduction) // ★ 환경에 따라 동적으로 설정
                 .path("/")
                 .maxAge(jwtTokenProvider.getAccessTokenValidityInMilliseconds() / 1000)
-                .sameSite("Strict") // CSRF 방어를 위해 Strict 설정
+                .sameSite(sameSite) // 개발 환경에서는 Lax, 프로덕션에서는 Strict
                 .build();
         response.addHeader("Set-Cookie", accessTokenCookie.toString());
 
@@ -521,7 +524,7 @@ public class AuthService {
                 .secure(isProduction) // 환경에 따라 동적으로 설정
                 .path("/")
                 .maxAge(jwtTokenProvider.getRefreshTokenValidityInMilliseconds() / 1000)
-                .sameSite("Strict") // CSRF 방어를 위해 Strict 설정
+                .sameSite(sameSite) // 개발 환경에서는 Lax, 프로덕션에서는 Strict
                 .build();
         response.addHeader("Set-Cookie", refreshTokenCookie.toString());
     }
@@ -536,16 +539,25 @@ public class AuthService {
     public void refreshToken(jakarta.servlet.http.HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = null;
         Cookie[] cookies = request.getCookies();
+        
+        // 디버깅: 쿠키 정보 로그
         if (cookies != null) {
+            log.info("[AuthService] refreshToken: 쿠키 개수: {}", cookies.length);
             for (Cookie cookie : cookies) {
+                log.info("[AuthService] refreshToken: 쿠키 이름: {}, 값 길이: {}", 
+                    cookie.getName(), cookie.getValue() != null ? cookie.getValue().length() : 0);
                 if ("refreshToken".equals(cookie.getName())) {
                     refreshToken = cookie.getValue();
+                    log.info("[AuthService] refreshToken: 리프레시 토큰 발견");
                     break;
                 }
             }
+        } else {
+            log.warn("[AuthService] refreshToken: 쿠키가 없습니다.");
         }
 
         if (refreshToken == null) {
+            log.error("[AuthService] refreshToken: 리프레시 토큰이 없습니다.");
             throw new IllegalArgumentException("리프레시 토큰이 없습니다.");
         }
 
@@ -585,13 +597,14 @@ public class AuthService {
 
         // 2. ResponseCookie를 사용하여 쿠키 삭제
         boolean isProduction = Arrays.asList(environment.getActiveProfiles()).contains("prod");
+        String sameSite = isProduction ? "Strict" : "Lax";
 
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", "")
                 .httpOnly(true)
                 .secure(isProduction) // 환경에 따라 동적으로 설정
                 .path("/")
                 .maxAge(0) // 쿠키 즉시 만료
-                .sameSite("Strict")
+                .sameSite(sameSite) // 개발 환경에서는 Lax, 프로덕션에서는 Strict
                 .build();
         response.addHeader("Set-Cookie", accessTokenCookie.toString());
         log.info("Access Token 쿠키가 삭제되었습니다.");
@@ -601,7 +614,7 @@ public class AuthService {
                 .secure(isProduction) // 환경에 따라 동적으로 설정
                 .path("/")
                 .maxAge(0) // 쿠키 즉시 만료
-                .sameSite("Strict")
+                .sameSite(sameSite) // 개발 환경에서는 Lax, 프로덕션에서는 Strict
                 .build();
         response.addHeader("Set-Cookie", refreshTokenCookie.toString());
         log.info("Refresh Token 쿠키가 삭제되었습니다.");
