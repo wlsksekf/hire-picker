@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button, Container, Box, Typography } from '@mui/material';
 import CommentForm from '@/app/comment/CommentForm';
+import CommentSection from '@/app/comment/CommentSection';
 
 const S3_BASE_URL = 'https://hirepicker-storage.s3.ap-northeast-2.amazonaws.com';
 
@@ -20,9 +21,7 @@ export default function PostDetailPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [currentUserIdx, setCurrentUserIdx] = useState(null);
   const [currentUserType, setCurrentUserType] = useState(null);
-  const [comments, setComments] = useState([]);
 
-  // 로그인 사용자 정보 불러오기
   useEffect(() => {
     axios.get('/api/posts/me', { withCredentials: true })
       .then(response => {
@@ -34,7 +33,6 @@ export default function PostDetailPage() {
       });
   }, []);
 
-  // 게시글 상세정보 불러오기
   useEffect(() => {
     if (!postIdx) {
       setErrorMsg('잘못된 게시글 번호입니다.');
@@ -56,32 +54,27 @@ export default function PostDetailPage() {
       });
   }, [postIdx]);
 
-  // 댓글 조회 함수
-  const fetchComments = () => {
-    axios.get(`/api/comments?post_idx=${postIdx}`)
-      .then(res => setComments(res.data));
+  const imgUrl = post?.imgName ? `${S3_BASE_URL}/${post.imgName}` : null;
+  const fileUrl = post?.fileName ? `${S3_BASE_URL}/${post.fileName}` : null;
+
+  const handleEdit = () => {
+    if (postIdx) router.push(`/community/${postIdx}/edit`);
+  };
+  const handleDelete = async () => {
+    if (!window.confirm('정말 삭제할까요?')) return;
+    try {
+      await axios.delete(`/api/posts/${postIdx}`, { withCredentials: true });
+      alert('삭제가 완료되었습니다.');
+      router.push('/community');
+    } catch (e) {
+      setErrorMsg('삭제 실패:' + (e.response?.data?.msg || e.message));
+    }
+  };
+  const handleList = () => {
+    router.push('/community');
   };
 
-  useEffect(() => { if (postIdx) fetchComments(); }, [postIdx]);
-
-  // 댓글 작성 함수 (content 유효성 체크, null 방지)
-  const handleAddComment = (content) => {
-    if (!content || content.trim().length === 0) {
-      alert("댓글 내용을 입력하세요!");
-      return;
-    }
-    if (!currentUserIdx) {
-      alert("로그인이 필요합니다.");
-      return;
-    }
-    axios.post("/api/comments", {
-      postIdx: postIdx,
-      pUserIdx: currentUserIdx,
-      content
-    }).then(() => fetchComments());
-  };
-
-  // 기타 버튼 핸들러 생략...
+  const isOwner = String(currentUserType).toLowerCase() === "personal" && currentUserIdx && post && String(currentUserIdx) === String(post.puserIdx);
 
   if (loading) {
     return <Box sx={{ p: 6, textAlign: 'center', fontSize: '1.2em' }}>로딩 중...</Box>;
@@ -97,7 +90,7 @@ export default function PostDetailPage() {
           <Button
             variant="outlined"
             color="primary"
-            onClick={() => router.push('/community')}
+            onClick={handleList}
           >
             목록으로 돌아가기
           </Button>
@@ -109,17 +102,12 @@ export default function PostDetailPage() {
     return <Box sx={{ p: 3, textAlign: 'center' }}>게시글이 존재하지 않습니다.</Box>;
   }
 
-  const imgUrl = post?.imgName ? `${S3_BASE_URL}/${post.imgName}` : null;
-  const fileUrl = post?.fileName ? `${S3_BASE_URL}/${post.fileName}` : null;
-  const isOwner = String(currentUserType).toLowerCase() === "personal" && currentUserIdx && post && String(currentUserIdx) === String(post.puserIdx);
-
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 8, p: 3 }}>
       <Box sx={{
         width: '100%', p: 3, border: '1px solid #ccc', borderRadius: 3,
         boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
       }}>
-        {/* 게시글 헤더/정보 영역 */}
         <Box component="h1" sx={{
           fontSize: '2.2em', borderBottom: '2px solid #333', pb: 1, mb: 2
         }}>{post.title}</Box>
@@ -133,21 +121,85 @@ export default function PostDetailPage() {
           minHeight: '200px', whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '1.1em', py: 1
         }}>{post.content}</Box>
 
-        {/* 이미지, 파일 영역 생략 ... */}
+        {/* 이미지 미리보기 + 파일명 */}
+        {imgUrl && (
+          <Box sx={{ my: 4, textAlign: 'center' }}>
+            <img src={imgUrl} alt="첨부 이미지" style={{
+              maxWidth: '300px', borderRadius: '8px', boxShadow: '0 0 12px #ddd'
+            }} />
+            <Box sx={{ fontSize: '0.9em', color: '#666', mt: 1 }}>첨부 이미지</Box>
+            <Box sx={{ fontSize: '0.95em', color: '#198754', mt: 1 }}>
+              {post.imgName && post.imgName.split('/').pop()}
+            </Box>
+          </Box>
+        )}
 
-        {/* ===== 댓글 영역 ===== */}
-        <Box sx={{ mt: 5 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>댓글</Typography>
-          <CommentForm onSubmit={handleAddComment} />
-          <div style={{ marginTop: 18 }}>
-            {comments.length === 0 && <div>댓글이 없습니다.</div>}
-            {comments.map(c => (
-              <div key={c.commentIdx} style={{ marginBottom: 12 }}>
-                <b>{c.nickname}</b>: {c.content}
-                <span style={{ fontSize: 12, color: "#888", marginLeft: 6 }}>{c.createdAt}</span>
-              </div>
-            ))}
-          </div>
+        {/* 첨부파일 다운로드 MUI 버튼 */}
+        {fileUrl && (
+          <Box sx={{ mt: 1, textAlign: 'center' }}>
+            <Button
+              variant="contained"
+              color="success"
+              component="a"
+              href={fileUrl}
+              download
+              target="_blank"
+              sx={{ px: 2, py: 1, fontWeight: 'bold', borderRadius: 1, mt: 1, textTransform: 'none' }}
+            >
+              첨부파일 다운로드
+            </Button>
+            <Box sx={{ fontSize: '0.9em', color: '#666', mt: 1 }}>
+              {post.fileName && post.fileName.split('/').pop()}
+            </Box>
+          </Box>
+        )}
+
+        <hr style={{ borderColor: '#f0f0f0', marginTop: '40px', marginBottom: '20px' }} />
+
+        {/* 목록/수정/삭제 MUI 버튼 */}
+        <Box sx={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+        }}>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={handleList}
+          >
+            목록
+          </Button>
+          {isOwner && (
+            <Box>
+              <Button
+                variant="contained"
+                color="info"
+                onClick={handleEdit}
+                sx={{ mr: 2 }}
+              >
+                수정
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                onClick={handleDelete}
+              >
+                삭제
+              </Button>
+            </Box>
+          )}
+        </Box>
+
+        {errorMsg && (
+          <Box sx={{
+            mt: 2, p: 2, backgroundColor: '#ffe6e6', color: '#cc0000',
+            border: '1px solid #ffb3b3', borderRadius: 1, textAlign: 'center'
+          }}>
+            {errorMsg}
+          </Box>
+        )}
+
+        {/* 댓글 영역 완전 통합 */}
+        <Box sx={{ mt: 4 }}>
+          <CommentSection postId={postIdx} currentUserIdx={currentUserIdx} />
         </Box>
       </Box>
     </Container>

@@ -27,6 +27,7 @@ public Comment writeComment(CommentRequestDto dto) {
             .content(dto.getContent())
             .build();
         // createdAt 등은 @CreatedDate 자동처리
+        System.out.println("생성된 Comment:"+comment);
         return commentRepository.save(comment);
     }
 
