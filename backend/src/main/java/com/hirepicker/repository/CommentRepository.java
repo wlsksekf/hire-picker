@@ -23,4 +23,6 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
            "FROM Comment c JOIN PersonalUser u ON c.pUserIdx = u.id " +
            "WHERE c.postIdx = :postIdx")
     List<CommentResponseDto> findCommentsWithNicknameByPostIdx(@Param("postIdx") Long postIdx);
+
+    
 }
