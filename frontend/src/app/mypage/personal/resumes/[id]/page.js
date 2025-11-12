@@ -67,6 +67,7 @@ function mapDetailToForm(detail) {
   const personal = detail.personal || {};
   next.name = personal.name || '';
   next.gender = personal.gender || '';
+  next.birthdate = normalizeIsoDate(personal.birthdate || personal.birthDate) || '';
   next.phone = personal.phone || personal.phoneNumber || '';
   next.email = personal.email || '';
   next.address = personal.address || '';
@@ -159,11 +160,71 @@ export default function ResumeDetailPage() {
     };
   }, [id]);
 
-  const pdfData = useMemo(() => ({
-    ...formData,
-    resume_status: status,
-    resume_title: title,
-  }), [formData, status, title]);
+  // 백엔드 API를 통해 이미지를 base64로 변환하는 함수
+  const convertImageToBase64 = async (url) => {
+    try {
+      const response = await fetch(`/api/resume/image/base64?url=${encodeURIComponent(url)}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) {
+        console.error('[PDF] 이미지 base64 변환 API 실패:', response.status, response.statusText);
+        return null;
+      }
+      const data = await response.json();
+      return data.base64 || null;
+    } catch (error) {
+      console.error('[PDF] 이미지 변환 실패:', error);
+      return null;
+    }
+  };
+
+  const [imageBase64, setImageBase64] = useState(null);
+  const [imageLoading, setImageLoading] = useState(false);
+
+  // 이미지를 미리 base64로 변환
+  useEffect(() => {
+    if (previewImage) {
+      setImageLoading(true);
+      convertImageToBase64(previewImage)
+        .then((base64) => {
+          if (base64) {
+            console.log('[PDF] 이미지 base64 변환 성공');
+            setImageBase64(base64);
+          } else {
+            console.log('[PDF] 이미지 base64 변환 실패');
+            setImageBase64(null);
+          }
+          setImageLoading(false);
+        })
+        .catch((error) => {
+          console.error('[PDF] 이미지 변환 중 오류:', error);
+          setImageBase64(null);
+          setImageLoading(false);
+        });
+    } else {
+      setImageBase64(null);
+      setImageLoading(false);
+    }
+  }, [previewImage]);
+
+  const pdfData = useMemo(() => {
+    const data = {
+      ...formData,
+      resume_status: status,
+      resume_title: title,
+      imageUrl: imageBase64 || previewImage, // base64가 있으면 사용, 없으면 원본 URL
+    };
+    // 디버깅: 이미지 URL 확인
+    if (previewImage) {
+      console.log('[PDF] 이미지 URL:', previewImage);
+      console.log('[PDF] base64 변환 여부:', imageBase64 ? '성공' : '실패 또는 진행 중');
+    } else {
+      console.log('[PDF] 이미지 URL 없음');
+    }
+    return data;
+  }, [formData, status, title, previewImage, imageBase64]);
 
   if (!id) {
   return (
@@ -201,8 +262,8 @@ export default function ResumeDetailPage() {
           </Button>
           <PDFDownloadLink document={<ResumePdfDocument formData={pdfData} />} fileName={`${formData.name || 'resume'}_${title || id}.pdf`}>
             {({ loading: generating }) => (
-              <Button variant="outlined" disabled={generating}>
-                {generating ? 'PDF 생성 중...' : 'PDF 다운로드'}
+              <Button variant="outlined" disabled={generating || imageLoading}>
+                {generating ? 'PDF 생성 중...' : imageLoading ? '이미지 로딩 중...' : 'PDF 다운로드'}
               </Button>
             )}
           </PDFDownloadLink>

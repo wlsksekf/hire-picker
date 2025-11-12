@@ -254,7 +254,7 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
           onChange={handleInputChange} // 입력 이벤트
           onKeyPress={handleKeyPress} // 엔터 이벤트
           InputProps={{
-            sx: { borderRadius: "50px", p: "8px 16px", fontSize: "1.1rem" },
+            sx: { borderRadius: "50px", p: "8px 16px", fontSize: "1.1rem", height: "40px" },
             endAdornment: (
               <IconButton onClick={handleSearch}>
                 {" "}

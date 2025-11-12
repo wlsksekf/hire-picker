@@ -9,11 +9,14 @@ import com.hirepicker.entity.payment.PersonalUserCredit;
 import com.hirepicker.entity.UserType;
 import com.hirepicker.entity.payment.Payment;
 import com.hirepicker.entity.payment.PaymentStatus;
+import com.hirepicker.entity.payment.CreditTransaction;
+import com.hirepicker.entity.payment.CreditTransactionStatus;
 import com.hirepicker.repository.payment.CompanyUserCreditRepository;
 import com.hirepicker.repository.CompanyUserRepository;
 import com.hirepicker.repository.payment.PersonalUserCreditRepository;
 import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.repository.payment.PaymentRepository;
+import com.hirepicker.repository.payment.CreditTransactionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +46,7 @@ public class TossPaymentServiceImpl implements TossPaymentService {
     private final CompanyUserRepository companyUserRepository;
     private final PersonalUserCreditRepository personalUserCreditRepository;
     private final CompanyUserCreditRepository companyUserCreditRepository;
+    private final CreditTransactionRepository creditTransactionRepository;
     private final WebClient tossWebClient;
 
     @Value("${api.payment.toss.client-key}")
@@ -162,6 +166,11 @@ public class TossPaymentServiceImpl implements TossPaymentService {
         payment.setStatus(PaymentStatus.DONE);
         payment.setPaymentKey((String) responseMap.get("paymentKey"));
         payment.setPaymentMethod((String) responseMap.get("method"));
+        
+        // payment 저장 (영속 상태 유지)
+        paymentRepository.save(payment);
+        log.info("[TossPaymentService] Payment 저장 완료. paymentId: {}, amount: {}, chargedCredits: {}", 
+                payment.getId(), payment.getAmount(), payment.getChargedCredits());
 
         // String approvedAtStr = (String) responseMap.get("approvedAt");
         // if (approvedAtStr != null) {
@@ -173,11 +182,41 @@ public class TossPaymentServiceImpl implements TossPaymentService {
                     .orElseThrow(() -> new EntityNotFoundException("Credit info not found for personal user"));
             credit.setBalance(credit.getBalance() + payment.getChargedCredits());
             credit.setUpdatedAt(LocalDateTime.now());
+            
+            // CreditTransaction 생성 (결제 내역 기록)
+            CreditTransaction transaction = CreditTransaction.builder()
+                    .personalUser(payment.getPersonalUser())
+                    .payment(payment)
+                    .amount(payment.getChargedCredits())
+                    .currency("KRW")
+                    .transactionType("CREDIT_TOPUP")
+                    .status(CreditTransactionStatus.COMPLETED)
+                    .description("크레딧 충전: " + payment.getChargedCredits() + " 크레딧")
+                    .build();
+            CreditTransaction savedTransaction = creditTransactionRepository.save(transaction);
+            log.info("[TossPaymentService] CreditTransaction 생성 완료. transactionId: {}, paymentId: {}, amount: {}", 
+                    savedTransaction.getId(), savedTransaction.getPayment() != null ? savedTransaction.getPayment().getId() : "null", 
+                    savedTransaction.getAmount());
         } else if (payment.getCompanyUser() != null) {
             CompanyUserCredit credit = companyUserCreditRepository.findById(payment.getCompanyUser().getId())
                     .orElseThrow(() -> new EntityNotFoundException("Credit info not found for company user"));
             credit.setBalance(credit.getBalance() + payment.getChargedCredits());
             credit.setUpdatedAt(LocalDateTime.now());
+            
+            // CreditTransaction 생성 (결제 내역 기록)
+            CreditTransaction transaction = CreditTransaction.builder()
+                    .companyUser(payment.getCompanyUser())
+                    .payment(payment)
+                    .amount(payment.getChargedCredits())
+                    .currency("KRW")
+                    .transactionType("CREDIT_TOPUP")
+                    .status(CreditTransactionStatus.COMPLETED)
+                    .description("크레딧 충전: " + payment.getChargedCredits() + " 크레딧")
+                    .build();
+            CreditTransaction savedTransaction = creditTransactionRepository.save(transaction);
+            log.info("[TossPaymentService] CreditTransaction 생성 완료. transactionId: {}, paymentId: {}, amount: {}", 
+                    savedTransaction.getId(), savedTransaction.getPayment() != null ? savedTransaction.getPayment().getId() : "null", 
+                    savedTransaction.getAmount());
         }
     }
 

@@ -68,10 +68,8 @@ export default function PaymentsOverviewTab() {
     return new Intl.NumberFormat('ko-KR').format(num);
   };
 
-  // 크레딧을 원화로 변환 (1 크레딧 = 100원 가정)
-  const creditsToWon = (credits) => {
-    return credits * 100;
-  };
+  // 백엔드에서 이미 원화 단위로 반환하므로 변환 불필요
+  // (주석 처리: 이전에는 크레딧 단위였지만, 현재는 Payment.amount를 직접 사용)
 
   if (loading) {
     return (
@@ -117,7 +115,7 @@ export default function PaymentsOverviewTab() {
     },
     {
       title: '총 수익',
-      value: `₩ ${formatNumber(creditsToWon(summaryCards?.totalRevenue || 0))}`,
+      value: `₩ ${formatNumber(summaryCards?.totalRevenue || 0)}`,
       icon: <AccountBalanceWalletIcon />,
       gradient: `linear-gradient(135deg, rgba(34,211,168,0.18) 0%, #ffffff 90%)`,
     },
@@ -261,7 +259,7 @@ export default function PaymentsOverviewTab() {
                     이번 달 결제 총액
                   </Typography>
                   <Typography variant="h4" fontWeight={800} mt={0.5} color="#0f172a">
-                    ₩ {formatNumber(creditsToWon(currentMonth?.totalAmount || 0))}
+                    ₩ {formatNumber(currentMonth?.totalAmount || 0)}
                   </Typography>
                   <Chip
                     label={`${monthGrowth >= 0 ? '+' : ''}${monthGrowth}% vs 지난달`}
@@ -408,7 +406,7 @@ export default function PaymentsOverviewTab() {
                           {stat.typeLabel}
                         </Typography>
                         <Typography variant="body2" fontWeight={700} color="#111827">
-                          {formatNumber(stat.totalAmount)} 크레딧
+                          ₩ {formatNumber(stat.totalAmount)}
                         </Typography>
                       </Stack>
                       <LinearProgress

@@ -5,6 +5,7 @@ import com.hirepicker.dto.ResumeResponseDto;
 import com.hirepicker.dto.ResumeTemplateDto; // 자동채움 응답 DTO
 import com.hirepicker.config.security.CustomUserDetails; // 인증 사용자 주입
 import com.hirepicker.service.ResumeService;
+import com.hirepicker.service.S3UploadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -21,9 +22,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +40,7 @@ import java.util.Map;
 public class ResumeController {
 
     private final ResumeService resumeService;
+    private final S3UploadService s3UploadService;
 
     @Operation(summary = "이력서 저장", description = "새로운 이력서를 데이터베이스에 저장합니다.")
     @ApiResponses(value = {
@@ -115,5 +119,24 @@ public class ResumeController {
         // 사용자 id 기반으로 자동채움 데이터 조회
         ResumeTemplateDto body = resumeService.getResumeTemplate(userDetails.getId());
         return ResponseEntity.ok(body);
+    }
+
+    @Operation(summary = "이미지 base64 변환", description = "S3 이미지 URL을 base64로 변환하여 반환합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "변환 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+        @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    @GetMapping("/resume/image/base64")
+    public ResponseEntity<Map<String, String>> getImageAsBase64(@RequestParam("url") String imageUrl) {
+        try {
+            String base64 = s3UploadService.getImageAsBase64(imageUrl);
+            Map<String, String> response = new HashMap<>();
+            response.put("base64", base64);
+            return ResponseEntity.ok(response);
+        } catch (IOException e) {
+            log.error("이미지 base64 변환 실패: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).build();
+        }
     }
 }
