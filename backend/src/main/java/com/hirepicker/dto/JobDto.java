@@ -22,6 +22,8 @@ public record JobDto(
     String companyType,
     Map<String, List<String>> filters,
     String experience_level, // 학력
-    String jobType
+    String jobType,
+    Boolean internal, // 우리 사이트 공고 여부
+    String applyUrl // 외부 지원 링크
 
 ) {}

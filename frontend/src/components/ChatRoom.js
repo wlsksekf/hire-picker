@@ -27,12 +27,12 @@ function ChatRoom({ post, onClose }) {
 
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  
+
   // [2. useRef] stompClient 객체를 유지하기 위해 사용
   const clientRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  
+
 
   // [3. useEffect] - 방 입장 및 WebSocket 연결
   useEffect(function() {
@@ -41,9 +41,9 @@ function ChatRoom({ post, onClose }) {
     // --- STOMP 클라이언트 설정 ---
     const stompClient = new Client({
       brokerURL: "ws://localhost:8080/ws", // WebSocketConfig의 엔드포인트
-      
+
       // [4. 연결 성공 시 실행될 *이름있는* 함수]
-      onConnect: handleStompConnect, // 연결이 성공한다면 handleStompconnect 실행 
+      onConnect: handleStompConnect, // 연결이 성공한다면 handleStompconnect 실행
 
       onStompError: function(frame) {
         console.error('STOMP 에러:', frame);
@@ -62,7 +62,7 @@ function ChatRoom({ post, onClose }) {
         `/topic/room/${post.id}`, // RedisSubscriber가 메시지를 보낼 주소
         handleNewMessage // 메시지 수신 시 실행될 *이름있는* 함수
       );
-      
+
       // (선택) 입장 메시지 발행
       // handleSend("ENTER", "박재윤님이 입장했습니다.");
     }
@@ -70,7 +70,7 @@ function ChatRoom({ post, onClose }) {
     // [6. 메시지 수신 시 실행될 *이름있는* 함수]
     function handleNewMessage(message) {
       const receivedMessage = JSON.parse(message.body);
-      
+
       // 람다 대신 일반 함수 사용
       setMessages(function(prevMessages) {
         return [...prevMessages, receivedMessage];
@@ -81,9 +81,9 @@ function ChatRoom({ post, onClose }) {
     axios.get(`http://localhost:8080/chat/history/${post.id}`)
       .then(function(response) {
         // axios는 response.data에 JSON 데이터가 바로 들어있습니다.
-        
+
         // [성공] API로 불러온 과거 기록을 state에 세팅
-        setMessages(response.data); 
+        setMessages(response.data);
 
         // [7. 연결 활성화]
         stompClient.activate();
@@ -113,9 +113,9 @@ function ChatRoom({ post, onClose }) {
   // [10. 메시지 발송 함수]
   function handleSendMessage() {
     const stompClient = clientRef.current;
-    
+
     if (!stompClient || !stompClient.connected || newMessage.trim() === "") {
-      return; 
+      return;
     }
 
     const messageDto = {
@@ -155,7 +155,7 @@ function ChatRoom({ post, onClose }) {
         <Typography id="modal-title" variant="h6" component="h2">
           기업: {post.companyName}<br/>{post.title}
         </Typography>
-        
+
         <Paper elevation={2} sx={{ flexGrow: 1, my: 2, p: 2, overflowY: 'auto' }}>
           <Stack spacing={1}>
             {messages.map(function(msg, idx) { // 람다 대신 function
@@ -177,7 +177,7 @@ function ChatRoom({ post, onClose }) {
             <div ref={messagesEndRef} />
           </Stack>
         </Paper>
-        
+
         <Box sx={{ display: 'flex', gap: 1 }}>
           <TextField
             fullWidth
@@ -185,7 +185,7 @@ function ChatRoom({ post, onClose }) {
             value={newMessage}
             onChange={handleMessageChange} // [11] 핸들러 연결
             onKeyDown={handleEnter}       // [12] 핸들러 연결
-            placeholder="메시지 입력해라"
+            placeholder="메시지를 입력하세요"
           />
           <Button variant="contained" onClick={handleSendMessage}> {/* [10] 핸들러 연결 */}
             전송

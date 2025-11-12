@@ -17,13 +17,20 @@ import { useRouter } from 'next/navigation';
 function Header() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // 모바일 화면 여부 확인
-  const { isAuthenticated, isLoading, logout } = useAuthStore(); // isLoading 추가
+  const { isAuthenticated, isLoading, logout, user } = useAuthStore(); // isLoading 추가
   const router = useRouter();
 
   const handleLogout = () => {
     logout();
+    window.location.reload();
     router.push('/');
   };
+
+  // 헤더에서 회원 유형별 마이페이지 기본 경로를 설정한다.
+  const mypagePath =
+    user?.userType?.toLowerCase() === 'company'
+      ? '/mypage/company/edit-info'
+      : '/mypage/personal/edit-profile';
 
   // 메인 메뉴 항목
   const mainNavItems = [
@@ -160,7 +167,7 @@ function Header() {
               >
                 로그아웃
               </Button>
-              <Link href="/mypage" passHref style={{ textDecoration: 'none' }}>
+              <Link href={mypagePath} passHref style={{ textDecoration: 'none' }}>
                 <Button
                   variant="text"
                   sx={{

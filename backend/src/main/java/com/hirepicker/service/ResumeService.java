@@ -81,15 +81,19 @@ public class ResumeService {
                 .findByPersonalUserOrderByGraduationDateDesc(userId)
                 .stream()
                 .map(a -> {
-                    String schoolName = schoolRepository.findById(a.getSchool())
-                            .map(School::getSchoolName)
-                            .orElse(null);
+                    // 학교 엔티티를 조회해 학교명/캠퍼스 정보를 조합
+                    School school = schoolRepository.findById(a.getSchool()).orElse(null);
+                    String schoolName = school != null ? school.getSchoolName() : null;
+                    String campus = school != null ? school.getCampus() : null;
                     return new AcademicAbilityViewDto(
                             a.getSchool(),
                             schoolName,
+                            campus,
                             a.getDegree(),
                             a.getMajor(),
-                            a.getMajorScore()
+                            a.getMajorScore(),
+                            a.getAdmissionDate(),
+                            a.getGraduationDate()
                     );
                 }).toList();
 
@@ -115,7 +119,8 @@ public class ResumeService {
                         m.getServiceType(),
                         m.getMilitaryBranch(),
                         m.getMilitaryRank(),
-                        m.getPeriodOfService(),
+                        m.getEnlistmentDate(),
+                        m.getDischargeDate(),
                         m.getReasonForExemption()
                 ))
                 .orElse(null);
@@ -152,7 +157,8 @@ public class ResumeService {
                             .orElse(null);
                     return new ResumeDetailDto.Academic(
                             schoolName,
-                            a.getDegree(), a.getMajor(), a.getMajorScore(), a.getGraduationDate()
+                            a.getDegree(), a.getMajor(), a.getMajorScore(),
+                            a.getAdmissionDate(), a.getGraduationDate()
                     );
                 }).toList();
 
@@ -169,7 +175,7 @@ public class ResumeService {
         var militaryOpt = militaryServiceRepository.findTopByPersonalUserIdOrderByIdDesc(user.getId());
         ResumeDetailDto.Military military = militaryOpt.map(m -> new ResumeDetailDto.Military(
                 m.getServiceType(), m.getMilitaryBranch(), m.getMilitaryRank(),
-                m.getPeriodOfService(), m.getReasonForExemption()
+                m.getEnlistmentDate(), m.getDischargeDate(), m.getReasonForExemption()
         )).orElse(null);
 
         return ResumeDetailDto.builder()
@@ -235,6 +241,7 @@ public class ResumeService {
                 .degree(dto.getDegree())
                 .major(dto.getMajor())
                 .majorScore(dto.getMajorScore())
+                .admissionDate(dto.getAdmissionDate())
                 .graduationDate(dto.getGraduationDate())
                 .build();
     }
@@ -260,12 +267,14 @@ public class ResumeService {
                 .serviceType(dto.getServiceType())
                 .militaryBranch(dto.getMilitaryBranch())
                 .militaryRank(dto.getMilitaryRank())
-                .periodOfService(dto.getPeriodOfService())
+                .enlistmentDate(dto.getEnlistmentDate())
+                .dischargeDate(dto.getDischargeDate())
                 .reasonForExemption(dto.getReasonForExemption())
                 .build();
     }
 
     // 리플렉션 안전 헬퍼 (더 이상 사용되지 않음)
+    @SuppressWarnings("unused") // 과거 호환성 유지용 메서드
     private static void setField(Object target, String fieldName, Object value) throws Exception {
         // 이 메서드는 더 이상 사용되지 않으므로 비워둡니다.
     }

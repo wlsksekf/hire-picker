@@ -28,23 +28,27 @@ public class AcademicAbility {
     @Column(name = "degree", nullable = false, length = 10)
     private String degree; // 학위(고졸/학사/석사/박사)
 
-    @Column(name = "major", nullable = false, length = 100)
+    @Column(name = "major", nullable = true, length = 100)
     private String major; // 전공
 
-    @Column(name = "major_score", precision = 2, scale = 1, nullable = false)
+    @Column(name = "major_score", precision = 2, scale = 1, nullable = true)
     private java.math.BigDecimal majorScore; // 전공 점수(2,1)
+
+    @Column(name = "admission_date")
+    private LocalDate admissionDate; // 입학일
 
     @Column(name = "graduation_date")
     private LocalDate graduationDate; // 졸업일
 
     @Builder
     public AcademicAbility(Long personalUser, Long school, String degree, String major,
-                           java.math.BigDecimal majorScore, LocalDate graduationDate) {
+                           java.math.BigDecimal majorScore, LocalDate admissionDate, LocalDate graduationDate) {
         this.personalUser = personalUser;
         this.school = school;
         this.degree = degree;
         this.major = major;
         this.majorScore = majorScore;
+        this.admissionDate = admissionDate;
         this.graduationDate = graduationDate;
     }
 }

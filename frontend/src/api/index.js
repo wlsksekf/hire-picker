@@ -14,27 +14,24 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const originalRequest = error.config;
-    console.log('Axios Interceptor: Received error', error.response.status, originalRequest.url);
     // 401 에러이고, 이미 재시도한 요청이 아니며, 로그인/회원가입/토큰 갱신 요청이 아닌 경우
     if (error.response.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/api/auth/') && !originalRequest.url.includes('/api/users/my-profile')) {
       originalRequest._retry = true; // 재시도 플래그 설정
       console.log('Axios Interceptor: Attempting token refresh for', originalRequest.url);
 
       // Promise 체이닝 방식으로 변경
-      return api.post('/api/auth/refresh').then(() => {
-        console.log('Axios Interceptor: Token refresh successful.');
+      return api.post('/api/auth/refresh').then((refreshResponse) => {
+        console.log('Axios Interceptor: Token refresh successful.', refreshResponse.status);
+        console.log('Axios Interceptor: Response headers:', refreshResponse.headers);
 
-        // 토큰 갱신 성공 후, authStore의 인증 상태를 다시 초기화하여 user 정보를 가져옴
-        useAuthStore.getState().initializeAuth();
-
-        // 원래 요청을 재시도하는 대신, initializeAuth가 처리하도록 함
-        return Promise.resolve({ status: 200, data: { message: 'Token refreshed, re-initializing auth.' } }); // 임시 응답 반환
+        // 원래 요청을 재시도 (initializeAuth는 나중에)
+        console.log('Axios Interceptor: Retrying original request:', originalRequest.url);
+        return api(originalRequest); // 원래 요청 재시도
       }).catch((refreshError) => {
-        // 리프레시 토큰 갱신 실패 시 (예: 리프레시 토큰 만료)
-        console.log('Axios Interceptor: Token refresh failed (expected in logged-out state).');
+        // 리프레시 토큰 갱신 실패 시
+        console.error('Axios Interceptor: Token refresh failed.', refreshError.response?.status);
 
-        // 로그아웃 처리
-        useAuthStore.getState().logout();
+        // 로그아웃시키지 말고 그냥 에러만 반환
         return Promise.reject(refreshError);
       });
     }
@@ -89,6 +86,8 @@ export const signupCompany = (signupData) => {
     return api.post('/api/auth/signup/company', signupData);
 };
 
+export const loginManage = (payload) => api.post('/api/manage/auth/login', payload);
+
 
 // `api` 변수를 기본 내보내기로 설정
 export { api };
@@ -120,6 +119,50 @@ export const getCreditBalance = () => {
       console.error('크레딧 잔액 조회 실패:', error);
       return 0;
     });
+};
+
+/**
+ * [크레딧 기능 추가] 상점에서 사용할 크레딧 상품 목록 + 잔액을 동시 제공
+ * 프론트 카드/결제 페이지가 동일 정보를 활용하도록 정적 상품 목록을 제공하고,
+ * 잔액은 실제 API에서 조회한다.
+ */
+export const getCreditProducts = () => {
+  const products = [
+    {
+      id: 'CREDIT_10K',
+      badge: 'NEW',
+      title: '스타터 코인팩',
+      description: '입문자를 위한 기본 충전',
+      credits: 10000,
+      price: 10000,
+      accent: '#1c63ff',
+      imageVariant: 'single',
+    },
+    {
+      id: 'CREDIT_50K',
+      badge: 'BEST',
+      title: '프로 코인팩',
+      description: '10% 혜택으로 넉넉하게',
+      credits: 50000,
+      price: 45000,
+      accent: '#4f6bff',
+      imageVariant: 'stack',
+    },
+    {
+      id: 'CREDIT_100K',
+      badge: 'HOT',
+      title: '언리미티드 코인팩',
+      description: '가장 많이 찾는 할인 구성',
+      credits: 100000,
+      price: 70000,
+      accent: '#2b4edb',
+      imageVariant: 'bundle',
+    },
+  ];
+
+  return getCreditBalance()
+    .then(balance => ({ products, balance }))
+    .catch(() => ({ products, balance: 0 }));
 };
 
 /**
@@ -205,6 +248,7 @@ export function updateUserProfile(updateData) {
     });
 }
 
+
 // [마이페이지] 기본정보 확장 업데이트(이메일 제외)
 export function updateUserProfileDetails(updateData) {
   // 이름/성별/전화/주소/닉네임/비밀번호 등 확장 필드
@@ -227,6 +271,13 @@ export function searchSchools(query) {
     .then(res => res.data);
 }
 
+// [검색] 정확히 일치하는 학교 찾기
+export function findExactSchool(name) {
+  return api.get('/api/schools/find', { params: { name } })
+    .then(res => res.data)
+    .catch(() => null); // 없으면 null 반환
+}
+
 // [마이페이지] 경력 조회/저장
 export function getExperiences() {
   return api.get('/api/users/experiences').then(res => res.data);
@@ -243,6 +294,41 @@ export function saveMilitary(military) {
   return api.put('/api/users/military', military).then(res => res.data);
 }
 
+// [마이페이지] 자격증 조회/저장
+export function getCertifications() {
+  return api
+    .get('/api/users/certifications')
+    .then(res => {
+      const data = res.data;
+      if (Array.isArray(data)) {
+        return data;
+      }
+      if (Array.isArray(data?.certifications)) {
+        return data.certifications;
+      }
+      if (Array.isArray(data?.data)) {
+        return data.data;
+      }
+      return [];
+    })
+    .catch(error => {
+      console.error('자격증 목록 조회 실패:', error);
+      return [];
+    });
+}
+export function saveCertifications({ resumeIdx = null, certifications = [] } = {}) {
+  const normalized = Array.isArray(certifications) ? certifications : [];
+  const payload = {
+    resume_idx: resumeIdx,
+    certifications: normalized.map(item => ({
+      cert_idx: item?.certIdx ?? item?.cert_idx ?? null,
+      cert_name: item?.certName ?? item?.cert_name ?? null,
+      score: item?.score ?? null,
+    })),
+  };
+  return api.put('/api/users/certifications', payload).then(res => res.data);
+}
+
 // [이력서] 수정
 export function updateResume(resumeId, payload) {
   return api.put(`/api/resume/${resumeId}`, payload).then(res => res.data);
@@ -250,15 +336,42 @@ export function updateResume(resumeId, payload) {
 
 // [이력서] 자격증 매핑 저장(이력서별)
 // - certIdxList를 알고 있으면 전달, 모르면 certNameList로 전달하면 백엔드가 마스터 생성/매핑 처리
-export function saveResumeCertifications(resumeIdx, { certIdxList = [], certNameList = [] } = {}) {
-  return api
-    .put('/api/users/certifications', { resumeIdx, certIdxList, certNameList })
-    .then(res => res.data);
+export function saveResumeCertifications(resumeIdx, { certifications = [] } = {}) {
+  const normalized = Array.isArray(certifications) ? certifications : [];
+  const payload = {
+    resume_idx: resumeIdx,
+    certifications: normalized.map(item => ({
+      cert_idx: item?.certIdx ?? item?.cert_idx ?? null,
+      cert_name: item?.certName ?? item?.cert_name ?? null,
+      score: item?.score ?? null,
+    })),
+  };
+  return api.put('/api/users/certifications', payload).then(res => res.data);
 }
 
 // [이력서] 자동채움 데이터(학력/경력/병역) 일괄 조회
 export function getResumeTemplate() {
   return api.get('/api/resumes/template').then(res => res.data);
+}
+
+/**
+ * [이력서] 로그인 사용자의 이력서 목록을 최신순으로 조회
+ * @returns {Promise<Array>} 이력서 목록
+ */
+export function getMyResumes() {
+  return api
+    .get('/api/resumes')
+    .then(res => {
+      const list = Array.isArray(res.data) ? res.data : [];
+      return list.map(item => ({
+        ...item,
+        creditCost: typeof item.creditCost === 'number' ? item.creditCost : 0,
+      }));
+    })
+    .catch(error => {
+      console.error('이력서 목록 조회 실패:', error);
+      return [];
+    });
 }
 
 // [이력서] 신규 생성 (multipart: resumeDto JSON + imageFile)
@@ -271,9 +384,24 @@ export function createResume(resumeDto, imageFile) {
     .then(res => res.data);
 }
 
+export function getResumeDetail(resumeId) {
+  return api.get(`/api/resume/${resumeId}`).then(res => res.data);
+}
+
+// [이력서] 삭제 처리
+export function deleteResume(resumeId) {
+  return api.delete(`/api/resume/${resumeId}`).then(res => res.data);
+}
+
+// [이력서] 공개 상태 변경
+export function updateResumeStatus(resumeId, status) {
+  return api.put(`/api/resume/${resumeId}`, { status }).then(res => res.data);
+}
+
 // [공통] 자격증 자동완성 검색
 export function searchCertifications(keyword) {
   if (!keyword || keyword.trim().length === 0) return Promise.resolve([]);
   return api.get('/api/certifications/search', { params: { keyword } })
     .then(res => Array.isArray(res.data) ? res.data : []);
 }
+

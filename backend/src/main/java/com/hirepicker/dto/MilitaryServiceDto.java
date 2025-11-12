@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 // 병역 DTO (간단 전달용)
 @Getter
 @NoArgsConstructor
@@ -27,9 +29,11 @@ public class MilitaryServiceDto {
     @Size(max = 10, message = "계급은 최대 10자까지 입력 가능합니다.")
     private String militaryRank;     // 계급
 
-    @Size(max = 20, message = "복무 기간은 최대 20자까지 입력 가능합니다.")
-    private String periodOfService;  // 복무 기간
+    private LocalDate enlistmentDate; // 입대일
+
+    private LocalDate dischargeDate;  // 전역일
 
     @Size(max = 20, message = "면제 사유는 최대 20자까지 입력 가능합니다.")
     private String reasonForExemption; // 면제 사유
 }
+

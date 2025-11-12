@@ -1,34 +1,152 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Container, Paper, Box, Typography, Divider, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import NextLink from 'next/link';
+import { Box, Button, CircularProgress, Typography } from '@mui/material';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import ResumeForm from '@/components/ResumeForm';
+import ResumePdfDocument from '@/components/ResumePdfDocument';
+import { createEmptyResumeForm } from '@/constants/resumeFormDefaults';
+
+function pad2(value = '') {
+  return value.toString().padStart(2, '0');
+}
+
+function normalizeIsoDate(dateStr) {
+  if (!dateStr) return '';
+  const trimmed = String(dateStr).trim();
+  if (!trimmed) return '';
+  const sanitized = trimmed.replace(/\./g, '-');
+  const match = sanitized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (!match) return '';
+  const [, year, month, day] = match;
+  return `${year}-${pad2(month)}-${pad2(day)}`;
+}
+
+function formatDisplayDate(dateStr) {
+  const iso = normalizeIsoDate(dateStr);
+  if (!iso) return '';
+  const [year, month, day] = iso.split('-');
+  return `${year}.${month}.${day}`;
+}
+
+function formatPeriod(startDate, endDate) {
+  const start = formatDisplayDate(startDate);
+  const end = formatDisplayDate(endDate);
+  if (!start && !end) return '';
+  const endLabel = end || '재직중';
+  if (!start) return endLabel;
+  return `${start} ~ ${endLabel}`;
+}
+
+function parseCertSummary(summary) {
+  if (!summary) return [];
+  return summary
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      const match = entry.match(/^(.*?)(?:\((.*?)\))?$/);
+      if (match) {
+        return { name: match[1].trim(), score: match[2] ? match[2].trim() : '' };
+      }
+      return { name: entry, score: '' };
+    });
+}
+
+function mapDetailToForm(detail) {
+  const next = createEmptyResumeForm();
+  next.title = detail.title || '';
+  next.selfGrowth = detail.selfGrowth || '';
+  next.selfStrengths = detail.selfStrengths || '';
+  next.selfMotivation = detail.selfMotivation || '';
+  next.selfAspirations = detail.selfAspirations || '';
+  next.cert = detail.cert || '';
+
+  const personal = detail.personal || {};
+  next.name = personal.name || '';
+  next.gender = personal.gender || '';
+  next.phone = personal.phone || personal.phoneNumber || '';
+  next.email = personal.email || '';
+  next.address = personal.address || '';
+
+  const academics = Array.isArray(detail.academics) ? detail.academics : [];
+  academics.slice(0, 2).forEach((item, index) => {
+    const idx = index + 1;
+    next[`edu${idx}_school`] = item.schoolName || '';
+    next[`edu${idx}_major`] = item.major || '';
+    next[`edu${idx}_status`] = item.degree || '';
+    next[`edu${idx}_score`] = item.majorScore != null ? String(item.majorScore) : '';
+    next[`edu${idx}_admission`] = normalizeIsoDate(item.admissionDate);
+    next[`edu${idx}_graduation`] = normalizeIsoDate(item.graduationDate);
+    next[`edu${idx}_period`] = formatPeriod(item.admissionDate, item.graduationDate);
+  });
+
+  const experiences = Array.isArray(detail.experiences) ? detail.experiences : [];
+  experiences.slice(0, 2).forEach((item, index) => {
+    const idx = index + 1;
+    next[`exp${idx}_company`] = item.companyName || '';
+    next[`exp${idx}_position`] = item.position || '';
+    next[`exp${idx}_duties`] = item.mainDuties || item.jobDescription || '';
+    next[`exp${idx}_type`] = item.department || '';
+    next[`exp${idx}_period`] = formatPeriod(item.hireDate, item.resignDate);
+    next[`exp${idx}_hire`] = normalizeIsoDate(item.hireDate);
+    next[`exp${idx}_resign`] = normalizeIsoDate(item.resignDate);
+  });
+
+  const military = detail.military || null;
+  if (military) {
+    next.military_status = military.serviceType || '';
+    next.military_branch = military.militaryBranch || '';
+    next.military_rank = military.militaryRank || '';
+    next.military_enlistment = normalizeIsoDate(military.enlistmentDate);
+    next.military_discharge = normalizeIsoDate(military.dischargeDate);
+    next.military_reason = military.reasonForExemption || '';
+    next.military_period = formatPeriod(military.enlistmentDate, military.dischargeDate);
+  }
+
+  const certs = parseCertSummary(detail.cert);
+  certs.slice(0, 3).forEach((item, index) => {
+    const idx = index + 1;
+    next[`cert${idx}_name`] = item.name;
+    next[`cert${idx}_score`] = item.score;
+  });
+
+  return next;
+}
 
 export default function ResumeDetailPage() {
   const params = useParams();
   const id = params?.id;
 
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState(() => createEmptyResumeForm());
+  const [previewImage, setPreviewImage] = useState(null);
+  const [status, setStatus] = useState('');
+  const [title, setTitle] = useState('');
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!id) return;
     let ignore = false;
     async function load() {
+      if (!id) return;
       setLoading(true);
       setError(null);
       try {
         const res = await fetch(`/api/resume/${id}`, {
           method: 'GET',
           credentials: 'include',
-          headers: { 'Accept': 'application/json' },
+          headers: { Accept: 'application/json' },
           cache: 'no-store',
         });
         if (!res.ok) throw new Error(`상세 조회 실패: ${res.status}`);
-        const json = await res.json();
-        if (!ignore) setData(json);
+        const detail = await res.json();
+        if (ignore) return;
+        setFormData(mapDetailToForm(detail));
+        setPreviewImage(detail.imageUrl || null);
+        setStatus(detail.status || '');
+        setTitle(detail.title || '');
       } catch (e) {
         if (!ignore) setError(e.message || '상세를 불러오지 못했습니다.');
       } finally {
@@ -36,202 +154,96 @@ export default function ResumeDetailPage() {
       }
     }
     load();
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, [id]);
 
+  const pdfData = useMemo(() => ({
+    ...formData,
+    resume_status: status,
+    resume_title: title,
+  }), [formData, status, title]);
+
+  if (!id) {
   return (
-    <Container maxWidth="lg">
-      <Paper sx={{ p: 3 }}>
-        {loading && <Typography>불러오는 중...</Typography>}
-        {error && <Typography color="error">{error}</Typography>}
-        {data && (
-          <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h5" sx={{ fontWeight: 'bold' }}>{data.title || '이력서'}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                최종 수정일: {data.modifiedDate ? new Date(data.modifiedDate).toISOString().slice(0,10) : '-'}
-              </Typography>
+      <Box sx={{ py: 6, textAlign: 'center' }}>
+        <Typography>유효하지 않은 이력서입니다.</Typography>
             </Box>
-            <Divider sx={{ mb: 2 }} />
+    );
+  }
 
-            {/* 이미지 */}
-            {data.imageUrl && (
-              <Box sx={{ mb: 3, textAlign: 'center' }}>
-                <img src={data.imageUrl} alt="프로필" style={{ maxWidth: 240, maxHeight: 240, objectFit: 'contain' }} />
-              </Box>
-            )}
-
-            {/* write_resume와 동일한 테이블/섹션 구성(읽기 전용) */}
-            <InfoTables data={data} />
-
-            {/* 기타 */}
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="subtitle2" color="text.secondary">공개 상태</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {data.status === 'PUBLIC' ? '공개' : data.status === 'PRIVATE' ? '비공개' : '-'}
-              </Typography>
-
-              <Typography variant="subtitle2" color="text.secondary">자격 요약</Typography>
-              <Typography variant="body1" whiteSpace="pre-line">{data.cert || '-'}</Typography>
+  if (loading) {
+    return (
+      <Box sx={{ py: 6, display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress />
             </Box>
-          </>
-        )}
-      </Paper>
-    </Container>
   );
 }
 
-function Section({ title, text }) {
-  if (!text) return null;
+  if (error) {
   return (
-    <Box sx={{ mb: 2 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 0.5 }}>{title}</Typography>
-      <Typography variant="body1" whiteSpace="pre-line">{text}</Typography>
+      <Box sx={{ py: 6, textAlign: 'center' }}>
+        <Typography color="error">{error}</Typography>
     </Box>
   );
 }
 
-// 스타일: write_resume와 유사한 라벨/입력 셀 스타일
-const StyledLabelCell = styled(TableCell)(({ theme }) => ({
-  backgroundColor: theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[800],
-  fontWeight: 'bold',
-  border: '1px solid #ccc',
-  textAlign: 'center',
-  width: '15%',
-}));
-
-const StyledValueCell = styled(TableCell)(() => ({
-  border: '1px solid #ccc',
-  padding: '4px 8px',
-}));
-
-function InfoTables({ data }) {
-  const p = data.personal || {};
-  const academics = Array.isArray(data.academics) ? data.academics : [];
-  const exps = Array.isArray(data.experiences) ? data.experiences : [];
-  const m = data.military || null;
-
   return (
-    <>
-      {/* 개인정보 */}
-      <Typography variant="h6" sx={{ mt: 1, mb: 1, fontWeight: 'bold' }}>[개인정보]</Typography>
-      <TableContainer sx={{ mb: 2 }}>
-        <Table size="small">
-          <TableBody>
-            <TableRow>
-              <StyledLabelCell>이름</StyledLabelCell>
-              <StyledValueCell width="35%">{p.name || '-'}</StyledValueCell>
-              <StyledLabelCell>성별</StyledLabelCell>
-              <StyledValueCell width="35%">{p.gender || '-'}</StyledValueCell>
-            </TableRow>
-            <TableRow>
-              <StyledLabelCell>전화</StyledLabelCell>
-              <StyledValueCell width="35%">{p.phone || '-'}</StyledValueCell>
-              <StyledLabelCell>E-mail</StyledLabelCell>
-              <StyledValueCell width="35%">{p.email || '-'}</StyledValueCell>
-            </TableRow>
-            <TableRow>
-              <StyledLabelCell>주소</StyledLabelCell>
-              <StyledValueCell colSpan={3}>{p.address || '-'}</StyledValueCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* 학력사항 */}
-      <Typography variant="h6" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>[학력사항]</Typography>
-      <TableContainer sx={{ mb: 2 }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <StyledLabelCell>학교</StyledLabelCell>
-              <StyledLabelCell>학위</StyledLabelCell>
-              <StyledLabelCell>전공</StyledLabelCell>
-              <StyledLabelCell>학점</StyledLabelCell>
-              <StyledLabelCell>졸업일</StyledLabelCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {academics.length === 0 && (
-              <TableRow>
-                <StyledValueCell colSpan={5}>학력 정보가 없습니다.</StyledValueCell>
-              </TableRow>
+    <Box sx={{ py: 4, maxWidth: 960, mx: 'auto' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+          {title || '이력서'}
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <Button component={NextLink} href={`/mypage/personal/resumes/${id}/edit`} variant="contained">
+            편집
+          </Button>
+          <PDFDownloadLink document={<ResumePdfDocument formData={pdfData} />} fileName={`${formData.name || 'resume'}_${title || id}.pdf`}>
+            {({ loading: generating }) => (
+              <Button variant="outlined" disabled={generating}>
+                {generating ? 'PDF 생성 중...' : 'PDF 다운로드'}
+              </Button>
             )}
-            {academics.map((a, idx) => (
-              <TableRow key={idx}>
-                <StyledValueCell>{a.schoolName || '-'}</StyledValueCell>
-                <StyledValueCell>{a.degree || '-'}</StyledValueCell>
-                <StyledValueCell>{a.major || '-'}</StyledValueCell>
-                <StyledValueCell>{a.majorScore ?? '-'}</StyledValueCell>
-                <StyledValueCell>{a.graduationDate || '-'}</StyledValueCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+          </PDFDownloadLink>
+        </Box>
+      </Box>
 
-      {/* 경력사항 */}
-      <Typography variant="h6" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>[경력사항]</Typography>
-      <TableContainer sx={{ mb: 2 }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <StyledLabelCell>회사</StyledLabelCell>
-              <StyledLabelCell>부서</StyledLabelCell>
-              <StyledLabelCell>직책</StyledLabelCell>
-              <StyledLabelCell>입사일</StyledLabelCell>
-              <StyledLabelCell>퇴사일</StyledLabelCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {exps.length === 0 && (
-              <TableRow>
-                <StyledValueCell colSpan={5}>경력 정보가 없습니다.</StyledValueCell>
-              </TableRow>
+      {status && (
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+          공개 상태: {status === 'PUBLIC' ? '공개' : status === 'PRIVATE' ? '비공개' : status}
+        </Typography>
             )}
-            {exps.map((w, idx) => (
-              <TableRow key={idx}>
-                <StyledValueCell>{w.companyName || '-'}</StyledValueCell>
-                <StyledValueCell>{w.department || '-'}</StyledValueCell>
-                <StyledValueCell>{w.position || '-'}</StyledValueCell>
-                <StyledValueCell>{w.hireDate || '-'}</StyledValueCell>
-                <StyledValueCell>{w.resignDate || '-'}</StyledValueCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
 
-      {/* 병역 */}
-      <Typography variant="h6" sx={{ mt: 2, mb: 1, fontWeight: 'bold' }}>[병역]</Typography>
-      <TableContainer sx={{ mb: 2 }}>
-        <Table size="small">
-          <TableBody>
-            <TableRow>
-              <StyledLabelCell>유형</StyledLabelCell>
-              <StyledValueCell>{m?.serviceType || '-'}</StyledValueCell>
-              <StyledLabelCell>병과</StyledLabelCell>
-              <StyledValueCell>{m?.militaryBranch || '-'}</StyledValueCell>
-            </TableRow>
-            <TableRow>
-              <StyledLabelCell>계급</StyledLabelCell>
-              <StyledValueCell>{m?.militaryRank || '-'}</StyledValueCell>
-              <StyledLabelCell>복무기간</StyledLabelCell>
-              <StyledValueCell>{m?.periodOfService || '-'}</StyledValueCell>
-            </TableRow>
-            <TableRow>
-              <StyledLabelCell>면제 사유</StyledLabelCell>
-              <StyledValueCell colSpan={3}>{m?.reasonForExemption || '-'}</StyledValueCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* 자기소개 섹션들 */}
-      <Section title="성장 배경" text={data.selfGrowth} />
-      <Section title="성격/강점" text={data.selfStrengths} />
-      <Section title="지원 동기" text={data.selfMotivation} />
-      <Section title="포부" text={data.selfAspirations} />
-    </>
+      <ResumeForm
+        formData={formData}
+        onChange={() => {}}
+        previewImage={previewImage}
+        onImageChange={() => {}}
+        isLoading={false}
+        onAiGenerate={() => {}}
+        onOpenAiDialog={() => {}}
+        onDownload={() => {}}
+        onSave={() => {}}
+        dialogOpen={false}
+        onDialogClose={() => {}}
+        onStartFresh={() => {}}
+        onRefine={() => {}}
+        confirmDialogOpen={false}
+        onConfirmDialogClose={() => {}}
+        onConfirmStartFresh={() => {}}
+        searchSchools={() => {}}
+        onSchoolSelect={() => {}}
+        schoolOptions1={[]}
+        schoolLoading1={false}
+        schoolOptions2={[]}
+        schoolLoading2={false}
+        availableExperiences={[]}
+        availableCertifications={[]}
+        onExperienceSelect={() => {}}
+        onCertificationSelect={() => {}}
+        readOnly
+      />
+    </Box>
   );
 }
