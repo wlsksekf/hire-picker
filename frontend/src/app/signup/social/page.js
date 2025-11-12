@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { TextField, Button, Container, Typography, Box, Alert, CircularProgress, MenuItem } from '@mui/material';
-import { Autocomplete } from '@react-google-maps/api';
+import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
 import { api } from '@/api';
 import useAuthStore from '@/store/authStore';
 import { StyledFormWrapper } from '@/components/StyledForm';
@@ -14,10 +14,17 @@ const genders = [
     { value: 'FEMALE', label: '여성' },
 ];
 
+const libraries = ['places'];
+
 // 소셜 로그인 후 추가 정보 입력 페이지
 export default function SocialSignupPage() {
     const router = useRouter();
     const { user, isAuthenticated } = useAuthStore();
+
+    const { isLoaded, loadError } = useJsApiLoader({
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+        libraries,
+    });
 
     const [formData, setFormData] = useState({
         nickname: '',
@@ -108,6 +115,31 @@ export default function SocialSignupPage() {
         );
     }
 
+    const renderAddressInput = () => {
+        if (loadError) {
+            return <TextField fullWidth disabled value="주소 검색을 사용할 수 없습니다." />;
+        }
+
+        if (!isLoaded) {
+            return <TextField fullWidth disabled value="주소 검색 로딩 중..." />;
+        }
+
+        return (
+            <Autocomplete
+                onLoad={handleAutocompleteLoad}
+                onPlaceChanged={handlePlaceChanged}
+            >
+                <TextField
+                    id="address"
+                    name="address"
+                    fullWidth
+                    value={formData.address}
+                    onChange={handleAddressChange}
+                />
+            </Autocomplete>
+        );
+    };
+
     return (
         <StyledFormWrapper>
             <div className="form-container">
@@ -174,18 +206,7 @@ export default function SocialSignupPage() {
 
                     <div className="input-group">
                         <label htmlFor="address">주소</label>
-                        <Autocomplete
-                            onLoad={handleAutocompleteLoad}
-                            onPlaceChanged={handlePlaceChanged}
-                        >
-                            <TextField
-                                id="address"
-                                name="address"
-                                fullWidth
-                                value={formData.address}
-                                onChange={handleAddressChange}
-                            />
-                        </Autocomplete>
+                        {renderAddressInput()}
                     </div>
 
                     <button type="submit" className="sign" disabled={loading}>

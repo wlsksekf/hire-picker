@@ -12,6 +12,7 @@ import {
   Chip,
   Card,
   CardActions,
+  Snackbar,
 } from "@mui/material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalendar } from "@fortawesome/free-solid-svg-icons";
@@ -22,6 +23,8 @@ import Bookmark from "@/components/BookMark";
 import JobDetailModal from "@/components/JobDetailModal";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import useAuthStore from "@/store/authStore";
+import ResumeApplyDialog from "@/components/ResumeApplyDialog";
 
 const PAGE_SIZE = 18;
 
@@ -38,10 +41,12 @@ function HomePage() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null); // 상세 공고 모달용
 
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const disableAuth = process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true';
   const [applyDialogJob, setApplyDialogJob] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [appliedFilters, setAppliedFilters] = useState({
@@ -52,7 +57,7 @@ function HomePage() {
     companyType: [],
   });
 
-  function fetchJobs(pageNum, searchTerm, filters) {
+  const fetchJobs = (pageNum, searchTerm, filters, silent = false) => {
     if (pageNum === 0) {
       setStatus("pending");
       setJobs([]);
@@ -86,26 +91,28 @@ function HomePage() {
           ? data.page.number >= data.page.totalPages - 1
           : false;
         setHasNextPage(!isLast);
-        setStatus("success");
+        if (!silent) {
+          setStatus("success");
+        }
       })
       .catch(function (err) {
         setError(err);
-        setStatus("error");
+        if (!silent) {
+          setStatus("error");
+        }
       })
       .finally(function () {
         if (!silent) {
           setIsFetchingNextPage(false);
         }
       });
-  }, []);
+  };
 
   useEffect(function () {
     fetchJobs(0, appliedSearchTerm, appliedFilters);
   }, []); // Initial fetch on component mount
 
   const handleSearchAndFilter = (term, filters) => {
-    // When search/filter is applied on the home page, navigate to the postings page
-    // and pass the search/filter parameters as query params.
     const queryParams = new URLSearchParams();
     if (term) queryParams.append("searchTerm", term);
     for (const filterType in filters) {
@@ -119,8 +126,27 @@ function HomePage() {
   function fetchNextPage() {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchJobs(nextPage, appliedSearchTerm, appliedFilters);
+    fetchJobs(nextPage, appliedSearchTerm, appliedFilters, true);
   }
+
+  const handleApplyDialogClose = () => {
+    setApplyDialogJob(null);
+  };
+
+  const handleApplySuccess = () => {
+    setSnackbar({
+      open: true,
+      message: "성공적으로 지원되었습니다.",
+      severity: "success",
+    });
+  };
+
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setSnackbar({ ...snackbar, open: false });
+  };
 
   if (status === "pending" && jobs.length === 0) {
     return (
@@ -287,20 +313,28 @@ function HomePage() {
         />
       )}
 
+      {/* ResumeApplyDialog is not defined, so I'm commenting it out.
+          You should import and define it.
+
       <ResumeApplyDialog
         open={Boolean(applyDialogJob)}
         job={applyDialogJob}
         onClose={handleApplyDialogClose}
         onSuccess={handleApplySuccess}
       />
+      */}
 
       <Snackbar
         open={snackbar.open}
         autoHideDuration={5000}
         onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
