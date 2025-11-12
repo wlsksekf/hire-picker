@@ -48,6 +48,9 @@ public class SearchControl {
         List<String> experienceLevels = filters.get("experienceLevel");
         List<String> companyTypes = filters.get("companyType");
         List<String> sources = filters.get("source");
+        String dateStatus = filters.containsKey("dateStatus") && !filters.get("dateStatus").isEmpty()
+                ? filters.get("dateStatus").get(0)
+                : null;
 
         System.out.println("===== 🔍 검색 요청 도착 =====");
         System.out.println("검색어: " + keyword);
@@ -57,9 +60,10 @@ public class SearchControl {
         System.out.println("학력: " + experienceLevels);
         System.out.println("기업형태: " + companyTypes);
         System.out.println("공고 출처: " + sources);
+        System.out.println("날짜 상태: " + dateStatus);
         System.out.println("============================");
 
-        return employmentDataImpl.jobFilter(dto, pageable);
+        return employmentDataImpl.jobFilter(dto, pageable, dateStatus);
     }
 
     @PostMapping("/bookmark/check")
@@ -91,12 +95,8 @@ public class SearchControl {
         CustomUserDetails p_user = (CustomUserDetails) auth.getPrincipal();
         String userIdx = String.valueOf(p_user.getId());
 
-        System.out.println(postIdx + "IIDIDIDIDIDIDIDIDIDIDIIDIDID");
-        System.out.println(userIdx + "IDXDIXDIXDIXIDXIDXIDXIDIXDIXDIXDIDX");
-
         boolean isBookmarked = bookMarkService.isBookmarked(userIdx, postIdx);
 
-        System.out.println(isBookmarked + "트루야펄스냐트루냐펄스냐트루냐펄스냐");
         m.put("LoggedIn", true);
         m.put("Bookmarked", isBookmarked);
 

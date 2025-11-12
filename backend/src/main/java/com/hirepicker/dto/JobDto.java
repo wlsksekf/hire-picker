@@ -31,7 +31,6 @@ public record JobDto(
         String required_qualifications,
         String preferred_qualifications,
         String experienceLevel,
-        String salaryInfo
-
-) {
+        String salaryInfo,
+        String status) {
 }

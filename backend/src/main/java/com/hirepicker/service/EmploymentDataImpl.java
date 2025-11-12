@@ -1,5 +1,6 @@
 package com.hirepicker.service;
 
+import java.time.LocalDate; // LocalDate 임포트 추가
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +70,7 @@ public class EmploymentDataImpl implements EmploymentData {
                     .required_qualifications(job.getRequiredQualifications())
                     .preferred_qualifications(job.getPreferredQualifications())
                     .salaryInfo(job.getSalaryInfo())
+                    .status(job.getStatus() != null ? job.getStatus().name() : null) // status 필드 추가
                     .build();
 
             jobDtos.add(jobDto);
@@ -98,7 +100,8 @@ public class EmploymentDataImpl implements EmploymentData {
                 event.getEventCode(),
                 event.getEventName(),
                 event.getEventDuration(),
-                event.getArea());
+                event.getArea(),
+                event.getEventStatus()); // eventStatus 필드 추가
     }
 
     // 기업 목록 조회
@@ -152,9 +155,10 @@ public class EmploymentDataImpl implements EmploymentData {
                 company.getWelfareBenefits()); // welfare_benefits
     }
 
-    public Page<JobDto> jobFilter(SearchFilterDTO dto, Pageable pageable) {
+    public Page<JobDto> jobFilter(SearchFilterDTO dto, Pageable pageable, String dateStatus) {
         Specification<JobPosting> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            LocalDate currentDate = LocalDate.now();
 
             Map<String, List<String>> filters = dto.getFilters() == null
                     ? java.util.Collections.emptyMap()
@@ -245,6 +249,21 @@ public class EmploymentDataImpl implements EmploymentData {
                     predicates.add(cb.and(
                             cb.isNotNull(root.get("country")),
                             cb.notEqual(cb.lower(root.get("country")), "south korea")));
+                }
+            }
+
+            // 📅 날짜 상태 필터링 (dateStatus)
+            if (dateStatus != null && !dateStatus.isEmpty()) {
+                if ("available".equalsIgnoreCase(dateStatus)) {
+                    // 가능 공고: end_date가 null이거나 현재 날짜보다 크거나 같은 경우
+                    predicates.add(cb.or(
+                            cb.isNull(root.get("endDate")),
+                            cb.greaterThanOrEqualTo(root.get("endDate"), currentDate)));
+                } else if ("past".equalsIgnoreCase(dateStatus)) {
+                    // 지난 공고: end_date가 현재 날짜보다 작은 경우 (null은 제외)
+                    predicates.add(cb.and(
+                            cb.isNotNull(root.get("endDate")),
+                            cb.lessThan(root.get("endDate"), currentDate)));
                 }
             }
 

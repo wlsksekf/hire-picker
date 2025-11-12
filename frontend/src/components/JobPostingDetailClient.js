@@ -190,7 +190,7 @@ function JobPostingDetailClient({ posting_idx }) {
                 />
               )}
               <Stack direction="row" spacing={1}>
-                <Bookmark jobId={jobPosting.id} />
+                <Bookmark jobId={jobPosting.postingIdx} />
                 <Button
                   variant="contained"
                   color="primary"

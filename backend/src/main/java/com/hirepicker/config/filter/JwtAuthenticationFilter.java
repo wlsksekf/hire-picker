@@ -1,12 +1,8 @@
 package com.hirepicker.config.filter;
 
-import com.hirepicker.config.jwt.JwtTokenProvider;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.util.List;
+
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,8 +10,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException;
-import java.util.List;
+import com.hirepicker.config.jwt.JwtTokenProvider;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component // Spring Bean으로 등록
 @RequiredArgsConstructor
@@ -27,13 +29,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider; // JWT 토큰 제공자
 
-@Override
-protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-    String path = request.getRequestURI();
-    String method = request.getMethod();
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
 
         // 1. permitAll()로 설정된 경로 리스트
-        //    주의: "/api/auth/**"는 "/api/auth/"로 시작하는지 검사해야 함
+        // 주의: "/api/auth/**"는 "/api/auth/"로 시작하는지 검사해야 함
         List<String> permitAllPaths = List.of(
                 "/api/users/signup",
                 "/api/oauth2/", // /api/oauth2/**
@@ -42,7 +44,6 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
                 "/api/work24/", // /api/work24/**
                 "/actuator/", // /actuator/**
                 "/api/health/", // /api/health/**
-                "/api/manage/", // /api/manage/**
                 "/confirm/", // /confirm/**
                 "/confirm-billing",
                 "/issue-billing-key",
@@ -56,43 +57,42 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
                 "/ws", // /ws, /ws/**
                 "/api/ai/upload-image",
                 "/api/search"
-                
 
         );
 
-    // ★ GET /api/posts와 /api/posts/{postIdx}는 필터 미적용 (비회원 조회 가능)
-    if (method.equals("GET") && (path.equals("/api/posts") || path.matches("/api/posts/\\d+"))) {
-        return true; // 필터 미적용
-    }
-
-    // ★ /api/posts/me는 필터를 적용해야 함 (인증 정보 필요) - 반환값: false
-    if (path.equals("/api/posts/me")) {
-        return false; // 필터 실행
-    }
-
-    // ★ POST /api/posts/write는 필터를 적용해야 함 (인증 필요)
-    if (method.equals("POST") && path.equals("/api/posts/write")) {
-        return false; // 필터 실행
-    }
-
-    // ★ GET /api/companies/search는 필터 미적용 (공개 검색)
-    if (method.equals("GET") && path.equals("/api/companies/search")) {
-        return true; // 필터 미적용
-    }
-
-    for (String permitPath : permitAllPaths) {
-        if (path.startsWith(permitPath)) {
-            return true;
+        // ★ GET /api/posts와 /api/posts/{postIdx}는 필터 미적용 (비회원 조회 가능)
+        if (method.equals("GET") && (path.equals("/api/posts") || path.matches("/api/posts/\\d+"))) {
+            return true; // 필터 미적용
         }
+
+        // ★ /api/posts/me는 필터를 적용해야 함 (인증 정보 필요) - 반환값: false
+        if (path.equals("/api/posts/me")) {
+            return false; // 필터 실행
+        }
+
+        // ★ POST /api/posts/write는 필터를 적용해야 함 (인증 필요)
+        if (method.equals("POST") && path.equals("/api/posts/write")) {
+            return false; // 필터 실행
+        }
+
+        // ★ GET /api/companies/search는 필터 미적용 (공개 검색)
+        if (method.equals("GET") && path.equals("/api/companies/search")) {
+            return true; // 필터 미적용
+        }
+
+        for (String permitPath : permitAllPaths) {
+            if (path.startsWith(permitPath)) {
+                return true;
+            }
+        }
+
+        return false;
     }
-
-    return false;
-}
-
 
     // 실제 필터링 로직
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
         log.info("[Filter] JwtAuthenticationFilter is running for URI: {}", request.getRequestURI());
         String jwt = resolveToken(request); // 요청에서 토큰 추출
 
@@ -102,7 +102,8 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
             Authentication authentication = jwtTokenProvider.getAuthentication(jwt); // 인증 정보 조회
 
             // ★ [디버깅용] 토큰 클레임 정보 로그 출력
-            log.info("[Filter] Authenticated user: Principal: {}, Authorities: {}", authentication.getPrincipal(), authentication.getAuthorities());
+            log.info("[Filter] Authenticated user: Principal: {}, Authorities: {}", authentication.getPrincipal(),
+                    authentication.getAuthorities());
 
             SecurityContextHolder.getContext().setAuthentication(authentication); // SecurityContext에 인증 정보 저장
         } else {
@@ -119,7 +120,6 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
             return bearerToken.substring(BEARER_PREFIX.length());
         }
-
 
         // 2. 쿠키에서 accessToken 추출 시도
         jakarta.servlet.http.Cookie[] cookies = request.getCookies();

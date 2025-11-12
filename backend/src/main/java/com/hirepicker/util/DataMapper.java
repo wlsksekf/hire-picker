@@ -35,7 +35,9 @@ public class DataMapper {
                 null, // preferred_qualifications
                 null, // experienceLevel
                 null, // salaryInfo
-                null // salaryInfo
+                null, // salaryInfo
+                "OPEN" // status
+
         );
     }
 
@@ -44,7 +46,7 @@ public class DataMapper {
         if (id == null || id.isBlank())
             return null; // Or throw an exception
         return new EventDto(id, XmlParser.getTagValue(e, "eventNm"), XmlParser.getTagValue(e, "eventTerm"),
-                XmlParser.getTagValue(e, "area"));
+                XmlParser.getTagValue(e, "area"), "OPEN"); // eventStatus 필드에 "OPEN" 전달
     }
 
     public static CompanyDto mapToCompanyDto(Element e) {

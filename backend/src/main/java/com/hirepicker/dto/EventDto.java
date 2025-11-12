@@ -8,5 +8,6 @@ public record EventDto(
     String id, // 행사 ID
     String title, // 행사명
     String period, // 행사 기간
-    String location // 행사 지역
+    String location, // 행사 지역
+    String eventStatus // 행사 상태 추가
 ) {}
