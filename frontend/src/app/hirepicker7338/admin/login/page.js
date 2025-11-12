@@ -12,6 +12,7 @@ import {
   Alert,
 } from '@mui/material';
 import useManageAuthStore from '../../../../store/manageAuthStore';
+import { MINT_PRIMARY, MINT_PRIMARY_DARK } from '../adminTheme';
 
 const AdminLoginPage = () => {
   const router = useRouter(); // 라우팅 처리를 위한 훅
@@ -44,7 +45,7 @@ const AdminLoginPage = () => {
       component="main"
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
+        backgroundColor: '#f5f6f8',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -52,31 +53,60 @@ const AdminLoginPage = () => {
       }}
     >
       <Stack spacing={4} alignItems="center" maxWidth={520} width="100%">
-        <Box textAlign="center" color="#fff">
-          <Typography variant="h3" fontWeight={700} gutterBottom>
+        <Box textAlign="center">
+          <Box
+            sx={{
+              width: 64,
+              height: 64,
+              borderRadius: 2.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: '#1f2937',
+              boxShadow: '0 14px 24px rgba(17,24,39,0.08)',
+              mx: 'auto',
+              mb: 2,
+            }}
+          >
+            <Typography variant="h5" fontWeight={700} color="#fff">
+              HP
+            </Typography>
+          </Box>
+          <Typography variant="h4" fontWeight={800} color="#0f172a" gutterBottom>
             HirePicker Admin
           </Typography>
-          <Typography variant="body1" sx={{ opacity: 0.85 }}>
-            Modernize Next.js 템플릿을 참고한 관리자 콘솔입니다.
+          <Typography variant="body2" color={MINT_PRIMARY_DARK}>
+            관리자 콘솔에 로그인하세요
           </Typography>
         </Box>
 
         <Paper
-          elevation={12}
+          elevation={0}
           sx={{
             width: '100%',
-            borderRadius: 4,
-            p: 4,
-            backdropFilter: 'blur(8px)',
+            borderRadius: 3,
+            p: 4.5,
+            backgroundColor: '#ffffff',
+            border: '1px solid rgba(17,24,39,0.06)',
+            boxShadow: '0 10px 18px -14px rgba(15,23,42,0.15)',
           }}
         >
           <Stack component="form" spacing={3} onSubmit={handleSubmit}>
-            <Typography variant="h5" fontWeight={600}>
+            <Typography variant="h5" fontWeight={700} color="#0f172a">
               관리자 로그인
             </Typography>
 
             {error && (
-              <Alert severity="error" onClose={() => setError(null)}>
+              <Alert
+                severity="error"
+                onClose={() => setError(null)}
+                sx={{
+                  borderRadius: 2,
+                  '& .MuiAlert-icon': {
+                    color: '#ef4444',
+                  },
+                }}
+              >
                 {error}
               </Alert>
             )}
@@ -89,6 +119,17 @@ const AdminLoginPage = () => {
               onChange={handleChange}
               fullWidth
               required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: MINT_PRIMARY,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: MINT_PRIMARY_DARK,
+                  },
+                },
+              }}
             />
 
             <TextField
@@ -100,13 +141,42 @@ const AdminLoginPage = () => {
               onChange={handleChange}
               fullWidth
               required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: MINT_PRIMARY,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: MINT_PRIMARY_DARK,
+                  },
+                },
+              }}
             />
 
             <Button
               type="submit"
               variant="contained"
               size="large"
-              sx={{ py: 1.4 }}
+              sx={{
+                py: 1.5,
+                borderRadius: 2,
+                backgroundColor: MINT_PRIMARY_DARK,
+                color: '#ffffff',
+                fontWeight: 600,
+                textTransform: 'none',
+                fontSize: '1rem',
+                boxShadow: '0 4px 12px rgba(15,118,110,0.25)',
+                '&:hover': {
+                  backgroundColor: MINT_PRIMARY_DARK,
+                  boxShadow: '0 6px 16px rgba(15,118,110,0.35)',
+                  transform: 'translateY(-1px)',
+                },
+                '&:active': {
+                  transform: 'translateY(0)',
+                },
+                transition: 'all 0.2s ease',
+              }}
               disabled={isLoading}
             >
               {isLoading ? '로그인 중...' : '로그인'}

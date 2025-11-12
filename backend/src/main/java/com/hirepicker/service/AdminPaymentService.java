@@ -69,17 +69,24 @@ public class AdminPaymentService {
     }
 
     private PaymentStatisticsDto.SummaryCards buildSummaryCards(List<CreditTransaction> transactions) {
-        // 양수 거래만 수익으로 계산 (크레딧 충전 등)
+        // 실제 결제 금액은 Payment.amount에서 가져옴 (크레딧 충전만 수익으로 계산)
+        log.debug("buildSummaryCards: 총 거래 건수 = {}", transactions.size());
         long totalRevenue = transactions.stream()
-                .filter(t -> t.getAmount() != null && t.getAmount() > 0)
-                .mapToLong(CreditTransaction::getAmount)
+                .filter(t -> {
+                    boolean hasPayment = t.getPayment() != null;
+                    boolean hasAmount = hasPayment && t.getPayment().getAmount() != null;
+                    if (!hasPayment) {
+                        log.debug("CreditTransaction {}: payment가 null (transactionType: {})", t.getId(), t.getTransactionType());
+                    } else if (!hasAmount) {
+                        log.debug("CreditTransaction {}: payment.amount가 null", t.getId());
+                    } else {
+                        log.debug("CreditTransaction {}: payment.amount = {} (transactionType: {})", t.getId(), t.getPayment().getAmount(), t.getTransactionType());
+                    }
+                    return hasAmount;
+                })
+                .mapToLong(t -> t.getPayment().getAmount())
                 .sum();
-        
-        // 음수 거래는 크레딧 사용 (차감)이므로 수익에서 제외
-        long totalUsage = Math.abs(transactions.stream()
-                .filter(t -> t.getAmount() != null && t.getAmount() < 0)
-                .mapToLong(CreditTransaction::getAmount)
-                .sum());
+        log.debug("buildSummaryCards: 총 수익 = {}", totalRevenue);
         
         // 총 거래 건수 (충전 + 사용)
         long totalTransactions = transactions.size();
@@ -113,10 +120,10 @@ public class AdminPaymentService {
             
             List<CreditTransaction> monthTransactions = byMonth.getOrDefault(monthKey, Collections.emptyList());
             
-            // 양수 거래만 수익으로 계산 (크레딧 충전)
+            // 실제 결제 금액은 Payment.amount에서 가져옴 (크레딧 충전만 수익으로 계산)
             long totalAmount = monthTransactions.stream()
-                    .filter(t -> t.getAmount() != null && t.getAmount() > 0)
-                    .mapToLong(CreditTransaction::getAmount)
+                    .filter(t -> t.getPayment() != null && t.getPayment().getAmount() != null)
+                    .mapToLong(t -> t.getPayment().getAmount())
                     .sum();
             
             // 환불 로직이 현재 구현되지 않았으므로 0으로 설정
@@ -139,9 +146,10 @@ public class AdminPaymentService {
                 .filter(t -> t.getTransactionType() != null)
                 .collect(Collectors.groupingBy(CreditTransaction::getTransactionType));
 
+        // 실제 결제 금액은 Payment.amount에서 가져옴
         long totalRevenue = transactions.stream()
-                .filter(t -> t.getAmount() != null && t.getAmount() > 0)
-                .mapToLong(CreditTransaction::getAmount)
+                .filter(t -> t.getPayment() != null && t.getPayment().getAmount() != null)
+                .mapToLong(t -> t.getPayment().getAmount())
                 .sum();
 
         List<PaymentStatisticsDto.TypeStat> stats = new ArrayList<>();
@@ -149,9 +157,10 @@ public class AdminPaymentService {
             String type = entry.getKey();
             List<CreditTransaction> typeTransactions = entry.getValue();
             
+            // 실제 결제 금액은 Payment.amount에서 가져옴 (크레딧 충전만)
             long typeAmount = typeTransactions.stream()
-                    .filter(t -> t.getAmount() != null && t.getAmount() > 0)
-                    .mapToLong(CreditTransaction::getAmount)
+                    .filter(t -> t.getPayment() != null && t.getPayment().getAmount() != null)
+                    .mapToLong(t -> t.getPayment().getAmount())
                     .sum();
             
             double percentage = totalRevenue > 0 
@@ -220,10 +229,10 @@ public class AdminPaymentService {
                     .build();
         }
 
-        // 평균 거래 단가
+        // 평균 거래 단가 (실제 결제 금액 기준)
         double avgAmount = transactions.stream()
-                .filter(t -> t.getAmount() != null && t.getAmount() > 0)
-                .mapToLong(CreditTransaction::getAmount)
+                .filter(t -> t.getPayment() != null && t.getPayment().getAmount() != null)
+                .mapToLong(t -> t.getPayment().getAmount())
                 .average()
                 .orElse(0.0);
 
