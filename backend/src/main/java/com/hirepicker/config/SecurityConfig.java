@@ -106,7 +106,10 @@ public class SecurityConfig {
                                 "/api/v1/ai-search",
                                 "/api/search", "/api/calendar/**",
                                 "/api/company-alarms/**",
-                                "/api/bookmark/toggle")
+                                "/api/bookmark/toggle",
+                                "/api/inquiry/submit",
+                                "/api/inquiries",
+                                "/inquiries/{inquiryIdx}/answer")
                         .permitAll()
 
 
