@@ -4,6 +4,7 @@ import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.entity.UserType;
 import com.hirepicker.repository.CompanyUserRepository;
 import com.hirepicker.repository.PersonalUserRepository;
+import com.hirepicker.repository.ManageUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,6 +29,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     private final PersonalUserRepository personalUserRepository;
     private final CompanyUserRepository companyUserRepository;
+    private final ManageUserRepository manageUserRepository;
 
     /**
      * ThreadLocal을 사용하여 userType을 스레드 간 안전하게 전달
@@ -111,7 +113,21 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                     });
         }
 
-        // === 경로 3: 순차 검색 (하위 호환성, userType이 없는 경우) ===
+        // === 경로 3: 관리자 검색 (효율적) ===
+        else if (userType == UserType.MANAGE) {
+            log.info("[Auth] 관리자 사용자로 검색합니다: {}", username);
+            return manageUserRepository.findByLoginId(username)
+                    .map(user -> {
+                        log.info("[Auth] 관리자 사용자를 찾았습니다: {}", username);
+                        return (UserDetails) new CustomUserDetails(user);
+                    })
+                    .orElseThrow(() -> {
+                        log.warn("[Auth] 관리자 사용자를 찾지 못했습니다: {}", username);
+                        return new UsernameNotFoundException("Manage user not found with login ID: " + username);
+                    });
+        }
+
+        // === 경로 4: 순차 검색 (하위 호환성, userType이 없는 경우) ===
         // OAuth2 로그인 등 userType이 지정되지 않은 경우를 위한 폴백 로직
         log.info("[Auth] userType이 지정되지 않아 순차 검색합니다: {}", username);
 
@@ -125,14 +141,22 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .orElseGet(() -> {
                     log.info("[Auth] 개인 사용자를 찾지 못해 기업 사용자를 조회합니다: {}", username);
                     return companyUserRepository.findByLoginId(username)
-                        .map(user -> {
-                            log.info("[Auth] 기업 사용자를 찾았습니다: {}", username);
-                            return (UserDetails) new CustomUserDetails(user);
-                        })
-                        .orElseThrow(() -> {
-                            log.warn("[Auth] 사용자를 찾지 못했습니다: {}", username);
-                            return new UsernameNotFoundException("User not found with username: " + username);
-                        });
+                            .map(user -> {
+                                log.info("[Auth] 기업 사용자를 찾았습니다: {}", username);
+                                return (UserDetails) new CustomUserDetails(user);
+                            })
+                            .orElseGet(() -> {
+                                log.info("[Auth] 기업 사용자도 찾지 못해 관리자 사용자를 조회합니다: {}", username);
+                                return manageUserRepository.findByLoginId(username)
+                                        .map(user -> {
+                                            log.info("[Auth] 관리자 사용자를 찾았습니다: {}", username);
+                                            return (UserDetails) new CustomUserDetails(user);
+                                        })
+                                        .orElseThrow(() -> {
+                                            log.warn("[Auth] 사용자를 찾지 못했습니다: {}", username);
+                                            return new UsernameNotFoundException("User not found with username: " + username);
+                                        });
+                            });
                 });
     }
 }

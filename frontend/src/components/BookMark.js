@@ -36,7 +36,7 @@ export default function Bookmark(props) {
     }
 
     if (isLoading) {
-      return;    
+      return;
     }
 
      // 3. 로그인 된 경우: 토글 로직 실행
@@ -47,16 +47,16 @@ export default function Bookmark(props) {
         // 백엔드로부터 받은 최신 상태로 UI 업데이트
         if(res.data.Bookmarked){
         setIsBookmarked(res.data.Bookmarked);
-        alert("즐겨찾기 등록되었다.")
+        alert("즐겨찾기 등록되었습니다.")
       }
         else{
         setIsBookmarked(res.data.Bookmarked);
-        alert("즐겨찾기 해제 되었다.")}
+        alert("즐겨찾기 해제 되었습니다.")}
 
 
       })
       .catch(function (error) {
-        alert("북마크 처리에 실패했다..");
+        alert("북마크 처리에 실패했습니다..");
       })
       .finally(function () {
         setIsLoading(false); // 로딩 종료 (성공/실패 여부와 관계없이)

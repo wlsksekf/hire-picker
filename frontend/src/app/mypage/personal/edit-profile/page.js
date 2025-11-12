@@ -9,7 +9,6 @@ import {
   Container,
   CircularProgress,
   Alert,
-  MenuItem,
   Card,
   CardContent,
   Avatar,
@@ -94,6 +93,29 @@ const StyledButton = styled(Button)(({ theme }) => ({
   },
 }));
 
+function normalizeGenderDisplay(rawGender) {
+  if (rawGender === undefined || rawGender === null) return '';
+  const trimmed = String(rawGender).trim();
+  if (!trimmed) return '';
+  const upper = trimmed.toUpperCase();
+  if (upper === 'MALE' || upper === 'M') return '남성';
+  if (upper === 'FEMALE' || upper === 'F') return '여성';
+  if (trimmed === '남' || trimmed === '남자') return '남성';
+  if (trimmed === '여' || trimmed === '여자') return '여성';
+  return trimmed;
+}
+
+function normalizeBirthdate(value) {
+  if (value === undefined || value === null) return '';
+  const trimmed = String(value).trim();
+  if (!trimmed) return '';
+  const sanitized = trimmed.replace(/\./g, '-').replace(/\//g, '-');
+  const match = sanitized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (!match) return sanitized;
+  const [, year, month, day] = match;
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+}
+
 // 개인 마이페이지 - 내 정보 관리
 export default function EditProfile() {
   const [profile, setProfile] = useState({
@@ -103,6 +125,7 @@ export default function EditProfile() {
     phoneNumber: '',
     address: '',
     gender: '',
+    birthdate: '',
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -117,19 +140,23 @@ export default function EditProfile() {
     phoneNumber: '',
     address: '',
     gender: '',
+    birthdate: '',
   });
   const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
     getUserProfile()
       .then((userData) => {
+        const normalizedGender = normalizeGenderDisplay(userData.gender);
+        const normalizedBirthdate = normalizeBirthdate(userData.birthdate ?? userData.birthDate);
         setProfile({
           name: userData.name || '',
           nickname: userData.nickname || '',
           email: userData.email || '',
           phoneNumber: userData.phoneNumber || '',
           address: userData.address || '',
-          gender: userData.gender || '',
+          gender: normalizedGender,
+          birthdate: normalizedBirthdate,
         });
         setForm((prev) => ({
           ...prev,
@@ -137,7 +164,8 @@ export default function EditProfile() {
           nickname: userData.nickname || '',
           phoneNumber: userData.phoneNumber || '',
           address: userData.address || '',
-          gender: userData.gender || '',
+          gender: normalizedGender,
+          birthdate: normalizedBirthdate,
         }));
         setLoading(false);
       })
@@ -193,6 +221,7 @@ export default function EditProfile() {
     }
     setPasswordError('');
 
+    const sanitizedBirthdate = normalizeBirthdate(form.birthdate);
     const payload = {
       name: form.name,
       nickname: form.nickname,
@@ -200,6 +229,7 @@ export default function EditProfile() {
       phoneNumber: form.phoneNumber,
       address: form.address,
       gender: form.gender,
+      birthdate: sanitizedBirthdate || undefined,
     };
     await updateUserProfileDetails(payload);
     alert('기본정보가 저장되었습니다.');
@@ -313,16 +343,19 @@ export default function EditProfile() {
                     fullWidth
                   />
                   <StyledTextField
-                    select
                     label="성별"
                     value={form.gender}
                     onChange={(e) => handleChange('gender', e.target.value)}
+                    placeholder="남성 / 여성"
                     fullWidth
-                  >
-                    <MenuItem value="">선택 안 함</MenuItem>
-                    <MenuItem value="MALE">남성</MenuItem>
-                    <MenuItem value="FEMALE">여성</MenuItem>
-                  </StyledTextField>
+                  />
+                  <StyledTextField
+                    label="생년월일"
+                    value={form.birthdate}
+                    onChange={(e) => handleChange('birthdate', e.target.value)}
+                    placeholder="YYYY-MM-DD"
+                    fullWidth
+                  />
                   <StyledTextField
                     fullWidth
                     name="password"

@@ -166,7 +166,7 @@ public class CompanyApiController {
     @Operation(summary = "캘린더용 채용 행사 목록 조회", description = "캘린더에 표시할 모든 채용 행사 목록을 조회합니다.")
     @GetMapping("/calendar/emp-events")
     public ResponseEntity<List<CalendarEmpEventDto>> getAllEmpEventsForCalendar(
-            @Parameter(description = "필터링할 지역 목록 (선택 사항)", example = "서울,부산") @RequestParam(required = false) List<String> regions) {
+            @Parameter(description = "필터링할 지역 목록 (선택 사항)", example = "서울,부산") @RequestParam(value = "regions", required = false) List<String> regions) {
         List<CalendarEmpEventDto> empEvents = employmentData.getAllEmpEventsForCalendarByRegions(regions);
         return ResponseEntity.ok(empEvents);
     }

@@ -38,6 +38,11 @@ function HomePage() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null); // 상세 공고 모달용
 
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const disableAuth = process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true';
+  const [applyDialogJob, setApplyDialogJob] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [appliedFilters, setAppliedFilters] = useState({
     jobType: [],
@@ -88,9 +93,11 @@ function HomePage() {
         setStatus("error");
       })
       .finally(function () {
-        setIsFetchingNextPage(false);
+        if (!silent) {
+          setIsFetchingNextPage(false);
+        }
       });
-  }
+  }, []);
 
   useEffect(function () {
     fetchJobs(0, appliedSearchTerm, appliedFilters);
@@ -279,6 +286,24 @@ function HomePage() {
           onClose={() => setSelectedJob(null)}
         />
       )}
+
+      <ResumeApplyDialog
+        open={Boolean(applyDialogJob)}
+        job={applyDialogJob}
+        onClose={handleApplyDialogClose}
+        onSuccess={handleApplySuccess}
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={5000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }

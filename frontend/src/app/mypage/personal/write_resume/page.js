@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ResumeForm from "@/components/ResumeForm";
 import {
@@ -15,6 +15,7 @@ import {
   getResumeDetail,
   updateResume,
   saveExperiences,
+  getCreditBalance,
 } from "@/api";
 import { createEmptyResumeForm } from "@/constants/resumeFormDefaults";
 import { Box, CircularProgress } from "@mui/material";
@@ -48,6 +49,74 @@ function formatDisplayPeriod(startDate, endDate) {
   if (!start) return `~ ${end}`;
   if (!end) return `${start} ~`;
   return `${start} ~ ${end}`;
+}
+
+function normalizeGenderDisplay(rawGender) {
+  if (rawGender === undefined || rawGender === null) return "";
+  const trimmed = String(rawGender).trim();
+  if (!trimmed) return "";
+  const upper = trimmed.toUpperCase();
+  if (upper === "MALE" || upper === "M") return "남성";
+  if (upper === "FEMALE" || upper === "F") return "여성";
+  if (trimmed === "남" || trimmed === "남자") return "남성";
+  if (trimmed === "여" || trimmed === "여자") return "여성";
+  return trimmed;
+}
+
+const HIGH_SCHOOL_DEGREE = "고졸";
+const AI_CREDIT_COST = 1000; // AI 생성 시 차감될 고정 크레딧
+function isHighSchoolDegree(degree = "") {
+  return degree === HIGH_SCHOOL_DEGREE;
+}
+function hasHighSchoolKeyword(text = "") {
+  if (!text) return false;
+  return text.includes("고등학교") || text.includes("고등") || text.includes("여고") || text.includes("상고");
+}
+function isHighSchoolType(type = "") {
+  return typeof type === "string" && type.includes("고등");
+}
+function isHighSchoolAcademic(item = {}) {
+  const degree = item?.degree ?? item?.Degree ?? "";
+  if (isHighSchoolDegree(degree)) return true;
+  const schoolType = item?.schoolType ?? item?.school_type ?? "";
+  if (isHighSchoolType(schoolType)) return true;
+  const schoolName = item?.schoolName ?? item?.school_name ?? "";
+  return hasHighSchoolKeyword(schoolName);
+}
+
+function resolveComparableTime(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.getTime();
+  const normalized = normalizeIsoDate(value);
+  if (normalized) {
+    const parsed = Date.parse(normalized);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function sortAcademicsDesc(list = []) {
+  return [...list].sort((a, b) => {
+    const aIsHighSchool = isHighSchoolAcademic(a);
+    const bIsHighSchool = isHighSchoolAcademic(b);
+    if (aIsHighSchool !== bIsHighSchool) {
+      return aIsHighSchool ? 1 : -1; // 고등학교는 하단으로 배치
+    }
+
+    const gradA =
+      resolveComparableTime(a?.graduationDate ?? a?.graduation_date) ??
+      resolveComparableTime(a?.admissionDate ?? a?.admission_date);
+    const gradB =
+      resolveComparableTime(b?.graduationDate ?? b?.graduation_date) ??
+      resolveComparableTime(b?.admissionDate ?? b?.admission_date);
+
+    if (gradA === null && gradB === null) return 0;
+    if (gradA === null) return 1;
+    if (gradB === null) return -1;
+    if (gradA === gradB) return 0;
+    return gradB - gradA;
+  });
 }
 
 function normalizeDateInput(input) {
@@ -95,16 +164,20 @@ function mapDetailToForm(detail) {
   next.selfMotivation = detail?.selfMotivation || "";
   next.selfAspirations = detail?.selfAspirations || "";
   next.cert = detail?.cert || "";
+  next.creditCost = typeof detail?.creditCost === 'number' ? detail.creditCost : Number(detail?.credit_cost ?? 0) || 0;
+  next.resumeStatus = detail?.status || "PRIVATE";
 
   const personal = detail?.personal || {};
   next.name = personal.name || "";
-  next.gender = personal.gender || "";
+  next.gender = normalizeGenderDisplay(personal.gender);
   next.phone = personal.phone || personal.phoneNumber || "";
   next.email = personal.email || "";
   next.address = personal.address || "";
+  next.birthdate =
+    normalizeIsoDate(personal.birthdate || personal.birthDate) || "";
 
   const academics = Array.isArray(detail?.academics) ? detail.academics : [];
-  academics.slice(0, 2).forEach((item, index) => {
+  sortAcademicsDesc(academics).slice(0, 2).forEach((item, index) => {
     const idx = index + 1;
     next[`edu${idx}_school`] = item.schoolName || "";
     next[`edu${idx}_major`] = item.major || "";
@@ -191,6 +264,32 @@ export default function WriteResumePage(props = {}) {
   const [availableExperiences, setAvailableExperiences] = useState([]); // 선택 가능한 경력 목록
   const [availableCertifications, setAvailableCertifications] = useState([]); // 선택 가능한 자격증 목록
   const [initializing, setInitializing] = useState(true);
+  const [creditBalance, setCreditBalance] = useState(null); // AI 사용을 위한 현재 크레딧 잔액
+
+  // 현재 크레딧 잔액을 최신화하는 헬퍼
+  const fetchCreditBalance = useCallback(async () => {
+    try {
+      const balance = await getCreditBalance();
+      setCreditBalance(balance);
+      return balance;
+    } catch (err) {
+      console.error("크레딧 잔액 조회 실패:", err);
+      setCreditBalance(0);
+      return 0;
+    }
+  }, []);
+
+  // AI 사용 전 크레딧 잔액 확인 및 안내
+  const ensureAiCredits = useCallback(async () => {
+    const currentRaw = creditBalance != null ? creditBalance : await fetchCreditBalance();
+    const current = Number.isFinite(currentRaw) ? currentRaw : 0;
+    if (current < AI_CREDIT_COST) {
+      alert(`AI 이력서를 작성하려면 ${AI_CREDIT_COST}크레딧이 필요합니다.\n현재 보유 크레딧: ${current}C`);
+      return false;
+    }
+    const confirmed = window.confirm(`AI 자기소개서 작성 시 ${AI_CREDIT_COST}크레딧이 차감됩니다. 계속 진행할까요?`);
+    return confirmed;
+  }, [creditBalance, fetchCreditBalance]);
 
   // init: load user and template
   useEffect(() => {
@@ -199,10 +298,15 @@ export default function WriteResumePage(props = {}) {
         const u = res.data || {};
         const detectedUserId = u?.p_user_idx ?? u?.pUserIdx ?? u?.id ?? null;
         setUserId(detectedUserId);
+        const normalizedGender = normalizeGenderDisplay(u.gender);
+        const normalizedBirthdate = normalizeIsoDate(
+          u.birthdate ?? u.birthDate ?? ""
+        );
         setFormData(prev => ({
           ...prev,
           name: u.name || '',
-          gender: u.gender || '',
+          gender: normalizedGender,
+          birthdate: normalizedBirthdate,
           phone: u.phoneNumber || '',
           email: u.email || '',
           address: u.address || ''
@@ -210,6 +314,10 @@ export default function WriteResumePage(props = {}) {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetchCreditBalance();
+  }, [fetchCreditBalance]);
 
   useEffect(() => {
     if (resumeId) {
@@ -229,8 +337,11 @@ export default function WriteResumePage(props = {}) {
       const updates = {};
 
       // 학력 자동 채우기 (최대 2개)
-      if (template.academics && template.academics.length > 0) {
-        const acad1 = template.academics[0];
+      const templateAcademics = sortAcademicsDesc(
+        Array.isArray(template?.academics) ? template.academics : []
+      );
+      if (templateAcademics.length > 0) {
+        const acad1 = templateAcademics[0];
         if (acad1) {
           updates.edu1_school = acad1.schoolName || '';
           updates.edu1_schoolCode = acad1.schoolCode || null;
@@ -241,8 +352,8 @@ export default function WriteResumePage(props = {}) {
           updates.edu1_graduation = normalizeIsoDate(acad1.graduationDate);
           updates.edu1_period = formatDisplayPeriod(acad1.admissionDate, acad1.graduationDate);
         }
-        if (template.academics.length > 1) {
-          const acad2 = template.academics[1];
+        if (templateAcademics.length > 1) {
+          const acad2 = templateAcademics[1];
           if (acad2) {
             updates.edu2_school = acad2.schoolName || '';
             updates.edu2_schoolCode = acad2.schoolCode || null;
@@ -253,6 +364,19 @@ export default function WriteResumePage(props = {}) {
             updates.edu2_graduation = normalizeIsoDate(acad2.graduationDate);
             updates.edu2_period = formatDisplayPeriod(acad2.admissionDate, acad2.graduationDate);
           }
+        }
+      }
+
+      if (template.personal) {
+        const templateGender = normalizeGenderDisplay(template.personal.gender);
+        if (templateGender) {
+          updates.gender = templateGender;
+        }
+        const templateBirthdate = normalizeIsoDate(
+          template.personal.birthdate ?? template.personal.birthDate ?? ""
+        );
+        if (templateBirthdate) {
+          updates.birthdate = templateBirthdate;
         }
       }
 
@@ -457,7 +581,7 @@ export default function WriteResumePage(props = {}) {
   };
 
   // AI draft generate
-  const onAiGenerate = async (arg) => {
+  const onAiGenerate = async (arg, options = {}) => {
     let prompt = typeof arg === 'string' ? arg.trim() : (formData.aiPrompt || '').trim();
     if (!prompt) {
       prompt = [
@@ -470,6 +594,12 @@ export default function WriteResumePage(props = {}) {
     }
     if (!prompt) { alert('AI 요청 문구를 입력해주세요.'); return; }
 
+    const skipCreditCheck = Boolean(options.skipCreditCheck);
+    if (!skipCreditCheck) {
+      const canProceed = await ensureAiCredits();
+      if (!canProceed) return;
+    }
+
     setIsLoading(true);
     try {
       const res = await generateAiFullDraft(prompt);
@@ -481,14 +611,36 @@ export default function WriteResumePage(props = {}) {
         selfMotivation: jobCompetencies || prev.selfMotivation || '',
         selfAspirations: aspirations || prev.selfAspirations || '',
       }));
+      const remaining = Number(res?.headers?.["x-remaining-credits"]);
+      // 서버 응답 헤더가 있으면 그대로 잔액을 반영
+      if (!Number.isNaN(remaining)) {
+        setCreditBalance(remaining);
+      } else {
+        // 헤더가 없으면 클라이언트에서 사용분만큼 차감
+        setCreditBalance(prev => (prev != null ? Math.max(0, prev - AI_CREDIT_COST) : prev));
+      }
+    } catch (error) {
+      console.error("AI 초안 생성 실패:", error);
+      // 서버에서 전달된 오류 메시지를 우선 노출
+      const message = error?.response?.data?.message || error?.message || 'AI 초안 생성 중 오류가 발생했습니다.';
+      alert(message);
+      if (error?.response?.status === 402) {
+        // 크레딧 부족 응답 시 잔액을 재조회해 정확도를 유지
+        await fetchCreditBalance();
+      }
+      return;
     } finally { setIsLoading(false); }
   };
 
   // refine
   const onRefine = async () => {
-    setAiDialogOpen(false);
     const userData = (formData.aiPrompt || formData.title || '').trim();
     if (!userData) { alert('AI 요청 문구를 입력해주세요.'); return; }
+    const canProceed = await ensureAiCredits();
+    if (!canProceed) {
+      return;
+    }
+    setAiDialogOpen(false);
     setIsLoading(true);
     try {
       const resumeDraft = {
@@ -506,16 +658,38 @@ export default function WriteResumePage(props = {}) {
         selfMotivation: jobCompetencies || prev.selfMotivation || '',
         selfAspirations: aspirations || prev.selfAspirations || '',
       }));
+      const remaining = Number(res?.headers?.["x-remaining-credits"]);
+      // 헤더 기반 잔액 갱신
+      if (!Number.isNaN(remaining)) {
+        setCreditBalance(remaining);
+      } else {
+        // 헤더 없으면 1회 사용량만큼 차감
+        setCreditBalance(prev => (prev != null ? Math.max(0, prev - AI_CREDIT_COST) : prev));
+      }
+    } catch (error) {
+      console.error("AI 초안 개선 실패:", error);
+      // 사용자에게 명확한 오류 메시지 전달
+      const message = error?.response?.data?.message || error?.message || 'AI 초안 개선 중 오류가 발생했습니다.';
+      alert(message);
+      if (error?.response?.status === 402) {
+        await fetchCreditBalance();
+      }
+      return;
     } finally { setIsLoading(false); }
   };
 
   // start fresh
   const onStartFresh = async () => {
-    setAiDialogOpen(false);
     const userData = (formData.aiPrompt || formData.title || '').trim();
     if (!userData) { alert('AI 요청 문구를 입력해주세요.'); return; }
+    const canProceed = await ensureAiCredits();
+    if (!canProceed) {
+      return;
+    }
+    setAiDialogOpen(false);
     setFormData(prev => ({ ...prev, selfGrowth: '', selfStrengths: '', selfMotivation: '', selfAspirations: '' }));
-    await onAiGenerate(userData);
+    // 직전에 차감 여부를 확인했으므로 추가 확인은 생략
+    await onAiGenerate(userData, { skipCreditCheck: true });
   };
 
   // save
@@ -542,6 +716,10 @@ export default function WriteResumePage(props = {}) {
             .map(item => item.score ? `${item.certName} (${item.score})` : item.certName)
             .join(', ');
 
+      const parsedCreditCost = Number(formData.creditCost);
+      const creditCostValue = Number.isFinite(parsedCreditCost) ? Math.max(0, Math.floor(parsedCreditCost)) : 0;
+      const resumeStatus = formData.resumeStatus === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE';
+
       if (isEditing) {
         if (imageFile) {
           alert('이미지 변경은 아직 지원되지 않습니다. 기존 이미지를 유지합니다.');
@@ -554,8 +732,8 @@ export default function WriteResumePage(props = {}) {
           selfMotivation: formData.selfMotivation || '',
           selfAspirations: formData.selfAspirations || '',
           imageUrl: initialImageUrl || null,
-          creditCost: 0,
-          status: 'PUBLIC',
+          creditCost: creditCostValue,
+          status: resumeStatus,
           cert: resumeCertSummary,
           expIdx: null,
         };
@@ -576,8 +754,8 @@ export default function WriteResumePage(props = {}) {
         selfAspirations: formData.selfAspirations || '',
         imageUrl: null,
         cert: resumeCertSummary,
-        credit_cost: 0,
-        status: 'PRIVATE',
+        credit_cost: creditCostValue,
+        status: resumeStatus,
         expIdx: null,
         p_user_idx: userId,
         gender: formData.gender || undefined,
@@ -614,6 +792,9 @@ export default function WriteResumePage(props = {}) {
       previewImage={previewImage}
       onImageChange={onImageChange}
       isLoading={isLoading}
+      aiCreditCost={AI_CREDIT_COST}
+      creditBalance={creditBalance}
+      isAiCreditInsufficient={creditBalance != null && creditBalance < AI_CREDIT_COST}
       onAiGenerate={onAiGenerate}
       onOpenAiDialog={onOpenAiDialog}
       onDownload={() => {}}

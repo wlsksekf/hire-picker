@@ -26,6 +26,7 @@ import {
   AutoAwesome, // AutoAwesome 아이콘 추가
   RateReview,
   Notifications,
+  Bookmark, // 즐겨찾기 공고 메뉴 아이콘
 } from "@mui/icons-material";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -76,6 +77,11 @@ const personalMenuItems = [
     text: "관심기업",
     icon: <Notifications />,
     path: "/mypage/personal/alarm",
+  },
+  {
+    text: "관심 공고", // 즐겨찾기 채용공고 이동 버튼
+    icon: <Bookmark />,
+    path: "/mypage/personal/liked-postings",
   },
 ];
 

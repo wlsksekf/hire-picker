@@ -14,27 +14,24 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const originalRequest = error.config;
-    console.log('Axios Interceptor: Received error', error.response.status, originalRequest.url);
     // 401 에러이고, 이미 재시도한 요청이 아니며, 로그인/회원가입/토큰 갱신 요청이 아닌 경우
     if (error.response.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/api/auth/') && !originalRequest.url.includes('/api/users/my-profile')) {
       originalRequest._retry = true; // 재시도 플래그 설정
       console.log('Axios Interceptor: Attempting token refresh for', originalRequest.url);
 
       // Promise 체이닝 방식으로 변경
-      return api.post('/api/auth/refresh').then(() => {
-        console.log('Axios Interceptor: Token refresh successful.');
+      return api.post('/api/auth/refresh').then((refreshResponse) => {
+        console.log('Axios Interceptor: Token refresh successful.', refreshResponse.status);
+        console.log('Axios Interceptor: Response headers:', refreshResponse.headers);
 
-        // 토큰 갱신 성공 후, authStore의 인증 상태를 다시 초기화하여 user 정보를 가져옴
-        useAuthStore.getState().initializeAuth();
-
-        // 원래 요청을 재시도하는 대신, initializeAuth가 처리하도록 함
-        return Promise.resolve({ status: 200, data: { message: 'Token refreshed, re-initializing auth.' } }); // 임시 응답 반환
+        // 원래 요청을 재시도 (initializeAuth는 나중에)
+        console.log('Axios Interceptor: Retrying original request:', originalRequest.url);
+        return api(originalRequest); // 원래 요청 재시도
       }).catch((refreshError) => {
-        // 리프레시 토큰 갱신 실패 시 (예: 리프레시 토큰 만료)
-        console.log('Axios Interceptor: Token refresh failed (expected in logged-out state).');
+        // 리프레시 토큰 갱신 실패 시
+        console.error('Axios Interceptor: Token refresh failed.', refreshError.response?.status);
 
-        // 로그아웃 처리
-        useAuthStore.getState().logout();
+        // 로그아웃시키지 말고 그냥 에러만 반환
         return Promise.reject(refreshError);
       });
     }
@@ -88,6 +85,11 @@ export const searchCompanies = (query) => {
 export const signupCompany = (signupData) => {
     return api.post('/api/auth/signup/company', signupData);
 };
+
+export const loginManage = (payload) => api.post('/api/manage/auth/login', payload);
+
+export const applyToJobPosting = (postingIdx, payload) =>
+  api.post(`/api/postings/${postingIdx}/apply`, payload);
 
 
 // `api` 변수를 기본 내보내기로 설정
@@ -397,6 +399,18 @@ export function deleteResume(resumeId) {
 // [이력서] 공개 상태 변경
 export function updateResumeStatus(resumeId, status) {
   return api.put(`/api/resume/${resumeId}`, { status }).then(res => res.data);
+}
+
+// [이력서 거래소] 공개 이력서 목록
+export function getMarketplaceResumes() {
+  return api.get('/api/resumes/marketplace')
+    .then((res) => Array.isArray(res.data) ? res.data : []);
+}
+
+// [이력서 거래소] 이력서 구매
+export function purchaseResume(resumeId) {
+  return api.post(`/api/resumes/${resumeId}/purchase`)
+    .then((res) => res.data);
 }
 
 // [공통] 자격증 자동완성 검색

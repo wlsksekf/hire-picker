@@ -166,10 +166,10 @@ export default function ResumeDetailPage() {
   }), [formData, status, title]);
 
   if (!id) {
-    return (
+  return (
       <Box sx={{ py: 6, textAlign: 'center' }}>
         <Typography>유효하지 않은 이력서입니다.</Typography>
-      </Box>
+            </Box>
     );
   }
 
@@ -177,17 +177,17 @@ export default function ResumeDetailPage() {
     return (
       <Box sx={{ py: 6, display: 'flex', justifyContent: 'center' }}>
         <CircularProgress />
-      </Box>
-    );
-  }
+            </Box>
+  );
+}
 
   if (error) {
-    return (
+  return (
       <Box sx={{ py: 6, textAlign: 'center' }}>
         <Typography color="error">{error}</Typography>
-      </Box>
-    );
-  }
+    </Box>
+  );
+}
 
   return (
     <Box sx={{ py: 4, maxWidth: 960, mx: 'auto' }}>
@@ -213,7 +213,7 @@ export default function ResumeDetailPage() {
         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
           공개 상태: {status === 'PUBLIC' ? '공개' : status === 'PRIVATE' ? '비공개' : status}
         </Typography>
-      )}
+            )}
 
       <ResumeForm
         formData={formData}

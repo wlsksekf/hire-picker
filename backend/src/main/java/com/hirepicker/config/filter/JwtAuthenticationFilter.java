@@ -51,7 +51,6 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
                 "/swagger-ui/", // /swagger-ui/**
                 "/api-docs/", // /api-docs/**
                 "/error",
-                "/api/companies/", // /api/companies/**
                 "/api/payment/webhook",
                 "/chat/", // /chat/**
                 "/ws", // /ws, /ws/**
@@ -63,7 +62,7 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
 
     // ★ GET /api/posts와 /api/posts/{postIdx}는 필터 미적용 (비회원 조회 가능)
     if (method.equals("GET") && (path.equals("/api/posts") || path.matches("/api/posts/\\d+"))) {
-        return false;
+        return true; // 필터 미적용
     }
 
     // ★ /api/posts/me는 필터를 적용해야 함 (인증 정보 필요) - 반환값: false
@@ -74,6 +73,11 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
     // ★ POST /api/posts/write는 필터를 적용해야 함 (인증 필요)
     if (method.equals("POST") && path.equals("/api/posts/write")) {
         return false; // 필터 실행
+    }
+
+    // ★ GET /api/companies/search는 필터 미적용 (공개 검색)
+    if (method.equals("GET") && path.equals("/api/companies/search")) {
+        return true; // 필터 미적용
     }
 
     for (String permitPath : permitAllPaths) {

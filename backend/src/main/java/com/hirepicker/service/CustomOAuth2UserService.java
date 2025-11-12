@@ -20,11 +20,13 @@ import java.util.Map;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final PersonalUserRepository personalUserRepository; // 사용자 리포지토리
+    private final CreditService creditService;
 
     private record UserInfo(String email, String name, com.hirepicker.entity.Gender gender) {}
 
     // OAuth2 사용자 정보를 로드하는 메서드
     @Override
+    @SuppressWarnings("unchecked")
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
 
@@ -68,6 +70,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             default -> throw new OAuth2AuthenticationException("Unsupported platform: " + registrationId);
         };
 
+        final boolean[] signupBonusGranted = {false};
+
         PersonalUser personalUser = personalUserRepository.findByEmail(userInfo.email())
                 .map(user -> {
                     // 이미 가입된 유저라면, 플랫폼 정보 업데이트
@@ -78,7 +82,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     return user;
                 })
                 .orElseGet(() -> {
-                    // 신규 유저라면, DB에 저장
+                    // 신규 유저라면, DB에 저장 후 보너스 지급
                     PersonalUser newUser = PersonalUser.builder()
                             .email(userInfo.email())
                             .name(userInfo.name())
@@ -86,9 +90,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                             .platform(platform.name())
                             .gender(userInfo.gender())
                             .build();
-                    return personalUserRepository.save(newUser);
+                    PersonalUser saved = personalUserRepository.save(newUser);
+                    creditService.grantSignupBonus(saved);
+                    signupBonusGranted[0] = true;
+                    return saved;
                 });
 
-        return new CustomUserDetails(personalUser, oAuth2User.getAttributes());
+        CustomUserDetails customUserDetails = new CustomUserDetails(personalUser, oAuth2User.getAttributes());
+        if (signupBonusGranted[0]) {
+            customUserDetails.markSignupBonusGranted();
+        }
+        return customUserDetails;
     }
 }

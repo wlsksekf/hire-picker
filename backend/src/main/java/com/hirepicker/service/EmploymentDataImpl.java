@@ -2,6 +2,7 @@ package com.hirepicker.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors; // Collectors 임포트 추가
 
@@ -49,11 +50,11 @@ public class EmploymentDataImpl implements EmploymentData {
 
         List<JobDto> jobDtos = new ArrayList<>();
         for (JobPosting job : jobPostings.getContent()) {
-
-            String companyName = "";
-            if (job.getCompany() != null) {
-                companyName = job.getCompany().getCompanyName();
-            }
+            Company company = job.getCompany();
+            String companyName = company != null ? company.getCompanyName() : "";
+            String imgPath = company != null ? company.getImgPath() : null;
+            String applyUrl = company != null ? company.getWebsiteUrl() : null;
+            boolean internal = job.getCUserIdx() != null;
 
             JobDto jobDto = JobDto.builder()
                     .id(job.getPostingId()) // Populate id
@@ -155,6 +156,10 @@ public class EmploymentDataImpl implements EmploymentData {
         Specification<JobPosting> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            Map<String, List<String>> filters = dto.getFilters() == null
+                    ? java.util.Collections.emptyMap()
+                    : dto.getFilters();
+
             // 🔍 검색어(title)
             if (dto.getSearchTerm() != null && !dto.getSearchTerm().isEmpty()) {
                 predicates.add(
@@ -164,13 +169,13 @@ public class EmploymentDataImpl implements EmploymentData {
             }
 
             // 🧩 직종
-            if (dto.getFilters().get("jobType") != null && !dto.getFilters().get("jobType").isEmpty()) {
-                predicates.add(root.get("jobType").in(dto.getFilters().get("jobType")));
+            if (filters.get("jobType") != null && !filters.get("jobType").isEmpty()) {
+                predicates.add(root.get("jobType").in(filters.get("jobType")));
             }
 
             // 📍 근무 지역 (OR 조건)
-            if (dto.getFilters().get("location") != null && !dto.getFilters().get("location").isEmpty()) {
-                List<String> locations = dto.getFilters().get("location");
+            if (filters.get("location") != null && !filters.get("location").isEmpty()) {
+                List<String> locations = filters.get("location");
                 List<Predicate> locationPredicates = new ArrayList<>();
                 for (String loc : locations) {
                     locationPredicates.add(
@@ -182,8 +187,8 @@ public class EmploymentDataImpl implements EmploymentData {
             }
 
             // 💼 고용 형태 (LIKE 검색)
-            if (dto.getFilters().get("employmentType") != null && !dto.getFilters().get("employmentType").isEmpty()) {
-                List<String> employmentTypes = dto.getFilters().get("employmentType");
+            if (filters.get("employmentType") != null && !filters.get("employmentType").isEmpty()) {
+                List<String> employmentTypes = filters.get("employmentType");
                 List<Predicate> employmentPredicates = new ArrayList<>();
                 for (String type : employmentTypes) {
                     employmentPredicates.add(
@@ -193,8 +198,8 @@ public class EmploymentDataImpl implements EmploymentData {
             }
 
             // 🎓 학력 (LIKE 검색, REPLACE 제거)
-            if (dto.getFilters().get("experienceLevel") != null && !dto.getFilters().get("experienceLevel").isEmpty()) {
-                List<String> experienceLevels = dto.getFilters().get("experienceLevel");
+            if (filters.get("experienceLevel") != null && !filters.get("experienceLevel").isEmpty()) {
+                List<String> experienceLevels = filters.get("experienceLevel");
                 List<Predicate> expPredicates = new ArrayList<>();
                 for (String level : experienceLevels) {
                     if (level == null || level.isBlank())
@@ -209,8 +214,38 @@ public class EmploymentDataImpl implements EmploymentData {
             }
 
             // ✅ 기업 종류 (JobPosting.location 컬럼 기준)
-            if (dto.getFilters().get("companyType") != null && !dto.getFilters().get("companyType").isEmpty()) {
-                predicates.add(root.get("location").in(dto.getFilters().get("companyType")));
+            if (filters.get("companyType") != null && !filters.get("companyType").isEmpty()) {
+                predicates.add(root.get("location").in(filters.get("companyType")));
+            }
+
+            // 🔁 공고 필터: 내부 지원 가능 공고 여부
+            List<String> sources = filters.get("source");
+            if (sources != null && !sources.isEmpty()) {
+                boolean includeInternal = sources.contains("내부 지원 가능 공고");
+                boolean includeExternal = sources.contains("외부 공고");
+
+                if (includeInternal && !includeExternal) {
+                    predicates.add(cb.isNotNull(root.get("cUserIdx")));
+                } else if (!includeInternal && includeExternal) {
+                    predicates.add(cb.isNull(root.get("cUserIdx")));
+                }
+            }
+
+            // 🌍 해외 공고 필터 (country가 South Korea가 아닌 경우)
+            List<String> overseasFilters = filters.get("overseas");
+            if (overseasFilters != null && !overseasFilters.isEmpty()) {
+                boolean includeDomestic = overseasFilters.contains("국내 공고");
+                boolean includeOverseas = overseasFilters.contains("해외 공고");
+
+                if (includeDomestic && !includeOverseas) {
+                    predicates.add(cb.or(
+                            cb.isNull(root.get("country")),
+                            cb.equal(cb.lower(root.get("country")), "south korea")));
+                } else if (!includeDomestic && includeOverseas) {
+                    predicates.add(cb.and(
+                            cb.isNotNull(root.get("country")),
+                            cb.notEqual(cb.lower(root.get("country")), "south korea")));
+                }
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -220,12 +255,12 @@ public class EmploymentDataImpl implements EmploymentData {
 
         List<JobDto> jobDtos = new ArrayList<>();
         for (JobPosting job : jobPostings.getContent()) {
-            String companyName = "";
-            String imgUrl = null;
-            if (job.getCompany() != null) {
-                companyName = job.getCompany().getCompanyName();
-                imgUrl = job.getCompany().getImgPath();
-            }
+            Company company = job.getCompany();
+            String companyName = company != null ? company.getCompanyName() : "";
+            String imgUrl = company != null ? company.getImgPath() : null;
+            String companyAddress = company != null ? company.getAddress() : null;
+            String applyUrl = company != null ? company.getWebsiteUrl() : null;
+            boolean internal = job.getCUserIdx() != null;
 
             jobDtos.add(JobDto.builder()
                     .id(job.getPostingId()) // Populate id
@@ -418,9 +453,11 @@ public class EmploymentDataImpl implements EmploymentData {
                             .location(jobPosting.getLocation())
                             .imgUrl(imgUrl)
                             .experience_level(jobPosting.getExperienceLevel())
-                            .companyType(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyType() : null)
+                            .companyType(
+                                    jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyType() : null)
                             .jobType(jobPosting.getJobType())
-                            .companyIdx(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyIdx() : null)
+                            .companyIdx(
+                                    jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyIdx() : null)
                             .welfare(jobPosting.getWelfare())
                             .experience_level(jobPosting.getExperienceLevel())
                             .required_qualifications(jobPosting.getRequiredQualifications())
@@ -431,4 +468,3 @@ public class EmploymentDataImpl implements EmploymentData {
                 .collect(Collectors.toList());
     }
 }
-

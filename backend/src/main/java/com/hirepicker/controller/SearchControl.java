@@ -39,12 +39,15 @@ public class SearchControl {
         }
 
         String keyword = dto.getSearchTerm();
-        var filters = dto.getFilters();
+        Map<String, List<String>> filters = dto.getFilters() == null
+                ? Map.of()
+                : dto.getFilters();
         List<String> locations = filters.get("location");
         List<String> jobTypes = filters.get("jobType");
         List<String> employmentTypes = filters.get("employmentType");
         List<String> experienceLevels = filters.get("experienceLevel");
         List<String> companyTypes = filters.get("companyType");
+        List<String> sources = filters.get("source");
 
         System.out.println("===== 🔍 검색 요청 도착 =====");
         System.out.println("검색어: " + keyword);
@@ -53,6 +56,7 @@ public class SearchControl {
         System.out.println("고용형태: " + employmentTypes);
         System.out.println("학력: " + experienceLevels);
         System.out.println("기업형태: " + companyTypes);
+        System.out.println("공고 출처: " + sources);
         System.out.println("============================");
 
         return employmentDataImpl.jobFilter(dto, pageable);
