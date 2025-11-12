@@ -74,7 +74,7 @@ function normalizeGenderDisplay(rawGender) {
 }
 
 const HIGH_SCHOOL_DEGREE = "고졸";
-const AI_CREDIT_COST = 1000; // AI 생성 시 차감될 고정 크레딧
+const AI_CREDIT_COST = 500; // AI 생성 시 차감될 고정 크레딧
 function isHighSchoolDegree(degree = "") {
   return degree === HIGH_SCHOOL_DEGREE;
 }
