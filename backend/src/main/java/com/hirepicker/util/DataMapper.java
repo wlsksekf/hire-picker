@@ -28,14 +28,16 @@ public class DataMapper {
                 null, // experience_level
                 null, // jobType
                 null, // description
-                null, // endDate
                 null, // startDate
+                null, // endDate
+                null, // companyIdx
                 null, // welfare
                 null, // required_qualifications
                 null, // preferred_qualifications
                 null, // experienceLevel
                 null, // salaryInfo
-                null // salaryInfo
+                null, // internal (외부 공고이므로 false)
+                null // applyUrl
         );
     }
 
