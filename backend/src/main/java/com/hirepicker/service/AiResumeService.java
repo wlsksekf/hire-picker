@@ -23,7 +23,7 @@ public class AiResumeService {
     private final Client client;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    // 생성자를 통해 환경변수를 로드하고 Gemini 클라이언트를 초기화
+    // Gemini SDK 클라이언트를 초기화한다. 환경변수(GOOGLE_API_KEY 등)는 SDK 내부에서 읽는다.
     public AiResumeService() {
         this.client = new Client();
     }
@@ -37,14 +37,15 @@ public class AiResumeService {
      */
     public FullResumeDraftDto generateFullResumeDraft(String userData, String jobPostingData, FullResumeDraftDto resumeDraft) {
         try {
-            // 1. 현재 요청의 모드를 정의
+            // 1. 현재 요청의 모드를 정의한다.
             boolean isRefining = (resumeDraft != null);
             boolean isSpecific = (jobPostingData != null && !jobPostingData.isBlank());
 
-            // 2. 모드에 따라 시스템 프롬프트와 사용자 프롬프트를 동적으로 생성
+            // 2. 모드에 따라 시스템 프롬프트와 사용자 프롬프트를 동적으로 생성한다.
             String systemPrompt;
             String userPrompt;
 
+            // 기본 안내 문구: 결과를 4개의 JSON 항목으로 돌려달라고 명시
             String baseInstruction = "당신은 대한민국 최고의 커리어 컨설턴트입니다. 결과는 반드시 4개 항목(growthProcess, jobCompetencies, prosAndCons, aspirations)을 모두 포함한 JSON 형식으로 반환해야 하며, 각 항목은 200자에서 400자 사이로 작성해야 합니다. ";
             String jobInfo = isSpecific ? jobPostingData : "(특별한 채용 공고 정보나 요청사항 없음)";
 
@@ -93,7 +94,7 @@ public class AiResumeService {
                 userPrompt = "## 사용자 정보\n" + userData + "\n\n" + "## 채용 공고/요청사항\n" + jobInfo;
             }
 
-            // 3. AI 모델 설정 및 호출
+            // 3. AI 모델 설정 및 호출: systemPrompt를 system instruction으로 등록한 뒤 Gemini 모델을 실행한다.
             GenerateContentConfig config = GenerateContentConfig.builder()
                     .systemInstruction(Content.fromParts(Part.fromText(systemPrompt)))
                     .build();
@@ -119,20 +120,25 @@ public class AiResumeService {
                 throw new RuntimeException("AI 응답 JSON 파싱에 실패했습니다.", e);
             }
 
-            // 키 불일치 대비: DB 컬럼명 기반 키와 기존 키를 모두 허용
+            // 키 불일치 대비: DB 컬럼명 기반 키와 기존 키를 모두 허용한다.
             String growth = getFirstNonBlank(rootNode,
                     "background_and_growth", "growthProcess", "growth_process", "growth");
             String competencies = getFirstNonBlank(rootNode,
                     "jobCompetencies", "job_competencies", "personality", "strengths", "skills");
-            String motivation = getFirstNonBlank(rootNode,
-                    "motivation_for_application", "support_motivation", "motivation", "cover_letter");
+            String prosCons = getFirstNonBlank(rootNode,
+                    "prosAndCons", "prosCons", "pros_cons", "pros_and_cons",
+                    "strengthsAndWeaknesses", "strengths_and_weaknesses",
+                    "advantages_disadvantages", "strengths_weaknesses", "personality_analysis");
+            if (prosCons == null || prosCons.isBlank()) {
+                prosCons = buildProsConsFallback(growth, competencies, resumeDraft);
+            }
             String future = getFirstNonBlank(rootNode,
                     "future_aspirations", "aspirations", "futurePlan", "future_plan", "plan");
 
             return new FullResumeDraftDto(
                     growth,
                     competencies,
-                    motivation,
+                    prosCons,
                     future
             );
         } catch (Throwable t) {
@@ -141,10 +147,37 @@ public class AiResumeService {
         }
     }
 
+    // 장단점이 누락된 경우, 이미 생성한 다른 항목을 조합해 하나의 자연스러운 문단으로 만든다.
+    private String buildProsConsFallback(String growth, String competencies, FullResumeDraftDto resumeDraft) {
+        StringBuilder sb = new StringBuilder();
+        appendSentence(sb, resumeDraft != null ? resumeDraft.jobCompetencies() : null);
+        appendSentence(sb, resumeDraft != null ? resumeDraft.growthProcess() : null);
+        appendSentence(sb, competencies);
+        appendSentence(sb, growth);
+
+        String text = sb.toString().trim();
+        if (text.isEmpty()) {
+            return "다양한 프로젝트 경험을 통해 강점을 발전시키고 부족한 부분은 꾸준히 개선하고 있습니다.";
+        }
+        return text;
+    }
+
+    // 문자열이 null/빈칸이 아닌 경우만 공백으로 이어 붙인다.
+    private void appendSentence(StringBuilder sb, String value) {
+        if (value == null) return;
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) return;
+        if (sb.length() > 0) {
+            sb.append(' ');
+        }
+        sb.append(trimmed);
+    }
+
     public FullResumeDraftDto generateFullDraft(String keywords, Long userId) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'generateFullDraft'");
     }
+
     // JSON에서 다수 후보 키 중 첫 번째로 존재하고 공백이 아닌 값을 반환하는 헬퍼
     private static String getFirstNonBlank(JsonNode node, String... keys) {
         for (String k : keys) {
@@ -156,6 +189,7 @@ public class AiResumeService {
         return ""; // 모든 후보가 없으면 빈 문자열 반환
     }
 
+    // 트리를 순회하면서 해당 키를 찾고 값을 문자열로 돌려준다.
     private static String findValue(JsonNode node, String targetKey) {
         if (node == null || targetKey == null || node.isMissingNode()) return null;
         if (node.isObject()) {
@@ -179,16 +213,19 @@ public class AiResumeService {
         return null;
     }
 
+    // 키 비교 시 대소문자/언더스코어 등을 무시하기 위한 비교 함수
     private static boolean keyMatches(String actual, String expected) {
         if (actual == null || expected == null) return false;
         if (actual.equalsIgnoreCase(expected)) return true;
         return normalizeKey(actual).equals(normalizeKey(expected));
     }
 
+    // 키 정규화: 언더스코어/하이픈 등을 제거하고 lower-case로 맞춘다.
     private static String normalizeKey(String key) {
         return key == null ? "" : key.toLowerCase().replaceAll("[_\\-\\s]", "");
     }
 
+    // JsonNode를 문자열로 안전하게 변환 (null -> 빈 문자열)
     private static String nodeToText(JsonNode node) {
         if (node == null || node.isMissingNode() || node.isNull()) return "";
         if (node.isValueNode() || node.isPojo()) {
