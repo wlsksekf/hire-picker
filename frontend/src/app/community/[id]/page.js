@@ -3,7 +3,9 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button, Container, Box } from '@mui/material';
+import { Button, Container, Box, Typography } from '@mui/material';
+import CommentForm from '@/app/comment/CommentForm';
+import CommentSection from '@/app/comment/CommentSection';
 
 const S3_BASE_URL = 'https://hirepicker-storage.s3.ap-northeast-2.amazonaws.com';
 
@@ -72,6 +74,8 @@ export default function PostDetailPage() {
     router.push('/community');
   };
 
+  const isOwner = String(currentUserType).toLowerCase() === "personal" && currentUserIdx && post && String(currentUserIdx) === String(post.puserIdx);
+
   if (loading) {
     return <Box sx={{ p: 6, textAlign: 'center', fontSize: '1.2em' }}>로딩 중...</Box>;
   }
@@ -97,8 +101,6 @@ export default function PostDetailPage() {
   if (!post) {
     return <Box sx={{ p: 3, textAlign: 'center' }}>게시글이 존재하지 않습니다.</Box>;
   }
-
-  const isOwner = String(currentUserType).toLowerCase() === "personal" && currentUserIdx && post && String(currentUserIdx) === String(post.puserIdx);
 
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 8, p: 3 }}>
@@ -154,7 +156,7 @@ export default function PostDetailPage() {
 
         <hr style={{ borderColor: '#f0f0f0', marginTop: '40px', marginBottom: '20px' }} />
 
-        {/* 목록/수정/삭제 MUI 버튼 100% theme 적용 */}
+        {/* 목록/수정/삭제 MUI 버튼 */}
         <Box sx={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center'
         }}>
@@ -194,6 +196,11 @@ export default function PostDetailPage() {
             {errorMsg}
           </Box>
         )}
+
+        {/* 댓글 영역 완전 통합 */}
+        <Box sx={{ mt: 4 }}>
+          <CommentSection postId={postIdx} currentUserIdx={currentUserIdx} />
+        </Box>
       </Box>
     </Container>
   );
