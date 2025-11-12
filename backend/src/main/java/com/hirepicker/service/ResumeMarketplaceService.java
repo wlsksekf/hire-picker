@@ -4,6 +4,8 @@ import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.ResumeMarketItemDto;
 import com.hirepicker.dto.ResumePurchaseResponse;
 import com.hirepicker.entity.*;
+import com.hirepicker.entity.payment.CreditTransaction;
+import com.hirepicker.entity.ResumePurchaseStatus;
 import com.hirepicker.exception.InsufficientCreditsException;
 import com.hirepicker.repository.ApplicationsRepository;
 import com.hirepicker.repository.PersonalUserRepository;
@@ -72,12 +74,11 @@ public class ResumeMarketplaceService {
         }
 
         int cost = Math.max(resume.getCreditCost(), 0);
-        if (cost > 0) {
-            try {
-                creditService.useCredits(userDetails, "RESUME_PURCHASE", (long) cost);
-            } catch (InsufficientCreditsException e) {
-                throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED, e.getMessage());
-            }
+        CreditTransaction transaction;
+        try {
+            transaction = creditService.useCredits(userDetails, "RESUME_PURCHASE", (long) cost);
+        } catch (InsufficientCreditsException e) {
+            throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED, e.getMessage());
         }
 
         PersonalUser buyer = personalUserRepository.findById(userDetails.getId())
@@ -85,8 +86,9 @@ public class ResumeMarketplaceService {
 
         resumePurchaseRepository.save(ResumePurchase.builder()
                 .resume(resume)
-                .personalUser(buyer)
-                .resumeCreditsUsed((long) cost)
+                .buyer(buyer)
+                .transaction(transaction)
+                .status(ResumePurchaseStatus.COMPLETED)
                 .build());
         Long balance = creditService.getCreditBalance(userDetails);
 
@@ -96,7 +98,7 @@ public class ResumeMarketplaceService {
     @Transactional(readOnly = true)
     public boolean isPurchased(Long resumeId, CustomUserDetails userDetails) {
         if (userDetails.getUserType() == UserType.PERSONAL) {
-            return resumePurchaseRepository.existsByResume_IdAndPersonalUser_Id(resumeId, userDetails.getId());
+            return resumePurchaseRepository.existsByResume_IdAndBuyer_Id(resumeId, userDetails.getId());
         }
         return false;
     }

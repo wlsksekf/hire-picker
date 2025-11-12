@@ -142,7 +142,7 @@ public class ResumeService {
                 && resume.getPersonalUser().getId().equals(principal.getId());
         if (!isOwner) {
             if (principal.getUserType() != UserType.PERSONAL ||
-                    !resumePurchaseRepository.existsByResume_IdAndPersonalUser_Id(resumeId, principal.getId())) {
+                    !resumePurchaseRepository.existsByResume_IdAndBuyer_Id(resumeId, principal.getId())) {
                 throw new IllegalArgumentException("조회 권한이 없습니다.");
             }
         }
