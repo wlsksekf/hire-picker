@@ -10,6 +10,7 @@ import com.hirepicker.dto.CalendarJobPostingDto;
 import com.hirepicker.dto.CompanyDto;
 import com.hirepicker.dto.EventDto;
 import com.hirepicker.dto.JobDto;
+import com.hirepicker.entity.JobPosting;
 
 // 채용 데이터 관련 비즈니스 로직을 정의하는 인터페이스
 public interface EmploymentData {
@@ -33,4 +34,18 @@ public interface EmploymentData {
 
     // 캘린더용 채용 행사 목록 조회 (지역 필터링)
     List<CalendarEmpEventDto> getAllEmpEventsForCalendarByRegions(List<String> regions);
+
+    // 특정 기업의 채용 공고 목록 조회
+    List<JobDto> getJobPostingsByCompanyIdx(Long companyIdx);
+
+    // 특정 채용 공고 상세 정보 조회 (ID 기준)
+    JobDto getJobPostingById(String postingId);
+
+    // 특정 채용 공고 상세 정보 조회 (인덱스 기준)
+    JobDto getJobPostingByPostingIdx(Long postingIdx);
+
+    // 관심 기업 ID 목록으로 채용 공고 목록 조회
+    List<JobDto> getJobPostingsByCompanyIds(List<Long> companyIds); // 새로 추가
+
+    JobPosting findByPostingIdx(Long postingIdx);
 }

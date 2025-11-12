@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import {
   Container,
   Typography,
@@ -17,6 +18,7 @@ import {
   Stack,
   IconButton,
   Modal,
+  Button,
 } from "@mui/material";
 import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -32,6 +34,10 @@ import {
   faAddressCard,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "@/api";
+import useAuthStore from "@/store/authStore"; // useAuthStore 추가
+import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
+import { faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
+import { pink } from "@mui/material/colors"; // pink 색상 추가
 
 // Helper component for rendering Welfare & Benefits with relevant emojis
 const WelfareList = ({ text }) => {
@@ -91,8 +97,60 @@ function CompanyDetailPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedReview, setSelectedReview] = useState(null);
 
+  const [jobPostings, setJobPostings] = useState([]);
+  const [jobPostingsLoading, setJobPostingsLoading] = useState(true);
+  const [jobPostingsError, setJobPostingsError] = useState(null);
+
   const reviewsPerPage = 4;
   const pageCount = Math.ceil(reviews.length / reviewsPerPage);
+
+  const { user, isAuthenticated } = useAuthStore(); // useAuthStore 훅 사용
+  const [likedCompanies, setLikedCompanies] = useState(new Set()); // 관심기업 상태
+
+  // 관심기업 전용 useEffect
+  useEffect(() => {
+    if (isAuthenticated) {
+      api
+        .get("/api/company-alarms/me/ids")
+        .then((res) => {
+          setLikedCompanies(new Set(res.data));
+        })
+        .catch((err) => console.error("Failed to fetch liked companies:", err));
+    } else {
+      setLikedCompanies(new Set());
+    }
+  }, [isAuthenticated]);
+
+  // 관심 기업 등록/해제 함수
+  async function toggleLikeCompany(companyIdx) {
+    if (!isAuthenticated) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    try {
+      if (likedCompanies.has(companyIdx)) {
+        // 이미 좋아요 상태이면 좋아요 해제 (DELETE 요청)
+        await api.delete(`/api/company-alarms/companies/${companyIdx}`);
+        setLikedCompanies((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(companyIdx);
+          return newSet;
+        });
+        console.log(`Company ${companyIdx} unliked.`);
+      } else {
+        // 좋아요 상태가 아니면 좋아요 등록 (POST 요청)
+        await api.post("/api/company-alarms", {
+          company_idx: companyIdx,
+        });
+        setLikedCompanies((prev) => new Set(prev).add(companyIdx));
+        console.log(`Company ${companyIdx} liked.`);
+      }
+    } catch (err) {
+      console.error("Failed to toggle like status:", err);
+      alert("관심 기업 상태 변경에 실패했습니다.");
+    }
+  }
 
   const handleNextPage = () => {
     setCurrentPage((prev) => Math.min(prev + 1, pageCount - 1));
@@ -130,8 +188,19 @@ function CompanyDetailPage() {
           setReviewsLoading(false);
         })
         .catch((err) => {
-          // It's okay if there are no reviews, so we don't set an error
           setReviewsLoading(false);
+        });
+
+      setJobPostingsLoading(true);
+      api
+        .get(`/api/companies/${idx}/job-postings`)
+        .then((response) => {
+          setJobPostings(response.data);
+          setJobPostingsLoading(false);
+        })
+        .catch((err) => {
+          setJobPostingsError(err);
+          setJobPostingsLoading(false);
         });
     }
   }, [idx]);
@@ -237,14 +306,59 @@ function CompanyDetailPage() {
                 />
               )}
               <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="h5"
-                  component="h1"
-                  fontWeight="bold"
-                  noWrap
-                >
-                  {company.name}
-                </Typography>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  {" "}
+                  {/* spacing을 2로 변경 */}
+                  <Typography
+                    variant="h6" // variant를 h6으로 변경
+                    component="h1"
+                    fontWeight="bold"
+                    noWrap
+                  >
+                    {company.name}
+                  </Typography>
+                  {isAuthenticated && user && user.userType === "PERSONAL" && (
+                    <Button
+                      variant="contained"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Link 컴포넌트의 페이지 이동 방지
+                        e.preventDefault(); // 기본 이벤트 방지
+                        toggleLikeCompany(company.companyIdx);
+                      }}
+                      startIcon={
+                        <FontAwesomeIcon
+                          icon={
+                            likedCompanies.has(company.companyIdx)
+                              ? faHeartSolid
+                              : faHeartRegular
+                          }
+                          style={{
+                            color: likedCompanies.has(company.companyIdx)
+                              ? pink[500] // 좋아요 시 핑크색
+                              : "gray", // 기본 회색
+                          }}
+                        />
+                      }
+                      style={{
+                        backgroundColor: "white", // 항상 흰색 배경
+                        color: "black", // 항상 검은색 글자
+                      }}
+                      sx={{
+                        border: `1px solid ${
+                          likedCompanies.has(company.companyIdx)
+                            ? pink[500] // 좋아요 시 핑크색 테두리
+                            : "gray" // 좋아요 해제 시 회색 테두리
+                        }`,
+                        borderRadius: "13px",
+                        "&:hover": {
+                          backgroundColor: theme.palette.grey[100], // 호버 시 연한 회색
+                        },
+                      }}
+                    >
+                      관심기업
+                    </Button>
+                  )}
+                </Stack>
                 {company.companyType && (
                   <Chip
                     label={company.companyType}
@@ -434,6 +548,56 @@ function CompanyDetailPage() {
               ) : (
                 <Typography variant="body2" color="text.secondary">
                   아직 작성된 리뷰가 없습니다.
+                </Typography>
+              )}
+            </Paper>
+
+            {/* Job Postings Section */}
+            <Paper elevation={0} sx={{ p: 4, borderRadius: 3, mt: 4 }}>
+              <Typography variant="h6" fontWeight={600} gutterBottom>
+                채용 공고
+              </Typography>
+              <Divider sx={{ my: 2 }} />
+              {jobPostingsLoading ? (
+                <CircularProgress size={24} />
+              ) : jobPostingsError ? (
+                <Alert severity="error">
+                  채용 공고를 불러오는 데 실패했습니다:{" "}
+                  {jobPostingsError.message}
+                </Alert>
+              ) : jobPostings.length > 0 ? (
+                <Grid container spacing={2}>
+                  {jobPostings.map((jobPosting) => (
+                    <Grid item xs={12} sm={6} md={4} key={jobPosting.id}>
+                      <Link
+                        href={`/postings/${jobPosting.postingIdx}`}
+                        passHref
+                        style={{ textDecoration: "none" }}
+                      >
+                        <Paper
+                          variant="outlined"
+                          sx={{
+                            p: 2,
+                            height: "100%",
+                            cursor: "pointer",
+                            width: 280,
+                          }}
+                        >
+                          <Typography variant="subtitle1" fontWeight="bold">
+                            {jobPosting.title}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {jobPosting.companyName}
+                          </Typography>
+                          {/* Add more job posting details as needed */}
+                        </Paper>
+                      </Link>
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  현재 진행 중인 채용 공고가 없습니다.
                 </Typography>
               )}
             </Paper>

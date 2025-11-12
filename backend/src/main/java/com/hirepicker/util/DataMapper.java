@@ -12,22 +12,31 @@ public class DataMapper {
         String id = XmlParser.getTagValue(e, "empSeqno");
         if (id == null || id.isBlank())
             return null; // Or throw an exception
+        Long postingIdx = Long.parseLong(id); // Assuming empSeqno can be parsed to Long
+
         return new JobDto(
-                id,
-                XmlParser.getTagValue(e, "empBusiNm"),
-                XmlParser.getTagValue(e, "empWantedTitle"),
-                XmlParser.getTagValue(e, "empWantedTypeNm"),
-                XmlParser.getTagValue(e, "workPlcNm"),
-                null,
-                null,
-                XmlParser.getTagValue(e, "coClcdNm"),
-                null,
-                null,
-                null,
-                Boolean.FALSE,
-                null,
-                null,
-                XmlParser.getTagValue(e, "nationNm"));
+                id, // id
+                postingIdx, // postingIdx
+                XmlParser.getTagValue(e, "empBusiNm"), // companyName
+                XmlParser.getTagValue(e, "empWantedTitle"), // title
+                XmlParser.getTagValue(e, "empWantedTypeNm"), // employmentType
+                XmlParser.getTagValue(e, "coClcdNm"), // location (this seems incorrect, should be job location)
+                null, // imgUrl
+                null, // searchTerm
+                null, // companyType
+                null, // filters
+                null, // experience_level
+                null, // jobType
+                null, // description
+                null, // endDate
+                null, // startDate
+                null, // welfare
+                null, // required_qualifications
+                null, // preferred_qualifications
+                null, // experienceLevel
+                null, // salaryInfo
+                null // salaryInfo
+        );
     }
 
     public static EventDto mapToEventDto(Element e) {
