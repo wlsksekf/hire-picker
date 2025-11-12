@@ -112,15 +112,34 @@ function HomePage() {
     fetchJobs(0, appliedSearchTerm, appliedFilters);
   }, []); // Initial fetch on component mount
 
-  const handleSearchAndFilter = (term, filters) => {
-    const queryParams = new URLSearchParams();
-    if (term) queryParams.append("searchTerm", term);
-    for (const filterType in filters) {
-      if (filters[filterType] && filters[filterType].length > 0) {
-        queryParams.append(filterType, filters[filterType].join(","));
+  const handleSearchAndFilter = (term, filters, responseData) => {
+    // 필터/검색 결과 데이터가 있으면 현재 페이지에서 업데이트
+    if (responseData) {
+      const newJobs = responseData._embedded
+        ? responseData._embedded.jobDtoList
+        : responseData.content || [];
+      
+      setAppliedSearchTerm(term || "");
+      setAppliedFilters(filters || {});
+      setJobs(newJobs);
+      setPage(0);
+      
+      const isLast = responseData.page
+        ? responseData.page.number >= responseData.page.totalPages - 1
+        : false;
+      setHasNextPage(!isLast);
+      setStatus("success");
+    } else {
+      // 데이터가 없으면 라우터로 이동 (기존 동작 유지)
+      const queryParams = new URLSearchParams();
+      if (term) queryParams.append("searchTerm", term);
+      for (const filterType in filters) {
+        if (filters[filterType] && filters[filterType].length > 0) {
+          queryParams.append(filterType, filters[filterType].join(","));
+        }
       }
+      router.push(`/postings?${queryParams.toString()}`);
     }
-    router.push(`/postings?${queryParams.toString()}`);
   };
 
   function fetchNextPage() {
@@ -191,23 +210,24 @@ function HomePage() {
                 key={job.id || `${job.companyName}-${job.title}`}
                 size={{ xs: 12, sm: 6, md: 4 }}
               >
-                <Link
-                  href={`/postings/${job.postingIdx}`}
-                  passHref
-                  style={{ textDecoration: "none" }}
+                <Card
+                  sx={{
+                    borderRadius: "16px",
+                    height: "100%",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                    transition: "background-color 0.2s, box-shadow 0.2s",
+                    display: "flex",
+                    flexDirection: "column",
+                    "&:hover": {
+                      backgroundColor: theme.palette.action.hover,
+                      boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
+                    },
+                  }}
                 >
-                  <Card
-                    sx={{
-                      borderRadius: "16px",
-                      height: "100%",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                      cursor: "pointer",
-                      transition: "background-color 0.2s, box-shadow 0.2s", // 부드럽게
-                      "&:hover": {
-                        backgroundColor: theme.palette.action.hover, // 살짝 빛나는 느낌
-                        boxShadow: "0 6px 16px rgba(0,0,0,0.1)", // 약간 그림자 강조
-                      },
-                    }}
+                  <Link
+                    href={`/postings/${job.postingIdx}`}
+                    passHref
+                    style={{ textDecoration: "none", color: "inherit" }}
                   >
                     <Box
                       sx={{
@@ -218,6 +238,7 @@ function HomePage() {
                         backgroundSize: "cover",
                         backgroundPosition: "center",
                         backgroundColor: theme.palette.grey[200],
+                        cursor: "pointer",
                       }}
                     />
                     <Box
@@ -227,6 +248,7 @@ function HomePage() {
                         flexDirection: "column",
                         justifyContent: "space-between",
                         height: "calc(100% - 180px)",
+                        cursor: "pointer",
                       }}
                     >
                       <Typography color="text.secondary" noWrap>
@@ -262,32 +284,69 @@ function HomePage() {
                           />
                         )}
                       </Box>
-                      <CardActions sx={{ mt: 2, justifyContent: "flex-end" }}>
-                        <Box onClick={(e) => e.stopPropagation()}>
-                          <Bookmark jobId={job.postingIdx} />
-                        </Box>
-                        <Button
-                          variant="outlined"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedPost(job);
-                          }} // 채팅 독립
-                        >
-                          실시간 채팅
-                        </Button>
-                        <Button
-                          variant="contained"
-                          href={job.homepageUrl}
-                          target="_blank"
-                          disabled={!job.homepageUrl}
-                          onClick={(e) => e.stopPropagation()} // 지원하기 독립
-                        >
-                          지원하기
-                        </Button>
-                      </CardActions>
                     </Box>
-                  </Card>
-                </Link>
+                  </Link>
+                  <CardActions 
+                    sx={{ 
+                      mt: 2, 
+                      justifyContent: "flex-end", 
+                      px: 3, 
+                      pb: 2,
+                      position: 'relative',
+                      zIndex: 10
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                  >
+                    <Box onClick={(e) => e.stopPropagation()}>
+                      <Bookmark jobId={job.postingIdx} />
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSelectedPost(job);
+                      }}
+                      sx={{ pointerEvents: 'auto' }}
+                    >
+                      실시간 채팅
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // 내부 지원 가능한 공고(c_user가 있는 경우)만 다이얼로그 열기
+                        if (job.internal) {
+                          setApplyDialogJob(job);
+                        } else if (job.applyUrl) {
+                          // 외부 공고는 지원 링크로 이동
+                          const url = job.applyUrl.startsWith('http') 
+                            ? job.applyUrl 
+                            : `http://${job.applyUrl}`;
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                        } else {
+                          alert('지원 링크가 제공되지 않았습니다.');
+                        }
+                      }}
+                      disabled={!job.internal && !job.applyUrl}
+                      sx={{ 
+                        pointerEvents: 'auto',
+                        position: 'relative',
+                        zIndex: 11,
+                        '&:hover': {
+                          backgroundColor: 'primary.dark',
+                        }
+                      }}
+                    >
+                      지원하기
+                    </Button>
+                  </CardActions>
+                </Card>
               </Grid>
             );
           })}
@@ -313,16 +372,12 @@ function HomePage() {
         />
       )}
 
-      {/* ResumeApplyDialog is not defined, so I'm commenting it out.
-          You should import and define it.
-
       <ResumeApplyDialog
         open={Boolean(applyDialogJob)}
         job={applyDialogJob}
         onClose={handleApplyDialogClose}
         onSuccess={handleApplySuccess}
       />
-      */}
 
       <Snackbar
         open={snackbar.open}

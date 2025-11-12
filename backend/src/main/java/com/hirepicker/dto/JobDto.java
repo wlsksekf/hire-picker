@@ -31,7 +31,9 @@ public record JobDto(
         String required_qualifications,
         String preferred_qualifications,
         String experienceLevel,
-        String salaryInfo
+        String salaryInfo,
+        Boolean internal, // 내부 지원 가능 여부 (cUserIdx가 있으면 true)
+        String applyUrl // 외부 지원 링크 (회사 웹사이트 URL)
 
 ) {
 }

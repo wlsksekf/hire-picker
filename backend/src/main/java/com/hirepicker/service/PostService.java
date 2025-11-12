@@ -32,13 +32,10 @@ public class PostService {
 
     @Value("${S3_ACCESS_KEY}")
     private String awsAccessKey;
-
     @Value("${S3_SECRET_KEY}")
     private String awsSecretKey;
-
     @Value("${S3_BUCKET_NAME}")
     private String s3BucketName;
-
     @Value("${S3_REGION:ap-northeast-2}")
     private String s3Region;
 
@@ -104,10 +101,26 @@ public class PostService {
         return postRepository.save(post);
     }
 
-    // 게시글 전체 목록 조회
-    public Page<PostListDto> getAllPostList(int cPage) {
+    // 게시글 전체 목록 및 검색 기능 (type/query)
+    public Page<PostListDto> getPostListWithSearch(int cPage, String type, String query) {
         Pageable pageable = PageRequest.of(cPage - 1, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "postIdx"));
-        return postRepository.findAllPostList(pageable);
+
+        // 검색 조건 분기
+        if (query != null && !query.trim().isEmpty()) {
+            switch (type.toLowerCase()) {
+                case "title":
+                    return postRepository.findAllPostListByTitle(query, pageable);
+                case "author":
+                case "nickname":
+                    return postRepository.findAllPostListByNickname(query, pageable);
+                case "content":
+                    return postRepository.findAllPostListByContent(query, pageable);
+                default:
+                    return postRepository.findAllPostList(pageable); // type 값 이상하면 전체 출력
+            }
+        } else {
+            return postRepository.findAllPostList(pageable);  // 검색값 없으면 전체
+        }
     }
 
     // 카테고리별 게시글 조회
@@ -125,7 +138,7 @@ public class PostService {
                     .orElse(null);
         }
         // 조회수 DB 1 증가 + Redis 키 생성
-        postRepository.increaseViewCount(postIdx); // Native 쿼리 필요
+        postRepository.increaseViewCount(postIdx);
         redisTemplate.opsForValue().set(cacheKey, "1", 24, TimeUnit.HOURS);
         return postRepository.findPostDetailWithNickname(postIdx)
                 .orElse(null);
@@ -134,8 +147,8 @@ public class PostService {
     // 게시글 수정 + S3 파일/이미지 변경
     @Transactional
     public boolean updatePost(Long postIdx, Long loginUserIdx, String title, String content,
-                              MultipartFile imageFile, MultipartFile attachmentFile,
-                              boolean deleteImg, boolean deleteFile) {
+                             MultipartFile imageFile, MultipartFile attachmentFile,
+                             boolean deleteImg, boolean deleteFile) {
         Posts post = postRepository.findById(postIdx).orElse(null);
         if (post == null || !post.getPUserIdx().equals(loginUserIdx)) {
             return false;

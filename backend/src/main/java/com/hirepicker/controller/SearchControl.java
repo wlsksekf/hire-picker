@@ -91,12 +91,8 @@ public class SearchControl {
         CustomUserDetails p_user = (CustomUserDetails) auth.getPrincipal();
         String userIdx = String.valueOf(p_user.getId());
 
-        System.out.println(postIdx + "IIDIDIDIDIDIDIDIDIDIDIIDIDID");
-        System.out.println(userIdx + "IDXDIXDIXDIXIDXIDXIDXIDIXDIXDIXDIDX");
-
         boolean isBookmarked = bookMarkService.isBookmarked(userIdx, postIdx);
 
-        System.out.println(isBookmarked + "트루야펄스냐트루냐펄스냐트루냐펄스냐");
         m.put("LoggedIn", true);
         m.put("Bookmarked", isBookmarked);
 
