@@ -2,6 +2,7 @@ package com.hirepicker.config.security;
 
 import com.hirepicker.entity.CompanyUser;
 import com.hirepicker.entity.PersonalUser;
+import com.hirepicker.entity.ManageUser;
 import com.hirepicker.entity.UserType;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
@@ -22,6 +23,7 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
     private final boolean isEnabled;
     private final UserType userType;
     private Map<String, Object> attributes; // OAuth2
+    private boolean signupBonusGranted;
 
     // 생성자: 개인 또는 기업 유저에 따라 CustomUserDetails 생성
     public CustomUserDetails(PersonalUser personalUser) {
@@ -38,6 +40,14 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
         this.password = companyUser.getPassword();
         this.isEnabled = !companyUser.isCancel();
         this.userType = UserType.COMPANY;
+    }
+
+    public CustomUserDetails(ManageUser manageUser) {
+        this.id = manageUser.getId();
+        this.username = manageUser.getLoginId();
+        this.password = manageUser.getPassword();
+        this.isEnabled = true; // 관리자 계정은 별도 비활성화 플래그 없음
+        this.userType = UserType.MANAGE;
     }
 
     // OAuth2 로그인용 생성자 (PersonalUser만 해당)
@@ -64,6 +74,9 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
         // 여기에서 userType에 따라 다른 ROLE을 부여할 수 있음
         if (userType == UserType.COMPANY) {
             return Collections.singleton(new SimpleGrantedAuthority("ROLE_COMPANY"));
+        }
+        if (userType == UserType.MANAGE) {
+            return Collections.singleton(new SimpleGrantedAuthority("ROLE_MANAGE"));
         }
         return Collections.singleton(new SimpleGrantedAuthority("ROLE_PERSONAL"));
     }
@@ -110,4 +123,7 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
         return String.valueOf(id);
     }
 
+    public void markSignupBonusGranted() {
+        this.signupBonusGranted = true;
+    }
 }

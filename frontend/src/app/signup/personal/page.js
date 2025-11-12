@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image'; // Image 컴포넌트 임포트
-import { Button, TextField, Container, Typography, Box, Alert, CircularProgress, MenuItem } from '@mui/material';
+import { Button, TextField, Container, Typography, Box, Alert, CircularProgress, MenuItem, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import { Autocomplete } from '@react-google-maps/api';
 import { sendVerificationEmail, checkVerificationCode, signupPersonal } from '@/api'; // checkVerificationCode 임포트
 import { StyledFormWrapper } from '@/components/StyledForm';
@@ -36,6 +36,8 @@ export default function SignupPage() {
     const [verifyLoading, setVerifyLoading] = useState(false); // 코드 확인 로딩
     const [error, setError] = useState(null);
     const [successMessage, setSuccessMessage] = useState(null);
+    const [bonusDialogOpen, setBonusDialogOpen] = useState(false);
+    const [bonusAmount, setBonusAmount] = useState(5000);
 
     const autocompleteRef = useRef(null);
 
@@ -109,6 +111,11 @@ export default function SignupPage() {
         setFormData(prevData => ({ ...prevData, address: e.target.value }));
     };
 
+    const handleBonusDialogClose = () => {
+        setBonusDialogOpen(false);
+        router.push('/login');
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         setLoading(true);
@@ -140,9 +147,14 @@ export default function SignupPage() {
         };
 
         signupPersonal(dataToSend)
-            .then(() => {
-                alert("회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.");
-                router.push('/login');
+            .then((response) => {
+                const message = response?.data?.message;
+                if (message) {
+                    setSuccessMessage(message);
+                }
+                const bonus = response?.data?.bonusAmount ?? 5000;
+                setBonusAmount(bonus);
+                setBonusDialogOpen(true);
             })
             .catch(err => {
                 setError(err.response?.data || '회원가입에 실패했습니다. 입력 정보를 확인해주세요.');
@@ -329,6 +341,21 @@ export default function SignupPage() {
                         <Image src="/assets/kakao-logo.svg" alt="Kakao logo" width={40} height={40} />
                     </a>
                 </div>
+
+                <Dialog open={bonusDialogOpen} onClose={handleBonusDialogClose}>
+                    <DialogTitle>회원가입 완료</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>
+                            환영합니다! 신규 가입 축하 보너스로 {bonusAmount?.toLocaleString?.() ?? bonusAmount} 크레딧이 지급되었습니다.
+                            로그인 후 마이페이지에서 잔액을 확인해 보세요.
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleBonusDialogClose} autoFocus>
+                            확인
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
             </div>
         </StyledFormWrapper>

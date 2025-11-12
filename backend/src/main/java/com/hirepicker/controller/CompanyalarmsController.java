@@ -73,7 +73,7 @@ public class CompanyalarmsController {
     }
 
     @GetMapping("/idx-by-email")
-    public ResponseEntity<Map<String, Long>> getIdxByEmail(@RequestParam String email) {
+    public ResponseEntity<Map<String, Long>> getIdxByEmail(@RequestParam("email") String email) {
         Long idx = authService.findPersonalUserIdxByEmail(email);
         if (idx != null) {
             Map<String, Long> response = new HashMap<>();

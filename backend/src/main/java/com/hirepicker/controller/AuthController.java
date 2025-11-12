@@ -4,6 +4,7 @@ import com.hirepicker.dto.CompanySignupRequestDto;
 import com.hirepicker.dto.LoginRequest;
 import com.hirepicker.dto.SignupRequestDto; // ★ 새로 만든 DTO 임포트
 import com.hirepicker.service.AuthService;
+import com.hirepicker.service.CreditService;
 import com.hirepicker.service.EmailService; // ★ EmailService 임포트
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -105,7 +106,7 @@ public class AuthController {
         @ApiResponse(responseCode = "500", description = "회원가입 중 오류가 발생했습니다.")
     })
     @PostMapping("/signup/personal")
-    public ResponseEntity<String> registerPersonalUser(@Valid @RequestBody SignupRequestDto signupRequest, HttpServletResponse response) {
+    public ResponseEntity<Map<String, Object>> registerPersonalUser(@Valid @RequestBody SignupRequestDto signupRequest, HttpServletResponse response) {
         log.info("[API] /api/auth/signup/personal 요청 수신. 사용자: {}", signupRequest.getEmail());
 
         // 1. (★수정) '인증 완료' 상태 검증
@@ -113,22 +114,30 @@ public class AuthController {
 
         if (!isVerified) {
             log.warn("'인증 완료' 상태가 아닙니다. 이메일: {}", signupRequest.getEmail());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("이메일 인증이 완료되지 않았거나 만료되었습니다.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", "이메일 인증이 완료되지 않았거나 만료되었습니다."));
         }
 
         // 2. (검증 통과) 기존 회원가입 로직 수행
         try {
-            authService.registerPersonalUser(signupRequest, response);
+            boolean bonusGranted = authService.registerPersonalUser(signupRequest, response);
             log.info("개인 회원가입 성공. 사용자: {}", signupRequest.getEmail());
-            // 3. 성공 응답 (JWT 토큰 포함)
-            return ResponseEntity.status(HttpStatus.CREATED).build();
+            // 3. 성공 응답 (보너스 지급 안내 포함)
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of(
+                            "message", "회원가입이 완료되었습니다.",
+                            "signupBonusGranted", bonusGranted,
+                            "bonusAmount", CreditService.SIGNUP_BONUS_AMOUNT
+                    ));
 
         } catch (IllegalArgumentException e) {
              log.warn("회원가입 중 충돌 발생: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             log.error("회원가입 처리 중 알 수 없는 오류 발생. 사용자: {}", signupRequest.getEmail(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("회원가입 중 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "회원가입 중 오류가 발생했습니다."));
         }
     }
 

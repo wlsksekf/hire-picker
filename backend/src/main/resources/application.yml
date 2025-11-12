@@ -127,6 +127,27 @@ info:
   description: 구인구직 사이트 Hire-Picker 프로젝트 API 명세서
   version: v1.0.0
 
+rapidapi:
+  jobsdb:
+    key: ${RAPIDAPI_JOBSDB_KEY}
+    host: active-jobs-db.p.rapidapi.com
+    endpoint: active-ats-7d
+    limit: 100
+    offset: 0
+    page-count: 10
+    sort-by: DATE
+    order: DESC
+    title-filter: "\"Data Engineer\""
+    location-filter: "\"United States\" OR \"United Kingdom\""
+  jsearch:
+    key: ${RAPIDAPI_JSEARCH_KEY}
+    host: jsearch.p.rapidapi.com
+    query: "developer jobs in chicago"
+    country: us
+    language: en
+    date-posted: all
+    page: 1
+    num-pages: 5
 # === 로깅 설정 ===
 logging:
   level:
@@ -158,7 +179,6 @@ api:
   gemini:
     api:
       key: ${GOOGLE_API_KEY}
-
 management:
   endpoints:
     web:

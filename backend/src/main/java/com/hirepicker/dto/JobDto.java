@@ -24,6 +24,8 @@ public record JobDto(
     String experience_level, // 학력
     String jobType,
     Boolean internal, // 우리 사이트 공고 여부
-    String applyUrl // 외부 지원 링크
+    String applyUrl, // 외부 지원 링크
+    Long postingIdx, // 내부 식별자 (posting_idx)
+    String country // 국가 정보
 
 ) {}

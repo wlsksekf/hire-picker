@@ -4,8 +4,25 @@ import { Modal, Box, Typography, Chip, Button } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
 
-export default function JobDetailModal({ job, onClose }) {
+export default function JobDetailModal({ job, onClose, onApply }) {
   if (!job) return null;
+
+  const isInternal = Boolean(job.internal);
+  const externalApplyUrl = job.applyUrl || job.homepageUrl;
+
+  function handleApply() {
+    if (isInternal && typeof onApply === 'function') {
+      onApply(job);
+      return;
+    }
+
+    if (externalApplyUrl) {
+      const url = externalApplyUrl.startsWith('http')
+        ? externalApplyUrl
+        : `http://${externalApplyUrl}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  }
 
   return (
     <Modal open={!!job} onClose={onClose}>
@@ -45,12 +62,8 @@ export default function JobDetailModal({ job, onClose }) {
           {job.description || '상세 설명이 없습니다.'}
         </Typography>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          {job.homepageUrl && (
-            <Button
-              variant="contained"
-              href={job.homepageUrl}
-              target="_blank"
-            >
+          {(isInternal || externalApplyUrl) && (
+            <Button variant="contained" onClick={handleApply}>
               지원하기
             </Button>
           )}

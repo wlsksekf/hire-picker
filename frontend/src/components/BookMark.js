@@ -47,7 +47,7 @@ export default function Bookmark(props) {
         // 백엔드로부터 받은 최신 상태로 UI 업데이트
         if(res.data.Bookmarked){
         setIsBookmarked(res.data.Bookmarked);
-        alert("즐겨찾기 등록되었습니다다.")
+        alert("즐겨찾기 등록되었습니다.")
       }
         else{
         setIsBookmarked(res.data.Bookmarked);
@@ -56,7 +56,7 @@ export default function Bookmark(props) {
 
       })
       .catch(function (error) {
-        alert("북마크 처리에 실패했습니다다..");
+        alert("북마크 처리에 실패했습니다..");
       })
       .finally(function () {
         setIsLoading(false); // 로딩 종료 (성공/실패 여부와 관계없이)

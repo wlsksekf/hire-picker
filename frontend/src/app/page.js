@@ -11,7 +11,8 @@ import {
   Button,
   Chip,
   Card,
-  CardActions
+  CardActions,
+  Snackbar,
 } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendar } from '@fortawesome/free-solid-svg-icons';
@@ -20,8 +21,27 @@ import ChatRoom from '@/components/ChatRoom';
 import SearchFilterBar from '@/components/SearchFilterBar';
 import Bookmark from '@/components/BookMark';
 import JobDetailModal from '@/components/JobDetailModal';
+import ResumeApplyDialog from '@/components/ResumeApplyDialog';
+import useAuthStore from '@/store/authStore';
 
 const PAGE_SIZE = 18;
+const DEFAULT_FILTERS = {
+  jobType: [],
+  location: [],
+  employmentType: [],
+  experienceLevel: [],
+  companyType: [],
+  source: [],
+  overseas: [],
+};
+
+function normalizeFilters(filters = {}) {
+  const normalized = { ...DEFAULT_FILTERS };
+  Object.keys(DEFAULT_FILTERS).forEach((key) => {
+    normalized[key] = Array.isArray(filters[key]) ? filters[key] : [];
+  });
+  return normalized;
+}
 
 function MainPage() {
   const theme = useTheme();
@@ -34,15 +54,13 @@ function MainPage() {
   const [selectedPost, setSelectedPost] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null); // 상세 공고 모달용
 
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const disableAuth = process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true';
+  const [applyDialogJob, setApplyDialogJob] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
   const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
-  const [appliedFilters, setAppliedFilters] = useState({
-    jobType: [],
-    location: [],
-    employmentType: [],
-    experienceLevel: [],
-    companyType: [],
-    source: [],
-  });
+  const [appliedFilters, setAppliedFilters] = useState(() => normalizeFilters());
 
   const fetchJobs = useCallback((pageNum, searchTerm, filters, options = {}) => {
     const silent = options.silent === true;
@@ -56,9 +74,11 @@ function MainPage() {
       }
     }
 
+    const normalizedFilters = normalizeFilters(filters);
+
     const requestbody = {
       searchTerm: searchTerm || '',
-      filters: filters
+      filters: normalizedFilters,
     };
 
     axios.post(`/api/search?page=${pageNum}&size=${PAGE_SIZE}`, requestbody)
@@ -116,8 +136,9 @@ function MainPage() {
   }, [fetchJobs, appliedSearchTerm, appliedFilters]);
 
   function handleSearchAndFilter(term, filters, responseData) {
+    const normalized = normalizeFilters(filters);
     setAppliedSearchTerm(term);
-    setAppliedFilters(filters);
+    setAppliedFilters(normalized);
     setPage(0);
 
     if (responseData && responseData.content) {
@@ -140,12 +161,47 @@ function MainPage() {
   function handleApplyClick(job, event) {
     event.stopPropagation();
     if (job.internal) {
-      setSelectedJob(job);
+      if (!disableAuth && !isAuthenticated) {
+        setSnackbar({ open: true, message: '로그인이 필요합니다.', severity: 'warning' });
+        window.location.href = '/login';
+        return;
+      }
+      if (!job.postingIdx) {
+        setSnackbar({ open: true, message: '지원 정보를 찾을 수 없습니다.', severity: 'error' });
+        return;
+      }
+      setApplyDialogJob(job);
       return;
     }
     if (job.applyUrl) {
       window.open(job.applyUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      setSnackbar({ open: true, message: '지원 링크가 제공되지 않은 공고입니다.', severity: 'info' });
     }
+  }
+
+  function handleApplyDialogClose() {
+    setApplyDialogJob(null);
+  }
+
+  function handleApplySuccess(result) {
+    if (result?.message) {
+      setSnackbar({
+        open: true,
+        message: result.message,
+        severity: result.success === false ? 'error' : 'success',
+      });
+    }
+  }
+
+  function handleSnackbarClose(event, reason) {
+    if (reason === 'clickaway') return;
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  }
+
+  function handleModalApply(job) {
+    if (!job) return;
+    handleApplyClick(job, { stopPropagation: () => {} });
   }
 
   if (status === 'pending' && jobs.length === 0) {
@@ -280,8 +336,26 @@ function MainPage() {
       )}
 
       {selectedJob && (
-        <JobDetailModal job={selectedJob} onClose={() => setSelectedJob(null)} />
+        <JobDetailModal job={selectedJob} onClose={() => setSelectedJob(null)} onApply={handleModalApply} />
       )}
+
+      <ResumeApplyDialog
+        open={Boolean(applyDialogJob)}
+        job={applyDialogJob}
+        onClose={handleApplyDialogClose}
+        onSuccess={handleApplySuccess}
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={5000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }

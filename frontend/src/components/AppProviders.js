@@ -12,6 +12,7 @@ import { oklch2rgb } from 'colorizr';
 import { ThemeModeContext } from '../theme/ThemeModeContext';
 import useAuthStore from '@/store/authStore'; // useAuthStore 임포트 (추가됨)
 import { LoadScript } from '@react-google-maps/api';
+import { usePathname } from 'next/navigation';
 
 // ★ 2. 'places' 라이브러리만 로드
 const libraries = ['places'];
@@ -104,9 +105,15 @@ function getTheme(mode) {
 export default function AppProviders({ children }) {
   const [mode, setMode] = useState('light'); // 테마 모드 상태 (light/dark)
   const { initializeAuth, isLoading } = useAuthStore(); // isLoading 가져오기
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith('/hirepicker7338/admin');
 
   // 컴포넌트 마운트 시 인증 상태 초기화
   useEffect(() => {
+    if (process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true') {
+      useAuthStore.setState({ isAuthenticated: false, user: null, isLoading: false });
+      return;
+    }
     initializeAuth();
   }, [initializeAuth]);
 
@@ -125,6 +132,10 @@ export default function AppProviders({ children }) {
                 {isLoading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
                     <CircularProgress />
+                  </Box>
+                ) : isAdminRoute ? (
+                  <Box sx={{ minHeight: '100vh' }}>
+                    {children}
                   </Box>
                 ) : (
                   <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>

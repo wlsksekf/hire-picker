@@ -29,6 +29,7 @@ import {
   faCookieBite,
   faSync,
   faBell,
+  faCloudArrowDown,
 } from '@fortawesome/free-solid-svg-icons';
 import DarkModeSwitch from '../../components/DarkModeSwitch'; // 커스텀 스위치 import
 import { api } from '@/api'; // 공용 api 인스턴스 사용
@@ -67,6 +68,42 @@ function SettingsPage() {
         setLoading(false);
       });
   }
+
+  const handleRapidJobImport = () => {
+    setLoading(true);
+    setStatus({ type: 'info', message: 'RapidAPI 공고를 불러오는 중입니다...' });
+    api
+      .post('/api/work24/sync/rapid-jobs')
+      .then((response) => {
+        const result = response.data;
+        const message = typeof result === 'object' ? result.message || JSON.stringify(result) : result;
+        setStatus({ type: 'success', message });
+      })
+      .catch((error) => {
+        const raw = error.response?.data || error.message || '채용 공고 수집 중 오류가 발생했습니다.';
+        const message = typeof raw === 'object' ? raw.message || JSON.stringify(raw) : raw;
+        setStatus({ type: 'error', message });
+      })
+      .finally(() => setLoading(false));
+  };
+
+  const handleJSearchJobImport = () => {
+    setLoading(true);
+    setStatus({ type: 'info', message: 'JSearch 공고를 불러오는 중입니다...' }); // JSearch 진행 상태 안내
+    api
+      .post('/api/work24/sync/jsearch-jobs')
+      .then((response) => {
+        const result = response.data;
+        const message = typeof result === 'object' ? result.message || JSON.stringify(result) : result;
+        setStatus({ type: 'success', message });
+      })
+      .catch((error) => {
+        const raw = error.response?.data || error.message || 'JSearch 공고 수집 중 오류가 발생했습니다.';
+        const message = typeof raw === 'object' ? raw.message || JSON.stringify(raw) : raw;
+        setStatus({ type: 'error', message });
+      })
+      .finally(() => setLoading(false));
+  };
 
   // 아이콘 스타일
   const iconStyle = {
@@ -158,7 +195,6 @@ function SettingsPage() {
               }}
             >
               {loading && <CircularProgress size={24} sx={{ mr: 2 }} />}{' '}
-              {/* 로딩 중일 때 로딩 스피너 표시 */}
               <Stack direction="row" spacing={1}>
                 <Button
                   variant="contained"
@@ -216,10 +252,28 @@ function SettingsPage() {
                   <FontAwesomeIcon icon={faSync} style={{ marginRight: 8 }} />
                   자격증 불러오기
                 </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleRapidJobImport}
+                  disabled={loading}
+                >
+                  <FontAwesomeIcon icon={faCloudArrowDown} style={{ marginRight: 8 }} />
+                  RapidAPI 공고 추가
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleJSearchJobImport}
+                  disabled={loading}
+                >
+                  <FontAwesomeIcon icon={faCloudArrowDown} style={{ marginRight: 8 }} />
+                  JSearch 공고 추가
+                </Button>
               </Stack>
             </Box>
           </ListItem>
-          {status.message && ( // 상태 메시지가 있을 경우 표시
+          {status.message && (
             <ListItem sx={{ mt: 2 }}>
               <Alert severity={status.type || 'info'} sx={{ width: '100%' }}>
                 {status.message}

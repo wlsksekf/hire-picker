@@ -33,6 +33,7 @@ public class ResumeService {
     private final MilitaryServiceRepository militaryServiceRepository; // 병역 리포지토리
     private final SchoolRepository schoolRepository; // 학교 리포지토리
     private final S3UploadService s3UploadService; // S3 업로드 서비스
+    private final com.hirepicker.repository.ResumePurchaseRepository resumePurchaseRepository;
 
     // 이력서를 생성/저장
     @Transactional
@@ -137,9 +138,13 @@ public class ResumeService {
 
         Resume resume = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이력서입니다."));
-        // 소유자 검증(개인회원만)
-        if (!resume.getPersonalUser().getId().equals(principal.getId())) {
-            throw new IllegalArgumentException("조회 권한이 없습니다.");
+        boolean isOwner = principal.getUserType() == UserType.PERSONAL
+                && resume.getPersonalUser().getId().equals(principal.getId());
+        if (!isOwner) {
+            if (principal.getUserType() != UserType.PERSONAL ||
+                    !resumePurchaseRepository.existsByResume_IdAndBuyer_Id(resumeId, principal.getId())) {
+                throw new IllegalArgumentException("조회 권한이 없습니다.");
+            }
         }
         // 개인 정보 구성
         var user = resume.getPersonalUser();
