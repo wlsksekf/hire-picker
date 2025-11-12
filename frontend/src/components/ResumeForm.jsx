@@ -26,6 +26,7 @@ import {
   FormControlLabel,
   InputAdornment,
   Tooltip,
+  Alert,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import Image from "next/image";
@@ -91,6 +92,9 @@ export default function ResumeForm({
   previewImage,
   onImageChange,
   isLoading,
+  aiCreditCost = null,
+  creditBalance = null,
+  isAiCreditInsufficient = false,
   onAiGenerate,
   onOpenAiDialog,
   onDownload,
@@ -717,9 +721,25 @@ export default function ResumeForm({
                     AI 자기소개서 초안 쓰기/개선하기
                   </Typography>
                 </Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: aiCreditCost != null || creditBalance != null ? 1 : 2 }}>
                   ai 이력서 작성 비서 픽키에게 정보를 입력해 주세요.
                 </Typography>
+                {/* AI 크레딧 안내 */}
+                {aiCreditCost != null && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: creditBalance != null ? 1 : 2 }}>
+                    AI 자기소개서 생성 시 {aiCreditCost}크레딧이 차감됩니다.
+                  </Typography>
+                )}
+                {creditBalance != null && (
+                  <Alert
+                    severity={isAiCreditInsufficient ? "warning" : "info"}
+                    sx={{ mb: 2 }}
+                  >
+                    {isAiCreditInsufficient
+                      ? `보유 크레딧이 부족합니다. 현재 ${creditBalance}C 남았습니다.`
+                      : `현재 보유 크레딧: ${creditBalance}C`}
+                  </Alert>
+                )}
                 <TextField
                   fullWidth
                   multiline
