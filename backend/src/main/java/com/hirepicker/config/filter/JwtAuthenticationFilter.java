@@ -42,7 +42,6 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
                 "/api/work24/", // /api/work24/**
                 "/actuator/", // /actuator/**
                 "/api/health/", // /api/health/**
-                "/api/manage/", // /api/manage/**
                 "/confirm/", // /confirm/**
                 "/confirm-billing",
                 "/issue-billing-key",
@@ -56,9 +55,10 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
                 "/ws", // /ws, /ws/**
                 "/api/ai/upload-image",
                 "/api/search"
-                
+
 
         );
+        // 관리자 API(/api/manage/**)는 반드시 인증 필터를 거쳐야 하므로 제외
 
     // ★ GET /api/posts와 /api/posts/{postIdx}는 필터 미적용 (비회원 조회 가능)
     if (method.equals("GET") && (path.equals("/api/posts") || path.matches("/api/posts/\\d+"))) {
@@ -134,7 +134,7 @@ protected boolean shouldNotFilter(HttpServletRequest request) throws ServletExce
                     return cookie.getValue();
                 }
             }
-            log.debug("[Filter] Cookies present but no accessToken found. Cookie names: {}", 
+            log.debug("[Filter] Cookies present but no accessToken found. Cookie names: {}",
                 java.util.Arrays.stream(cookies).map(jakarta.servlet.http.Cookie::getName).collect(java.util.stream.Collectors.joining(", ")));
         } else {
             log.debug("[Filter] No cookies in request.");

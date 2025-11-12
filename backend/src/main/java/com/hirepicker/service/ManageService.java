@@ -27,13 +27,17 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hirepicker.dto.PendingCompanyApprovalDto;
+import com.hirepicker.entity.ApprovalStatus;
 import com.hirepicker.entity.Certification;
 import com.hirepicker.entity.Company;
+import com.hirepicker.entity.CompanyUser;
 import com.hirepicker.entity.JobPosting;
 import com.hirepicker.entity.JobPostingStatus;
 import com.hirepicker.entity.School;
 import com.hirepicker.repository.CertificationRepository;
 import com.hirepicker.repository.CompanyRepository;
+import com.hirepicker.repository.CompanyUserRepository;
 import com.hirepicker.repository.JobPostingRepository;
 import com.hirepicker.repository.SchoolRepository;
 
@@ -61,6 +65,7 @@ public class ManageService {
     private final CertificationRepository certificationRepository;
     private final JobPostingRepository jobPostingRepository;
     private final CompanyRepository companyRepository;
+    private final CompanyUserRepository companyUserRepository;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -124,6 +129,38 @@ public class ManageService {
 
     @Value("${rapidapi.jsearch.num-pages:1}") // 조회할 페이지 수
     private int jsearchNumPages;
+
+    @Transactional(readOnly = true)
+    public List<PendingCompanyApprovalDto> getPendingCompanyApprovals() {
+        // 승인 대기 중인 기업회원만 모아 관리자에게 전달
+        return companyUserRepository.findByIsApproved(ApprovalStatus.PENDING)
+                .stream()
+                .map(user -> {
+                    Company company = user.getCompany();
+                    return PendingCompanyApprovalDto.builder()
+                            .companyUserId(user.getId())
+                            .companyId(company != null ? company.getCompanyIdx() : null)
+                            .companyName(company != null ? company.getCompanyName() : null)
+                            .contactName(user.getName())
+                            .contactEmail(user.getEmail())
+                            .contactPhone(user.getPhoneNumber())
+                            .verificationFileUrl(user.getVerificationFile()) // S3 인증 서류 URL 전달
+                            .submittedDate(user.getRegDate())
+                            .approvalStatus(user.getIsApproved())
+                            .build();
+                })
+                .toList();
+    }
+
+    @Transactional
+    public void approveCompanyUser(Long companyUserId) {
+        CompanyUser companyUser = companyUserRepository.findById(companyUserId)
+                .orElseThrow(() -> new IllegalArgumentException("승인 대상 기업회원이 존재하지 않습니다."));
+
+        companyUser.setIsApproved(ApprovalStatus.APPROVED); // 승인 상태 갱신
+        companyUser.setModDate(LocalDate.now()); // 승인일 갱신
+        companyUserRepository.save(companyUser); // 변경사항 저장
+    }
 
     // === RapidAPI 채용공고 ===
     @Transactional
