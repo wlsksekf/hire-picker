@@ -245,27 +245,8 @@ function HomePage() {
                       >
                         {job.title}
                       </Typography>
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                        {job.employmentType && (
-                          <Chip label={job.employmentType} />
-                        )}
-                        {job.location && <Chip label={job.location} />}
-                        {job.experience_level && (
-                          <Chip label={job.experience_level} />
-                        )}
-                        {job.companyType && <Chip label={job.companyType} />}
-                        {job.jobType && <Chip label={job.jobType} />}
-                        {job.startDate && job.endDate && (
-                          <Chip
-                            icon={<FontAwesomeIcon icon={faCalendar} />}
-                            label={`${job.startDate} ~ ${job.endDate}`}
-                          />
-                        )}
-                      </Box>
                       <CardActions sx={{ mt: 2, justifyContent: "flex-end" }}>
-                        <Box onClick={(e) => e.stopPropagation()}>
-                          <Bookmark jobId={job.postingIdx} />
-                        </Box>
+                        <Bookmark jobId={job.postingIdx} />
                         <Button
                           variant="outlined"
                           onClick={(e) => {

@@ -231,36 +231,6 @@ function PostingsPage() {
                     >
                       {job.title}
                     </Typography>
-
-                    {/* Chip 리스트 */}
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: 1,
-                        mb: 2,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {" "}
-                      {/* Chip 리스트도 줄어들지 않도록 */}
-                      {job.employmentType && (
-                        <Chip label={job.employmentType} />
-                      )}
-                      {job.location && <Chip label={job.location} />}
-                      {job.experience_level && (
-                        <Chip label={job.experience_level} />
-                      )}
-                      {job.companyType && <Chip label={job.companyType} />}
-                      {job.jobType && <Chip label={job.jobType} />}
-                      {job.startDate && job.endDate && (
-                        <Chip
-                          icon={<FontAwesomeIcon icon={faCalendar} />}
-                          label={`${job.startDate} ~ ${job.endDate}`}
-                        />
-                      )}
-                    </Box>
-
                     {/* 카드 하단 버튼들 */}
                     <CardActions
                       sx={{

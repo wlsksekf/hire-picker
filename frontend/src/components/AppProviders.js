@@ -115,7 +115,7 @@ export default function AppProviders({ children }) {
       return;
     }
     initializeAuth();
-  }, [initializeAuth]);
+  }, []);
 
   // 테마 모드가 변경될 때만 테마를 다시 생성
   const theme = useMemo(function() { return getTheme(mode) }, [mode]);
