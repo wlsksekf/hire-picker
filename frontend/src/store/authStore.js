@@ -147,6 +147,10 @@ const useAuthStore = create((set, get) => ({
                   }, 100); // 100ms 지연
                 });
               } else {
+                // 401은 로그인하지 않은 상태 (정상)이므로 에러로 throw하지 않음
+                if (refreshResponse.status === 401) {
+                  return Promise.reject({ response: { status: 401 }, isNormal: true });
+                }
                 throw new Error(`Token refresh failed with status: ${refreshResponse.status}`);
               }
             })
@@ -168,7 +172,12 @@ const useAuthStore = create((set, get) => ({
               }
             })
             .catch((refreshError) => {
-              console.error("AuthStore: Token refresh failed during initializeAuth", refreshError);
+              // 리프레시 토큰이 없으면 로그인하지 않은 상태 (정상)
+              // 401 에러는 정상적인 상황이므로 에러 로그를 출력하지 않음
+              const isNormal401 = refreshError.isNormal || (refreshError.response?.status === 401);
+              if (!isNormal401) {
+                console.error("AuthStore: Token refresh failed during initializeAuth", refreshError);
+              }
               // 리프레시 실패 시 로그아웃 상태로 설정
               set({ isAuthenticated: false, user: null, isLoading: false });
               get().clearLogoutTimer();
