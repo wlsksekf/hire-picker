@@ -18,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -28,6 +30,8 @@ public class CreditService {
     private final PersonalUserCreditRepository personalUserCreditRepository;
     private final CompanyUserCreditRepository companyUserCreditRepository;
     private final CreditUsageHistoryRepository creditUsageHistoryRepository;
+
+    public static final long SIGNUP_BONUS_AMOUNT = 5000L; // 신규 가입 보너스 크레딧
 
     /**
      * 현재 로그인한 사용자의 크레딧 잔액을 조회합니다.
@@ -97,5 +101,51 @@ public class CreditService {
         }
 
         creditUsageHistoryRepository.save(historyBuilder.build());
+    }
+
+    /**
+     * 신규 가입 보너스를 개인 회원에게 지급합니다.
+     * @param personalUser 대상 개인 회원
+     */
+    @Transactional
+    public void grantSignupBonus(PersonalUser personalUser) {
+        grantCreditsToPersonalUser(personalUser, "SIGNUP_BONUS", SIGNUP_BONUS_AMOUNT);
+    }
+
+    /**
+     * 지정한 크레딧을 개인 회원에게 지급합니다.
+     * @param personalUser 대상 개인 회원
+     * @param serviceName 처리 사유
+     * @param amount 지급 크레딧
+     */
+    @Transactional
+    public void grantCreditsToPersonalUser(PersonalUser personalUser, String serviceName, long amount) {
+        if (personalUser == null) {
+            throw new IllegalArgumentException("개인 회원 정보가 필요합니다.");
+        }
+        if (amount <= 0L) {
+            return;
+        }
+
+        PersonalUserCredit credit = personalUserCreditRepository.findById(personalUser.getId())
+                .orElseGet(() -> {
+                    PersonalUserCredit created = personalUserCreditRepository.save(new PersonalUserCredit(personalUser, 0L));
+                    personalUser.setCredit(created);
+                    return created;
+                });
+
+        long currentBalance = credit.getBalance() == null ? 0L : credit.getBalance();
+        long newBalance = currentBalance + amount;
+        credit.setBalance(newBalance);
+        credit.setUpdatedAt(LocalDateTime.now());
+        personalUserCreditRepository.save(credit);
+
+        creditUsageHistoryRepository.save(
+                CreditUsageHistory.builder()
+                        .personalUser(personalUser)
+                        .serviceName(serviceName)
+                        .creditsUsed(-amount) // 음수로 기록하여 지급 내역을 구분
+                        .build()
+        );
     }
 }

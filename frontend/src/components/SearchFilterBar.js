@@ -28,7 +28,8 @@ const LOCATIONS = ['서울', '경기', '인천', '부산', '대구', '대전', '
 const EMPLOYMENT_TYPES = ['정규직', '정규직전환형', '기간제', '인턴', '기타'];
 const EXPERIENCE_LEVELS = ['학력무관', '고졸', '초대졸', '대졸', '석사 이상'];
 const COMPANY_TYPES = ['대기업', '중견기업', '중소기업', '공기업', '기타'];
-const SOURCE_TYPES = ['우리 공고', 'API 공고'];
+const SOURCE_TYPES = ['내부 지원 가능 공고', '외부 공고'];
+const OVERSEAS_TYPES = ['국내 공고', '해외 공고'];
 
 /**
  * ==============================
@@ -50,6 +51,7 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
     experienceLevel: [],
     companyType: [],
     source: [],
+    overseas: [],
   });
   const [anchorEl, setAnchorEl] = useState(null);   // Popover 기준 엘리먼트
   const [currentFilterType, setCurrentFilterType] = useState(null); // 현재 팝업 필터 카테고리
@@ -65,6 +67,7 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
       case 'experienceLevel': return EXPERIENCE_LEVELS;
       case 'companyType': return COMPANY_TYPES;
       case 'source': return SOURCE_TYPES;
+      case 'overseas': return OVERSEAS_TYPES;
       default: return [];
     }
   }
@@ -136,7 +139,7 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
    * - 초기 상태 POST 요청
    */
   function handleResetAll() {
-    const empty = { jobType: [], location: [], employmentType: [], experienceLevel: [], companyType: [], source: [] };
+    const empty = { jobType: [], location: [], employmentType: [], experienceLevel: [], companyType: [], source: [], overseas: [] };
     setSearchTerm('');
     setFilters(empty);
 
@@ -232,7 +235,8 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
           ['employmentType', '고용 형태'],
           ['experienceLevel', '학력'],
           ['companyType', '기업 종류'],
-          ['source', '공고 출처'],
+          ['source', '내부 지원 가능 공고'],
+          ['overseas', '국가'],
         ].map(function(item) {
           const key = item[0];
           const label = item[1];
@@ -275,7 +279,8 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
             {currentFilterType === 'employmentType' && '고용 형태'}
             {currentFilterType === 'experienceLevel' && '학력'}
             {currentFilterType === 'companyType' && '기업 종류'}
-            {currentFilterType === 'source' && '공고 출처'}
+            {currentFilterType === 'source' && '내부 지원 가능 공고'}
+            {currentFilterType === 'overseas' && '국가'}
           </Typography>
           <IconButton onClick={handleClosePopover} size="small">
             <FontAwesomeIcon icon={faClose} />

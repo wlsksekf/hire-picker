@@ -35,7 +35,7 @@ const defaultMenuItems = [
 ];
 
 const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
-  <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#ecfdf5' }}>
+  <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f5f6f8' }}>
     <Drawer
       variant="permanent"
       sx={{
@@ -45,7 +45,7 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
           width: drawerWidth,
           boxSizing: 'border-box',
           backgroundColor: '#ffffff',
-          borderRight: '1px solid rgba(16,185,129,0.08)',
+          borderRight: '1px solid rgba(17,24,39,0.06)',
           px: 2.5,
           py: 3,
         },
@@ -61,8 +61,8 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: '#0f766e',
-              boxShadow: '0 16px 24px rgba(15, 118, 110, 0.28)',
+              background: '#1f2937',
+              boxShadow: '0 14px 24px rgba(17,24,39,0.08)',
             }}
           >
             <Typography variant="h6" fontWeight={700} color="#fff">
@@ -70,10 +70,10 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
             </Typography>
           </Box>
           <Box>
-            <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
+            <Typography variant="subtitle1" fontWeight={700} color="#111827">
               HirePicker
             </Typography>
-            <Typography variant="caption" color="#0f766e">
+            <Typography variant="caption" color="#6b7280">
               Admin Console
             </Typography>
           </Box>
@@ -94,21 +94,21 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
                     borderRadius: 2.5,
                     py: 1.4,
                     px: 2,
-                    color: '#0f172a',
+                    color: '#374151',
                     '&.Mui-selected': {
-                      backgroundColor: 'rgba(13,148,136,0.12)',
-                      color: '#0f766e',
+                      backgroundColor: 'rgba(17,24,39,0.08)',
+                      color: '#111827',
                       '& .MuiListItemIcon-root': {
-                        color: '#0f766e',
+                        color: '#111827',
                       },
                     },
                     '&:hover': {
-                      backgroundColor: 'rgba(13,148,136,0.08)',
+                      backgroundColor: 'rgba(17,24,39,0.05)',
                     },
                   }}
                   selected={item.href === '/hirepicker7338/admin'}
                 >
-                  <ListItemIcon sx={{ color: '#38bdf8', minWidth: 32 }}>
+                  <ListItemIcon sx={{ color: '#9ca3af', minWidth: 32 }}>
                     {item.icon}
                   </ListItemIcon>
                   <ListItemText primaryTypographyProps={{ fontWeight: 600, fontSize: 14 }} primary={item.label} />
@@ -124,8 +124,9 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
           mt: 6,
           p: 2.2,
           borderRadius: 3,
-          backgroundColor: '#0f766e',
-          color: '#ecfdf5',
+          backgroundColor: '#f9fafb',
+          color: '#374151',
+          border: '1px solid rgba(17,24,39,0.05)',
         }}
       >
         <Typography variant="subtitle2" fontWeight={700}>
@@ -146,7 +147,7 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100vh',
-        backgroundColor: '#f0fdfa',
+        backgroundColor: '#f9fafb',
       }}
     >
       <AppBar
@@ -154,10 +155,10 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
         color="transparent"
         elevation={0}
         sx={{
-          backgroundColor: '#ecfdf5',
-          color: '#0f172a',
-          borderBottom: '1px solid rgba(13,148,136,0.12)',
-          boxShadow: '0 10px 18px -12px rgba(14, 116, 144, 0.2)',
+          backgroundColor: '#ffffff',
+          color: '#111827',
+          borderBottom: '1px solid rgba(17,24,39,0.06)',
+          boxShadow: '0 10px 18px -14px rgba(15,23,42,0.15)',
         }}
       >
         <Toolbar
@@ -175,30 +176,30 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#0f766e' }} />
+                  <SearchIcon sx={{ color: '#9ca3af' }} />
                 </InputAdornment>
               ),
               sx: {
                 borderRadius: 3,
-                color: '#0f172a',
-                bgcolor: '#ffffff',
+                color: '#111827',
+                bgcolor: '#f9fafb',
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderColor: 'transparent',
                 },
                 '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(13,148,136,0.4)',
+                  borderColor: 'rgba(17,24,39,0.12)',
                 },
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#0f766e',
+                  borderColor: '#1f2937',
                 },
               },
             }}
           />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-            <IconButton sx={{ color: '#0f766e' }}>
+            <IconButton sx={{ color: '#4b5563' }}>
               <NotificationsNoneIcon />
             </IconButton>
-            <IconButton sx={{ color: '#0f766e' }}>
+            <IconButton sx={{ color: '#4b5563' }}>
               <SettingsOutlinedIcon />
             </IconButton>
             <Divider orientation="vertical" flexItem sx={{ borderColor: 'rgba(148,163,184,0.35)' }} />
@@ -207,10 +208,10 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
                 sx={{
                   width: 40,
                   height: 40,
-                  bgcolor: '#0d9488',
-                  color: '#fff',
+                  bgcolor: '#e5e7eb',
+                  color: '#1f2937',
                   fontWeight: 600,
-                  boxShadow: '0 12px 24px -12px rgba(14, 116, 144, 0.4)',
+                  boxShadow: '0 12px 24px -18px rgba(17,24,39,0.25)',
                 }}
               >
                 {manageUser?.name ? manageUser.name.charAt(0).toUpperCase() : 'A'}
@@ -219,7 +220,7 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
                 <Typography variant="subtitle2" fontWeight={600}>
                   {manageUser?.name || '관리자'}
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#64748b' }}>
+                <Typography variant="caption" sx={{ color: '#6b7280' }}>
                   System Admin
                 </Typography>
               </Box>
@@ -232,8 +233,11 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
                 textTransform: 'none',
                 px: 3,
                 borderRadius: 2.5,
-                backgroundColor: '#f87171',
-                boxShadow: '0 14px 26px -18px rgba(248, 113, 113, 0.5)',
+                backgroundColor: '#1f2937',
+                boxShadow: '0 14px 26px -18px rgba(17,24,39,0.4)',
+                '&:hover': {
+                  backgroundColor: '#111827',
+                },
               }}
             >
               로그아웃

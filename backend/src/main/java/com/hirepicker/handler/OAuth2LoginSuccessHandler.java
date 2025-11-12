@@ -7,6 +7,7 @@ import com.hirepicker.entity.RefreshToken;
 import com.hirepicker.entity.UserType;
 import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.repository.RefreshTokenRepository;
+import com.hirepicker.service.CreditService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -41,6 +42,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         PersonalUser personalUser = personalUserRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("User not found with email: " + email));
 
+        boolean signupBonusGranted = customUserDetails.isSignupBonusGranted();
+
         String accessToken = jwtTokenProvider.createAccessToken(authentication);
         String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(authentication);
 
@@ -65,8 +68,11 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         // 환경에 따라 리디렉션 URL 결정
         boolean isProduction = Arrays.asList(env.getActiveProfiles()).contains("prod");
         String baseUrl = isProduction ? "https://hirepicker.duckdns.org" : "http://localhost:3000";
-        String targetUrl = UriComponentsBuilder.fromUriString(baseUrl + "/oauth2/redirect")
-                .build().toUriString();
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl + "/oauth2/redirect");
+        if (signupBonusGranted) {
+            builder.queryParam("signupBonus", CreditService.SIGNUP_BONUS_AMOUNT);
+        }
+        String targetUrl = builder.build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }

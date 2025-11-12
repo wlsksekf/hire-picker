@@ -88,6 +88,9 @@ export const signupCompany = (signupData) => {
 
 export const loginManage = (payload) => api.post('/api/manage/auth/login', payload);
 
+export const applyToJobPosting = (postingIdx, payload) =>
+  api.post(`/api/postings/${postingIdx}/apply`, payload);
+
 
 // `api` 변수를 기본 내보내기로 설정
 export { api };
@@ -396,6 +399,18 @@ export function deleteResume(resumeId) {
 // [이력서] 공개 상태 변경
 export function updateResumeStatus(resumeId, status) {
   return api.put(`/api/resume/${resumeId}`, { status }).then(res => res.data);
+}
+
+// [이력서 거래소] 공개 이력서 목록
+export function getMarketplaceResumes() {
+  return api.get('/api/resumes/marketplace')
+    .then((res) => Array.isArray(res.data) ? res.data : []);
+}
+
+// [이력서 거래소] 이력서 구매
+export function purchaseResume(resumeId) {
+  return api.post(`/api/resumes/${resumeId}/purchase`)
+    .then((res) => res.data);
 }
 
 // [공통] 자격증 자동완성 검색

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ResumeForm from "@/components/ResumeForm";
 import {
@@ -15,6 +15,7 @@ import {
   getResumeDetail,
   updateResume,
   saveExperiences,
+  getCreditBalance,
 } from "@/api";
 import { createEmptyResumeForm } from "@/constants/resumeFormDefaults";
 import { Box, CircularProgress } from "@mui/material";
@@ -63,6 +64,7 @@ function normalizeGenderDisplay(rawGender) {
 }
 
 const HIGH_SCHOOL_DEGREE = "고졸";
+const AI_CREDIT_COST = 1000; // AI 생성 시 차감될 고정 크레딧
 function isHighSchoolDegree(degree = "") {
   return degree === HIGH_SCHOOL_DEGREE;
 }
@@ -162,6 +164,8 @@ function mapDetailToForm(detail) {
   next.selfMotivation = detail?.selfMotivation || "";
   next.selfAspirations = detail?.selfAspirations || "";
   next.cert = detail?.cert || "";
+  next.creditCost = typeof detail?.creditCost === 'number' ? detail.creditCost : Number(detail?.credit_cost ?? 0) || 0;
+  next.resumeStatus = detail?.status || "PRIVATE";
 
   const personal = detail?.personal || {};
   next.name = personal.name || "";
@@ -260,6 +264,32 @@ export default function WriteResumePage(props = {}) {
   const [availableExperiences, setAvailableExperiences] = useState([]); // 선택 가능한 경력 목록
   const [availableCertifications, setAvailableCertifications] = useState([]); // 선택 가능한 자격증 목록
   const [initializing, setInitializing] = useState(true);
+  const [creditBalance, setCreditBalance] = useState(null); // AI 사용을 위한 현재 크레딧 잔액
+
+  // 현재 크레딧 잔액을 최신화하는 헬퍼
+  const fetchCreditBalance = useCallback(async () => {
+    try {
+      const balance = await getCreditBalance();
+      setCreditBalance(balance);
+      return balance;
+    } catch (err) {
+      console.error("크레딧 잔액 조회 실패:", err);
+      setCreditBalance(0);
+      return 0;
+    }
+  }, []);
+
+  // AI 사용 전 크레딧 잔액 확인 및 안내
+  const ensureAiCredits = useCallback(async () => {
+    const currentRaw = creditBalance != null ? creditBalance : await fetchCreditBalance();
+    const current = Number.isFinite(currentRaw) ? currentRaw : 0;
+    if (current < AI_CREDIT_COST) {
+      alert(`AI 이력서를 작성하려면 ${AI_CREDIT_COST}크레딧이 필요합니다.\n현재 보유 크레딧: ${current}C`);
+      return false;
+    }
+    const confirmed = window.confirm(`AI 자기소개서 작성 시 ${AI_CREDIT_COST}크레딧이 차감됩니다. 계속 진행할까요?`);
+    return confirmed;
+  }, [creditBalance, fetchCreditBalance]);
 
   // init: load user and template
   useEffect(() => {
@@ -284,6 +314,10 @@ export default function WriteResumePage(props = {}) {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetchCreditBalance();
+  }, [fetchCreditBalance]);
 
   useEffect(() => {
     if (resumeId) {
@@ -547,7 +581,7 @@ export default function WriteResumePage(props = {}) {
   };
 
   // AI draft generate
-  const onAiGenerate = async (arg) => {
+  const onAiGenerate = async (arg, options = {}) => {
     let prompt = typeof arg === 'string' ? arg.trim() : (formData.aiPrompt || '').trim();
     if (!prompt) {
       prompt = [
@@ -560,6 +594,12 @@ export default function WriteResumePage(props = {}) {
     }
     if (!prompt) { alert('AI 요청 문구를 입력해주세요.'); return; }
 
+    const skipCreditCheck = Boolean(options.skipCreditCheck);
+    if (!skipCreditCheck) {
+      const canProceed = await ensureAiCredits();
+      if (!canProceed) return;
+    }
+
     setIsLoading(true);
     try {
       const res = await generateAiFullDraft(prompt);
@@ -571,14 +611,36 @@ export default function WriteResumePage(props = {}) {
         selfMotivation: jobCompetencies || prev.selfMotivation || '',
         selfAspirations: aspirations || prev.selfAspirations || '',
       }));
+      const remaining = Number(res?.headers?.["x-remaining-credits"]);
+      // 서버 응답 헤더가 있으면 그대로 잔액을 반영
+      if (!Number.isNaN(remaining)) {
+        setCreditBalance(remaining);
+      } else {
+        // 헤더가 없으면 클라이언트에서 사용분만큼 차감
+        setCreditBalance(prev => (prev != null ? Math.max(0, prev - AI_CREDIT_COST) : prev));
+      }
+    } catch (error) {
+      console.error("AI 초안 생성 실패:", error);
+      // 서버에서 전달된 오류 메시지를 우선 노출
+      const message = error?.response?.data?.message || error?.message || 'AI 초안 생성 중 오류가 발생했습니다.';
+      alert(message);
+      if (error?.response?.status === 402) {
+        // 크레딧 부족 응답 시 잔액을 재조회해 정확도를 유지
+        await fetchCreditBalance();
+      }
+      return;
     } finally { setIsLoading(false); }
   };
 
   // refine
   const onRefine = async () => {
-    setAiDialogOpen(false);
     const userData = (formData.aiPrompt || formData.title || '').trim();
     if (!userData) { alert('AI 요청 문구를 입력해주세요.'); return; }
+    const canProceed = await ensureAiCredits();
+    if (!canProceed) {
+      return;
+    }
+    setAiDialogOpen(false);
     setIsLoading(true);
     try {
       const resumeDraft = {
@@ -596,16 +658,38 @@ export default function WriteResumePage(props = {}) {
         selfMotivation: jobCompetencies || prev.selfMotivation || '',
         selfAspirations: aspirations || prev.selfAspirations || '',
       }));
+      const remaining = Number(res?.headers?.["x-remaining-credits"]);
+      // 헤더 기반 잔액 갱신
+      if (!Number.isNaN(remaining)) {
+        setCreditBalance(remaining);
+      } else {
+        // 헤더 없으면 1회 사용량만큼 차감
+        setCreditBalance(prev => (prev != null ? Math.max(0, prev - AI_CREDIT_COST) : prev));
+      }
+    } catch (error) {
+      console.error("AI 초안 개선 실패:", error);
+      // 사용자에게 명확한 오류 메시지 전달
+      const message = error?.response?.data?.message || error?.message || 'AI 초안 개선 중 오류가 발생했습니다.';
+      alert(message);
+      if (error?.response?.status === 402) {
+        await fetchCreditBalance();
+      }
+      return;
     } finally { setIsLoading(false); }
   };
 
   // start fresh
   const onStartFresh = async () => {
-    setAiDialogOpen(false);
     const userData = (formData.aiPrompt || formData.title || '').trim();
     if (!userData) { alert('AI 요청 문구를 입력해주세요.'); return; }
+    const canProceed = await ensureAiCredits();
+    if (!canProceed) {
+      return;
+    }
+    setAiDialogOpen(false);
     setFormData(prev => ({ ...prev, selfGrowth: '', selfStrengths: '', selfMotivation: '', selfAspirations: '' }));
-    await onAiGenerate(userData);
+    // 직전에 차감 여부를 확인했으므로 추가 확인은 생략
+    await onAiGenerate(userData, { skipCreditCheck: true });
   };
 
   // save
@@ -632,6 +716,10 @@ export default function WriteResumePage(props = {}) {
             .map(item => item.score ? `${item.certName} (${item.score})` : item.certName)
             .join(', ');
 
+      const parsedCreditCost = Number(formData.creditCost);
+      const creditCostValue = Number.isFinite(parsedCreditCost) ? Math.max(0, Math.floor(parsedCreditCost)) : 0;
+      const resumeStatus = formData.resumeStatus === 'PUBLIC' ? 'PUBLIC' : 'PRIVATE';
+
       if (isEditing) {
         if (imageFile) {
           alert('이미지 변경은 아직 지원되지 않습니다. 기존 이미지를 유지합니다.');
@@ -644,8 +732,8 @@ export default function WriteResumePage(props = {}) {
           selfMotivation: formData.selfMotivation || '',
           selfAspirations: formData.selfAspirations || '',
           imageUrl: initialImageUrl || null,
-          creditCost: 0,
-          status: 'PUBLIC',
+          creditCost: creditCostValue,
+          status: resumeStatus,
           cert: resumeCertSummary,
           expIdx: null,
         };
@@ -666,8 +754,8 @@ export default function WriteResumePage(props = {}) {
         selfAspirations: formData.selfAspirations || '',
         imageUrl: null,
         cert: resumeCertSummary,
-        credit_cost: 0,
-        status: 'PRIVATE',
+        credit_cost: creditCostValue,
+        status: resumeStatus,
         expIdx: null,
         p_user_idx: userId,
         gender: formData.gender || undefined,
@@ -704,6 +792,9 @@ export default function WriteResumePage(props = {}) {
       previewImage={previewImage}
       onImageChange={onImageChange}
       isLoading={isLoading}
+      aiCreditCost={AI_CREDIT_COST}
+      creditBalance={creditBalance}
+      isAiCreditInsufficient={creditBalance != null && creditBalance < AI_CREDIT_COST}
       onAiGenerate={onAiGenerate}
       onOpenAiDialog={onOpenAiDialog}
       onDownload={() => {}}

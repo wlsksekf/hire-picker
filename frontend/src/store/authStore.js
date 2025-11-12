@@ -33,7 +33,11 @@ const useAuthStore = create((set, get) => ({
   // 로그인 처리 (상태만 변경)
   login: (userData) => {
     console.log('AuthStore: login called', userData);
-    set({ isAuthenticated: true, user: userData });
+    const normalized = {
+      ...userData,
+      userType: userData?.userType || userData?.user_type,
+    };
+    set({ isAuthenticated: true, user: normalized });
     get().startLogoutTimer(); // 로그인 시 타이머 시작
   },
 
@@ -99,7 +103,11 @@ const useAuthStore = create((set, get) => ({
 
       if (response.status === 200) {
         console.log('AuthStore: initializeAuth success', response.data);
-        set({ isAuthenticated: true, user: response.data, isLoading: false });
+        const userData = {
+          ...response.data,
+          userType: response.data?.userType || response.data?.user_type,
+        };
+        set({ isAuthenticated: true, user: userData, isLoading: false });
         get().startLogoutTimer();
         return response.data;
       } else {
