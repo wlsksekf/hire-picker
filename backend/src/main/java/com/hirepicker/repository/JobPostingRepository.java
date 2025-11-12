@@ -28,4 +28,19 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long>, J
 
     List<JobPosting> findByPostingIdxIn(List<Long> postingIdxs);
 
+    /**
+     * 특정 회사의 모든 채용공고 조회
+     *
+     * @param companyIdx 회사 ID
+     * @return 해당 회사의 채용공고 목록
+     */
+    List<JobPosting> findByCompany_CompanyIdx(Long companyIdx);
+
+    /**
+     * 특정 회사의 채용공고를 등록일 기준 내림차순으로 조회
+     *
+     * @param companyIdx 회사 ID
+     * @return 해당 회사의 채용공고 목록 (최신순)
+     */
+    List<JobPosting> findByCompany_CompanyIdxOrderByRegDateDesc(Long companyIdx);
 }

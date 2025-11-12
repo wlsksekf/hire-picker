@@ -50,6 +50,73 @@ function formatDisplayPeriod(startDate, endDate) {
   return `${start} ~ ${end}`;
 }
 
+function normalizeGenderDisplay(rawGender) {
+  if (rawGender === undefined || rawGender === null) return "";
+  const trimmed = String(rawGender).trim();
+  if (!trimmed) return "";
+  const upper = trimmed.toUpperCase();
+  if (upper === "MALE" || upper === "M") return "남성";
+  if (upper === "FEMALE" || upper === "F") return "여성";
+  if (trimmed === "남" || trimmed === "남자") return "남성";
+  if (trimmed === "여" || trimmed === "여자") return "여성";
+  return trimmed;
+}
+
+const HIGH_SCHOOL_DEGREE = "고졸";
+function isHighSchoolDegree(degree = "") {
+  return degree === HIGH_SCHOOL_DEGREE;
+}
+function hasHighSchoolKeyword(text = "") {
+  if (!text) return false;
+  return text.includes("고등학교") || text.includes("고등") || text.includes("여고") || text.includes("상고");
+}
+function isHighSchoolType(type = "") {
+  return typeof type === "string" && type.includes("고등");
+}
+function isHighSchoolAcademic(item = {}) {
+  const degree = item?.degree ?? item?.Degree ?? "";
+  if (isHighSchoolDegree(degree)) return true;
+  const schoolType = item?.schoolType ?? item?.school_type ?? "";
+  if (isHighSchoolType(schoolType)) return true;
+  const schoolName = item?.schoolName ?? item?.school_name ?? "";
+  return hasHighSchoolKeyword(schoolName);
+}
+
+function resolveComparableTime(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.getTime();
+  const normalized = normalizeIsoDate(value);
+  if (normalized) {
+    const parsed = Date.parse(normalized);
+    if (!Number.isNaN(parsed)) return parsed;
+  }
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function sortAcademicsDesc(list = []) {
+  return [...list].sort((a, b) => {
+    const aIsHighSchool = isHighSchoolAcademic(a);
+    const bIsHighSchool = isHighSchoolAcademic(b);
+    if (aIsHighSchool !== bIsHighSchool) {
+      return aIsHighSchool ? 1 : -1; // 고등학교는 하단으로 배치
+    }
+
+    const gradA =
+      resolveComparableTime(a?.graduationDate ?? a?.graduation_date) ??
+      resolveComparableTime(a?.admissionDate ?? a?.admission_date);
+    const gradB =
+      resolveComparableTime(b?.graduationDate ?? b?.graduation_date) ??
+      resolveComparableTime(b?.admissionDate ?? b?.admission_date);
+
+    if (gradA === null && gradB === null) return 0;
+    if (gradA === null) return 1;
+    if (gradB === null) return -1;
+    if (gradA === gradB) return 0;
+    return gradB - gradA;
+  });
+}
+
 function normalizeDateInput(input) {
   if (input === undefined || input === null) return "";
   const trimmed = String(input).trim();
@@ -98,13 +165,15 @@ function mapDetailToForm(detail) {
 
   const personal = detail?.personal || {};
   next.name = personal.name || "";
-  next.gender = personal.gender || "";
+  next.gender = normalizeGenderDisplay(personal.gender);
   next.phone = personal.phone || personal.phoneNumber || "";
   next.email = personal.email || "";
   next.address = personal.address || "";
+  next.birthdate =
+    normalizeIsoDate(personal.birthdate || personal.birthDate) || "";
 
   const academics = Array.isArray(detail?.academics) ? detail.academics : [];
-  academics.slice(0, 2).forEach((item, index) => {
+  sortAcademicsDesc(academics).slice(0, 2).forEach((item, index) => {
     const idx = index + 1;
     next[`edu${idx}_school`] = item.schoolName || "";
     next[`edu${idx}_major`] = item.major || "";
@@ -199,10 +268,15 @@ export default function WriteResumePage(props = {}) {
         const u = res.data || {};
         const detectedUserId = u?.p_user_idx ?? u?.pUserIdx ?? u?.id ?? null;
         setUserId(detectedUserId);
+        const normalizedGender = normalizeGenderDisplay(u.gender);
+        const normalizedBirthdate = normalizeIsoDate(
+          u.birthdate ?? u.birthDate ?? ""
+        );
         setFormData(prev => ({
           ...prev,
           name: u.name || '',
-          gender: u.gender || '',
+          gender: normalizedGender,
+          birthdate: normalizedBirthdate,
           phone: u.phoneNumber || '',
           email: u.email || '',
           address: u.address || ''
@@ -229,8 +303,11 @@ export default function WriteResumePage(props = {}) {
       const updates = {};
 
       // 학력 자동 채우기 (최대 2개)
-      if (template.academics && template.academics.length > 0) {
-        const acad1 = template.academics[0];
+      const templateAcademics = sortAcademicsDesc(
+        Array.isArray(template?.academics) ? template.academics : []
+      );
+      if (templateAcademics.length > 0) {
+        const acad1 = templateAcademics[0];
         if (acad1) {
           updates.edu1_school = acad1.schoolName || '';
           updates.edu1_schoolCode = acad1.schoolCode || null;
@@ -241,8 +318,8 @@ export default function WriteResumePage(props = {}) {
           updates.edu1_graduation = normalizeIsoDate(acad1.graduationDate);
           updates.edu1_period = formatDisplayPeriod(acad1.admissionDate, acad1.graduationDate);
         }
-        if (template.academics.length > 1) {
-          const acad2 = template.academics[1];
+        if (templateAcademics.length > 1) {
+          const acad2 = templateAcademics[1];
           if (acad2) {
             updates.edu2_school = acad2.schoolName || '';
             updates.edu2_schoolCode = acad2.schoolCode || null;
@@ -253,6 +330,19 @@ export default function WriteResumePage(props = {}) {
             updates.edu2_graduation = normalizeIsoDate(acad2.graduationDate);
             updates.edu2_period = formatDisplayPeriod(acad2.admissionDate, acad2.graduationDate);
           }
+        }
+      }
+
+      if (template.personal) {
+        const templateGender = normalizeGenderDisplay(template.personal.gender);
+        if (templateGender) {
+          updates.gender = templateGender;
+        }
+        const templateBirthdate = normalizeIsoDate(
+          template.personal.birthdate ?? template.personal.birthDate ?? ""
+        );
+        if (templateBirthdate) {
+          updates.birthdate = templateBirthdate;
         }
       }
 
