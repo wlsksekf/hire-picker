@@ -3,7 +3,6 @@ import {
   AppBar,
   Avatar,
   Box,
-  Button,
   Divider,
   Drawer,
   IconButton,
@@ -17,10 +16,10 @@ import {
   Toolbar,
   Typography,
 } from '@mui/material';
+import styled from 'styled-components';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ArticleIcon from '@mui/icons-material/Article';
 import PeopleIcon from '@mui/icons-material/People';
-import LogoutIcon from '@mui/icons-material/Logout';
 import SearchIcon from '@mui/icons-material/Search';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
@@ -35,7 +34,7 @@ const defaultMenuItems = [
 ];
 
 const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
-  <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#ecfdf5' }}>
+  <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f5f6f8' }}>
     <Drawer
       variant="permanent"
       sx={{
@@ -45,7 +44,7 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
           width: drawerWidth,
           boxSizing: 'border-box',
           backgroundColor: '#ffffff',
-          borderRight: '1px solid rgba(16,185,129,0.08)',
+          borderRight: '1px solid rgba(17,24,39,0.06)',
           px: 2.5,
           py: 3,
         },
@@ -61,8 +60,8 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: '#0f766e',
-              boxShadow: '0 16px 24px rgba(15, 118, 110, 0.28)',
+              background: '#1f2937',
+              boxShadow: '0 14px 24px rgba(17,24,39,0.08)',
             }}
           >
             <Typography variant="h6" fontWeight={700} color="#fff">
@@ -70,10 +69,10 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
             </Typography>
           </Box>
           <Box>
-            <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
+            <Typography variant="subtitle1" fontWeight={700} color="#111827">
               HirePicker
             </Typography>
-            <Typography variant="caption" color="#0f766e">
+            <Typography variant="caption" color="#6b7280">
               Admin Console
             </Typography>
           </Box>
@@ -94,21 +93,21 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
                     borderRadius: 2.5,
                     py: 1.4,
                     px: 2,
-                    color: '#0f172a',
+                    color: '#374151',
                     '&.Mui-selected': {
-                      backgroundColor: 'rgba(13,148,136,0.12)',
-                      color: '#0f766e',
+                      backgroundColor: 'rgba(17,24,39,0.08)',
+                      color: '#111827',
                       '& .MuiListItemIcon-root': {
-                        color: '#0f766e',
+                        color: '#111827',
                       },
                     },
                     '&:hover': {
-                      backgroundColor: 'rgba(13,148,136,0.08)',
+                      backgroundColor: 'rgba(17,24,39,0.05)',
                     },
                   }}
                   selected={item.href === '/hirepicker7338/admin'}
                 >
-                  <ListItemIcon sx={{ color: '#38bdf8', minWidth: 32 }}>
+                  <ListItemIcon sx={{ color: '#9ca3af', minWidth: 32 }}>
                     {item.icon}
                   </ListItemIcon>
                   <ListItemText primaryTypographyProps={{ fontWeight: 600, fontSize: 14 }} primary={item.label} />
@@ -124,8 +123,9 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
           mt: 6,
           p: 2.2,
           borderRadius: 3,
-          backgroundColor: '#0f766e',
-          color: '#ecfdf5',
+          backgroundColor: '#f9fafb',
+          color: '#374151',
+          border: '1px solid rgba(17,24,39,0.05)',
         }}
       >
         <Typography variant="subtitle2" fontWeight={700}>
@@ -146,7 +146,7 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100vh',
-        backgroundColor: '#f0fdfa',
+        backgroundColor: '#f9fafb',
       }}
     >
       <AppBar
@@ -154,10 +154,10 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
         color="transparent"
         elevation={0}
         sx={{
-          backgroundColor: '#ecfdf5',
-          color: '#0f172a',
-          borderBottom: '1px solid rgba(13,148,136,0.12)',
-          boxShadow: '0 10px 18px -12px rgba(14, 116, 144, 0.2)',
+          backgroundColor: '#ffffff',
+          color: '#111827',
+          borderBottom: '1px solid rgba(17,24,39,0.06)',
+          boxShadow: '0 10px 18px -14px rgba(15,23,42,0.15)',
         }}
       >
         <Toolbar
@@ -175,30 +175,30 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#0f766e' }} />
+                  <SearchIcon sx={{ color: '#9ca3af' }} />
                 </InputAdornment>
               ),
               sx: {
                 borderRadius: 3,
-                color: '#0f172a',
-                bgcolor: '#ffffff',
+                color: '#111827',
+                bgcolor: '#f9fafb',
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderColor: 'transparent',
                 },
                 '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(13,148,136,0.4)',
+                  borderColor: 'rgba(17,24,39,0.12)',
                 },
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#0f766e',
+                  borderColor: '#1f2937',
                 },
               },
             }}
           />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-            <IconButton sx={{ color: '#0f766e' }}>
+            <IconButton sx={{ color: '#4b5563' }}>
               <NotificationsNoneIcon />
             </IconButton>
-            <IconButton sx={{ color: '#0f766e' }}>
+            <IconButton sx={{ color: '#4b5563' }}>
               <SettingsOutlinedIcon />
             </IconButton>
             <Divider orientation="vertical" flexItem sx={{ borderColor: 'rgba(148,163,184,0.35)' }} />
@@ -207,10 +207,10 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
                 sx={{
                   width: 40,
                   height: 40,
-                  bgcolor: '#0d9488',
-                  color: '#fff',
+                  bgcolor: '#e5e7eb',
+                  color: '#1f2937',
                   fontWeight: 600,
-                  boxShadow: '0 12px 24px -12px rgba(14, 116, 144, 0.4)',
+                  boxShadow: '0 12px 24px -18px rgba(17,24,39,0.25)',
                 }}
               >
                 {manageUser?.name ? manageUser.name.charAt(0).toUpperCase() : 'A'}
@@ -219,25 +219,12 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
                 <Typography variant="subtitle2" fontWeight={600}>
                   {manageUser?.name || '관리자'}
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#64748b' }}>
+                <Typography variant="caption" sx={{ color: '#6b7280' }}>
                   System Admin
                 </Typography>
               </Box>
             </Box>
-            <Button
-              variant="contained"
-              startIcon={<LogoutIcon />}
-              onClick={onLogout}
-              sx={{
-                textTransform: 'none',
-                px: 3,
-                borderRadius: 2.5,
-                backgroundColor: '#f87171',
-                boxShadow: '0 14px 26px -18px rgba(248, 113, 113, 0.5)',
-              }}
-            >
-              로그아웃
-            </Button>
+            <AdminLogoutButton onClick={onLogout} />
           </Box>
         </Toolbar>
       </AppBar>
@@ -262,4 +249,90 @@ AdminLayout.defaultProps = {
 };
 
 export default AdminLayout;
+
+const AdminLogoutWrapper = styled.div`
+  .admin-logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 48px;
+    height: 48px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition-duration: 0.3s;
+    box-shadow: 2px 4px 12px rgba(15, 23, 42, 0.18);
+    background: linear-gradient(135deg, #0f172a 0%, #1f2937 100%);
+  }
+
+  .admin-logout-icon {
+    width: 100%;
+    transition-duration: 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .admin-logout-icon svg {
+    width: 18px;
+  }
+
+  .admin-logout-icon svg path {
+    fill: #ffffff;
+  }
+
+  .admin-logout-text {
+    position: absolute;
+    right: 0%;
+    width: 0%;
+    opacity: 0;
+    color: #ffffff;
+    font-size: 1.05em;
+    font-weight: 600;
+    transition-duration: 0.3s;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+
+  .admin-logout-btn:hover {
+    width: 140px;
+    border-radius: 44px;
+    transition-duration: 0.3s;
+    box-shadow: 4px 6px 18px rgba(15, 23, 42, 0.28);
+  }
+
+  .admin-logout-btn:hover .admin-logout-icon {
+    width: 28%;
+    padding-left: 20px;
+  }
+
+  .admin-logout-btn:hover .admin-logout-text {
+    opacity: 1;
+    width: 72%;
+    padding-right: 12px;
+  }
+
+  .admin-logout-btn:active {
+    transform: translate(1px, 1px);
+  }
+`;
+
+const AdminLogoutButton = ({ onClick }) => (
+  <AdminLogoutWrapper>
+    <button type="button" className="admin-logout-btn" onClick={onClick} aria-label="관리자 로그아웃">
+      <div className="admin-logout-icon">
+        <svg viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+          <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z" />
+        </svg>
+      </div>
+      <div className="admin-logout-text">Logout</div>
+    </button>
+  </AdminLogoutWrapper>
+);
+
+AdminLogoutButton.propTypes = {
+  onClick: PropTypes.func.isRequired,
+};
 

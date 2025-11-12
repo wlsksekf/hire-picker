@@ -53,6 +53,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final Environment environment;
     private final S3UploadService s3UploadService;
+    private final CreditService creditService;
 
     /**
      * 로그인 처리 (개인회원/기업회원 통합)
@@ -247,7 +248,7 @@ public class AuthService {
      * @return 로그인 응답 (JWT 토큰 포함)
      */
     @Transactional
-    public void registerPersonalUser(SignupRequestDto signupRequest, HttpServletResponse response) {
+    public boolean registerPersonalUser(SignupRequestDto signupRequest, HttpServletResponse response) {
         // 이중 체크: 이미 가입된 이메일인지 확인
         if (isEmailDuplicate(signupRequest.getEmail())) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다.");
@@ -277,9 +278,11 @@ public class AuthService {
 
         PersonalUser savedUser = personalUserRepository.save(newUser);
         log.info("새로운 개인 회원이 등록되었습니다. ID: {}, Email: {}", savedUser.getId(), savedUser.getEmail());
+        creditService.grantSignupBonus(savedUser);
 
         // 2. 가입된 정보로 Authentication 객체 생성
         CustomUserDetails userDetails = new CustomUserDetails(savedUser);
+        userDetails.markSignupBonusGranted();
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 userDetails, null, userDetails.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -293,6 +296,8 @@ public class AuthService {
 
         // 5. 토큰을 쿠키에 저장
         addTokensToCookie(response, accessToken, refreshTokenValue);
+
+        return true;
     }
 
     /**

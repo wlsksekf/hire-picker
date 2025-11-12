@@ -3,31 +3,47 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import useAuthStore from '@/store/authStore';
-import { Box, CircularProgress, Typography, Alert, Button } from '@mui/material';
+import { Box, CircularProgress, Typography, Alert, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 
 // 소셜 로그인 후 리디렉션되는 페이지
 export default function OAuth2RedirectPage() {
     const router = useRouter();
     const [error, setError] = useState(null);
+    const [bonusDialogOpen, setBonusDialogOpen] = useState(false);
+    const [bonusAmount, setBonusAmount] = useState(null);
+    const [pendingRedirect, setPendingRedirect] = useState(null);
+    const [hasBonusParam, setHasBonusParam] = useState(false);
 
     useEffect(() => {
         console.log('OAuth2 리디렉션 페이지에 도달했습니다. 인증 초기화를 시작합니다.');
 
-        // 인증 상태 초기화 (쿠키의 토큰으로 사용자 정보 가져오기)
+        if (typeof window === 'undefined') {
+            return;
+        }
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('signupBonus')) {
+            const bonus = Number(params.get('signupBonus'));
+            setBonusAmount(Number.isNaN(bonus) ? null : bonus);
+            setBonusDialogOpen(true);
+            setHasBonusParam(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        console.log('OAuth2 리디렉션 페이지에 도달했습니다. 인증 초기화를 시작합니다.');
+
         useAuthStore.getState().initializeAuth()
             .then(userData => {
                 if (userData) {
                     console.log('인증 초기화 성공:', userData);
-                    // 닉네임 정보가 없으면 신규 소셜 가입자로 판단
-                    if (!userData.nickname) {
-                        console.log('신규 소셜 가입자입니다. 추가 정보 입력 페이지로 이동합니다.');
-                        router.push('/signup/social');
+                    const destination = userData.nickname ? '/' : '/signup/social';
+
+                    if (hasBonusParam) {
+                        setPendingRedirect(destination);
                     } else {
-                        console.log('기존 회원입니다. 메인 페이지로 이동합니다.');
-                        router.push('/');
+                        router.push(destination);
                     }
                 } else {
-                    // userData가 null이면 인증 실패로 간주
                     throw new Error('인증에 실패했습니다. 로그인 정보를 확인해주세요.');
                 }
             })
@@ -36,7 +52,16 @@ export default function OAuth2RedirectPage() {
                 const errorMessage = err.message || '인증에 실패했습니다. 로그인 페이지로 다시 시도해주세요.';
                 setError(errorMessage);
             });
-    }, [router]);
+    }, [router, hasBonusParam]);
+
+    const handleBonusDialogClose = () => {
+        setBonusDialogOpen(false);
+        if (pendingRedirect) {
+            router.push(pendingRedirect);
+        } else {
+            router.push('/');
+        }
+    };
 
     // 에러가 발생한 경우
     if (error) {
@@ -76,6 +101,21 @@ export default function OAuth2RedirectPage() {
             <Typography sx={{ mt: 2 }}>
                 로그인 정보를 확인 중입니다. 잠시만 기다려주세요...
             </Typography>
+
+            <Dialog open={bonusDialogOpen} onClose={handleBonusDialogClose}>
+                <DialogTitle>환영합니다!</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        신규 가입 보너스로 {(bonusAmount ?? 5000).toLocaleString()} 크레딧이 지급되었습니다.
+                        추가 정보 입력 또는 메인 페이지에서 크레딧을 확인해 주세요.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleBonusDialogClose} autoFocus>
+                        확인
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

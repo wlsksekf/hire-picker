@@ -23,6 +23,7 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
     private final boolean isEnabled;
     private final UserType userType;
     private Map<String, Object> attributes; // OAuth2
+    private boolean signupBonusGranted;
 
     // 생성자: 개인 또는 기업 유저에 따라 CustomUserDetails 생성
     public CustomUserDetails(PersonalUser personalUser) {
@@ -122,4 +123,7 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
         return String.valueOf(id);
     }
 
+    public void markSignupBonusGranted() {
+        this.signupBonusGranted = true;
+    }
 }

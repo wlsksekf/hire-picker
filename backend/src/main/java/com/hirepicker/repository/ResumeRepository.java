@@ -1,6 +1,7 @@
 package com.hirepicker.repository;
 
 import com.hirepicker.entity.Resume;
+import com.hirepicker.entity.ResumeStatus;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,4 +15,6 @@ public interface ResumeRepository extends JpaRepository<Resume, Long> {
 
     // 개인회원 ID로 최신 이력서 조회
     java.util.Optional<Resume> findTopByPersonalUserIdOrderByIdDesc(Long personalUserId);
+
+    List<Resume> findByStatusAndCreditCostGreaterThanEqual(ResumeStatus status, int creditCost);
 }

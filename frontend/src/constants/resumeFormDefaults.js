@@ -12,6 +12,8 @@ export function createEmptyResumeForm() {
     selfStrengths: "",
     selfMotivation: "",
     selfAspirations: "",
+    creditCost: 0,
+    resumeStatus: "PRIVATE",
     // 학력 1
     edu1_school: "",
     edu1_schoolCode: null,
