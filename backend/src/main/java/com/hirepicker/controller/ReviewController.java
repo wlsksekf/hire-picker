@@ -32,13 +32,13 @@ public class ReviewController {
     private final ReviewService reviewService;
     private final PersonalUserRepository personalUserRepository;
 
-    @GetMapping("/companies/{companyId}")
+    @GetMapping("/companies/{companyId}") // 기업 상세보기에 리뷰들 가져오기
     public ResponseEntity<List<ReviewResponseDto>> getReviewsByCompany(@PathVariable Long companyId) {
         List<ReviewResponseDto> reviews = reviewService.getReviewsByCompany(companyId);
         return ResponseEntity.ok(reviews);
     }
 
-    @GetMapping("/companies")
+    @GetMapping("/companies") // 사용자가 리뷰 작성 가능한 회사들 가져오기
     public ResponseEntity<List<CompanyReviewDto>> getReviewableCompanies(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
         if (userDetails == null) {
@@ -49,46 +49,65 @@ public class ReviewController {
         return ResponseEntity.ok(reviewableCompanies);
     }
 
-    @GetMapping("/{companyId}/my-review")
+    @GetMapping("/{companyId}/my-review") // 사용자가 특정 회사에 작성한 리뷰 가져오기
     public ResponseEntity<ReviewRequest> getMyReview(
             @PathVariable Long companyId,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
+        // 1. 로그인 여부 확인
         if (userDetails == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Long pUserIdx = userDetails.getId();
-        PersonalUser personalUser = personalUserRepository.findById(pUserIdx)
-                .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다. id=" + pUserIdx));
-        Optional<ComReview> myReview = reviewService.getMyReview(companyId, personalUser);
 
-        return myReview.map(review -> {
-            ReviewRequest reviewRequest = new ReviewRequest();
-            reviewRequest.setReviewIdx(review.getReviewIdx());
-            reviewRequest.setReview(review.getContent());
-            reviewRequest.setReviewerType(review.getReviewerType());// Not strictly needed for frontend, but good for
-            // consistency
-            return ResponseEntity.ok(reviewRequest);
-        }).orElse(ResponseEntity.notFound().build());
+        // 2. 사용자 조회 (없으면 404)
+        Optional<PersonalUser> optionalUser = personalUserRepository.findById(userDetails.getId());
+        if (optionalUser.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        PersonalUser user = optionalUser.get();
+
+        // 3. 리뷰 조회
+        Optional<ComReview> optionalReview = reviewService.getMyReview(companyId, user);
+        if (optionalReview.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // 4. DTO 변환 후 반환
+        ComReview review = optionalReview.get();
+        ReviewRequest dto = new ReviewRequest();
+        dto.setReviewIdx(review.getReviewIdx());
+        dto.setReview(review.getContent());
+        dto.setReviewerType(review.getReviewerType());
+
+        return ResponseEntity.ok(dto);
     }
 
-    @PostMapping("/{companyId}")
+    @PostMapping("/{companyId}") // 리뷰 작성 및 수정
     public ResponseEntity<Void> saveReview(
             @PathVariable Long companyId,
             @RequestBody ReviewRequest reviewRequest,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
+        // 1. 로그인 확인
         if (userDetails == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        Long pUserIdx = userDetails.getId();
-        PersonalUser personalUser = personalUserRepository.findById(pUserIdx)
-                .orElseThrow(() -> new IllegalArgumentException("해당 사용자를 찾을 수 없습니다. id=" + pUserIdx));
 
+        // 2. 사용자 조회
+        Long userId = userDetails.getId();
+        Optional<PersonalUser> optionalUser = personalUserRepository.findById(userId);
+        if (optionalUser.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        PersonalUser personalUser = optionalUser.get();
+
+        // 3. 리뷰 저장
         reviewService.saveReview(
                 companyId,
                 reviewRequest.getReview(),
                 reviewRequest.getReviewerType(),
                 personalUser,
                 reviewRequest.getReviewIdx());
+
+        // 4. 성공 응답
         return ResponseEntity.ok().build();
     }
 }

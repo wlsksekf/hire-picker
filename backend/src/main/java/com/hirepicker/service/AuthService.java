@@ -1,28 +1,10 @@
 package com.hirepicker.service;
 
-import com.hirepicker.config.jwt.JwtTokenProvider;
-import com.hirepicker.config.security.CustomUserDetails;
-import com.hirepicker.dto.CompanySignupRequestDto;
-import com.hirepicker.dto.LoginRequest;
-import com.hirepicker.dto.ManageLoginRequest;
-import com.hirepicker.dto.ManageLoginResponse;
-import com.hirepicker.dto.SignupRequestDto;
-import com.hirepicker.entity.ApprovalStatus;
-import com.hirepicker.entity.Company;
-import com.hirepicker.entity.CompanyUser;
-import com.hirepicker.entity.PersonalUser;
-import com.hirepicker.entity.ManageUser;
-import com.hirepicker.entity.RefreshToken;
-import com.hirepicker.entity.UserType;
-import com.hirepicker.repository.CompanyRepository;
-import com.hirepicker.repository.CompanyUserRepository;
-import com.hirepicker.repository.ManageUserRepository;
-import com.hirepicker.repository.PersonalUserRepository;
-import com.hirepicker.repository.RefreshTokenRepository;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.Cookie;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,9 +16,30 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import com.hirepicker.config.jwt.JwtTokenProvider;
+import com.hirepicker.config.security.CustomUserDetails;
+import com.hirepicker.dto.CompanySignupRequestDto;
+import com.hirepicker.dto.LoginRequest;
+import com.hirepicker.dto.ManageLoginRequest;
+import com.hirepicker.dto.ManageLoginResponse;
+import com.hirepicker.dto.SignupRequestDto;
+import com.hirepicker.entity.ApprovalStatus;
+import com.hirepicker.entity.Company;
+import com.hirepicker.entity.CompanyUser;
+import com.hirepicker.entity.ManageUser;
+import com.hirepicker.entity.PersonalUser;
+import com.hirepicker.entity.RefreshToken;
+import com.hirepicker.entity.UserType;
+import com.hirepicker.repository.CompanyRepository;
+import com.hirepicker.repository.CompanyUserRepository;
+import com.hirepicker.repository.ManageUserRepository;
+import com.hirepicker.repository.PersonalUserRepository;
+import com.hirepicker.repository.RefreshTokenRepository;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -66,7 +69,7 @@ public class AuthService {
      * 4. HttpOnly 쿠키에 토큰 설정
      * 5. ThreadLocal 정리
      *
-     * @param request 로그인 요청 정보 (email/아이디, password, userType)
+     * @param request  로그인 요청 정보 (email/아이디, password, userType)
      * @param response HTTP 응답 (쿠키 설정용)
      */
     @Transactional
@@ -83,8 +86,8 @@ public class AuthService {
                 log.info("Step 1: Authenticating user...");
 
                 // 1-1. 인증 토큰 생성 (username, password)
-                UsernamePasswordAuthenticationToken authenticationToken =
-                        new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
+                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                        request.getEmail(), request.getPassword());
 
                 // 1-2. AuthenticationManager를 통한 인증 실행
                 // 내부적으로 UserDetailsService.loadUserByUsername() 호출
@@ -97,8 +100,8 @@ public class AuthService {
 
                 // ========== 인증된 사용자 정보 추출 ==========
                 CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-                UserType userType = userDetails.getUserType();  // PERSONAL 또는 COMPANY
-                Long userId = userDetails.getId();              // 사용자 PK
+                UserType userType = userDetails.getUserType(); // PERSONAL 또는 COMPANY
+                Long userId = userDetails.getId(); // 사용자 PK
 
                 // ========== 기업회원 승인 상태 체크 ==========
                 if (userType == UserType.COMPANY) {
@@ -144,15 +147,23 @@ public class AuthService {
                 // userType에 따라 해당 사용자 엔티티를 가져와서 Refresh Token 저장
                 if (userType == UserType.PERSONAL) {
                     PersonalUser user = personalUserRepository.findById(userId)
-                            .orElseThrow(() -> new IllegalArgumentException("Personal user not found with ID: " + userId));
+                            .orElseThrow(
+                                    () -> new IllegalArgumentException("Personal user not found with ID: " + userId));
                     handleRefreshToken(user, newRefreshTokenValue, userType);
                 } else if (userType == UserType.COMPANY) {
                     CompanyUser user = companyUserRepository.findById(userId)
-                            .orElseThrow(() -> new IllegalArgumentException("Company user not found with ID: " + userId));
+                            .orElseThrow(
+                                    () -> new IllegalArgumentException("Company user not found with ID: " + userId));
                     handleRefreshToken(user, newRefreshTokenValue, userType);
                 } else if (userType == UserType.MANAGE) {
                     ManageUser user = manageUserRepository.findById(userId)
-                            .orElseThrow(() -> new IllegalArgumentException("Manage user not found with ID: " + userId));
+                            .orElseThrow(
+                                    () -> new IllegalArgumentException("Manage user not found with ID: " + userId));
+                    handleRefreshToken(user, newRefreshTokenValue, userType);
+                } else if (userType == UserType.MANAGE) {
+                    ManageUser user = manageUserRepository.findById(userId)
+                            .orElseThrow(
+                                    () -> new IllegalArgumentException("Manage user not found with ID: " + userId));
                     handleRefreshToken(user, newRefreshTokenValue, userType);
                 }
 
@@ -181,7 +192,7 @@ public class AuthService {
     /**
      * 관리자 로그인 처리 (MANAGE 전용)
      *
-     * @param request 관리자 로그인 요청
+     * @param request  관리자 로그인 요청
      * @param response HttpOnly 쿠키 설정용 응답 객체
      * @return 관리자 기본 정보
      */
@@ -227,6 +238,7 @@ public class AuthService {
 
     /**
      * [신규] 이메일 중복 확인
+     *
      * @param email 확인할 이메일
      * @return 중복 여부 (true: 중복, false: 사용 가능)
      */
@@ -237,13 +249,21 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public Long findPersonalUserIdxByEmail(String email) {
-        return personalUserRepository.findByEmail(email)
-                                     .map(PersonalUser::getId)
-                                     .orElse(null);
+        Optional<PersonalUser> optionalUser = personalUserRepository.findByEmail(email);
+
+        // 사용자가 존재하지 않으면 null 반환
+        if (optionalUser.isEmpty()) {
+            return null;
+        }
+
+        // 존재하면 ID 반환
+        PersonalUser user = optionalUser.get();
+        return user.getId();
     }
 
     /**
      * [신규] 개인 회원 가입 처리
+     *
      * @param signupRequest 회원가입 요청 DTO
      * @return 로그인 응답 (JWT 토큰 포함)
      */
@@ -302,6 +322,7 @@ public class AuthService {
 
     /**
      * 기업 회원 가입 처리
+     *
      * @param request 회원가입 요청 DTO
      * @return 로그인 응답 (JWT 토큰 포함)
      */
@@ -355,7 +376,8 @@ public class AuthService {
      * 주의: 자동 로그인하지 않음 (승인 대기 상태이므로)
      */
     @Transactional
-    public void registerCompanyUserWithDocument(CompanySignupRequestDto request, MultipartFile file, HttpServletResponse response) throws IOException {
+    public void registerCompanyUserWithDocument(CompanySignupRequestDto request, MultipartFile file,
+            HttpServletResponse response) throws IOException {
         log.info("기업 회원가입 처리 시작. ID: {}, 파일명: {}", request.getId(), file.getOriginalFilename());
 
         // === STEP 1: 중복 체크 ===
@@ -386,8 +408,8 @@ public class AuthService {
                 .email(request.getEmail())
                 .phoneNumber(request.getPhone_number())
                 .company(company)
-                .verificationFile(fileUrl)               // S3 URL 저장
-                .isApproved(ApprovalStatus.PENDING)      // 승인 대기 상태
+                .verificationFile(fileUrl) // S3 URL 저장
+                .isApproved(ApprovalStatus.PENDING) // 승인 대기 상태
                 .build();
 
         CompanyUser savedUser = companyUserRepository.save(newUser);
@@ -435,13 +457,16 @@ public class AuthService {
 
         if (user instanceof PersonalUser pUser) {
             refreshToken = pUser.getRefreshToken();
-            if (refreshToken == null) isNewUser = true;
+            if (refreshToken == null)
+                isNewUser = true;
         } else if (user instanceof CompanyUser cUser) {
             refreshToken = cUser.getRefreshToken();
-            if (refreshToken == null) isNewUser = true;
+            if (refreshToken == null)
+                isNewUser = true;
         } else if (user instanceof ManageUser mUser) {
             refreshToken = mUser.getRefreshToken();
-            if (refreshToken == null) isNewUser = true;
+            if (refreshToken == null)
+                isNewUser = true;
         }
 
         if (isNewUser) {
@@ -479,12 +504,15 @@ public class AuthService {
         // 현재 활성 프로필을 확인하여 secure 속성 동적 설정
         boolean isProduction = Arrays.asList(environment.getActiveProfiles()).contains("prod");
 
+        // 개발 환경에서는 SameSite=Lax로 설정하여 쿠키 전송 보장
+        String sameSite = isProduction ? "Strict" : "Lax";
+        
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
                 .httpOnly(true)
                 .secure(isProduction) // ★ 환경에 따라 동적으로 설정
                 .path("/")
                 .maxAge(jwtTokenProvider.getAccessTokenValidityInMilliseconds() / 1000)
-                .sameSite("Strict") // CSRF 방어를 위해 Strict 설정
+                .sameSite(sameSite) // 개발 환경에서는 Lax, 프로덕션에서는 Strict
                 .build();
         response.addHeader("Set-Cookie", accessTokenCookie.toString());
 
@@ -493,30 +521,40 @@ public class AuthService {
                 .secure(isProduction) // 환경에 따라 동적으로 설정
                 .path("/")
                 .maxAge(jwtTokenProvider.getRefreshTokenValidityInMilliseconds() / 1000)
-                .sameSite("Strict") // CSRF 방어를 위해 Strict 설정
+                .sameSite(sameSite) // 개발 환경에서는 Lax, 프로덕션에서는 Strict
                 .build();
         response.addHeader("Set-Cookie", refreshTokenCookie.toString());
     }
 
     /**
      * 리프레시 토큰을 이용한 액세스 토큰 갱신
-     * @param request HttpServletRequest (리프레시 토큰 쿠키 추출)
+     *
+     * @param request  HttpServletRequest (리프레시 토큰 쿠키 추출)
      * @param response HttpServletResponse (새로운 토큰 쿠키 설정)
      */
     @Transactional
     public void refreshToken(jakarta.servlet.http.HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = null;
         Cookie[] cookies = request.getCookies();
+        
+        // 디버깅: 쿠키 정보 로그
         if (cookies != null) {
+            log.info("[AuthService] refreshToken: 쿠키 개수: {}", cookies.length);
             for (Cookie cookie : cookies) {
+                log.info("[AuthService] refreshToken: 쿠키 이름: {}, 값 길이: {}", 
+                    cookie.getName(), cookie.getValue() != null ? cookie.getValue().length() : 0);
                 if ("refreshToken".equals(cookie.getName())) {
                     refreshToken = cookie.getValue();
+                    log.info("[AuthService] refreshToken: 리프레시 토큰 발견");
                     break;
                 }
             }
+        } else {
+            log.warn("[AuthService] refreshToken: 쿠키가 없습니다.");
         }
 
         if (refreshToken == null) {
+            log.error("[AuthService] refreshToken: 리프레시 토큰이 없습니다.");
             throw new IllegalArgumentException("리프레시 토큰이 없습니다.");
         }
 
@@ -546,6 +584,7 @@ public class AuthService {
 
     /**
      * 로그아웃 처리: JWT 토큰 쿠키 삭제 및 SecurityContext 초기화
+     *
      * @param response HttpServletResponse (쿠키 삭제)
      */
     public void logout(HttpServletResponse response) {
@@ -555,13 +594,14 @@ public class AuthService {
 
         // 2. ResponseCookie를 사용하여 쿠키 삭제
         boolean isProduction = Arrays.asList(environment.getActiveProfiles()).contains("prod");
+        String sameSite = isProduction ? "Strict" : "Lax";
 
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", "")
                 .httpOnly(true)
                 .secure(isProduction) // 환경에 따라 동적으로 설정
                 .path("/")
                 .maxAge(0) // 쿠키 즉시 만료
-                .sameSite("Strict")
+                .sameSite(sameSite) // 개발 환경에서는 Lax, 프로덕션에서는 Strict
                 .build();
         response.addHeader("Set-Cookie", accessTokenCookie.toString());
         log.info("Access Token 쿠키가 삭제되었습니다.");
@@ -571,7 +611,7 @@ public class AuthService {
                 .secure(isProduction) // 환경에 따라 동적으로 설정
                 .path("/")
                 .maxAge(0) // 쿠키 즉시 만료
-                .sameSite("Strict")
+                .sameSite(sameSite) // 개발 환경에서는 Lax, 프로덕션에서는 Strict
                 .build();
         response.addHeader("Set-Cookie", refreshTokenCookie.toString());
         log.info("Refresh Token 쿠키가 삭제되었습니다.");

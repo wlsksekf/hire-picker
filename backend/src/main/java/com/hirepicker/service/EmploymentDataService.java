@@ -171,14 +171,27 @@ public class EmploymentDataService {
             for (Company company : allDbCompanies) {
                 String currentCorpCode = company.getCorpCode();
                 if (currentCorpCode != null && !currentCorpCode.isEmpty()) {
-                    companyByCorpCode.putIfAbsent(currentCorpCode, company);
+                    companyByCorpCode.putIfAbsent(currentCorpCode, company); // 이미 Map에 있으면 덮어쓰지 않고 기존 회사 정보를 유지
                 }
             }
 
             Map<String, List<Company>> companiesByName = new HashMap<>();
             for (Company company : allDbCompanies) {
+                // 회사 코드가 없는 회사만 처리
                 if (company.getCorpCode() == null || company.getCorpCode().isEmpty()) {
-                    companiesByName.computeIfAbsent(company.getCompanyName(), k -> new ArrayList<>()).add(company);
+                    String name = company.getCompanyName();
+
+                    // 키가 이미 존재하는지 확인
+                    if (companiesByName.containsKey(name)) {
+                        // 이미 존재하면 기존 리스트 가져오기
+                        List<Company> list = companiesByName.get(name);
+                        list.add(company);
+                    } else {
+                        // 존재하지 않으면 새 리스트 만들고 추가 후 맵에 넣기
+                        List<Company> list = new ArrayList<>();
+                        list.add(company);
+                        companiesByName.put(name, list);
+                    }
                 }
             }
 
@@ -189,11 +202,10 @@ public class EmploymentDataService {
 
             if (progressFile.exists()) {
                 try {
-                    List<String> lines = Files.readAllLines(progressFile.toPath());
+                    List<String> lines = Files.readAllLines(progressFile.toPath()); // 모든 줄 읽기
                     if (!lines.isEmpty()) {
                         String lastLine = lines.get(lines.size() - 1).trim(); // 마지막 줄
                         startPage = Integer.parseInt(lastLine);
-                        log.info("이전 작업 감지됨 — {} 페이지부터 이어서 시작합니다.", startPage);
                     }
                 } catch (Exception e) {
                     log.warn("진행상황 파일 읽기 실패.", e);
@@ -217,12 +229,6 @@ public class EmploymentDataService {
                 }
 
             }
-
-            // --- 모든 작업 완료 시 진행상황 파일 삭제 ---
-            // if (progressFile.exists()) {
-            // progressFile.delete();
-            // log.info("🧹 진행상황 파일 삭제 완료");
-            // }
 
             log.info("DART 전체 동기화 완료.");
 
@@ -381,9 +387,8 @@ public class EmploymentDataService {
         return work24Key;
     }
 
-    // --- [수정됨] ---
     private String getDartKey() {
-        // 3. 리스트가 초기화되었는지 확인
+        // 리스트가 초기화되었는지 확인
         if (dartApiKeys == null || dartApiKeys.isEmpty()) {
             log.error("DART API 키가 application.yml 또는 환경변수에 설정되지 않았습니다.");
             // init() 메서드가 아직 실행되기 전일 수 있으므로, 여기서 한 번 더 시도
@@ -395,13 +400,12 @@ public class EmploymentDataService {
             }
         }
 
-        // 4. 네가 만든 기존 키 순환 로직은 그대로 사용
         for (int i = 0; i < 5; i++) {
             // currentDartKeyIndex는 1-based, 리스트는 0-based
             int listIndex = currentDartKeyIndex - 1;
             String keyName = "dart_key" + currentDartKeyIndex;
 
-            // 5. dotenv.get() 대신 리스트에서 키를 가져옴
+            // 리스트에서 키를 가져옴
             String apiKey = dartApiKeys.get(listIndex);
 
             if (apiKey != null && !apiKey.isBlank() && !isKeyExhausted(keyName)) {
@@ -416,7 +420,6 @@ public class EmploymentDataService {
         log.error("모든 DART API Key가 사용 불가합니다. DART 동기화를 중단합니다.");
         return null;
     }
-    // --- [수정 끝] ---
 
     // 사용량 초과 체크용 예시
     private boolean isKeyExhausted(String keyName) {
@@ -461,7 +464,7 @@ public class EmploymentDataService {
                     URL corpUrl = new URL(companyApiUrl);
                     HttpURLConnection conn = (HttpURLConnection) corpUrl.openConnection();
                     conn.setRequestMethod("GET");
-                    conn.setConnectTimeout(120000);
+                    conn.setConnectTimeout(120000); // 120 seconds, DART API 특성상 느릴 수 있어 타임아웃 늘림
                     conn.setReadTimeout(120000);
 
                     int responseCode2 = conn.getResponseCode();
@@ -478,12 +481,10 @@ public class EmploymentDataService {
                                 log.warn(
                                         "⚠️ DART API request limit exceeded for current key. Switching to next key...");
 
-                                // --- [수정] ---
                                 // 현재 키를 소진 목록에 추가
                                 exhaustedKeys.add("dart_key" + currentDartKeyIndex);
                                 // 다음 키로 인덱스 변경
                                 currentDartKeyIndex = (currentDartKeyIndex % 5) + 1;
-                                // --- [수정 끝] ---
 
                                 apiKey = getDartKey(); // 새 키 가져오기
                                 if (apiKey == null) {
@@ -531,7 +532,9 @@ public class EmploymentDataService {
                                                     String empCountStr = json2.path("account_nm").asText(null);
                                                     if (empCountStr != null && !empCountStr.isBlank()) {
                                                         try {
-                                                            employee_count = empCountStr.replaceAll("[^0-9]", "");
+                                                            employee_count = empCountStr.replaceAll("[^0-9]", ""); // 숫자
+                                                                                                                   // 이외
+                                                                                                                   // 제거
                                                         } catch (NumberFormatException ignore) {
                                                             log.warn("종업원 수 파싱 실패: {}", empCountStr);
                                                         }
@@ -588,7 +591,7 @@ public class EmploymentDataService {
                         || (employee_count != null && !employee_count.equals(existingCompany.getEmployeeCount()));
                 ;
 
-                if (needsUpdate) {
+                if (needsUpdate) { // 실제로 업데이트가 필요한 경우에만 처리
                     existingCompany.setStatus("approved"); // status를 approved로 설정
                     existingCompany.setRegDate(new java.util.Date()); // regDate를 현재 날짜로 설정
                     existingCompany.setCompanyName(corpName);
@@ -610,7 +613,7 @@ public class EmploymentDataService {
                     }
                     companiesToUpdate.add(existingCompany);
                 }
-            } else {
+            } else { // corpCode로 매칭되는 회사가 없는 경우, 회사 이름으로 매칭 시도
                 List<Company> matchingCompanies = companiesByName.get(corpName);
                 if (matchingCompanies != null && !matchingCompanies.isEmpty()) {
                     Company companyToUpdate = matchingCompanies.remove(0);
@@ -633,7 +636,7 @@ public class EmploymentDataService {
                         companyToUpdate.setEmployeeCount(employee_count);
                     }
                     companiesToUpdate.add(companyToUpdate);
-                } else {
+                } else { // 신규 회사로 처리
                     Company newCompany = new Company();
                     newCompany.setStatus("approved"); // status를 approved로 설정
                     newCompany.setRegDate(new java.util.Date()); // regDate를 현재 날짜로 설정
@@ -662,10 +665,9 @@ public class EmploymentDataService {
         if (!companiesToUpdate.isEmpty()) {
             log.info("[배치 {}/{}] 업데이트할 회사 수: {}", page + 1, totalPages, companiesToUpdate.size());
             try {
-                companyRepository.saveAll(companiesToUpdate);
-            } catch (Exception e) {
+                companyRepository.saveAll(companiesToUpdate); // 일괄 업데이트
+            } catch (Exception e) { // 일괄 저장 실패 시 개별 저장 시도
                 log.error("배치 업데이트 중 DB 저장 오류: {}", e.getMessage(), e);
-                // attempt individual saves to isolate bad records
                 for (Company c : companiesToUpdate) {
                     try {
                         companyRepository.save(c);
@@ -680,12 +682,12 @@ public class EmploymentDataService {
         if (!companiesToInsert.isEmpty()) {
             log.info("[배치 {}/{}] 추가할 회사 수: {}", page + 1, totalPages, companiesToInsert.size());
             try {
-                companyRepository.saveAll(companiesToInsert);
+                companyRepository.saveAll(companiesToInsert); // 일괄 삽입
             } catch (Exception e) {
                 log.error("배치 삽입 중 DB 저장 오류: {}", e.getMessage(), e);
                 for (Company c : companiesToInsert) {
                     try {
-                        companyRepository.save(c);
+                        companyRepository.save(c); // 개별 삽입 시도
                     } catch (Exception ex) {
                         log.error("개별 삽입 실패 (회사: {}, 코드: {}): {}", c.getCompanyName(), c.getCorpCode(),
                                 ex.getMessage());
@@ -696,7 +698,7 @@ public class EmploymentDataService {
 
         if (!companiesToUpdate.isEmpty() || !companiesToInsert.isEmpty()) {
             try {
-                companyRepository.flush();
+                companyRepository.flush(); // 변경사항 즉시 DB에 반영
                 log.info("[배치 {}/{}] DB 저장 완료.", page + 1, totalPages);
             } catch (Exception e) {
                 log.error("flush 중 오류 발생: {}", e.getMessage(), e);
@@ -726,7 +728,6 @@ public class EmploymentDataService {
         HttpURLConnection connection = null;
 
         try {
-            log.info("DART corpCode.xml 다운로드 시작 (API 키: {})", apiKey);
 
             URL url = new URL(urlString);
             connection = (HttpURLConnection) url.openConnection();
@@ -737,14 +738,6 @@ public class EmploymentDataService {
                 log.error("DART API 응답 실패. ResponseCode = {}", responseCode);
                 return false;
             }
-
-            // 기존 파일 삭제
-            // if (downloadedFile.exists())
-            // downloadedFile.delete();
-            // if (zipFile.exists())
-            // zipFile.delete();
-            // if (extractedXmlFile.exists())
-            // extractedXmlFile.delete();
 
             // 파일 다운로드
             try (BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
@@ -792,7 +785,6 @@ public class EmploymentDataService {
                 return false;
             }
 
-            log.info("corpCode.xml 다운로드 및 검증 성공 (API 키: {})", apiKey);
             return true;
 
         } catch (Exception e) {

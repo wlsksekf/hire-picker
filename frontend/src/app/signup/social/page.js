@@ -108,6 +108,24 @@ export default function SocialSignupPage() {
         );
     }
 
+    const renderAddressInput = () => {
+        // AppProviders의 LoadScript로 이미 로드되므로 바로 사용 가능
+        return (
+            <Autocomplete
+                onLoad={handleAutocompleteLoad}
+                onPlaceChanged={handlePlaceChanged}
+            >
+                <TextField
+                    id="address"
+                    name="address"
+                    fullWidth
+                    value={formData.address}
+                    onChange={handleAddressChange}
+                />
+            </Autocomplete>
+        );
+    };
+
     return (
         <StyledFormWrapper>
             <div className="form-container">
@@ -174,18 +192,7 @@ export default function SocialSignupPage() {
 
                     <div className="input-group">
                         <label htmlFor="address">주소</label>
-                        <Autocomplete
-                            onLoad={handleAutocompleteLoad}
-                            onPlaceChanged={handlePlaceChanged}
-                        >
-                            <TextField
-                                id="address"
-                                name="address"
-                                fullWidth
-                                value={formData.address}
-                                onChange={handleAddressChange}
-                            />
-                        </Autocomplete>
+                        {renderAddressInput()}
                     </div>
 
                     <button type="submit" className="sign" disabled={loading}>

@@ -2,8 +2,9 @@ package com.hirepicker.service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors; // Collectors 임포트 추가
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -35,12 +36,11 @@ public class EmploymentDataImpl implements EmploymentData {
     private final EmpEventRepository empEventRepository; // 채용 행사 리포지토리
     private final CompanyRepository companyRepository; // 기업 리포지토리
 
-
-    public JobPosting findByPostingId(String postingId) {
-    return jobPostingRepository.findByPostingId(postingId)
-            .orElseThrow(() -> new IllegalArgumentException("해당 posting_id에 해당하는 공고를 찾을 수 없습니다."));
-}
-
+    @Override
+    public JobPosting findByPostingIdx(Long postingIdx) {
+        return jobPostingRepository.findByPostingIdx(postingIdx)
+                .orElseThrow(() -> new IllegalArgumentException("해당 posting_idx에 해당하는 공고를 찾을 수 없습니다."));
+    }
 
     // 채용 공고 목록 조회
     @Override
@@ -57,16 +57,20 @@ public class EmploymentDataImpl implements EmploymentData {
             boolean internal = job.getCUserIdx() != null;
 
             JobDto jobDto = JobDto.builder()
-                    .id(job.getPostingId())
+                    .id(job.getPostingId()) // Populate id
+                    .postingIdx(job.getPostingIdx()) // Populate postingIdx
                     .companyName(companyName)
                     .title(job.getTitle())
                     .employmentType(job.getEmploymentType())
                     .location(job.getLocation())
-                    .imgUrl(imgPath)
-                    .internal(internal)
-                    .applyUrl(internal ? null : applyUrl)
-                    .postingIdx(job.getPostingIdx())
-                    .country(job.getCountry())
+                    .imgUrl(job.getCompany().getImgPath())
+                    .welfare(job.getWelfare())
+                    .experience_level(job.getExperienceLevel())
+                    .required_qualifications(job.getRequiredQualifications())
+                    .preferred_qualifications(job.getPreferredQualifications())
+                    .salaryInfo(job.getSalaryInfo())
+                    .internal(internal) // 내부 지원 가능 여부
+                    .applyUrl(applyUrl) // 외부 지원 링크
                     .build();
 
             jobDtos.add(jobDto);
@@ -238,13 +242,11 @@ public class EmploymentDataImpl implements EmploymentData {
                 if (includeDomestic && !includeOverseas) {
                     predicates.add(cb.or(
                             cb.isNull(root.get("country")),
-                            cb.equal(cb.lower(root.get("country")), "south korea")
-                    ));
+                            cb.equal(cb.lower(root.get("country")), "south korea")));
                 } else if (!includeDomestic && includeOverseas) {
                     predicates.add(cb.and(
                             cb.isNotNull(root.get("country")),
-                            cb.notEqual(cb.lower(root.get("country")), "south korea")
-                    ));
+                            cb.notEqual(cb.lower(root.get("country")), "south korea")));
                 }
             }
 
@@ -263,19 +265,23 @@ public class EmploymentDataImpl implements EmploymentData {
             boolean internal = job.getCUserIdx() != null;
 
             jobDtos.add(JobDto.builder()
-                    .id(job.getPostingId())
+                    .id(job.getPostingId()) // Populate id
+                    .postingIdx(job.getPostingIdx()) // Populate postingIdx
                     .companyName(companyName)
                     .title(job.getTitle())
                     .employmentType(job.getEmploymentType())
-                    .location(companyAddress != null ? companyAddress : job.getLocation())
+                    .location(job.getLocation())
                     .imgUrl(imgUrl)
                     .experience_level(job.getExperienceLevel())
-                    .companyType(job.getLocation())
+                    .companyType(job.getCompany() != null ? job.getCompany().getCompanyType() : null)
                     .jobType(job.getJobType())
-                    .internal(internal)
-                    .applyUrl(internal ? null : applyUrl)
-                    .postingIdx(job.getPostingIdx())
-                    .country(job.getCountry())
+                    .welfare(job.getWelfare())
+                    .experience_level(job.getExperienceLevel())
+                    .required_qualifications(job.getRequiredQualifications())
+                    .preferred_qualifications(job.getPreferredQualifications())
+                    .salaryInfo(job.getSalaryInfo())
+                    .internal(internal) // 내부 지원 가능 여부
+                    .applyUrl(applyUrl) // 외부 지원 링크
                     .build());
         }
 
@@ -323,6 +329,146 @@ public class EmploymentDataImpl implements EmploymentData {
         return dtoList;
     }
 
+    @Override
+    public List<JobDto> getJobPostingsByCompanyIdx(Long companyIdx) {
+        List<JobPosting> jobPostings = jobPostingRepository.findByCompany_CompanyIdx(companyIdx);
+        List<JobDto> jobDtos = new ArrayList<>();
 
+        for (JobPosting job : jobPostings) {
+            String companyName = "";
+            String imgUrl = null;
+            if (job.getCompany() != null) {
+                companyName = job.getCompany().getCompanyName();
+                imgUrl = job.getCompany().getImgPath();
+            }
 
+            jobDtos.add(JobDto.builder()
+                    .id(job.getPostingId()) // Populate id
+                    .postingIdx(job.getPostingIdx()) // Populate postingIdx
+                    .companyName(companyName)
+                    .title(job.getTitle())
+                    .employmentType(job.getEmploymentType())
+                    .location(job.getLocation())
+                    .imgUrl(imgUrl)
+                    .experience_level(job.getExperienceLevel())
+                    .companyType(job.getCompany() != null ? job.getCompany().getCompanyType() : null)
+                    .jobType(job.getJobType())
+                    .companyIdx(job.getCompany() != null ? job.getCompany().getCompanyIdx() : null)
+                    .welfare(job.getWelfare())
+                    .experience_level(job.getExperienceLevel())
+                    .required_qualifications(job.getRequiredQualifications())
+                    .preferred_qualifications(job.getPreferredQualifications())
+                    .salaryInfo(job.getSalaryInfo())
+                    .build());
+        }
+        return jobDtos;
+    }
+
+    @Override
+    public JobDto getJobPostingById(String postingId) {
+        JobPosting jobPosting = jobPostingRepository.findByPostingId(postingId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 posting_id에 해당하는 공고를 찾을 수 없습니다."));
+
+        String companyName = "";
+        String imgUrl = null;
+        if (jobPosting.getCompany() != null) {
+            companyName = jobPosting.getCompany().getCompanyName();
+            imgUrl = jobPosting.getCompany().getImgPath();
+        }
+
+        return JobDto.builder()
+                .id(jobPosting.getPostingId())
+                .postingIdx(jobPosting.getPostingIdx()) // Populate postingIdx
+                .companyName(companyName)
+                .title(jobPosting.getTitle())
+                .employmentType(jobPosting.getEmploymentType())
+                .location(jobPosting.getLocation())
+                .imgUrl(imgUrl)
+                .experience_level(jobPosting.getExperienceLevel())
+                .companyType(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyType() : null)
+                .jobType(jobPosting.getJobType())
+                .description(jobPosting.getDescription())
+                .endDate(jobPosting.getEndDate() != null ? jobPosting.getEndDate().toString() : null)
+                .startDate(jobPosting.getStartDate() != null ? jobPosting.getStartDate().toString() : null)
+                .companyIdx(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyIdx() : null)
+                .welfare(jobPosting.getWelfare())
+                .experience_level(jobPosting.getExperienceLevel())
+                .required_qualifications(jobPosting.getRequiredQualifications())
+                .preferred_qualifications(jobPosting.getPreferredQualifications())
+                .salaryInfo(jobPosting.getSalaryInfo())
+                .build();
+    }
+
+    @Override
+    public JobDto getJobPostingByPostingIdx(Long postingIdx) {
+        JobPosting jobPosting = jobPostingRepository.findByPostingIdx(postingIdx)
+                .orElseThrow(() -> new IllegalArgumentException("해당 posting_idx에 해당하는 공고를 찾을 수 없습니다."));
+
+        String companyName = "";
+        String imgUrl = null;
+        if (jobPosting.getCompany() != null) {
+            companyName = jobPosting.getCompany().getCompanyName();
+            imgUrl = jobPosting.getCompany().getImgPath();
+        }
+
+        return JobDto.builder()
+                .id(jobPosting.getPostingId()) // Populate id
+                .postingIdx(jobPosting.getPostingIdx()) // Populate postingIdx
+                .companyName(companyName)
+                .title(jobPosting.getTitle())
+                .employmentType(jobPosting.getEmploymentType())
+                .location(jobPosting.getLocation())
+                .imgUrl(imgUrl)
+                .experience_level(jobPosting.getExperienceLevel())
+                .companyType(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyType() : null)
+                .jobType(jobPosting.getJobType())
+                .description(jobPosting.getDescription())
+                .endDate(jobPosting.getEndDate() != null ? jobPosting.getEndDate().toString() : null)
+                .startDate(jobPosting.getStartDate() != null ? jobPosting.getStartDate().toString() : null)
+                .companyIdx(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyIdx() : null)
+                .welfare(jobPosting.getWelfare())
+                .experience_level(jobPosting.getExperienceLevel())
+                .required_qualifications(jobPosting.getRequiredQualifications())
+                .preferred_qualifications(jobPosting.getPreferredQualifications())
+                .salaryInfo(jobPosting.getSalaryInfo())
+                .build();
+    }
+
+    @Override
+    public List<JobDto> getJobPostingsByCompanyIds(List<Long> companyIds) {
+        if (companyIds == null || companyIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<JobPosting> jobPostings = jobPostingRepository.findByCompany_CompanyIdxIn(companyIds);
+        return jobPostings.stream()
+                .map(jobPosting -> {
+                    String companyName = "";
+                    String imgUrl = null;
+                    if (jobPosting.getCompany() != null) {
+                        companyName = jobPosting.getCompany().getCompanyName();
+                        imgUrl = jobPosting.getCompany().getImgPath();
+                    }
+                    return JobDto.builder()
+                            .id(jobPosting.getPostingId())
+                            .postingIdx(jobPosting.getPostingIdx())
+                            .companyName(companyName)
+                            .title(jobPosting.getTitle())
+                            .employmentType(jobPosting.getEmploymentType())
+                            .location(jobPosting.getLocation())
+                            .imgUrl(imgUrl)
+                            .experience_level(jobPosting.getExperienceLevel())
+                            .companyType(
+                                    jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyType() : null)
+                            .jobType(jobPosting.getJobType())
+                            .companyIdx(
+                                    jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyIdx() : null)
+                            .welfare(jobPosting.getWelfare())
+                            .experience_level(jobPosting.getExperienceLevel())
+                            .required_qualifications(jobPosting.getRequiredQualifications())
+                            .preferred_qualifications(jobPosting.getPreferredQualifications())
+                            .salaryInfo(jobPosting.getSalaryInfo())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
 }

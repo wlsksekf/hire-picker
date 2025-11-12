@@ -17,7 +17,11 @@ import { useRouter } from 'next/navigation';
 function Header() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // 모바일 화면 여부 확인
-  const { isAuthenticated, isLoading, logout, user } = useAuthStore(); // isLoading 추가
+  // Zustand 스토어에서 상태를 구독하여 변경 시 자동 리렌더링
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const router = useRouter();
 
   const handleLogout = () => {

@@ -57,15 +57,9 @@ export default function ReviewPage() {
     }
 
     if (user) {
-      console.log("User object is present. Calling fetchCompanies.");
-
       const fetchCompanies = async () => {
         try {
-          const response = await fetch("/api/reviews/companies", {
-            headers: {
-              // Authorization: `Bearer ${token}`, // HttpOnly cookie handles authentication
-            },
-          });
+          const response = await fetch("/api/reviews/companies");
 
           if (response.ok) {
             const data = await response.json();
@@ -176,7 +170,6 @@ export default function ReviewPage() {
             review,
             reviewerType,
             reviewIdx,
-            // pUserIdx is obtained from authenticated user on backend
           }),
         }
       );
@@ -186,8 +179,6 @@ export default function ReviewPage() {
         setSnackbarMessage("리뷰가 저장되었습니다.");
         setSnackbarOpen(true);
         setIsEditing(false); // Disable editing after saving
-        // Optionally, refetch companies to update the list if a company can only be reviewed once
-        // fetchCompanies();
       } else {
         setSnackbarSeverity("error");
         setSnackbarMessage("리뷰 저장에 실패했습니다.");

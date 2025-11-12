@@ -24,6 +24,16 @@ function pad2(value = "") {
   return value.toString().padStart(2, "0");
 }
 
+function resolveProsCons(rawProsCons, jobCompetencies, growthProcess) {
+  const trimmed = typeof rawProsCons === 'string' ? rawProsCons.trim() : "";
+  if (trimmed) return trimmed;
+  const fallbackParts = [jobCompetencies, growthProcess].filter(Boolean).map((v) => v.trim()).filter(Boolean);
+  if (fallbackParts.length > 0) {
+    return fallbackParts.join("\n\n");
+  }
+  return "상황에 맞춰 강점을 살리고 부족한 부분은 지속해서 개선하겠습니다.";
+}
+
 function normalizeIsoDate(dateStr) {
   if (!dateStr) return "";
   const trimmed = String(dateStr).trim();
@@ -64,7 +74,7 @@ function normalizeGenderDisplay(rawGender) {
 }
 
 const HIGH_SCHOOL_DEGREE = "고졸";
-const AI_CREDIT_COST = 1000; // AI 생성 시 차감될 고정 크레딧
+const AI_CREDIT_COST = 500; // AI 생성 시 차감될 고정 크레딧
 function isHighSchoolDegree(degree = "") {
   return degree === HIGH_SCHOOL_DEGREE;
 }
@@ -604,10 +614,11 @@ export default function WriteResumePage(props = {}) {
     try {
       const res = await generateAiFullDraft(prompt);
       const { growthProcess, jobCompetencies, prosAndCons, aspirations } = res.data || {};
+      const resolvedProsCons = resolveProsCons(prosAndCons, jobCompetencies, growthProcess);
       setFormData(prev => ({
         ...prev,
         selfGrowth: growthProcess || prev.selfGrowth || '',
-        selfStrengths: prosAndCons || prev.selfStrengths || '',
+        selfStrengths: resolvedProsCons || prev.selfStrengths || '',
         selfMotivation: jobCompetencies || prev.selfMotivation || '',
         selfAspirations: aspirations || prev.selfAspirations || '',
       }));
@@ -651,10 +662,11 @@ export default function WriteResumePage(props = {}) {
       };
       const res = await generateAiResumeDraft({ userData, resumeDraft });
       const { growthProcess, jobCompetencies, prosAndCons, aspirations } = res.data || {};
+      const resolvedProsCons = resolveProsCons(prosAndCons, jobCompetencies, growthProcess);
       setFormData(prev => ({
         ...prev,
         selfGrowth: growthProcess || prev.selfGrowth || '',
-        selfStrengths: prosAndCons || prev.selfStrengths || '',
+        selfStrengths: resolvedProsCons || prev.selfStrengths || '',
         selfMotivation: jobCompetencies || prev.selfMotivation || '',
         selfAspirations: aspirations || prev.selfAspirations || '',
       }));
