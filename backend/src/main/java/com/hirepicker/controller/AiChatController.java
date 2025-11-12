@@ -10,6 +10,11 @@ import com.google.genai.types.Tool;
 import com.hirepicker.dto.chatbot.ChatRequestDto;
 import com.hirepicker.dto.chatbot.ChatResponseDto;
 import com.hirepicker.service.ChatbotToolService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +26,7 @@ import java.util.Optional;
 import java.util.UUID; // UUID import 추가
 import java.util.concurrent.ConcurrentHashMap; // ConcurrentHashMap import 추가
 
+@Tag(name = "AI 챗봇", description = "AI 챗봇 (Function Calling) 관련 API")
 @RestController
 @RequestMapping("/api/v1/ai-chat") // Function Calling 전용
 @RequiredArgsConstructor
@@ -33,9 +39,14 @@ public class AiChatController {
     // 챗봇 세션을 저장하는 맵 (세션 ID -> Chat 객체)
     private final Map<String, Chat> chatSessions = new ConcurrentHashMap<>();
 
+    @Operation(summary = "AI 챗봇 대화", description = "채용공고 및 기업 정보 검색 기능이 포함된 AI 챗봇과 대화합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "대화 성공"),
+        @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     @PostMapping
     public ResponseEntity<ChatResponseDto> handleChat(
-            @RequestBody ChatRequestDto request) {
+            @Parameter(description = "챗봇 요청 (프롬프트 및 세션 ID)", required = true) @RequestBody ChatRequestDto request) {
 
         try {
             // 세션 ID가 없으면 새로 생성
