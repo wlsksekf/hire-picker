@@ -5,6 +5,9 @@ import com.hirepicker.dto.JobApplicationRequest;
 import com.hirepicker.dto.JobApplicationResponse;
 import com.hirepicker.service.JobApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,20 +20,26 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "채용 공고 지원", description = "채용 공고 지원 처리 API")
 @RestController
 @RequestMapping("/api/postings")
 @RequiredArgsConstructor
-@Tag(name = "채용 공고 지원", description = "채용 공고 지원 처리 API")
 public class JobApplicationController {
 
     private final JobApplicationService jobApplicationService;
 
-    @Operation(summary = "채용 공고 지원", description = "선택한 이력서를 사용하여 채용 공고에 지원합니다.")
+    @Operation(summary = "채용 공고 지원", description = "선택한 이력서를 사용하여 채용 공고에 지원합니다. 개인회원만 지원 가능합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "지원 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청 (이력서 없음, 공고 없음)"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "409", description = "이미 지원한 공고")
+    })
     @PostMapping("/{postingIdx}/apply")
     public ResponseEntity<JobApplicationResponse> applyToPosting(
-            @PathVariable("postingIdx") Long postingIdx,
-            @Valid @RequestBody JobApplicationRequest request,
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @Parameter(description = "지원할 채용 공고 ID", required = true) @PathVariable("postingIdx") Long postingIdx,
+            @Parameter(description = "지원 정보 (이력서 ID 포함)", required = true) @Valid @RequestBody JobApplicationRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         if (userDetails == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

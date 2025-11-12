@@ -66,6 +66,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/users/signup").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
+                        .requestMatchers("/api/comments/**").authenticated()
 
                         // OAuth2 관련 엔드포인트는 모두 허용
                         .requestMatchers("/api/oauth2/**", "/login/oauth2/code/**").permitAll()
