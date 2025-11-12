@@ -6,8 +6,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-
 /**
  * 이력서 열람 구매 이력 엔티티
  */
@@ -19,7 +17,7 @@ public class ResumePurchase {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "purchase_idx")
+    @Column(name = "purchase_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -27,30 +25,40 @@ public class ResumePurchase {
     private Resume resume; // 구매 대상 이력서
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "p_user_idx")
-    private PersonalUser personalUser; // 구매한 개인회원 (선택)
+    @JoinColumn(name = "buyer_p_user_idx")
+    private PersonalUser buyer; // 구매자
 
-    @Column(name = "resume_credits_used", nullable = false)
-    private Long resumeCreditsUsed; // 사용한 크레딧 수
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "transaction_id")
+    private com.hirepicker.entity.payment.CreditTransaction transaction;
 
-    @Column(name = "purchased_at", nullable = false)
-    private LocalDate purchasedAt; // 구매 일자
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private ResumePurchaseStatus status;
+
+    @Column(name = "created_at", nullable = false)
+    private java.time.LocalDateTime createdAt;
 
     @PrePersist
     protected void onPersist() {
-        if (purchasedAt == null) {
-            purchasedAt = LocalDate.now();
+        if (createdAt == null) {
+            createdAt = java.time.LocalDateTime.now();
+        }
+        if (status == null) {
+            status = ResumePurchaseStatus.COMPLETED;
         }
     }
 
     @Builder
-    public ResumePurchase(Long id, Resume resume, PersonalUser personalUser,
-                          Long resumeCreditsUsed, LocalDate purchasedAt) {
+    public ResumePurchase(Long id, Resume resume, PersonalUser buyer,
+                          com.hirepicker.entity.payment.CreditTransaction transaction,
+                          ResumePurchaseStatus status, java.time.LocalDateTime createdAt) {
         this.id = id;
         this.resume = resume;
-        this.personalUser = personalUser;
-        this.resumeCreditsUsed = resumeCreditsUsed;
-        this.purchasedAt = purchasedAt;
+        this.buyer = buyer;
+        this.transaction = transaction;
+        this.status = status != null ? status : ResumePurchaseStatus.COMPLETED;
+        this.createdAt = createdAt != null ? createdAt : java.time.LocalDateTime.now();
     }
 }
 

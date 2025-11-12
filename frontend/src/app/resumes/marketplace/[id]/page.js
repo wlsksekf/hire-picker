@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use as usePromise } from "react";
 import {
   Alert,
   Box,
@@ -52,7 +52,9 @@ const formatDate = (value) => {
 
 const ResumeMarketplaceDetailPage = ({ params }) => {
   const router = useRouter();
-  const resumeId = Number(params?.id);
+  const resolvedParams =
+    params && typeof params.then === "function" ? usePromise(params) : params;
+  const resumeId = Number(resolvedParams?.id);
 
   const [resume, setResume] = useState(null);
   const [loading, setLoading] = useState(true);

@@ -3,7 +3,6 @@ import {
   AppBar,
   Avatar,
   Box,
-  Button,
   Divider,
   Drawer,
   IconButton,
@@ -17,10 +16,10 @@ import {
   Toolbar,
   Typography,
 } from '@mui/material';
+import styled from 'styled-components';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ArticleIcon from '@mui/icons-material/Article';
 import PeopleIcon from '@mui/icons-material/People';
-import LogoutIcon from '@mui/icons-material/Logout';
 import SearchIcon from '@mui/icons-material/Search';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
@@ -225,23 +224,7 @@ const AdminLayout = ({ children, manageUser, onLogout, customMenu }) => (
                 </Typography>
               </Box>
             </Box>
-            <Button
-              variant="contained"
-              startIcon={<LogoutIcon />}
-              onClick={onLogout}
-              sx={{
-                textTransform: 'none',
-                px: 3,
-                borderRadius: 2.5,
-                backgroundColor: '#1f2937',
-                boxShadow: '0 14px 26px -18px rgba(17,24,39,0.4)',
-                '&:hover': {
-                  backgroundColor: '#111827',
-                },
-              }}
-            >
-              로그아웃
-            </Button>
+            <AdminLogoutButton onClick={onLogout} />
           </Box>
         </Toolbar>
       </AppBar>
@@ -266,4 +249,90 @@ AdminLayout.defaultProps = {
 };
 
 export default AdminLayout;
+
+const AdminLogoutWrapper = styled.div`
+  .admin-logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 48px;
+    height: 48px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition-duration: 0.3s;
+    box-shadow: 2px 4px 12px rgba(15, 23, 42, 0.18);
+    background: linear-gradient(135deg, #0f172a 0%, #1f2937 100%);
+  }
+
+  .admin-logout-icon {
+    width: 100%;
+    transition-duration: 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .admin-logout-icon svg {
+    width: 18px;
+  }
+
+  .admin-logout-icon svg path {
+    fill: #ffffff;
+  }
+
+  .admin-logout-text {
+    position: absolute;
+    right: 0%;
+    width: 0%;
+    opacity: 0;
+    color: #ffffff;
+    font-size: 1.05em;
+    font-weight: 600;
+    transition-duration: 0.3s;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+
+  .admin-logout-btn:hover {
+    width: 140px;
+    border-radius: 44px;
+    transition-duration: 0.3s;
+    box-shadow: 4px 6px 18px rgba(15, 23, 42, 0.28);
+  }
+
+  .admin-logout-btn:hover .admin-logout-icon {
+    width: 28%;
+    padding-left: 20px;
+  }
+
+  .admin-logout-btn:hover .admin-logout-text {
+    opacity: 1;
+    width: 72%;
+    padding-right: 12px;
+  }
+
+  .admin-logout-btn:active {
+    transform: translate(1px, 1px);
+  }
+`;
+
+const AdminLogoutButton = ({ onClick }) => (
+  <AdminLogoutWrapper>
+    <button type="button" className="admin-logout-btn" onClick={onClick} aria-label="관리자 로그아웃">
+      <div className="admin-logout-icon">
+        <svg viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+          <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z" />
+        </svg>
+      </div>
+      <div className="admin-logout-text">Logout</div>
+    </button>
+  </AdminLogoutWrapper>
+);
+
+AdminLogoutButton.propTypes = {
+  onClick: PropTypes.func.isRequired,
+};
 
