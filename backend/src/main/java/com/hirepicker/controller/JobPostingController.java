@@ -45,7 +45,8 @@ public class JobPostingController {
     @GetMapping("/all")
     public ResponseEntity<?> getAllJobPostings(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PageableDefault(size = 10, sort = "regDate") Pageable pageable) {
+            @PageableDefault(size = 10, sort = "regDate") Pageable pageable,
+            @RequestParam(required = false) String search) { // search 파라미터 추가
 
         if (userDetails == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -56,7 +57,7 @@ public class JobPostingController {
                     .body(Map.of("message", "관리자만 접근 가능합니다."));
         }
 
-        Page<JobDto> jobPostings = employmentData.getJobs(pageable);
+        Page<JobDto> jobPostings = employmentData.getJobs(pageable, search); // search 파라미터 전달
         return ResponseEntity.ok(jobPostings);
     }
 
@@ -117,12 +118,13 @@ public class JobPostingController {
         return ResponseEntity.ok(Map.of("message", "채용 공고가 성공적으로 삭제되었습니다."));
     }
 
-    @Operation(summary = "채용 공고 상태 변경 (관리자용)", description = "posting_idx를 이용하여 채용 공고의 상태를 CLOSED로 변경합니다. 관리자만 접근 가능합니다.")
+    @Operation(summary = "채용 공고 상태 변경 (관리자용)", description = "posting_idx를 이용하여 채용 공고의 상태를 변경합니다. 관리자만 접근 가능합니다.")
     @PutMapping("/{postingIdx}/status")
     @Transactional
     public ResponseEntity<?> updateJobPostingStatus(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PathVariable("postingIdx") Long postingIdx) {
+            @PathVariable("postingIdx") Long postingIdx,
+            @RequestParam JobPostingStatus newStatus) { // newStatus 파라미터 추가
 
         if (userDetails == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -135,9 +137,9 @@ public class JobPostingController {
 
         return jobPostingRepository.findById(postingIdx)
                 .map(jobPosting -> {
-                    jobPosting.setStatus(JobPostingStatus.CLOSED);
+                    jobPosting.setStatus(newStatus); // newStatus로 변경
                     jobPostingRepository.save(jobPosting);
-                    return ResponseEntity.ok(Map.of("message", "채용 공고 상태가 CLOSED로 변경되었습니다."));
+                    return ResponseEntity.ok(Map.of("message", "채용 공고 상태가 " + newStatus.name() + "로 변경되었습니다."));
                 })
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("message", "해당 posting_idx의 채용 공고를 찾을 수 없습니다.")));

@@ -288,7 +288,12 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
           onChange={handleInputChange} // 입력 이벤트
           onKeyPress={handleKeyPress} // 엔터 이벤트
           InputProps={{
-            sx: { borderRadius: "50px", p: "8px 16px", fontSize: "1.1rem", height: "40px" },
+            sx: {
+              borderRadius: "50px",
+              p: "8px 16px",
+              fontSize: "1.1rem",
+              height: "40px",
+            },
             endAdornment: (
               <IconButton onClick={handleSearch}>
                 {" "}
@@ -333,7 +338,7 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
           ["companyType", "기업 종류"],
           ["source", "내부 지원 가능 공고"],
           ["overseas", "국가"],
-          ["dateStatus", "공고 상태"], // 새로운 공고 상태 필터 버튼
+          ["dateStatus", "공고 날짜"],
         ].map(function (item) {
           const key = item[0];
           const label = item[1];

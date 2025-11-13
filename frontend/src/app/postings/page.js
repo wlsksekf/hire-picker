@@ -212,9 +212,26 @@ function PostingsPage() {
                     }}
                   >
                     <Link href={`/postings/${job.postingIdx}`} passHref>
-                      <Typography color="text.secondary" noWrap>
-                        {job.companyName}
-                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <Typography color="text.secondary" noWrap>
+                          {job.companyName}
+                        </Typography>
+                        {job.status && (
+                          <Chip
+                            label={job.status === "OPEN" ? "지원가능" : "마감"}
+                            size="small"
+                            sx={{
+                              ml: 1,
+                              fontWeight: 600,
+                              bgcolor:
+                                job.status === "OPEN"
+                                  ? theme.palette.success.light
+                                  : theme.palette.error.light,
+                              color: theme.palette.common.white,
+                            }}
+                          />
+                        )}
+                      </Box>
                     </Link>
 
                     <Typography

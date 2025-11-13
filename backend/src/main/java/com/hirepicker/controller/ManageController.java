@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hirepicker.config.security.CustomUserDetails;
@@ -53,7 +54,8 @@ public class ManageController {
     @GetMapping("/emp-events")
     public ResponseEntity<?> getAllEmpEvents(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PageableDefault(size = 10, sort = "eventIdx") Pageable pageable) {
+            @PageableDefault(size = 10, sort = "eventIdx") Pageable pageable,
+            @RequestParam(required = false) String search) { // search 파라미터 추가
 
         log.info("[API] getAllEmpEvents 호출됨. UserDetails: {}", userDetails);
         if (userDetails != null) {
@@ -71,7 +73,7 @@ public class ManageController {
                     .body(Map.of("message", "관리자만 접근 가능합니다."));
         }
 
-        Page<EventDto> empEvents = employmentData.getEvents(pageable);
+        Page<EventDto> empEvents = employmentData.getEvents(pageable, search); // search 파라미터 전달
         return ResponseEntity.ok(empEvents);
     }
 
@@ -107,12 +109,13 @@ public class ManageController {
         return ResponseEntity.ok(Map.of("message", "채용 행사가 성공적으로 삭제되었습니다."));
     }
 
-    @Operation(summary = "채용 행사 상태 변경 (관리자용)", description = "event_code를 이용하여 채용 행사의 상태를 CLOSED로 변경합니다. 관리자만 접근 가능합니다.")
+    @Operation(summary = "채용 행사 상태 변경 (관리자용)", description = "event_code를 이용하여 채용 행사의 상태를 변경합니다. 관리자만 접근 가능합니다.")
     @PutMapping("/emp-events/{eventCode}/status")
     @Transactional
     public ResponseEntity<?> updateEmpEventStatus(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @PathVariable("eventCode") String eventCode) {
+            @PathVariable("eventCode") String eventCode,
+            @RequestParam String newStatus) { // newStatus 파라미터 추가
 
         log.info("[API] updateEmpEventStatus 호출됨. UserDetails: {}", userDetails);
         if (userDetails != null) {
@@ -132,9 +135,9 @@ public class ManageController {
 
         return empEventRepository.findByEventCode(eventCode)
                 .map(empEvent -> {
-                    empEvent.setEventStatus("CLOSED");
+                    empEvent.setEventStatus(newStatus); // newStatus로 변경
                     empEventRepository.save(empEvent);
-                    return ResponseEntity.ok(Map.of("message", "채용 행사 상태가 CLOSED로 변경되었습니다."));
+                    return ResponseEntity.ok(Map.of("message", "채용 행사 상태가 " + newStatus + "로 변경되었습니다."));
                 })
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("message", "해당 event_code의 채용 행사를 찾을 수 없습니다.")));

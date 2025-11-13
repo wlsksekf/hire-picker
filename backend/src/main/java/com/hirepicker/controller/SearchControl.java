@@ -47,7 +47,7 @@ public class SearchControl {
         // ✅ dto가 null인 경우 (초기 로드 시 전체 조회)
         if (dto == null) {
             System.out.println("===== 🔍 기본 전체 조회 요청 =====");
-            return employmentDataImpl.getJobs(pageable);
+            return employmentDataImpl.getJobs(pageable, null);
         }
 
         String keyword = dto.getSearchTerm();

@@ -53,6 +53,7 @@ function JobPostingDetailClient({ posting_idx }) {
 
   useEffect(() => {
     if (posting_idx) {
+      console.log("Fetching job posting details for:", posting_idx); // 추가된 로그
       setLoading(true);
       setLogoError(false);
       api
@@ -172,9 +173,30 @@ function JobPostingDetailClient({ posting_idx }) {
             >
               {jobPosting.title}
             </Typography>
-            <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-              {jobPosting.companyName}
-            </Typography>
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1}
+              sx={{ mb: 2 }}
+            >
+              <Typography variant="h6" color="text.secondary">
+                {jobPosting.companyName}
+              </Typography>
+              {jobPosting.status && (
+                <Chip
+                  label={jobPosting.status === "OPEN" ? "지원가능" : "마감"}
+                  size="small"
+                  sx={{
+                    fontWeight: 600,
+                    bgcolor:
+                      jobPosting.status === "OPEN"
+                        ? theme.palette.success.light
+                        : theme.palette.error.light,
+                    color: theme.palette.common.white,
+                  }}
+                />
+              )}
+            </Stack>
             <Stack
               direction="row"
               alignItems="center"

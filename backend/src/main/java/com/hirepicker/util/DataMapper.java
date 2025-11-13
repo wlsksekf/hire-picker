@@ -37,8 +37,7 @@ public class DataMapper {
                 null, // experienceLevel
                 null, // salaryInfo
                 null, // internal (외부 공고이므로 false)
-                null // applyUrl
-                null, // salaryInfo
+                null, // applyUrl
                 "OPEN" // status
 
         );
