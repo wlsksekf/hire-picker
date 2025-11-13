@@ -11,12 +11,7 @@ import { Box, Container, CircularProgress } from '@mui/material'; // CircularPro
 import { oklch2rgb } from 'colorizr';
 import { ThemeModeContext } from '../theme/ThemeModeContext';
 import useAuthStore from '@/store/authStore'; // useAuthStore 임포트 (추가됨)
-import { LoadScript } from '@react-google-maps/api';
 import { usePathname } from 'next/navigation';
-
-// ★ 2. 'places' 라이브러리만 로드
-const libraries = ['places'];
-const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 // oklch(l c h) 문자열을 rgb(r, g, b) 문자열로 변환하는 헬퍼 함수
 function convertOklchToRgb(oklchStr) {
@@ -157,28 +152,23 @@ export default function AppProviders({ children }) {
           <MuiThemeProvider theme={theme}>
             <StyledThemeProvider theme={theme}>
               <CssBaseline />
-              <LoadScript
-                  googleMapsApiKey={googleMapsApiKey}
-                  libraries={libraries}
-              >
-                {isLoading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-                    <CircularProgress />
-                  </Box>
-                ) : isAdminRoute ? (
-                  <Box sx={{ minHeight: '100vh' }}>
+              {isLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                  <CircularProgress />
+                </Box>
+              ) : isAdminRoute ? (
+                <Box sx={{ minHeight: '100vh' }}>
+                  {children}
+                </Box>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+                  <Header />
+                  <Container component="main" sx={{ flexGrow: 1, py: 4 }}>
                     {children}
-                  </Box>
-                ) : (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-                    <Header />
-                    <Container component="main" sx={{ flexGrow: 1, py: 4 }}>
-                      {children}
-                    </Container>
-                    <Footer />
-                  </Box>
-                )}
-              </LoadScript>
+                  </Container>
+                  <Footer />
+                </Box>
+              )}
             </StyledThemeProvider>
           </MuiThemeProvider>
       </ThemeModeContext.Provider>
