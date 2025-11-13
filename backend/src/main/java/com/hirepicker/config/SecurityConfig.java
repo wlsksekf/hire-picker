@@ -53,8 +53,9 @@ public class SecurityConfig {
                 // 1. CORS 설정
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // 2. 기본 설정 비활성화 (CSRF, HTTP Basic, Form Login, Session)
-                .csrf(csrf -> csrf.disable()) // CSRF 보호 비활성화
+                // 2. 기본 설정 (CSRF 비활성화, HTTP Basic/Form Login 비활성화)
+                // HttpOnly + SameSite 쿠키로 충분히 보호됩니다.
+                .csrf(csrf -> csrf.disable())
                 .httpBasic(basic -> basic.disable()) // HTTP Basic 인증 비활성화
                 .formLogin(form -> form.disable()) // 폼 로그인 비활성화
                 .sessionManagement(session -> session

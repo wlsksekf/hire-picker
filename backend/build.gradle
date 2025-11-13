@@ -76,6 +76,9 @@ dependencies {
 
     // Java 8 날짜/시간 API 지원을 위한 Jackson 모듈
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    
+    // Rate Limiting (Bucket4j) - 무차별 대입 공격 방지
+    implementation 'com.bucket4j:bucket4j-core:8.1.0'
     // AWS S3 SDK v2 사용으로 경량화 및 최신 API 사용
     implementation 'software.amazon.awssdk:s3:2.25.66'
     // JPA (Database) - (첫 번째 파일에서 중복 선언되어 제거)

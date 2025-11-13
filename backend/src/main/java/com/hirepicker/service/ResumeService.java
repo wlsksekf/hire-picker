@@ -10,6 +10,7 @@ import com.hirepicker.dto.AcademicAbilityViewDto; // 자동채움 학력 요약 
 import com.hirepicker.dto.ResumeTemplateDto; // 자동채움 응답 DTO
 import com.hirepicker.entity.*;
 import com.hirepicker.repository.*;
+import com.hirepicker.repository.payment.CreditTransactionRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ public class ResumeService {
     private final MilitaryServiceRepository militaryServiceRepository; // 병역 리포지토리
     private final SchoolRepository schoolRepository; // 학교 리포지토리
     private final S3UploadService s3UploadService; // S3 업로드 서비스
-    private final com.hirepicker.repository.ResumePurchaseRepository resumePurchaseRepository;
+    private final CreditTransactionRepository creditTransactionRepository; // 크레딧 거래 리포지토리
 
     // 이력서를 생성/저장
     @Transactional
@@ -141,8 +142,13 @@ public class ResumeService {
         boolean isOwner = principal.getUserType() == UserType.PERSONAL
                 && resume.getPersonalUser().getId().equals(principal.getId());
         if (!isOwner) {
-            if (principal.getUserType() != UserType.PERSONAL ||
-                    !resumePurchaseRepository.existsByResume_IdAndBuyer_Id(resumeId, principal.getId())) {
+            // 개인 회원이고 이력서를 구매한 경우에만 조회 가능
+            if (principal.getUserType() == UserType.PERSONAL) {
+                boolean isPurchased = creditTransactionRepository.existsByPersonalUserIdAndResumeId(principal.getId(), resumeId);
+                if (!isPurchased) {
+                    throw new IllegalArgumentException("조회 권한이 없습니다. 이력서를 구매해야 합니다.");
+                }
+            } else {
                 throw new IllegalArgumentException("조회 권한이 없습니다.");
             }
         }

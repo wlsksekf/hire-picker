@@ -70,23 +70,34 @@ public class AdminPaymentService {
 
     private PaymentStatisticsDto.SummaryCards buildSummaryCards(List<CreditTransaction> transactions) {
         // 실제 결제 금액은 Payment.amount에서 가져옴 (크레딧 충전만 수익으로 계산)
-        log.debug("buildSummaryCards: 총 거래 건수 = {}", transactions.size());
-        long totalRevenue = transactions.stream()
+        log.info("buildSummaryCards: 총 거래 건수 = {}", transactions.size());
+        
+        // 크레딧 충전 거래만 필터링 (CREDIT_TOPUP이고 Payment가 연결된 것만)
+        List<CreditTransaction> topupTransactions = transactions.stream()
                 .filter(t -> {
+                    boolean isTopup = "CREDIT_TOPUP".equals(t.getTransactionType());
                     boolean hasPayment = t.getPayment() != null;
                     boolean hasAmount = hasPayment && t.getPayment().getAmount() != null;
-                    if (!hasPayment) {
-                        log.debug("CreditTransaction {}: payment가 null (transactionType: {})", t.getId(), t.getTransactionType());
+                    
+                    if (!isTopup) {
+                        log.debug("CreditTransaction {}: CREDIT_TOPUP이 아님 (transactionType: {})", t.getId(), t.getTransactionType());
+                    } else if (!hasPayment) {
+                        log.warn("CreditTransaction {}: CREDIT_TOPUP인데 payment가 null", t.getId());
                     } else if (!hasAmount) {
-                        log.debug("CreditTransaction {}: payment.amount가 null", t.getId());
+                        log.warn("CreditTransaction {}: CREDIT_TOPUP인데 payment.amount가 null", t.getId());
                     } else {
-                        log.debug("CreditTransaction {}: payment.amount = {} (transactionType: {})", t.getId(), t.getPayment().getAmount(), t.getTransactionType());
+                        log.info("CreditTransaction {}: payment.amount = {} (transactionType: {})", t.getId(), t.getPayment().getAmount(), t.getTransactionType());
                     }
-                    return hasAmount;
+                    
+                    return isTopup && hasAmount;
                 })
+                .collect(Collectors.toList());
+        
+        long totalRevenue = topupTransactions.stream()
                 .mapToLong(t -> t.getPayment().getAmount())
                 .sum();
-        log.debug("buildSummaryCards: 총 수익 = {}", totalRevenue);
+        
+        log.info("buildSummaryCards: 크레딧 충전 거래 건수 = {}, 총 수익 = {}", topupTransactions.size(), totalRevenue);
         
         // 총 거래 건수 (충전 + 사용)
         long totalTransactions = transactions.size();
@@ -122,7 +133,9 @@ public class AdminPaymentService {
             
             // 실제 결제 금액은 Payment.amount에서 가져옴 (크레딧 충전만 수익으로 계산)
             long totalAmount = monthTransactions.stream()
-                    .filter(t -> t.getPayment() != null && t.getPayment().getAmount() != null)
+                    .filter(t -> "CREDIT_TOPUP".equals(t.getTransactionType()) 
+                            && t.getPayment() != null 
+                            && t.getPayment().getAmount() != null)
                     .mapToLong(t -> t.getPayment().getAmount())
                     .sum();
             
@@ -146,9 +159,11 @@ public class AdminPaymentService {
                 .filter(t -> t.getTransactionType() != null)
                 .collect(Collectors.groupingBy(CreditTransaction::getTransactionType));
 
-        // 실제 결제 금액은 Payment.amount에서 가져옴
+        // 실제 결제 금액은 Payment.amount에서 가져옴 (크레딧 충전만)
         long totalRevenue = transactions.stream()
-                .filter(t -> t.getPayment() != null && t.getPayment().getAmount() != null)
+                .filter(t -> "CREDIT_TOPUP".equals(t.getTransactionType())
+                        && t.getPayment() != null 
+                        && t.getPayment().getAmount() != null)
                 .mapToLong(t -> t.getPayment().getAmount())
                 .sum();
 
@@ -159,7 +174,9 @@ public class AdminPaymentService {
             
             // 실제 결제 금액은 Payment.amount에서 가져옴 (크레딧 충전만)
             long typeAmount = typeTransactions.stream()
-                    .filter(t -> t.getPayment() != null && t.getPayment().getAmount() != null)
+                    .filter(t -> "CREDIT_TOPUP".equals(t.getTransactionType())
+                            && t.getPayment() != null 
+                            && t.getPayment().getAmount() != null)
                     .mapToLong(t -> t.getPayment().getAmount())
                     .sum();
             
@@ -229,9 +246,11 @@ public class AdminPaymentService {
                     .build();
         }
 
-        // 평균 거래 단가 (실제 결제 금액 기준)
+        // 평균 거래 단가 (실제 결제 금액 기준, 크레딧 충전만)
         double avgAmount = transactions.stream()
-                .filter(t -> t.getPayment() != null && t.getPayment().getAmount() != null)
+                .filter(t -> "CREDIT_TOPUP".equals(t.getTransactionType())
+                        && t.getPayment() != null 
+                        && t.getPayment().getAmount() != null)
                 .mapToLong(t -> t.getPayment().getAmount())
                 .average()
                 .orElse(0.0);
