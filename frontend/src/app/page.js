@@ -27,7 +27,7 @@ import { useRouter } from "next/navigation";
 import useAuthStore from "@/store/authStore";
 import ResumeApplyDialog from "@/components/ResumeApplyDialog";
 
-const PAGE_SIZE = 18;
+const PAGE_SIZE = 9;
 
 function HomePage() {
   const theme = useTheme();
@@ -200,7 +200,7 @@ function HomePage() {
       </Box>
 
       {/* 광고 공고 섹션 */}
-      <AdPostingSection 
+      <AdPostingSection
         onChatClick={setSelectedPost}
         onApplyClick={setApplyDialogJob}
       />
