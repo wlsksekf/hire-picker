@@ -38,13 +38,9 @@ function Header() {
 
   // 메인 메뉴 항목
   const mainNavItems = [
+    { text: '채용정보', path: '/postings' },
     { text: '채용행사', path: '/events' },
     { text: '공채기업정보', path: '/companies' },
-    { text: '채용정보', path: '/postings' },
-    { text: '취업축하금', path: '/rewards' },
-    { text: '신입.인턴', path: '/intern' },
-    { text: '기업.연봉', path: '/companies' },
-    { text: '취업전략', path: '/strategy' },
     { text: '커뮤니티', path: '/community' },
   ];
 

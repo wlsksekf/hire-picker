@@ -2,15 +2,11 @@ package com.hirepicker.service;
 
 import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.ResumeMarketItemDto;
-import com.hirepicker.dto.ResumePurchaseResponse;
 import com.hirepicker.entity.*;
-import com.hirepicker.entity.payment.CreditTransaction;
-import com.hirepicker.entity.ResumePurchaseStatus;
 import com.hirepicker.exception.InsufficientCreditsException;
 import com.hirepicker.repository.ApplicationsRepository;
-import com.hirepicker.repository.PersonalUserRepository;
-import com.hirepicker.repository.ResumePurchaseRepository;
 import com.hirepicker.repository.ResumeRepository;
+import com.hirepicker.repository.payment.CreditTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,10 +34,9 @@ public class ResumeMarketplaceService {
     private static final List<String> STATUS_PRIORITY = List.of("3", "2", "1", "0", "4");
 
     private final ResumeRepository resumeRepository;
-    private final ResumePurchaseRepository resumePurchaseRepository;
     private final ApplicationsRepository applicationsRepository;
-    private final PersonalUserRepository personalUserRepository;
     private final CreditService creditService;
+    private final CreditTransactionRepository creditTransactionRepository;
 
     @Transactional(readOnly = true)
     public List<ResumeMarketItemDto> getMarketplaceResumes(CustomUserDetails userDetails) {
@@ -52,7 +47,7 @@ public class ResumeMarketplaceService {
     }
 
     @Transactional
-    public ResumePurchaseResponse purchaseResume(Long resumeId, CustomUserDetails userDetails) {
+    public Map<String, Object> purchaseResume(Long resumeId, CustomUserDetails userDetails) {
         Resume resume = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 이력서입니다."));
 
@@ -65,40 +60,47 @@ public class ResumeMarketplaceService {
         }
 
         if (resume.getPersonalUser().getId().equals(userDetails.getId())) {
-            return new ResumePurchaseResponse(true, "본인 이력서는 구매 없이 열람할 수 있습니다.", null, true);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "본인 이력서는 구매 없이 열람할 수 있습니다.");
+            response.put("remainingCredits", null);
+            response.put("alreadyOwned", true);
+            return response;
         }
 
+        // 이미 구매한 이력서인지 확인
         if (isPurchased(resume.getId(), userDetails)) {
             Long balance = creditService.getCreditBalance(userDetails);
-            return new ResumePurchaseResponse(true, "이미 구매한 이력서입니다.", balance, true);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "이미 구매한 이력서입니다.");
+            response.put("remainingCredits", balance);
+            response.put("alreadyOwned", true);
+            return response;
         }
 
         int cost = Math.max(resume.getCreditCost(), 0);
-        CreditTransaction transaction;
         try {
-            transaction = creditService.useCredits(userDetails, "RESUME_PURCHASE", (long) cost);
+            // 이력서 구매 시 referenceType과 referenceId에 이력서 정보 저장
+            creditService.useCredits(userDetails, "RESUME_PURCHASE", (long) cost, "RESUME", resumeId);
         } catch (InsufficientCreditsException e) {
             throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED, e.getMessage());
         }
 
-        PersonalUser buyer = personalUserRepository.findById(userDetails.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "개인 회원을 찾을 수 없습니다."));
-
-        resumePurchaseRepository.save(ResumePurchase.builder()
-                .resume(resume)
-                .buyer(buyer)
-                .transaction(transaction)
-                .status(ResumePurchaseStatus.COMPLETED)
-                .build());
         Long balance = creditService.getCreditBalance(userDetails);
-
-        return new ResumePurchaseResponse(true, "이력서를 구매했습니다.", balance, false);
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "이력서를 구매했습니다.");
+        response.put("remainingCredits", balance);
+        response.put("alreadyOwned", false);
+        return response;
     }
 
     @Transactional(readOnly = true)
     public boolean isPurchased(Long resumeId, CustomUserDetails userDetails) {
         if (userDetails.getUserType() == UserType.PERSONAL) {
-            return resumePurchaseRepository.existsByResume_IdAndBuyer_Id(resumeId, userDetails.getId());
+            // CreditTransaction에서 이력서 구매 이력 확인
+            return creditTransactionRepository.existsByPersonalUserIdAndResumeId(userDetails.getId(), resumeId);
         }
         return false;
     }

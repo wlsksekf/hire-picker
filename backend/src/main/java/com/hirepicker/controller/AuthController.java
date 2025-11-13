@@ -1,5 +1,6 @@
 package com.hirepicker.controller;
 
+import com.hirepicker.config.RateLimitConfig;
 import com.hirepicker.dto.CompanySignupRequestDto;
 import com.hirepicker.dto.LoginRequest;
 import com.hirepicker.dto.SignupRequestDto; // ★ 새로 만든 DTO 임포트
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse; // HttpOnly 쿠키 설정을 위한 Import
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final EmailService emailService; // ★ EmailService 주입
+    private final RateLimitConfig rateLimitConfig; // Rate Limiting
 
     /**
      * [신규] 회원가입을 위한 이메일 인증 코드 발송
@@ -202,8 +205,20 @@ public class AuthController {
         @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletResponse response) {
-        log.info("[API] /api/auth/login 요청 수신. 사용자: {}", loginRequest.getEmail());
+    public ResponseEntity<Map<String, String>> login(
+            @Valid @RequestBody LoginRequest loginRequest, 
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        
+        // Rate Limiting: IP 기반 로그인 시도 제한 (5분에 10회)
+        String clientIp = getClientIp(request);
+        if (!rateLimitConfig.tryConsume(clientIp)) {
+            log.warn("[API] 로그인 시도 제한 초과. IP: {}", clientIp);
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of("message", "로그인 시도 횟수가 초과되었습니다. 5분 후 다시 시도해주세요."));
+        }
+        
+        log.info("[API] /api/auth/login 요청 수신. IP: {}", clientIp);
         try {
             authService.login(loginRequest, response);
             return ResponseEntity.ok().build();
@@ -218,6 +233,29 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "아이디 또는 비밀번호가 올바르지 않습니다."));
         }
+    }
+    
+    /**
+     * 클라이언트 IP 주소 추출 (프록시 고려)
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
     }
 
     @Operation(summary = "로그아웃", description = "사용자 세션을 종료하고 JWT 토큰 쿠키를 삭제합니다.")

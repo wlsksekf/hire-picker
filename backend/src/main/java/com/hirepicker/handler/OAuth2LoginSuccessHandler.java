@@ -8,12 +8,12 @@ import com.hirepicker.entity.UserType;
 import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.repository.RefreshTokenRepository;
 import com.hirepicker.service.CreditService;
+import com.hirepicker.util.CookieUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -31,6 +31,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private final RefreshTokenRepository refreshTokenRepository;
     private final PersonalUserRepository personalUserRepository;
     private final Environment env;
+    private final CookieUtils cookieUtils; // 쿠키 유틸리티
 
     @Override
     @Transactional
@@ -62,8 +63,9 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             refreshTokenRepository.save(refreshToken);
         }
 
-        // 토큰을 쿠키에 저장
-        addTokensToCookie(response, accessToken, newRefreshTokenValue);
+        // 토큰을 쿠키에 저장 (CookieUtils 사용)
+        response.addHeader("Set-Cookie", cookieUtils.createAccessTokenCookie(accessToken).toString());
+        response.addHeader("Set-Cookie", cookieUtils.createRefreshTokenCookie(newRefreshTokenValue).toString());
 
         // 환경에 따라 리디렉션 URL 결정
         boolean isProduction = Arrays.asList(env.getActiveProfiles()).contains("prod");
@@ -75,29 +77,5 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         String targetUrl = builder.build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
-    }
-
-    // HttpOnly, SameSite, Secure 속성을 적용하여 쿠키를 추가하는 헬퍼 메서드
-    private void addTokensToCookie(HttpServletResponse response, String accessToken, String refreshToken) {
-        // 현재 활성 프로필을 확인하여 secure 속성 동적 설정
-        boolean isProduction = Arrays.asList(env.getActiveProfiles()).contains("prod");
-
-        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
-                .httpOnly(true)
-                .secure(isProduction) // ★ 환경에 따라 동적으로 설정
-                .path("/")
-                .maxAge(jwtTokenProvider.getAccessTokenValidityInMilliseconds() / 1000)
-                .sameSite("Strict") // CSRF 방어를 위해 Strict 설정
-                .build();
-        response.addHeader("Set-Cookie", accessTokenCookie.toString());
-
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
-                .httpOnly(true)
-                .secure(isProduction) // 환경에 따라 동적으로 설정
-                .path("/")
-                .maxAge(jwtTokenProvider.getRefreshTokenValidityInMilliseconds() / 1000)
-                .sameSite("Strict") // CSRF 방어를 위해 Strict 설정
-                .build();
-        response.addHeader("Set-Cookie", refreshTokenCookie.toString());
     }
 }
