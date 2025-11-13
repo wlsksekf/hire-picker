@@ -206,62 +206,49 @@ function PostingsPage() {
                       p: 3,
                       display: "flex",
                       flexDirection: "column",
-                      flexGrow: 1,
-                      overflow: "hidden",
+                      justifyContent: "space-between",
+                      flexGrow: 1, // 남은 공간을 채우도록 설정
+                      overflow: "hidden", // 콘텐츠가 넘칠 경우 숨김
                     }}
                   >
-                    {/* 내용 영역 */}
-                    <Link 
-                      href={`/postings/${job.postingIdx}`} 
-                      passHref
-                      style={{ textDecoration: "none", color: "inherit", flexGrow: 1, display: "flex", flexDirection: "column" }}
-                    >
-                      <Typography color="text.secondary" noWrap sx={{ mb: 1 }}>
-                        {job.companyName}
-                      </Typography>
-                      <Typography
-                        variant="h5"
-                        fontWeight="bold"
-                        sx={{
-                          mb: 2,
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {job.title}
-                      </Typography>
-                      {/* Chip 리스트 */}
-                      <Box
-                        sx={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          gap: 1,
-                          mb: 2,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {job.employmentType && (
-                          <Chip label={job.employmentType} />
-                        )}
-                        {job.location && <Chip label={job.location} />}
-                        {job.experience_level && (
-                          <Chip label={job.experience_level} />
-                        )}
-                        {job.companyType && <Chip label={job.companyType} />}
-                        {job.jobType && <Chip label={job.jobType} />}
-                        {job.startDate && job.endDate && (
+                    <Link href={`/postings/${job.postingIdx}`} passHref>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <Typography color="text.secondary" noWrap>
+                          {job.companyName}
+                        </Typography>
+                        {job.status && (
                           <Chip
-                            icon={<FontAwesomeIcon icon={faCalendar} />}
-                            label={`${job.startDate} ~ ${job.endDate}`}
+                            label={job.status === "OPEN" ? "지원가능" : "마감"}
+                            size="small"
+                            sx={{
+                              ml: 1,
+                              fontWeight: 600,
+                              bgcolor:
+                                job.status === "OPEN"
+                                  ? theme.palette.success.light
+                                  : theme.palette.error.light,
+                              color: theme.palette.common.white,
+                            }}
                           />
                         )}
                       </Box>
                     </Link>
 
-                    {/* 카드 하단 버튼들 - 하단 정렬 */}
+                    <Typography
+                      variant="h5"
+                      fontWeight="bold"
+                      sx={{
+                        mb: 2,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        flexShrink: 0, // 타이틀이 줄어들지 않도록
+                      }}
+                    >
+                      {job.title}
+                    </Typography>
+                    {/* 카드 하단 버튼들 */}
                     <CardActions
                       sx={{
                         mt: "auto",

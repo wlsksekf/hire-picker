@@ -38,7 +38,7 @@ public class SearchControl {
 
     @Operation(summary = "채용공고 검색 및 필터링", description = "검색어와 필터 조건을 사용하여 채용공고를 검색합니다. 페이지네이션을 지원합니다.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "검색 성공")
+            @ApiResponse(responseCode = "200", description = "검색 성공")
     })
     @PostMapping("/search")
     public Page<JobDto> filter(
@@ -47,7 +47,7 @@ public class SearchControl {
         // ✅ dto가 null인 경우 (초기 로드 시 전체 조회)
         if (dto == null) {
             System.out.println("===== 🔍 기본 전체 조회 요청 =====");
-            return employmentDataImpl.getJobs(pageable);
+            return employmentDataImpl.getJobs(pageable, null);
         }
 
         String keyword = dto.getSearchTerm();
@@ -60,6 +60,9 @@ public class SearchControl {
         List<String> experienceLevels = filters.get("experienceLevel");
         List<String> companyTypes = filters.get("companyType");
         List<String> sources = filters.get("source");
+        String dateStatus = filters.containsKey("dateStatus") && !filters.get("dateStatus").isEmpty()
+                ? filters.get("dateStatus").get(0)
+                : null;
 
         // System.out.println("===== 🔍 검색 요청 도착 =====");
         // System.out.println("검색어: " + keyword);
@@ -71,12 +74,12 @@ public class SearchControl {
         // System.out.println("공고 출처: " + sources);
         // System.out.println("============================");
 
-        return employmentDataImpl.jobFilter(dto, pageable);
+        return employmentDataImpl.jobFilter(dto, pageable, dateStatus);
     }
 
     @Operation(summary = "북마크 상태 확인", description = "특정 채용공고의 북마크 여부를 확인합니다.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "확인 성공")
+            @ApiResponse(responseCode = "200", description = "확인 성공")
     })
     @PostMapping("/bookmark/check")
     public Map<String, Object> check(

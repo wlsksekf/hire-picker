@@ -118,12 +118,12 @@ function HomePage() {
       const newJobs = responseData._embedded
         ? responseData._embedded.jobDtoList
         : responseData.content || [];
-      
+
       setAppliedSearchTerm(term || "");
       setAppliedFilters(filters || {});
       setJobs(newJobs);
       setPage(0);
-      
+
       const isLast = responseData.page
         ? responseData.page.number >= responseData.page.totalPages - 1
         : false;
@@ -244,7 +244,7 @@ function HomePage() {
                       }}
                     />
                   </Link>
-                  
+
                   {/* 카드 본문 부분 (내용 + 버튼) */}
                   <Box
                     sx={{
@@ -259,11 +259,34 @@ function HomePage() {
                     <Link
                       href={`/postings/${job.postingIdx}`}
                       passHref
-                      style={{ textDecoration: "none", color: "inherit", flexGrow: 1, display: "flex", flexDirection: "column" }}
+                      style={{
+                        textDecoration: "none",
+                        color: "inherit",
+                        flexGrow: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
                     >
-                      <Typography color="text.secondary" noWrap sx={{ mb: 1 }}>
-                        {job.companyName}
-                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <Typography color="text.secondary" noWrap>
+                          {job.companyName}
+                        </Typography>
+                        {job.status && (
+                          <Chip
+                            label={job.status === "OPEN" ? "지원가능" : "마감"}
+                            size="small"
+                            sx={{
+                              ml: 1,
+                              fontWeight: 600,
+                              bgcolor:
+                                job.status === "OPEN"
+                                  ? theme.palette.success.light
+                                  : theme.palette.error.light,
+                              color: theme.palette.common.white,
+                            }}
+                          />
+                        )}
+                      </Box>
                       <Typography
                         variant="h5"
                         fontWeight="bold"
@@ -278,7 +301,15 @@ function HomePage() {
                       >
                         {job.title}
                       </Typography>
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2, flexShrink: 0 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 1,
+                          mb: 2,
+                          flexShrink: 0,
+                        }}
+                      >
                         {job.employmentType && (
                           <Chip label={job.employmentType} />
                         )}
@@ -295,67 +326,30 @@ function HomePage() {
                           />
                         )}
                       </Box>
+                      <CardActions sx={{ mt: 2, justifyContent: "flex-end" }}>
+                        <Box onClick={(e) => e.stopPropagation()}>
+                          <Bookmark jobId={job.postingIdx} />
+                        </Box>
+                        <Button
+                          variant="outlined"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPost(job);
+                          }} // 채팅 독립
+                        >
+                          실시간 채팅
+                        </Button>
+                        <Button
+                          variant="contained"
+                          href={job.homepageUrl}
+                          target="_blank"
+                          disabled={!job.homepageUrl}
+                          onClick={(e) => e.stopPropagation()} // 지원하기 독립
+                        >
+                          지원하기
+                        </Button>
+                      </CardActions>
                     </Link>
-
-                    {/* 버튼 영역 - 하단 정렬 */}
-                    <CardActions 
-                      sx={{ 
-                        mt: "auto",
-                        pt: 2,
-                        justifyContent: "flex-end", 
-                        px: 0,
-                        flexShrink: 0,
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
-                    >
-                      <Box onClick={(e) => e.stopPropagation()}>
-                        <Bookmark jobId={job.postingIdx} />
-                      </Box>
-                      <Button
-                        variant="outlined"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSelectedPost(job);
-                        }}
-                        sx={{ pointerEvents: 'auto', ml: 1 }}
-                      >
-                        실시간 채팅
-                      </Button>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          // 내부 지원 가능한 공고(c_user가 있는 경우)만 다이얼로그 열기
-                          if (job.internal) {
-                            setApplyDialogJob(job);
-                          } else if (job.applyUrl) {
-                            // 외부 공고는 지원 링크로 이동
-                            const url = job.applyUrl.startsWith('http') 
-                              ? job.applyUrl 
-                              : `http://${job.applyUrl}`;
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                          } else {
-                            alert('지원 링크가 제공되지 않았습니다.');
-                          }
-                        }}
-                        disabled={!job.internal && !job.applyUrl}
-                        sx={{ 
-                          pointerEvents: 'auto',
-                          ml: 1,
-                          '&:hover': {
-                            backgroundColor: 'primary.dark',
-                          }
-                        }}
-                      >
-                        지원하기
-                      </Button>
-                    </CardActions>
                   </Box>
                 </Card>
               </Grid>

@@ -4,10 +4,9 @@ import React from "react";
 import {
   Typography,
   Box,
-  Chip,
-  Grid,
   Paper,
   useTheme,
+  Stack,
 } from "@mui/material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -20,6 +19,7 @@ import {
   faGraduationCap,
   faPlane,
   faHandshake,
+  faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 
 const benefitIcons = {
@@ -42,16 +42,16 @@ const getIconForBenefit = (benefit) => {
       return benefitIcons[key];
     }
   }
-  return faHandshake; // Default icon
+  return faCheck; // Default icon
 };
 
 const WelfareBenefits = ({ welfare }) => {
   const theme = useTheme();
   if (!welfare) return null;
 
-  // Split by common delimiters and filter out empty strings
+  // Split by common delimiters (including newline) and filter out empty strings
   const benefits = welfare
-    .split(/,|\/|·|\\s+및\\s+/) // Corrected escaping for regex
+    .split(/,|\/|·|\\s+및\\s+|\n/)
     .map((item) => item.trim())
     .filter(Boolean);
 
@@ -61,34 +61,30 @@ const WelfareBenefits = ({ welfare }) => {
         복리후생
       </Typography>
       <Box sx={{ mt: 2 }}>
-        <Grid container spacing={2}>
+        <Stack spacing={1.5}>
           {benefits.map((benefit, index) => (
-            <Grid item key={index}>
-              <Chip
-                icon={
-                  <FontAwesomeIcon
-                    icon={getIconForBenefit(benefit)}
-                    style={{
-                      color: theme.palette.primary.main,
-                      width: "16px",
-                      height: "16px",
-                    }}
-                  />
-                }
-                label={benefit}
-                variant="outlined"
-                sx={{
-                  p: 1.5,
-                  fontSize: "0.9rem",
-                  borderColor: theme.palette.divider,
-                  "& .MuiChip-icon": {
-                    marginLeft: "8px",
-                  },
+            <Box
+              key={index}
+              sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}
+            >
+              <FontAwesomeIcon
+                icon={getIconForBenefit(benefit)}
+                style={{
+                  color: theme.palette.primary.main,
+                  width: "18px",
+                  marginTop: "5px",
                 }}
               />
-            </Grid>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ flex: 1 }}
+              >
+                {benefit}
+              </Typography>
+            </Box>
           ))}
-        </Grid>
+        </Stack>
       </Box>
     </Paper>
   );

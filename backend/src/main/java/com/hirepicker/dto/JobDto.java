@@ -33,7 +33,7 @@ public record JobDto(
         String experienceLevel,
         String salaryInfo,
         Boolean internal, // 내부 지원 가능 여부 (cUserIdx가 있으면 true)
-        String applyUrl // 외부 지원 링크 (회사 웹사이트 URL)
+        String applyUrl, // 외부 지원 링크 (회사 웹사이트 URL)
+        String status) {
 
-) {
 }

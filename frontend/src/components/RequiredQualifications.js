@@ -1,24 +1,17 @@
 "use client";
 
 import React from "react";
-import {
-  Typography,
-  Box,
-  Chip,
-  Grid,
-  Paper,
-  useTheme,
-} from "@mui/material";
+import { Typography, Box, Paper, useTheme, Stack } from "@mui/material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { faCheck } from "@fortawesome/free-solid-svg-icons";
 
 const RequiredQualifications = ({ qualifications }) => {
   const theme = useTheme();
   if (!qualifications) return null;
 
-  // Split by common delimiters and filter out empty strings
+  // Split by common delimiters (including newline) and filter out empty strings
   const items = qualifications
-    .split(/,|\/|·|\\s+및\\s+/) // Corrected escaping for regex
+    .split(/,|\/|·|\\s+및\\s+|\n/)
     .map((item) => item.trim())
     .filter(Boolean);
 
@@ -28,34 +21,30 @@ const RequiredQualifications = ({ qualifications }) => {
         채용 필수사항
       </Typography>
       <Box sx={{ mt: 2 }}>
-        <Grid container spacing={2}>
+        <Stack spacing={1.5}>
           {items.map((item, index) => (
-            <Grid item key={index}>
-              <Chip
-                icon={
-                  <FontAwesomeIcon
-                    icon={faCheckCircle}
-                    style={{
-                      color: theme.palette.success.main,
-                      width: "16px",
-                      height: "16px",
-                    }}
-                  />
-                }
-                label={item}
-                variant="outlined"
-                sx={{
-                  p: 1.5,
-                  fontSize: "0.9rem",
-                  borderColor: theme.palette.divider,
-                  "& .MuiChip-icon": {
-                    marginLeft: "8px",
-                  },
+            <Box
+              key={index}
+              sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}
+            >
+              <FontAwesomeIcon
+                icon={faCheck}
+                style={{
+                  color: theme.palette.success.main,
+                  width: "18px",
+                  marginTop: "5px",
                 }}
               />
-            </Grid>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ flex: 1 }}
+              >
+                {item}
+              </Typography>
+            </Box>
           ))}
-        </Grid>
+        </Stack>
       </Box>
     </Paper>
   );
