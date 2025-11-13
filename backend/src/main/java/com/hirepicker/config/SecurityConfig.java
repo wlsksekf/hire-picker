@@ -99,7 +99,7 @@ public class SecurityConfig {
                                 "/api/companies/**",
                                 "/api/dart/**",
                                 "/api/national-pension/**",
-                                "/api/job-postings/**",
+                                "/api/job-postings/**", // 그 외 채용공고 조회는 공개
                                 "/signup/company/**",
                                 "/api/payment/webhook", // 웹훅 엔드포인트는 모두 허용
                                 "/chat/**",
@@ -115,7 +115,13 @@ public class SecurityConfig {
                                 "/api/inquiries",
                                 "/inquiries/{inquiryIdx}/answer",
                                 "/api/bookmark/check",
+<<<<<<< HEAD
+                                "/api/ad-postings/active", // 활성 광고 공고 조회 (공개)
+                                "/api/ad-postings/*/click") // 광고 클릭 기록 (공개)
+
+=======
                                 "/api/manage/**")
+>>>>>>> dev
                         .permitAll()
 
                         // 이미지 업로드 엔드포인트는 인증 없이 허용
@@ -152,6 +158,22 @@ public class SecurityConfig {
                         // 이미지 업로드 엔드포인트는 인증 없이 허용
                         .requestMatchers(HttpMethod.POST, "/api/ai/upload-image").permitAll()
 
+<<<<<<< HEAD
+                // 결제, AI, 크레딧 관련 API는 인증 필요
+                .requestMatchers("/api/manage/auth/login").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/api/manage/job-postings/import/rapid").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/manage/job-postings/import/rapid").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/api/work24/sync/rapid-jobs").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/work24/sync/rapid-jobs").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/api/work24/sync/jsearch-jobs").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/work24/sync/jsearch-jobs").permitAll()
+                .requestMatchers("/api/manage/**").hasAuthority("ROLE_MANAGE")
+                .requestMatchers("/api/ad-postings/admin/**").hasAuthority("ROLE_MANAGE") // 광고 관리 (관리자 전용)
+                .requestMatchers("/api/ad-postings/**").authenticated() // 광고 공고 등록/수정/삭제 (인증 필요)
+                .requestMatchers("/api/payment/**").authenticated()
+                .requestMatchers("/api/ai/**").authenticated() // [AI 기능 추가] AI 관련 API는 인증된 사용자만 접근 가능
+                .requestMatchers("/api/credits/**").authenticated() // [크레딧 기능 추가] 크레딧 관련 API는 인증된 사용자만 접근 가능
+=======
                         // 결제, AI, 크레딧 관련 API는 인증 필요
                         .requestMatchers("/api/manage/auth/login").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/api/manage/job-postings/import/rapid").permitAll()
@@ -164,6 +186,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/payment/**").authenticated()
                         .requestMatchers("/api/ai/**").authenticated() // [AI 기능 추가] AI 관련 API는 인증된 사용자만 접근 가능
                         .requestMatchers("/api/credits/**").authenticated() // [크레딧 기능 추가] 크레딧 관련 API는 인증된 사용자만 접근 가능
+>>>>>>> dev
 
                         // 그 외 모든 요청은 인증 필요
                         .anyRequest().authenticated())

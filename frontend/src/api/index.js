@@ -487,3 +487,6 @@ export function searchCertifications(keyword) {
     .then(res => Array.isArray(res.data) ? res.data : []);
 }
 
+// axios 인스턴스 기본 export
+export default api;
+
