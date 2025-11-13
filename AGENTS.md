@@ -43,7 +43,7 @@
 
 ## 프로젝트 컨텍스트(참고)
 - Backend: Spring Boot 3.5.x, Java 17, JPA/Security/OAuth2/Web/WebFlux/Actuator/WebSocket/Redis/MySQL/H2, OpenAPI(springdoc), JWT, SendGrid, AWS S3 등.
-- Frontend: Next.js, MUI/Emotion, STOMP, Google Maps, TossPayments 등. `/api/*`는 백엔드로 프록시.
+- Frontend: Next.js, MUI/Emotion, STOMP, TossPayments 등. `/api/*`는 백엔드로 프록시.
 
 ## 커스터마이즈 방법
 - 이 파일을 수정해 규칙을 추가/완화할 수 있습니다.
