@@ -3,11 +3,19 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Button, Container, Box, Typography } from '@mui/material';
+import { Button, Container, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, RadioGroup, FormControlLabel, Radio } from '@mui/material';
 import CommentForm from '@/app/comment/CommentForm';
 import CommentSection from '@/app/comment/CommentSection';
 
 const S3_BASE_URL = 'https://hirepicker-storage.s3.ap-northeast-2.amazonaws.com';
+
+const REPORT_REASONS = [
+  '부적절한 내용',
+  '욕설/비방',
+  '광고/스팸',
+  '도배',
+  '기타'
+];
 
 export default function PostDetailPage() {
   const router = useRouter();
@@ -21,6 +29,12 @@ export default function PostDetailPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [currentUserIdx, setCurrentUserIdx] = useState(null);
   const [currentUserType, setCurrentUserType] = useState(null);
+
+  // 신고 모달 상태
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState(REPORT_REASONS[0]);
+  const [etcInput, setEtcInput] = useState('');
+  const [reportStatus, setReportStatus] = useState('');
 
   useEffect(() => {
     axios.get('/api/posts/me', { withCredentials: true })
@@ -76,6 +90,42 @@ export default function PostDetailPage() {
 
   const isOwner = String(currentUserType).toLowerCase() === "personal" && currentUserIdx && post && String(currentUserIdx) === String(post.puserIdx);
 
+  // 신고 버튼 클릭 시 모달 열기(로그인 체크)
+  const openReportModal = () => {
+    if (!currentUserIdx) {
+      alert("로그인 후 신고할 수 있습니다.");
+      router.push('/login');
+      return;
+    }
+    setReportOpen(true);
+    setReportStatus('');
+    setEtcInput('');
+    setReportReason(REPORT_REASONS[0]);
+  };
+
+  // 신고 전송
+  const handleReport = async () => {
+    // 기타: etcInput필수, 신고사유는 reason에 합쳐 전송
+    if (reportReason === '기타' && !etcInput.trim()) {
+      setReportStatus('기타 신고 사유를 작성해주세요.');
+      return;
+    }
+    const reasonToSend =
+      reportReason === '기타' ? `기타 - ${etcInput}` : reportReason;
+    try {
+      await axios.post('/api/report', {
+        reporterIdx: currentUserIdx,
+        targetIdx: post.postIdx,
+        reason: reasonToSend,
+        reportDate: new Date().toISOString()
+      });
+      setReportStatus('신고가 접수되었습니다.');
+      setTimeout(() => setReportOpen(false), 1000);
+    } catch (e) {
+      setReportStatus('신고 처리 중 오류가 발생했습니다.');
+    }
+  };
+
   if (loading) {
     return <Box sx={{ p: 6, textAlign: 'center', fontSize: '1.2em' }}>로딩 중...</Box>;
   }
@@ -121,7 +171,6 @@ export default function PostDetailPage() {
           minHeight: '200px', whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '1.1em', py: 1
         }}>{post.content}</Box>
 
-        {/* 이미지 미리보기 + 파일명 */}
         {imgUrl && (
           <Box sx={{ my: 4, textAlign: 'center' }}>
             <img src={imgUrl} alt="첨부 이미지" style={{
@@ -134,7 +183,6 @@ export default function PostDetailPage() {
           </Box>
         )}
 
-        {/* 첨부파일 다운로드 MUI 버튼 */}
         {fileUrl && (
           <Box sx={{ mt: 1, textAlign: 'center' }}>
             <Button
@@ -156,7 +204,6 @@ export default function PostDetailPage() {
 
         <hr style={{ borderColor: '#f0f0f0', marginTop: '40px', marginBottom: '20px' }} />
 
-        {/* 목록/수정/삭제 MUI 버튼 */}
         <Box sx={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center'
         }}>
@@ -167,26 +214,72 @@ export default function PostDetailPage() {
           >
             목록
           </Button>
-          {isOwner && (
-            <Box>
-              <Button
-                variant="contained"
-                color="info"
-                onClick={handleEdit}
-                sx={{ mr: 2 }}
-              >
-                수정
-              </Button>
-              <Button
-                variant="contained"
-                color="error"
-                onClick={handleDelete}
-              >
-                삭제
-              </Button>
-            </Box>
-          )}
+          <Box sx={{ display: "flex", gap: 1 }}>
+            {isOwner && (
+              <>
+                <Button
+                  variant="contained"
+                  color="info"
+                  onClick={handleEdit}
+                  sx={{ mr: 1 }}
+                >
+                  수정
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={handleDelete}
+                  sx={{ mr: 1 }}
+                >
+                  삭제
+                </Button>
+              </>
+            )}
+            <Button
+              variant="outlined"
+              color="error"
+              sx={{ fontWeight: 'bold', px: 3, py: 1, borderRadius: 2 }}
+              onClick={openReportModal}
+            >
+              신고하기
+            </Button>
+          </Box>
         </Box>
+
+        {/* 신고 모달 (기타 입력 → reason 하나로 합침) */}
+        <Dialog open={reportOpen} onClose={() => setReportOpen(false)}>
+          <DialogTitle>신고하기</DialogTitle>
+          <DialogContent>
+            <RadioGroup
+              value={reportReason}
+              onChange={e => { setReportReason(e.target.value); if(e.target.value !== '기타') setEtcInput(''); }}
+            >
+              {REPORT_REASONS.map(r => (
+                <FormControlLabel key={r} value={r} control={<Radio />} label={r} />
+              ))}
+            </RadioGroup>
+            {reportReason === '기타' && (
+              <Box sx={{ mt: 2 }}>
+                <Typography sx={{ mb: 1, fontWeight: 'bold' }}>신고 사유를 직접 입력:</Typography>
+                <textarea
+                  style={{ width: '100%', minHeight: '56px', resize: 'vertical' }}
+                  value={etcInput}
+                  onChange={e => setEtcInput(e.target.value)}
+                  placeholder="신고 사유를 작성해주세요."
+                />
+              </Box>
+            )}
+            {reportStatus && (
+              <Box sx={{ color: "#e60000", mt: 2, fontWeight: "bold" }}>{reportStatus}</Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setReportOpen(false)}>닫기</Button>
+            <Button variant="contained" color="error" onClick={handleReport}>
+              신고
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         {errorMsg && (
           <Box sx={{
@@ -197,7 +290,6 @@ export default function PostDetailPage() {
           </Box>
         )}
 
-        {/* 댓글 영역 완전 통합 */}
         <Box sx={{ mt: 4 }}>
           <CommentSection postId={postIdx} currentUserIdx={currentUserIdx} />
         </Box>
