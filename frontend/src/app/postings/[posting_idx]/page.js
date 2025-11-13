@@ -19,4 +19,3 @@ export default async function JobPostingDetailPage({ params }) {
 
   return <JobPostingDetailClient posting_idx={posting_idx} />;
 }
-

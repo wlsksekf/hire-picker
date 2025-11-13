@@ -54,7 +54,7 @@ public class CompanyApiController {
     public ResponseEntity<PagedModel<EntityModel<JobDto>>> getJobs(
             Pageable pageable,
             PagedResourcesAssembler<JobDto> assembler) {
-        Page<JobDto> jobs = employmentData.getJobs(pageable);
+        Page<JobDto> jobs = employmentData.getJobs(pageable, null);
         return ResponseEntity.ok(assembler.toModel(jobs));
     }
 
@@ -66,7 +66,7 @@ public class CompanyApiController {
     public ResponseEntity<PagedModel<EntityModel<EventDto>>> getEvents(
             Pageable pageable,
             PagedResourcesAssembler<EventDto> assembler) {
-        Page<EventDto> events = employmentData.getEvents(pageable);
+        Page<EventDto> events = employmentData.getEvents(pageable, null);
         return ResponseEntity.ok(assembler.toModel(events));
     }
 

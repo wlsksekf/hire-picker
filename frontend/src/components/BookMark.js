@@ -1,37 +1,55 @@
-'use client';
-import React, { useState, useEffect } from 'react';
-import { IconButton } from '@mui/material';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faStar as solidStar } from '@fortawesome/free-solid-svg-icons';
-import { faStar as regularStar } from '@fortawesome/free-regular-svg-icons';
-import Cookies from 'js-cookie';
-import axios from 'axios';
-import { amET } from 'node_modules/@mui/material/locale';
+"use client";
+import React, { useState, useEffect } from "react";
+import { IconButton } from "@mui/material";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faStar as solidStar } from "@fortawesome/free-solid-svg-icons";
+import { faStar as regularStar } from "@fortawesome/free-regular-svg-icons";
+import axios from "axios";
+import useAuthStore from "@/store/authStore";
+import { useRouter } from "next/navigation";
 
 export default function Bookmark(props) {
-  var jobId = props.jobId;
-  var [isBookmarked, setIsBookmarked] = useState(false);
-  var [isLoggedIn, setIsLoggedIn] = useState(false);
-  var [isLoading, setIsLoading] = useState(false); // API 요청 중 상태
+  const { jobId } = props;
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-  const checkurl="/api/bookmark/check"
-  const toggleurl="/api/bookmark/toggle"
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
-  // 로그인 여부 확인
-  useEffect(function(){
-    axios.post(checkurl,{jobId:jobId},{withCredentials:true, timeout:90000})
-    .then(function(res){
-      // console.log(res.data)
-      setIsLoggedIn(res.data.LoggedIn)
-      setIsBookmarked(res.data.Bookmarked)
-    }).catch(function(){
-      setIsLoggedIn(false);
-    });
-  },[jobId])
+  const checkUrl = "/api/bookmark/check";
+  const toggleUrl = "/api/bookmark/toggle";
 
-  function handleClick(){
-    if(!isLoggedIn){
-      alert("로그인이 필요합니다.")
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setIsBookmarked(false);
+      return;
+    }
+
+    setIsLoading(true);
+    axios
+      .post(checkUrl, { jobId }, { withCredentials: true, timeout: 90000 })
+      .then((res) => {
+        if (res.data.LoggedIn) {
+          setIsBookmarked(res.data.Bookmarked);
+        } else {
+          setIsBookmarked(false);
+        }
+      })
+      .catch(() => {
+        setIsBookmarked(false);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [jobId, isAuthenticated, checkUrl]);
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!isAuthenticated) {
+      alert("로그인이 필요합니다.");
+      router.push("/login");
       return;
     }
 
@@ -39,39 +57,32 @@ export default function Bookmark(props) {
       return;
     }
 
-     // 3. 로그인 된 경우: 토글 로직 실행
     setIsLoading(true);
-
-  axios.post(toggleurl, { jobId: jobId }, { withCredentials: true })
-      .then(function (res) {
-        // 백엔드로부터 받은 최신 상태로 UI 업데이트
-        if(res.data.Bookmarked){
-        setIsBookmarked(res.data.Bookmarked);
-        alert("즐겨찾기 등록되었습니다.")
-      }
-        else{
-        setIsBookmarked(res.data.Bookmarked);
-        alert("즐겨찾기 해제 되었습니다.")}
-
-
+    axios
+      .post(toggleUrl, { jobId }, { withCredentials: true })
+      .then((res) => {
+        if (res.data.success) {
+          setIsBookmarked(res.data.Bookmarked);
+          alert(res.data.message);
+        } else {
+          alert(res.data.message || "처리 중 오류가 발생했습니다.");
+        }
       })
-      .catch(function (error) {
-        alert("북마크 처리에 실패했습니다..");
+      .catch(() => {
+        alert("북마크 처리에 실패했습니다.");
       })
-      .finally(function () {
-        setIsLoading(false); // 로딩 종료 (성공/실패 여부와 관계없이)
+      .finally(() => {
+        setIsLoading(false);
       });
+  };
 
-  }
-
-
-
-
-
-    return (
-    <IconButton onClick={handleClick} color={isBookmarked ? 'warning' : 'default'}>
+  return (
+    <IconButton
+      onClick={handleClick}
+      color={isBookmarked ? "warning" : "default"}
+      disabled={isLoading}
+    >
       <FontAwesomeIcon icon={isBookmarked ? solidStar : regularStar} />
     </IconButton>
   );
-
 }

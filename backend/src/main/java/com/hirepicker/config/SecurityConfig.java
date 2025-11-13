@@ -73,14 +73,14 @@ public class SecurityConfig {
                         // OAuth2 관련 엔드포인트는 모두 허용
                         .requestMatchers("/api/oauth2/**", "/login/oauth2/code/**").permitAll()
 
-                // 사용자 정보 조회는 인증 필요
-                .requestMatchers("/api/users/me").authenticated()
+                        // 사용자 정보 조회는 인증 필요
+                        .requestMatchers("/api/users/me").authenticated()
 
-                // 회사 정보 조회는 인증 필요 (기업회원 전용)
-                .requestMatchers("/api/companies/my").authenticated()
+                        // 회사 정보 조회는 인증 필요 (기업회원 전용)
+                        .requestMatchers("/api/companies/my").authenticated()
 
-                // 회사 검색은 공개 (누구나 조회 가능)
-                .requestMatchers(HttpMethod.GET, "/api/companies/search").permitAll()
+                        // 회사 검색은 공개 (누구나 조회 가능)
+                        .requestMatchers(HttpMethod.GET, "/api/companies/search").permitAll()
                         // 기타 공개 API 및 웹훅, 채팅 관련 엔드포인트는 모두 허용
                         .requestMatchers(
                                 "/api/auth/**",
@@ -115,45 +115,50 @@ public class SecurityConfig {
                                 "/api/inquiries",
                                 "/inquiries/{inquiryIdx}/answer",
                                 "/api/bookmark/check",
+<<<<<<< HEAD
                                 "/api/ad-postings/active", // 활성 광고 공고 조회 (공개)
                                 "/api/ad-postings/*/click") // 광고 클릭 기록 (공개)
 
+=======
+                                "/api/manage/**")
+>>>>>>> dev
                         .permitAll()
 
                         // 이미지 업로드 엔드포인트는 인증 없이 허용
                         .requestMatchers(HttpMethod.POST, "/api/ai/upload-image").permitAll()
-                // 기타 공개 API 및 웹훅, 채팅 관련 엔드포인트는 모두 허용
-                .requestMatchers(
-                        "/api/auth/**",
-                        "/api/webhooks/**", // 카카오 웹훅 엔드포인트 추가
-                        "/api/work24/**",
-                        "/actuator/**",
-                        "/api/health/**",
-                        "/confirm/**",
-                        "/confirm-billing",
-                        "/issue-billing-key",
-                        "/callback-auth",
-                        "/fail",
-                        "/swagger-ui/**",
-                        "/api-docs/**",
-                        "/error",
-                        "/api/dart/**",
-                        "/api/national-pension/**",
-                        "/signup/company/**",
-                        "/api/payment/webhook", // 웹훅 엔드포인트는 모두 허용
-                        "/chat/**",
-                        "/ws",
-                        "/ws/**",
-                        "/chat/history/**",
-                        "/api/v1/ai-chat",
-                        "/api/v1/ai-search",
-                        "/api/search", "/api/calendar/**",
-                        "/api/company-alarms/**")
-                .permitAll()
+                        // 기타 공개 API 및 웹훅, 채팅 관련 엔드포인트는 모두 허용
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/webhooks/**", // 카카오 웹훅 엔드포인트 추가
+                                "/api/work24/**",
+                                "/actuator/**",
+                                "/api/health/**",
+                                "/confirm/**",
+                                "/confirm-billing",
+                                "/issue-billing-key",
+                                "/callback-auth",
+                                "/fail",
+                                "/swagger-ui/**",
+                                "/api-docs/**",
+                                "/error",
+                                "/api/dart/**",
+                                "/api/national-pension/**",
+                                "/signup/company/**",
+                                "/api/payment/webhook", // 웹훅 엔드포인트는 모두 허용
+                                "/chat/**",
+                                "/ws",
+                                "/ws/**",
+                                "/chat/history/**",
+                                "/api/v1/ai-chat",
+                                "/api/v1/ai-search",
+                                "/api/search", "/api/calendar/**",
+                                "/api/company-alarms/**")
+                        .permitAll()
 
-                // 이미지 업로드 엔드포인트는 인증 없이 허용
-                .requestMatchers(HttpMethod.POST, "/api/ai/upload-image").permitAll()
+                        // 이미지 업로드 엔드포인트는 인증 없이 허용
+                        .requestMatchers(HttpMethod.POST, "/api/ai/upload-image").permitAll()
 
+<<<<<<< HEAD
                 // 결제, AI, 크레딧 관련 API는 인증 필요
                 .requestMatchers("/api/manage/auth/login").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/api/manage/job-postings/import/rapid").permitAll()
@@ -168,9 +173,23 @@ public class SecurityConfig {
                 .requestMatchers("/api/payment/**").authenticated()
                 .requestMatchers("/api/ai/**").authenticated() // [AI 기능 추가] AI 관련 API는 인증된 사용자만 접근 가능
                 .requestMatchers("/api/credits/**").authenticated() // [크레딧 기능 추가] 크레딧 관련 API는 인증된 사용자만 접근 가능
+=======
+                        // 결제, AI, 크레딧 관련 API는 인증 필요
+                        .requestMatchers("/api/manage/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/manage/job-postings/import/rapid").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/manage/job-postings/import/rapid").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/work24/sync/rapid-jobs").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/work24/sync/rapid-jobs").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/work24/sync/jsearch-jobs").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/work24/sync/jsearch-jobs").permitAll()
+                        .requestMatchers("/api/manage/**").hasAuthority("ROLE_MANAGE")
+                        .requestMatchers("/api/payment/**").authenticated()
+                        .requestMatchers("/api/ai/**").authenticated() // [AI 기능 추가] AI 관련 API는 인증된 사용자만 접근 가능
+                        .requestMatchers("/api/credits/**").authenticated() // [크레딧 기능 추가] 크레딧 관련 API는 인증된 사용자만 접근 가능
+>>>>>>> dev
 
-                // 그 외 모든 요청은 인증 필요
-                .anyRequest().authenticated())
+                        // 그 외 모든 요청은 인증 필요
+                        .anyRequest().authenticated())
 
                 // 4. 커스텀 필터 추가 (JWT)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
