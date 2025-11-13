@@ -1,6 +1,7 @@
 package com.hirepicker.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,7 +10,9 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,12 +20,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hirepicker.config.security.CustomUserDetails;
 import com.hirepicker.dto.CalendarEmpEventDto;
 import com.hirepicker.dto.CalendarJobPostingDto;
+import com.hirepicker.dto.CompanyApplicantResumeDto;
+import com.hirepicker.dto.CompanyApplicantSummaryDto;
 import com.hirepicker.dto.CompanyDto;
 import com.hirepicker.dto.CompanySearchResponseDto;
 import com.hirepicker.dto.EventDto;
 import com.hirepicker.dto.JobDto;
+import com.hirepicker.dto.UpdateApplicationStatusRequest;
+import com.hirepicker.entity.UserType;
+import com.hirepicker.service.CompanyApplicantService;
 import com.hirepicker.service.CompanyDataUpdateService;
 import com.hirepicker.service.CompanyService;
 import com.hirepicker.service.EmploymentData;
@@ -45,6 +54,7 @@ public class CompanyApiController {
     private final EmploymentData employmentData;
     private final CompanyDataUpdateService companyDataUpdateService;
     private final CompanyService companyService;
+    private final CompanyApplicantService companyApplicantService;
 
     @Operation(summary = "채용공고 목록 조회", description = "페이지네이션을 적용하여 채용공고 목록을 조회합니다.")
     @ApiResponses(value = {
@@ -201,6 +211,54 @@ public class CompanyApiController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(jobPostings);
+    }
+
+    @Operation(summary = "기업회원 지원자 목록 조회", description = "특정 공고에 지원한 지원자 목록을 조회합니다.")
+    @GetMapping("/company/postings/{postingIdx}/applications")
+    public ResponseEntity<?> getApplicants(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable("postingIdx") Long postingIdx) {
+        // 기업회원 권한 확인
+        if (userDetails == null || userDetails.getUserType() != UserType.COMPANY) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "기업회원만 접근할 수 있습니다."));
+        }
+
+        // 서비스로 지원자 목록 조회
+        List<CompanyApplicantSummaryDto> response = companyApplicantService.getApplicantsForPosting(userDetails.getId(), postingIdx);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "기업회원 지원자 이력서 조회", description = "지원자의 제출 이력서를 조회합니다.")
+    @GetMapping("/company/postings/{postingIdx}/applications/{resumeIdx}/resume")
+    public ResponseEntity<?> getApplicantResume(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable("postingIdx") Long postingIdx,
+            @PathVariable("resumeIdx") Long resumeIdx) {
+        // 기업회원 권한 확인
+        if (userDetails == null || userDetails.getUserType() != UserType.COMPANY) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "기업회원만 접근할 수 있습니다."));
+        }
+
+        // 서비스로 이력서 조회
+        CompanyApplicantResumeDto response = companyApplicantService.getResumeForApplication(userDetails.getId(), postingIdx, resumeIdx);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "기업회원 지원 상태 변경", description = "지원자의 상태 코드를 변경합니다.")
+    @PatchMapping("/company/postings/{postingIdx}/applications/{resumeIdx}/status")
+    public ResponseEntity<?> updateApplicantStatus(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable("postingIdx") Long postingIdx,
+            @PathVariable("resumeIdx") Long resumeIdx,
+            @RequestBody UpdateApplicationStatusRequest request) {
+        // 기업회원 권한 확인
+        if (userDetails == null || userDetails.getUserType() != UserType.COMPANY) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "기업회원만 접근할 수 있습니다."));
+        }
+
+        // 서비스로 상태 변경
+        companyApplicantService.updateApplicationStatus(userDetails.getId(), postingIdx, resumeIdx, request.getStatusCode());
+        return ResponseEntity.ok().build();
     }
 
 }

@@ -29,6 +29,13 @@ public class ApplicationQueryService {
     private final ApplicationsRepository applicationsRepository;
     private final JobPostingRepository jobPostingRepository;
 
+    private static final Map<String, String> STATUS_LABEL_MAP = Map.of(
+            "0", "지원중",
+            "1", "서류합격",
+            "2", "면접합격",
+            "3", "최종합격",
+            "4", "서류탈락");
+
     /**
      * 개인회원이 지원한 채용공고 목록을 조회한다.
      */
@@ -73,13 +80,17 @@ public class ApplicationQueryService {
                 ? posting.getCompany().getCompanyName()
                 : null;
 
+        String rawStatus = application.getStatus();
+        // 숫자 코드로 내려오는 상태값을 한글 라벨로 변환, 매핑되지 않으면 원본 유지
+        String statusLabel = rawStatus != null ? STATUS_LABEL_MAP.getOrDefault(rawStatus, rawStatus) : "지원중";
+
         return ApplicationStatusDto.builder()
                 .resumeIdx(application.getResumeIdx())
                 .postingIdx(application.getPostingIdx())
                 .postingId(posting != null ? posting.getPostingId() : null)
                 .companyName(companyName)
                 .postingTitle(posting != null ? posting.getTitle() : null)
-                .status(application.getStatus())
+                .status(statusLabel)
                 .appliedAt(application.getResumeDate())
                 .build();
     }
