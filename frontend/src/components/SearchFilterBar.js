@@ -283,7 +283,7 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
         <TextField
           fullWidth
           variant="outlined"
-          placeholder="기업, 공고, 콘텐츠 검색"
+          placeholder="기업명 검색"
           value={searchTerm}
           onChange={handleInputChange} // 입력 이벤트
           onKeyPress={handleKeyPress} // 엔터 이벤트

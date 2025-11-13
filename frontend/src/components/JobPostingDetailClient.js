@@ -421,43 +421,42 @@ function JobPostingDetailClient({ posting_idx }) {
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
+                              fontWeight: "bold",
+                              fontSize: "1.2rem",
                             }}
                           >
-                            <FontAwesomeIcon
-                              icon={faBuilding}
-                              style={{
-                                color: theme.palette.text.secondary,
-                                width: "24px",
-                              }}
-                            />
+                            {company.logoUrl?.charAt(0) ?? "C"}
                           </Box>
                         ) : (
                           <Box
                             component="img"
                             src={getLogoUrl(company.logoUrl)}
-                            alt={`${company.name} logo`}
+                            alt="company-logo"
                             onError={() => setLogoError(true)}
                             sx={{
                               width: 60,
                               height: 60,
-                              objectFit: "contain",
-                              border: `1px solid ${theme.palette.divider}`,
                               borderRadius: 1.5,
-                              p: 0.5,
                               flexShrink: 0,
+                              objectFit: "cover",
                             }}
                           />
                         )}
-                        <Typography variant="h6" fontWeight="bold">
-                          {company.name}
-                        </Typography>
+                        <Box>
+                          <Typography variant="h6" fontWeight={600}>
+                            {company.companyName ?? jobPosting.companyName}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {company.companyType}
+                          </Typography>
+                        </Box>
                       </Box>
-                      <Grid container spacing={3}>
+                      <Grid container spacing={2}>
                         {[
                           {
-                            label: "대표자",
-                            value: company.ceoNm,
-                            icon: faUser,
+                            label: "설립일",
+                            value: company.foundedDate,
+                            icon: faCalendarAlt,
                           },
                           {
                             label: "직원 수",
@@ -465,118 +464,104 @@ function JobPostingDetailClient({ posting_idx }) {
                             icon: faUsers,
                           },
                           {
-                            label: "주소",
-                            value: company.adres,
-                            icon: faMapMarkerAlt,
+                            label: "대표자",
+                            value: company.ceoName,
+                            icon: faUser,
                           },
                           {
-                            label: "웹사이트",
+                            label: "홈페이지",
                             value: company.homepage,
                             icon: faGlobe,
                             isLink: true,
+                          },
+                          {
+                            label: "주요 산업",
+                            value: company.industry,
+                            icon: faListAlt,
                           },
                         ]
                           .filter((item) => item.value)
                           .map((item) => (
                             <Grid item xs={12} sm={6} key={item.label}>
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "flex-start",
-                                  gap: 1.5,
-                                }}
-                              >
+                              <Stack direction="row" spacing={1.5}>
                                 <FontAwesomeIcon
                                   icon={item.icon}
-                                  style={{
-                                    color: theme.palette.text.secondary,
-                                    width: "18px",
-                                    marginTop: "4px",
-                                  }}
+                                  style={{ color: theme.palette.text.secondary }}
                                 />
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    flexGrow: 1,
-                                    flexDirection: "column",
-                                  }}
-                                >
-                                  {" "}
-                                  {/* 라벨과 값을 감싸는 Box 추가, 세로 정렬 */}
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={{ flexShrink: 0, width: "80px" }} // 라벨 너비 고정 (조정 가능)
+                                {item.isLink ? (
+                                  <MuiLink
+                                    href={
+                                      item.value.startsWith("http")
+                                        ? item.value
+                                        : `http://${item.value}`
+                                    }
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                   >
-                                    {item.label}
+                                    {item.value}
+                                  </MuiLink>
+                                ) : (
+                                  <Typography variant="body2">
+                                    {item.value}
                                   </Typography>
-                                  {item.isLink ? (
-                                    <MuiLink
-                                      href={
-                                        item.value &&
-                                        item.value.startsWith("http")
-                                          ? item.value
-                                          : `http://${item.value}`
-                                      }
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      variant="body1"
-                                      sx={{
-                                        fontWeight: 500,
-                                        wordBreak: "break-all",
-                                        flexGrow: 1,
-                                      }} // 값이 남은 공간 채우도록
-                                    >
-                                      {item.value}
-                                    </MuiLink>
-                                  ) : (
-                                    <Typography
-                                      variant="body1"
-                                      sx={{
-                                        fontWeight: 500,
-                                        flexGrow: 1,
-                                        wordBreak: "break-all",
-                                      }} // 값이 남은 공간 채우도록
-                                    >
-                                      {item.value}
-                                    </Typography>
-                                  )}
-                                </Box>
-                              </Box>
+                                )}
+                              </Stack>
                             </Grid>
                           ))}
                       </Grid>
                     </Stack>
                   ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      회사 정보를 불러올 수 없습니다.
+                    <Typography color="text.secondary">
+                      회사 정보가 제공되지 않았습니다.
                     </Typography>
                   )}
                 </Paper>
 
-                {/* Detailed Description */}
-                {jobPosting.description && (
-                  <Paper
-                    elevation={0}
-                    variant="outlined"
-                    sx={{ p: 4, borderRadius: 3 }}
-                  >
+                {/* Additional Information Cards */}
+                <Card
+                  elevation={0}
+                  variant="outlined"
+                  sx={{ borderRadius: 3 }}
+                >
+                  <CardContent>
                     <Typography variant="h6" fontWeight={600} gutterBottom>
-                      상세 내용
+                      기타 정보
                     </Typography>
                     <Divider sx={{ my: 2 }} />
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        lineHeight: 1.8,
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "keep-all",
-                      }}
-                    >
-                      {jobPosting.description}
-                    </Typography>
-                  </Paper>
-                )}
+                    <Stack direction="row" spacing={4}>
+                      <Stack spacing={2}>
+                        <Typography variant="body2" color="text.secondary">
+                          등록일
+                        </Typography>
+                        <Typography variant="body1" fontWeight={600}>
+                          {jobPosting.regDate}
+                        </Typography>
+                      </Stack>
+                      <Stack spacing={2}>
+                        <Typography variant="body2" color="text.secondary">
+                          마감일
+                        </Typography>
+                        <Typography variant="body1" fontWeight={600}>
+                          {jobPosting.endDate ?? "정보 없음"}
+                        </Typography>
+                      </Stack>
+                      <Stack spacing={2}>
+                        <Typography variant="body2" color="text.secondary">
+                          지원 URL
+                        </Typography>
+                        <MuiLink
+                          href={jobPosting.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          underline="hover"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          {jobPosting.link ?? "제공되지 않았습니다."}
+                        </MuiLink>
+                      </Stack>
+                    </Stack>
+                  </CardContent>
+                </Card>
               </Stack>
             </Grid>
           </Grid>
@@ -587,3 +572,4 @@ function JobPostingDetailClient({ posting_idx }) {
 }
 
 export default JobPostingDetailClient;
+

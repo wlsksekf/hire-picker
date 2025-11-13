@@ -224,6 +224,7 @@ function HomePage() {
                     },
                   }}
                 >
+                  {/* 이미지 부분 */}
                   <Link
                     href={`/postings/${job.postingIdx}`}
                     passHref
@@ -239,17 +240,26 @@ function HomePage() {
                         backgroundPosition: "center",
                         backgroundColor: theme.palette.grey[200],
                         cursor: "pointer",
+                        flexShrink: 0,
                       }}
                     />
-                    <Box
-                      sx={{
-                        p: 3,
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        height: "calc(100% - 180px)",
-                        cursor: "pointer",
-                      }}
+                  </Link>
+
+                  {/* 카드 본문 부분 (내용 + 버튼) */}
+                  <Box
+                    sx={{
+                      p: 3,
+                      display: "flex",
+                      flexDirection: "column",
+                      flexGrow: 1,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {/* 내용 영역 */}
+                    <Link
+                      href={`/postings/${job.postingIdx}`}
+                      passHref
+                      style={{ textDecoration: "none", color: "inherit", flexGrow: 1, display: "flex", flexDirection: "column" }}
                     >
                       <Box sx={{ display: "flex", alignItems: "center" }}>
                         <Typography color="text.secondary" noWrap>
@@ -280,11 +290,12 @@ function HomePage() {
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: "vertical",
                           overflow: "hidden",
+                          flexShrink: 0,
                         }}
                       >
                         {job.title}
                       </Typography>
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2, flexShrink: 0 }}>
                         {job.employmentType && (
                           <Chip label={job.employmentType} />
                         )}

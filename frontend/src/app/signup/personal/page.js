@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image'; // Image 컴포넌트 임포트
 import { Button, TextField, Container, Typography, Box, Alert, CircularProgress, MenuItem, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
-import { Autocomplete } from '@react-google-maps/api';
 import { sendVerificationEmail, checkVerificationCode, signupPersonal } from '@/api'; // checkVerificationCode 임포트
 import { StyledFormWrapper } from '@/components/StyledForm';
 
@@ -37,8 +36,6 @@ export default function SignupPage() {
     const [successMessage, setSuccessMessage] = useState(null);
     const [bonusDialogOpen, setBonusDialogOpen] = useState(false);
     const [bonusAmount, setBonusAmount] = useState(5000);
-
-    const autocompleteRef = useRef(null);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -91,23 +88,6 @@ export default function SignupPage() {
             .finally(() => {
                 setVerifyLoading(false);
             });
-    };
-
-    const handleAutocompleteLoad = (autocomplete) => {
-        autocompleteRef.current = autocomplete;
-    };
-
-    const handlePlaceChanged = () => {
-        if (autocompleteRef.current) {
-            const place = autocompleteRef.current.getPlace();
-            if (place && place.formatted_address) {
-                setFormData(prevData => ({ ...prevData, address: place.formatted_address }));
-            }
-        }
-    };
-
-    const handleAddressChange = (e) => {
-        setFormData(prevData => ({ ...prevData, address: e.target.value }));
     };
 
     const handleBonusDialogClose = () => {
@@ -163,24 +143,6 @@ export default function SignupPage() {
             });
     };
 
-    const renderAddressInput = () => {
-        // AppProviders의 LoadScript로 이미 로드되므로 바로 사용 가능
-        return (
-            <Autocomplete
-                onLoad={handleAutocompleteLoad}
-                onPlaceChanged={handlePlaceChanged}
-            >
-                <TextField
-                    id="address"
-                    name="address"
-                    fullWidth
-                    value={formData.address}
-                    onChange={handleAddressChange}
-                    disabled={!isCodeConfirmed}
-                />
-            </Autocomplete>
-        );
-    };
 
     return (
         <StyledFormWrapper>
@@ -324,7 +286,15 @@ export default function SignupPage() {
 
                     <div className="input-group">
                         <label htmlFor="address">주소</label>
-                        {renderAddressInput()}
+                        <TextField
+                            id="address"
+                            name="address"
+                            fullWidth
+                            value={formData.address}
+                            onChange={handleChange}
+                            disabled={!isCodeConfirmed}
+                            placeholder="주소를 입력하세요"
+                        />
                     </div>
                     <button type="submit" className="sign" disabled={!isCodeConfirmed || loading}>
                         {loading ? <CircularProgress size={24} color="inherit" /> : '가입하기'}

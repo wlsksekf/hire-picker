@@ -17,4 +17,7 @@ public interface ApplicationsRepository extends JpaRepository<Applications, Appl
     boolean existsByResumeIdxAndPostingIdx(Long resumeIdx, Long postingIdx);
 
     List<Applications> findByResumeIdx(Long resumeIdx);
+
+    // 개인회원이 가진 여러 이력서의 지원 기록 조회
+    List<Applications> findByResumeIdxIn(List<Long> resumeIdxs);
 }

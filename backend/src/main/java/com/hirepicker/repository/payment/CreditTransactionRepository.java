@@ -18,6 +18,10 @@ public interface CreditTransactionRepository extends JpaRepository<CreditTransac
     // 최근 N개의 완료된 거래 조회 (payment 함께 로드)
     @Query("SELECT ct FROM CreditTransaction ct LEFT JOIN FETCH ct.payment WHERE ct.status = :status ORDER BY ct.createdAt DESC")
     List<CreditTransaction> findRecentCompletedTransactions(@Param("status") CreditTransactionStatus status);
+    
+    // 이력서 구매 여부 확인 (개인 사용자 기준)
+    @Query("SELECT COUNT(ct) > 0 FROM CreditTransaction ct WHERE ct.personalUser.id = :userId AND ct.transactionType = 'RESUME_PURCHASE' AND ct.referenceType = 'RESUME' AND ct.referenceId = :resumeId AND ct.status = 'COMPLETED'")
+    boolean existsByPersonalUserIdAndResumeId(@Param("userId") Long userId, @Param("resumeId") Long resumeId);
 }
 
 

@@ -252,12 +252,12 @@ function PostingsPage() {
                     <CardActions
                       sx={{
                         mt: "auto",
+                        pt: 2,
                         justifyContent: "flex-end",
+                        px: 0,
                         flexShrink: 0,
                       }}
                     >
-                      {" "}
-                      {/* mt: "auto"로 하단에 붙이고, 줄어들지 않도록 */}
                       <Box onClick={(e) => e.stopPropagation()}>
                         <Bookmark jobId={job.postingIdx} />
                       </Box>
@@ -267,6 +267,7 @@ function PostingsPage() {
                           e.stopPropagation();
                           setSelectedPost(job);
                         }}
+                        sx={{ ml: 1 }}
                       >
                         실시간 채팅
                       </Button>
@@ -276,6 +277,7 @@ function PostingsPage() {
                         target="_blank"
                         disabled={!job.homepageUrl}
                         onClick={(e) => e.stopPropagation()}
+                        sx={{ ml: 1 }}
                       >
                         지원하기
                       </Button>

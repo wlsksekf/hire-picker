@@ -6,14 +6,11 @@ import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -53,8 +50,9 @@ public class SecurityConfig {
                 // 1. CORS 설정
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // 2. 기본 설정 비활성화 (CSRF, HTTP Basic, Form Login, Session)
-                .csrf(csrf -> csrf.disable()) // CSRF 보호 비활성화
+                // 2. 기본 설정 (CSRF 비활성화, HTTP Basic/Form Login 비활성화)
+                // HttpOnly + SameSite 쿠키로 충분히 보호됩니다.
+                .csrf(csrf -> csrf.disable())
                 .httpBasic(basic -> basic.disable()) // HTTP Basic 인증 비활성화
                 .formLogin(form -> form.disable()) // 폼 로그인 비활성화
                 .sessionManagement(session -> session
@@ -110,6 +108,11 @@ public class SecurityConfig {
                                 "/api/search/**", "/api/calendar/**",
                                 "/api/company-alarms/**",
                                 "/api/bookmark/toggle",
+                                "/api/inquiry/submit",
+                                "/api/inquiries",
+                                "/inquiries/{inquiryIdx}/answer",
+                                "/api/bookmark/check")
+
                                 "/api/bookmark/check",
                                 "/api/manage/**")
                         .permitAll()

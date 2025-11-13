@@ -38,7 +38,7 @@ public class SearchControl {
 
     @Operation(summary = "채용공고 검색 및 필터링", description = "검색어와 필터 조건을 사용하여 채용공고를 검색합니다. 페이지네이션을 지원합니다.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "검색 성공")
+            @ApiResponse(responseCode = "200", description = "검색 성공")
     })
     @PostMapping("/search")
     public Page<JobDto> filter(
@@ -64,29 +64,28 @@ public class SearchControl {
                 ? filters.get("dateStatus").get(0)
                 : null;
 
-        System.out.println("===== 🔍 검색 요청 도착 =====");
-        System.out.println("검색어: " + keyword);
-        System.out.println("지역: " + locations);
-        System.out.println("직종: " + jobTypes);
-        System.out.println("고용형태: " + employmentTypes);
-        System.out.println("학력: " + experienceLevels);
-        System.out.println("기업형태: " + companyTypes);
-        System.out.println("공고 출처: " + sources);
-        System.out.println("날짜 상태: " + dateStatus);
-        System.out.println("============================");
+        // System.out.println("===== 🔍 검색 요청 도착 =====");
+        // System.out.println("검색어: " + keyword);
+        // System.out.println("지역: " + locations);
+        // System.out.println("직종: " + jobTypes);
+        // System.out.println("고용형태: " + employmentTypes);
+        // System.out.println("학력: " + experienceLevels);
+        // System.out.println("기업형태: " + companyTypes);
+        // System.out.println("공고 출처: " + sources);
+        // System.out.println("============================");
 
         return employmentDataImpl.jobFilter(dto, pageable, dateStatus);
     }
 
     @Operation(summary = "북마크 상태 확인", description = "특정 채용공고의 북마크 여부를 확인합니다.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "확인 성공")
+            @ApiResponse(responseCode = "200", description = "확인 성공")
     })
     @PostMapping("/bookmark/check")
     public Map<String, Object> check(
             @Parameter(description = "채용공고 ID (jobId)", required = true) @RequestBody Map<String, Object> body) {
 
-        System.out.println("-----------------------------------" + body);
+        // System.out.println("-----------------------------------" + body);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Map<String, Object> m = new HashMap<>();
 
@@ -94,7 +93,7 @@ public class SearchControl {
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
             m.put("LoggedIn", false);
             m.put("Bookmarked", false); // 북마크 여부 기본값 (예: 로그인 안 되어 있으면 false)
-            System.out.println("❌ 로그인 안 된 상태");
+            // System.out.println("❌ 로그인 안 된 상태");
             return m;
         }
 
