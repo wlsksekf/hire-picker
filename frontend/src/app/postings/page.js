@@ -23,7 +23,7 @@ import JobDetailModal from "@/components/JobDetailModal";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation"; // Import useSearchParams and useRouter
 
-const PAGE_SIZE = 18;
+const PAGE_SIZE = 9;
 
 function PostingsPage() {
   const theme = useTheme();
@@ -188,7 +188,7 @@ function PostingsPage() {
                   >
                     <Box
                       sx={{
-                        height: "180px", // 이미지 높이를 고정
+                        height: "160px", // 이미지 높이를 고정
                         backgroundImage: job.imgUrl
                           ? `url(/${job.imgUrl})`
                           : "none",
@@ -257,6 +257,10 @@ function PostingsPage() {
                         px: 0,
                         flexShrink: 0,
                       }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                     >
                       <Box onClick={(e) => e.stopPropagation()}>
                         <Bookmark jobId={job.postingIdx} />
@@ -264,20 +268,42 @@ function PostingsPage() {
                       <Button
                         variant="outlined"
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           setSelectedPost(job);
                         }}
-                        sx={{ ml: 1 }}
+                        sx={{ pointerEvents: "auto", ml: 1 }}
                       >
                         실시간 채팅
                       </Button>
                       <Button
                         variant="contained"
-                        href={job.homepageUrl}
-                        target="_blank"
-                        disabled={!job.homepageUrl}
-                        onClick={(e) => e.stopPropagation()}
-                        sx={{ ml: 1 }}
+                        color="primary"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          // 내부 지원 가능한 공고만 다이얼로그 열기
+                          if (job.internal) {
+                            // 내부 지원 로직 (다이얼로그 등)
+                            alert("내부 지원 기능은 메인 페이지에서 이용 가능합니다.");
+                          } else if (job.applyUrl) {
+                            // 외부 공고는 지원 링크로 이동
+                            const url = job.applyUrl.startsWith("http")
+                              ? job.applyUrl
+                              : `http://${job.applyUrl}`;
+                            window.open(url, "_blank", "noopener,noreferrer");
+                          } else {
+                            alert("지원 링크가 제공되지 않았습니다.");
+                          }
+                        }}
+                        disabled={!job.internal && !job.applyUrl}
+                        sx={{
+                          pointerEvents: "auto",
+                          ml: 1,
+                          "&:hover": {
+                            backgroundColor: "primary.dark",
+                          },
+                        }}
                       >
                         지원하기
                       </Button>

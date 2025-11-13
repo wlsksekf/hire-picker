@@ -76,7 +76,7 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
   const [dateStatus, setDateStatus] = useState("전체"); // 새로운 날짜 상태 필터
   const [anchorEl, setAnchorEl] = useState(null); // Popover 기준 엘리먼트
   const [currentFilterType, setCurrentFilterType] = useState(null); // 현재 팝업 필터 카테고리
-  const PAGE_SIZE = 18;
+  const PAGE_SIZE = 9;
   /** ==============================
    * 필터 옵션 반환
    * ============================== */
