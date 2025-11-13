@@ -147,16 +147,11 @@ function JobPostingDetailClient({ posting_idx }) {
       value: jobPosting.preferred_qualifications,
       icon: faStar,
     },
-    {
-      label: "요구 경력",
-      value: jobPosting.experienceLevel,
-      icon: faGraduationCap,
-    },
     { label: "급여 정보", value: jobPosting.salaryInfo, icon: faDollarSign },
     { label: "근무지", value: jobPosting.location, icon: faMapMarkerAlt },
     { label: "고용 형태", value: jobPosting.employmentType, icon: faBriefcase },
     {
-      label: "경력",
+      label: "요구경력",
       value: jobPosting.experience_level,
       icon: faGraduationCap,
     },
@@ -396,6 +391,30 @@ function JobPostingDetailClient({ posting_idx }) {
                   </Grid>
                 </Grid>
               </Paper>
+
+              {/* Job Description */}
+              {jobPosting.description && (
+                <Paper
+                  elevation={0}
+                  variant="outlined"
+                  sx={{ p: 4, borderRadius: 3 }}
+                >
+                  <Typography variant="h6" fontWeight={600} gutterBottom>
+                    직무 내용
+                  </Typography>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      lineHeight: 1.8,
+                    }}
+                  >
+                    {jobPosting.description}
+                  </Typography>
+                </Paper>
+              )}
 
               {/* Required Qualifications */}
               {jobPosting.required_qualifications && (

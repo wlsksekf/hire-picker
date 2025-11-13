@@ -1,7 +1,14 @@
 "use client";
 
 import React from "react";
-import { Typography, Box, Paper, useTheme, Stack } from "@mui/material";
+import {
+  Typography,
+  Box,
+  Paper,
+  useTheme,
+  Stack,
+  Divider,
+} from "@mui/material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCheck } from "@fortawesome/free-solid-svg-icons";
 
@@ -20,6 +27,7 @@ const RequiredQualifications = ({ qualifications }) => {
       <Typography variant="h6" fontWeight={600} gutterBottom>
         채용 필수사항
       </Typography>
+      <Divider sx={{ my: 2 }} />
       <Box sx={{ mt: 2 }}>
         <Stack spacing={1.5}>
           {items.map((item, index) => (
