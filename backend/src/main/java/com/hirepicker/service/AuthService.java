@@ -6,8 +6,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.core.env.Environment;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -36,6 +34,8 @@ import com.hirepicker.repository.CompanyUserRepository;
 import com.hirepicker.repository.ManageUserRepository;
 import com.hirepicker.repository.PersonalUserRepository;
 import com.hirepicker.repository.RefreshTokenRepository;
+import com.hirepicker.util.CookieUtils;
+import com.hirepicker.util.LogMaskingUtils;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -55,9 +55,9 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
-    private final Environment environment;
     private final S3UploadService s3UploadService;
     private final CreditService creditService;
+    private final CookieUtils cookieUtils; // 쿠키 유틸리티
 
     /**
      * 로그인 처리 (개인회원/기업회원 통합)
@@ -75,7 +75,9 @@ public class AuthService {
      */
     @Transactional
     public void login(LoginRequest request, HttpServletResponse response) {
-        log.info("Login attempt for user: {}, type: {}", request.getEmail(), request.getUserType());
+        // 개인정보 보호: 이메일 마스킹
+        log.info("Login attempt for user: {}, type: {}",
+            LogMaskingUtils.maskEmail(request.getEmail()), request.getUserType());
         try {
             // ========== STEP 0: UserType 설정 ==========
             // UserDetailsService가 userType에 따라 효율적으로 검색할 수 있도록
@@ -173,7 +175,8 @@ public class AuthService {
                 // XSS 공격 방지를 위해 HttpOnly 쿠키로 전송
                 // - access_token: 30분 만료
                 // - refresh_token: 7일 만료
-                addTokensToCookie(response, accessToken, newRefreshTokenValue);
+                response.addHeader("Set-Cookie", cookieUtils.createAccessTokenCookie(accessToken).toString());
+                response.addHeader("Set-Cookie", cookieUtils.createRefreshTokenCookie(newRefreshTokenValue).toString());
 
             } finally {
                 // ========== STEP 5: ThreadLocal 정리 (필수) ==========
@@ -221,7 +224,8 @@ public class AuthService {
                     .orElseThrow(() -> new IllegalArgumentException("관리자 정보를 찾을 수 없습니다."));
             handleRefreshToken(manageUser, refreshTokenValue, UserType.MANAGE);
 
-            addTokensToCookie(response, accessToken, refreshTokenValue);
+            response.addHeader("Set-Cookie", cookieUtils.createAccessTokenCookie(accessToken).toString());
+            response.addHeader("Set-Cookie", cookieUtils.createRefreshTokenCookie(refreshTokenValue).toString());
 
             return ManageLoginResponse.builder()
                     .mUserIdx(manageUser.getId())
@@ -316,7 +320,8 @@ public class AuthService {
         handleRefreshToken(savedUser, refreshTokenValue, UserType.PERSONAL);
 
         // 5. 토큰을 쿠키에 저장
-        addTokensToCookie(response, accessToken, refreshTokenValue);
+        response.addHeader("Set-Cookie", cookieUtils.createAccessTokenCookie(accessToken).toString());
+        response.addHeader("Set-Cookie", cookieUtils.createRefreshTokenCookie(refreshTokenValue).toString());
 
         return true;
     }
@@ -362,7 +367,8 @@ public class AuthService {
 
         handleRefreshToken(savedUser, refreshTokenValue, UserType.COMPANY);
 
-        addTokensToCookie(response, accessToken, refreshTokenValue);
+        response.addHeader("Set-Cookie", cookieUtils.createAccessTokenCookie(accessToken).toString());
+        response.addHeader("Set-Cookie", cookieUtils.createRefreshTokenCookie(refreshTokenValue).toString());
     }
 
     /**
@@ -502,91 +508,89 @@ public class AuthService {
         }
     }
 
-    // HttpOnly, SameSite, Secure 속성을 적용하여 쿠키를 추가하는 헬퍼 메서드
+    // [Deprecated] 이 메서드는 CookieUtils로 이동됨
+    // 하위 호환성을 위해 유지하되, 내부적으로 CookieUtils 사용
+    @Deprecated
     public void addTokensToCookie(HttpServletResponse response, String accessToken, String refreshToken) {
-        // 현재 활성 프로필을 확인하여 secure 속성 동적 설정
-        boolean isProduction = Arrays.asList(environment.getActiveProfiles()).contains("prod");
-
-        // 개발 환경에서는 SameSite=Lax로 설정하여 쿠키 전송 보장
-        String sameSite = isProduction ? "Strict" : "Lax";
-        
-        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", accessToken)
-                .httpOnly(true)
-                .secure(isProduction) // ★ 환경에 따라 동적으로 설정
-                .path("/")
-                .maxAge(jwtTokenProvider.getAccessTokenValidityInMilliseconds() / 1000)
-                .sameSite(sameSite) // 개발 환경에서는 Lax, 프로덕션에서는 Strict
-                .build();
-        response.addHeader("Set-Cookie", accessTokenCookie.toString());
-
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", refreshToken)
-                .httpOnly(true)
-                .secure(isProduction) // 환경에 따라 동적으로 설정
-                .path("/")
-                .maxAge(jwtTokenProvider.getRefreshTokenValidityInMilliseconds() / 1000)
-                .sameSite(sameSite) // 개발 환경에서는 Lax, 프로덕션에서는 Strict
-                .build();
-        response.addHeader("Set-Cookie", refreshTokenCookie.toString());
+        response.addHeader("Set-Cookie", cookieUtils.createAccessTokenCookie(accessToken).toString());
+        response.addHeader("Set-Cookie", cookieUtils.createRefreshTokenCookie(refreshToken).toString());
     }
 
     /**
      * 리프레시 토큰을 이용한 액세스 토큰 갱신
      *
+     * 동작 방식:
+     * 1. 쿠키에서 RefreshToken 추출
+     * 2. RefreshToken 유효성 검증
+     * 3. 새로운 AccessToken 발급 (RefreshToken은 재사용)
+     * 4. AccessToken만 쿠키에 갱신
+     *
      * @param request  HttpServletRequest (리프레시 토큰 쿠키 추출)
-     * @param response HttpServletResponse (새로운 토큰 쿠키 설정)
+     * @param response HttpServletResponse (새로운 액세스 토큰 쿠키 설정)
      */
     @Transactional
     public void refreshToken(jakarta.servlet.http.HttpServletRequest request, HttpServletResponse response) {
-        String refreshToken = null;
+        final String refreshToken; // final로 선언
         Cookie[] cookies = request.getCookies();
-        
-        // 디버깅: 쿠키 정보 로그
+
+        // 쿠키에서 리프레시 토큰 추출
+        String tempToken = null;
         if (cookies != null) {
-            log.info("[AuthService] refreshToken: 쿠키 개수: {}", cookies.length);
+            log.debug("[RefreshToken] 쿠키 개수: {}", cookies.length);
             for (Cookie cookie : cookies) {
-                log.info("[AuthService] refreshToken: 쿠키 이름: {}, 값 길이: {}", 
-                    cookie.getName(), cookie.getValue() != null ? cookie.getValue().length() : 0);
                 if ("refreshToken".equals(cookie.getName())) {
-                    refreshToken = cookie.getValue();
-                    log.info("[AuthService] refreshToken: 리프레시 토큰 발견");
+                    tempToken = cookie.getValue();
+                    log.debug("[RefreshToken] 리프레시 토큰 발견");
                     break;
                 }
             }
         } else {
-            log.warn("[AuthService] refreshToken: 쿠키가 없습니다.");
+            log.warn("[RefreshToken] 쿠키가 없습니다.");
         }
 
-        if (refreshToken == null) {
-            log.error("[AuthService] refreshToken: 리프레시 토큰이 없습니다.");
+        if (tempToken == null) {
+            log.error("[RefreshToken] 리프레시 토큰이 없습니다.");
             throw new IllegalArgumentException("리프레시 토큰이 없습니다.");
         }
 
-        // 1. 리프레시 토큰 유효성 검증
+        refreshToken = tempToken; // final 변수에 할당
+
+        // 1. 리프레시 토큰 유효성 검증 (만료 여부)
         if (!jwtTokenProvider.validateToken(refreshToken)) {
+            log.warn("[RefreshToken] 만료된 리프레시 토큰");
             throw new IllegalArgumentException("유효하지 않거나 만료된 리프레시 토큰입니다.");
         }
 
-        // 2. 리프레시 토큰에서 인증 정보 가져오기
+        // 2. DB에서 토큰 존재 여부 확인 (선택적)
+        RefreshToken storedRefreshToken = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> {
+                    log.warn("[RefreshToken] DB에 없는 리프레시 토큰");
+                    return new IllegalArgumentException("유효하지 않은 리프레시 토큰입니다.");
+                });
+
+        // 3. 리프레시 토큰에서 인증 정보 가져오기
         Authentication authentication = jwtTokenProvider.getAuthentication(refreshToken);
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // 3. 새로운 액세스 토큰 및 리프레시 토큰 생성
+        // 4. 새로운 액세스 토큰만 생성 (RefreshToken은 재사용)
         String newAccessToken = jwtTokenProvider.createAccessToken(authentication);
-        String newRefreshTokenValue = jwtTokenProvider.createRefreshToken(authentication);
 
-        // 4. DB에 저장된 리프레시 토큰 업데이트
-        RefreshToken storedRefreshToken = refreshTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new IllegalArgumentException("저장된 리프레시 토큰을 찾을 수 없습니다."));
-
-        storedRefreshToken.updateTokenValue(newRefreshTokenValue);
+        // 5. 마지막 사용 시각 업데이트 (통계/모니터링용)
+        storedRefreshToken.updateLastUsedAt();
         refreshTokenRepository.save(storedRefreshToken);
 
-        // 5. 새로운 토큰들을 쿠키에 추가
-        addTokensToCookie(response, newAccessToken, newRefreshTokenValue);
+        log.info("[RefreshToken] 액세스 토큰 갱신 완료. RefreshToken 재사용");
+
+        // 6. 새로운 액세스 토큰만 쿠키에 추가 (RefreshToken은 그대로 유지)
+        response.addHeader("Set-Cookie", cookieUtils.createAccessTokenCookie(newAccessToken).toString());
     }
 
     /**
      * 로그아웃 처리: JWT 토큰 쿠키 삭제 및 SecurityContext 초기화
+     *
+     * 주의: DB의 RefreshToken은 삭제하지 않음 (사용자 요청에 따라 제외됨)
+     * - 쿠키만 삭제하여 클라이언트에서 접근 불가능하게 함
+     * - 필요 시 추가 보안 요구사항에 따라 DB 삭제 로직 추가 가능
      *
      * @param response HttpServletResponse (쿠키 삭제)
      */
@@ -595,28 +599,10 @@ public class AuthService {
         SecurityContextHolder.clearContext();
         log.info("SecurityContextHolder가 초기화되었습니다.");
 
-        // 2. ResponseCookie를 사용하여 쿠키 삭제
-        boolean isProduction = Arrays.asList(environment.getActiveProfiles()).contains("prod");
-        String sameSite = isProduction ? "Strict" : "Lax";
+        // 2. 쿠키 삭제 (CookieUtils 활용)
+        response.addHeader("Set-Cookie", cookieUtils.createDeleteAccessTokenCookie().toString());
+        response.addHeader("Set-Cookie", cookieUtils.createDeleteRefreshTokenCookie().toString());
 
-        ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", "")
-                .httpOnly(true)
-                .secure(isProduction) // 환경에 따라 동적으로 설정
-                .path("/")
-                .maxAge(0) // 쿠키 즉시 만료
-                .sameSite(sameSite) // 개발 환경에서는 Lax, 프로덕션에서는 Strict
-                .build();
-        response.addHeader("Set-Cookie", accessTokenCookie.toString());
-        log.info("Access Token 쿠키가 삭제되었습니다.");
-
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", "")
-                .httpOnly(true)
-                .secure(isProduction) // 환경에 따라 동적으로 설정
-                .path("/")
-                .maxAge(0) // 쿠키 즉시 만료
-                .sameSite(sameSite) // 개발 환경에서는 Lax, 프로덕션에서는 Strict
-                .build();
-        response.addHeader("Set-Cookie", refreshTokenCookie.toString());
-        log.info("Refresh Token 쿠키가 삭제되었습니다.");
+        log.info("Access Token 및 Refresh Token 쿠키가 삭제되었습니다.");
     }
 }

@@ -71,6 +71,19 @@ public class CreditService {
      */
     @Transactional
     public CreditTransaction useCredits(CustomUserDetails userDetails, String serviceName, Long amount) {
+        return useCredits(userDetails, serviceName, amount, null, null);
+    }
+
+    /**
+     * 서비스 사용에 대한 크레딧을 차감합니다. (참조 정보 포함)
+     * @param userDetails 현재 인증된 사용자 정보
+     * @param serviceName 크레딧을 사용한 서비스 이름
+     * @param amount 차감할 크레딧 양
+     * @param referenceType 참조 타입 (예: "RESUME")
+     * @param referenceId 참조 ID (예: 이력서 ID)
+     */
+    @Transactional
+    public CreditTransaction useCredits(CustomUserDetails userDetails, String serviceName, Long amount, String referenceType, Long referenceId) {
         long requestedAmount = amount == null ? 0L : amount;
         if (requestedAmount < 0L) {
             throw new IllegalArgumentException("차감 크레딧은 음수가 될 수 없습니다.");
@@ -80,7 +93,9 @@ public class CreditService {
                 .transactionType(serviceName)
                 .status(CreditTransactionStatus.COMPLETED)
                 .currency("CREDIT")
-                .amount(-requestedAmount);
+                .amount(-requestedAmount)
+                .referenceType(referenceType)
+                .referenceId(referenceId);
 
         if (userDetails.getUserType() == UserType.PERSONAL) {
             PersonalUserCredit credit = personalUserCreditRepository.findById(userDetails.getId())
