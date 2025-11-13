@@ -47,6 +47,9 @@ public class CompanyApiController {
     private final CompanyService companyService;
 
     @Operation(summary = "채용공고 목록 조회", description = "페이지네이션을 적용하여 채용공고 목록을 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공")
+    })
     @GetMapping("/work24/jobs")
     public ResponseEntity<PagedModel<EntityModel<JobDto>>> getJobs(
             Pageable pageable,
@@ -56,6 +59,9 @@ public class CompanyApiController {
     }
 
     @Operation(summary = "채용박람회 목록 조회", description = "페이지네이션을 적용하여 채용박람회 목록을 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공")
+    })
     @GetMapping("/work24/events")
     public ResponseEntity<PagedModel<EntityModel<EventDto>>> getEvents(
             Pageable pageable,
@@ -65,6 +71,9 @@ public class CompanyApiController {
     }
 
     @Operation(summary = "기업 목록 조회", description = "페이지네이션과 검색 기능을 적용하여 기업 목록을 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공")
+    })
     @GetMapping("/companies")
     public ResponseEntity<PagedModel<EntityModel<CompanyDto>>> getCompanies(
             @Parameter(description = "검색어") @RequestParam(value = "query", required = false, defaultValue = "") String query,
@@ -75,8 +84,13 @@ public class CompanyApiController {
     }
 
     @Operation(summary = "기업 상세 정보 조회", description = "company_idx를 이용하여 특정 기업의 상세 정보를 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "404", description = "기업을 찾을 수 없음")
+    })
     @GetMapping("/companies/{idx}")
-    public ResponseEntity<CompanyDto> getCompany(@PathVariable("idx") Long idx) {
+    public ResponseEntity<CompanyDto> getCompany(
+            @Parameter(description = "기업 인덱스", required = true) @PathVariable("idx") Long idx) {
         CompanyDto companyDto = employmentData.getCompany(idx);
         if (companyDto == null) {
             return ResponseEntity.notFound().build();
@@ -93,8 +107,13 @@ public class CompanyApiController {
     }
 
     @Operation(summary = "신규 회사 등록", description = "새로운 회사 정보를 시스템에 등록합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "등록 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청")
+    })
     @PostMapping("/CreateCompanies")
-    public ResponseEntity<CompanyDto> createCompany(@RequestBody CompanyDto CompanyDto) {
+    public ResponseEntity<CompanyDto> createCompany(
+            @Parameter(description = "등록할 회사 정보", required = true) @RequestBody CompanyDto CompanyDto) {
         try {
             CompanyDto CreateCompany = companyService.createCompany(CompanyDto);
             return ResponseEntity.status(HttpStatus.CREATED).body(CreateCompany);
@@ -120,6 +139,9 @@ public class CompanyApiController {
     }
 
     @Operation(summary = "채용박람회 데이터 동기화", description = "Work24 API를 통해 채용박람회 데이터를 수동으로 동기화합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "동기화 시작")
+    })
     @GetMapping("/work24/sync/events")
     public ResponseEntity<String> syncEvents() {
         employmentDataService.synchronizeEvents();
