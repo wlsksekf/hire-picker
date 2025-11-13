@@ -110,7 +110,11 @@ public class SecurityConfig {
                                 "/api/search/**", "/api/calendar/**",
                                 "/api/company-alarms/**",
                                 "/api/bookmark/toggle",
+                                "/api/inquiry/submit",
+                                "/api/inquiries",
+                                "/inquiries/{inquiryIdx}/answer",
                                 "/api/bookmark/check")
+
                         .permitAll()
 
                         // 이미지 업로드 엔드포인트는 인증 없이 허용
