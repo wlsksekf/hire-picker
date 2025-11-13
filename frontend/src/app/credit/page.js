@@ -311,6 +311,7 @@ const CreditPage = () => {
   
   // 회사회원용 광고 공고 상태
   const [myJobPostings, setMyJobPostings] = useState([]);
+  const [advertisedPostingIds, setAdvertisedPostingIds] = useState(new Set());
   const [adLoading, setAdLoading] = useState(false);
 
   useEffect(() => {
@@ -342,21 +343,33 @@ const CreditPage = () => {
       .finally(() => setMarketLoading(false));
   };
 
-  const loadMyJobPostings = () => {
+  const loadMyJobPostings = async () => {
     if (!isCompany) {
       setMyJobPostings([]);
       return;
     }
     setAdLoading(true);
-    api.get("/api/companies/my/job-postings")
-      .then((res) => {
-        setMyJobPostings(res.data || []);
-      })
-      .catch((err) => {
-        console.error("채용공고 목록을 불러오는 중 오류", err);
-        setFeedback({ type: "error", message: "채용공고 목록을 불러오지 못했습니다." });
-      })
-      .finally(() => setAdLoading(false));
+    try {
+      // 내 채용공고 목록 가져오기
+      const jobPostingsRes = await api.get("/api/companies/my/job-postings");
+      console.log("=== 채용공고 API 응답 ===", jobPostingsRes.data);
+      console.log("첫 번째 공고:", jobPostingsRes.data[0]);
+      setMyJobPostings(jobPostingsRes.data || []);
+
+      // 활성 광고 목록 가져오기 (광고로 등록된 공고 ID 수집)
+      const activeAdsRes = await api.get("/api/ad-postings/active");
+      console.log("=== 광고 공고 API 응답 ===", activeAdsRes.data);
+      const advertisedIds = new Set(
+        (activeAdsRes.data || []).map(ad => ad.jobPosting?.postingIdx).filter(Boolean)
+      );
+      console.log("광고 중인 공고 ID들:", Array.from(advertisedIds));
+      setAdvertisedPostingIds(advertisedIds);
+    } catch (err) {
+      console.error("채용공고 목록을 불러오는 중 오류", err);
+      setFeedback({ type: "error", message: "채용공고 목록을 불러오지 못했습니다." });
+    } finally {
+      setAdLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -446,6 +459,22 @@ const CreditPage = () => {
       });
       return;
     }
+
+    if (!posting.cUserIdx) {
+      setFeedback({
+        type: "error",
+        message: "외부 공고는 광고로 등록할 수 없습니다. 직접 등록한 공고만 가능합니다.",
+      });
+      return;
+    }
+
+    if (advertisedPostingIds.has(posting.postingIdx)) {
+      setFeedback({
+        type: "error",
+        message: "이미 광고로 등록된 채용공고입니다.",
+      });
+      return;
+    }
     
     if (balance < 10000) {
       setFeedback({
@@ -476,6 +505,9 @@ const CreditPage = () => {
         type: "success", 
         message: "광고가 성공적으로 등록되었습니다! 메인 페이지에서 확인하세요." 
       });
+      
+      // 광고 등록된 공고 ID를 즉시 추가 (UI 즉시 반영)
+      setAdvertisedPostingIds(prev => new Set([...prev, posting.postingIdx]));
       
       // 목록 새로고침
       loadMyJobPostings();
@@ -649,7 +681,13 @@ const CreditPage = () => {
               </EmptyMarket>
             ) : (
               <ResumeMarketGrid>
-                {myJobPostings.map((posting) => (
+                {myJobPostings.map((posting) => {
+                  console.log(`[렌더링] 공고 ${posting.postingIdx}:`, {
+                    cUserIdx: posting.cUserIdx,
+                    title: posting.title,
+                    isAdvertised: advertisedPostingIds.has(posting.postingIdx)
+                  });
+                  return (
                   <MarketCard key={posting.postingIdx}>
                     <MarketHeader>
                       <CardTitle>{posting.title}</CardTitle>
@@ -672,17 +710,27 @@ const CreditPage = () => {
                       <PurchaseButton
                         type="button"
                         onClick={() => handleRegisterAd(posting)}
-                        disabled={purchaseLoadingId === posting.postingIdx || balance < 10000}
+                        disabled={
+                          purchaseLoadingId === posting.postingIdx || 
+                          balance < 10000 || 
+                          advertisedPostingIds.has(posting.postingIdx) ||
+                          !posting.cUserIdx  // 외부 공고는 비활성화
+                        }
                       >
                         {purchaseLoadingId === posting.postingIdx
                           ? "처리 중…"
+                          : !posting.cUserIdx
+                          ? "외부 공고"
+                          : advertisedPostingIds.has(posting.postingIdx)
+                          ? "광고 중"
                           : balance < 10000
                           ? "크레딧 부족"
                           : "광고 등록"}
                       </PurchaseButton>
                     </CardFooter>
                   </MarketCard>
-                ))}
+                  );
+                })}
               </ResumeMarketGrid>
             )}
           </MarketplaceSection>

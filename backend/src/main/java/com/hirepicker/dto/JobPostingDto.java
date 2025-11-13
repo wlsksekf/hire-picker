@@ -1,5 +1,6 @@
 package com.hirepicker.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hirepicker.entity.JobPosting;
 import com.hirepicker.entity.JobPostingStatus;
 import lombok.Builder;
@@ -18,6 +19,11 @@ import java.time.LocalDateTime;
 public class JobPostingDto {
     private Long postingIdx;              // 공고 ID (PK)
     private String postingId;             // 공고 ID (유니크)
+    
+    @JsonProperty("cUserIdx")
+    private Long cUserIdx;                // 회사회원 ID (null이면 외부 공고)
+    
+    private String companyName;           // 회사명
     private String title;                 // 공고 제목
     private String employmentType;        // 고용 형태 (정규직, 계약직 등)
     private String experienceLevel;       // 경력 수준
@@ -50,6 +56,8 @@ public class JobPostingDto {
         return JobPostingDto.builder()
                 .postingIdx(jobPosting.getPostingIdx())
                 .postingId(jobPosting.getPostingId())
+                .cUserIdx(jobPosting.getCUserIdx()) // 회사회원 ID (null이면 외부 공고)
+                .companyName(jobPosting.getCompany() != null ? jobPosting.getCompany().getCompanyName() : null)
                 .title(jobPosting.getTitle())
                 .employmentType(jobPosting.getEmploymentType())
                 .experienceLevel(jobPosting.getExperienceLevel())
