@@ -13,7 +13,7 @@ import java.util.Optional;
 import org.springframework.data.repository.query.Param;
 
 @Repository
-public interface PostRepository extends JpaRepository<Posts, Long>{
+public interface PostRepository extends JpaRepository<Posts, Long> {
 
     // 카테고리별 게시글 조회
     @Query("SELECT new com.hirepicker.dto.PostListDto(p.postIdx, p.boardIdx, p.pUserIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
@@ -25,6 +25,25 @@ public interface PostRepository extends JpaRepository<Posts, Long>{
     @Query("SELECT new com.hirepicker.dto.PostListDto(p.postIdx, p.boardIdx, p.pUserIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
            "FROM Posts p JOIN PersonalUser u ON p.pUserIdx = u.id")
     Page<PostListDto> findAllPostList(Pageable pageable);
+
+    // ---------- 아래부터 검색용 ----------
+    // 제목 검색
+    @Query("SELECT new com.hirepicker.dto.PostListDto(p.postIdx, p.boardIdx, p.pUserIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
+           "FROM Posts p JOIN PersonalUser u ON p.pUserIdx = u.id " +
+           "WHERE LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))")
+    Page<PostListDto> findAllPostListByTitle(@Param("title") String title, Pageable pageable);
+
+    // 작성자 닉네임 검색
+    @Query("SELECT new com.hirepicker.dto.PostListDto(p.postIdx, p.boardIdx, p.pUserIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
+           "FROM Posts p JOIN PersonalUser u ON p.pUserIdx = u.id " +
+           "WHERE LOWER(u.nickname) LIKE LOWER(CONCAT('%', :nickname, '%'))")
+    Page<PostListDto> findAllPostListByNickname(@Param("nickname") String nickname, Pageable pageable);
+
+    // 내용 검색
+    @Query("SELECT new com.hirepicker.dto.PostListDto(p.postIdx, p.boardIdx, p.pUserIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +
+           "FROM Posts p JOIN PersonalUser u ON p.pUserIdx = u.id " +
+           "WHERE LOWER(p.content) LIKE LOWER(CONCAT('%', :content, '%'))")
+    Page<PostListDto> findAllPostListByContent(@Param("content") String content, Pageable pageable);
 
     // 게시글 상세 조회
     @Query("SELECT new com.hirepicker.dto.PostListDto(p.postIdx, p.boardIdx, p.pUserIdx, u.nickname, p.title, p.content, p.createdAt, p.viewCount, p.imgName, p.fileName) " +

@@ -8,6 +8,11 @@ import com.google.genai.types.GoogleSearch;
 import com.google.genai.types.Tool;
 import com.hirepicker.dto.chatbot.ChatRequestDto;
 import com.hirepicker.dto.chatbot.ChatResponseDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Tag(name = "AI 검색", description = "AI 웹 검색 챗봇 관련 API")
 @RestController
 @RequestMapping("/api/v1/ai-search") // Google Search 전용
 @RequiredArgsConstructor
@@ -30,8 +36,14 @@ public class AiSearchController {
     // 챗봇 세션을 저장하는 맵 (세션 ID -> Chat 객체)
     private final Map<String, Chat> chatSessions = new ConcurrentHashMap<>();
 
+    @Operation(summary = "AI 웹 검색", description = "Google Search를 활용한 AI 검색 챗봇과 대화합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "검색 성공"),
+        @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
     @PostMapping
-    public ResponseEntity<ChatResponseDto> handleSearch(@RequestBody ChatRequestDto request) {
+    public ResponseEntity<ChatResponseDto> handleSearch(
+            @Parameter(description = "검색 요청 (프롬프트 및 세션 ID)", required = true) @RequestBody ChatRequestDto request) {
         try {
             // 세션 ID가 없으면 새로 생성
             String sessionId = Optional.ofNullable(request.sessionId())

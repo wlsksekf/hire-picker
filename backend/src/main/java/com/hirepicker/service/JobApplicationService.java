@@ -22,7 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JobApplicationService {
 
-    private static final String DEFAULT_STATUS = "APPLIED";
+    // 지원 상태: 0=지원중, 1=서류합격, 2=면접합격, 3=최종합격, 4=서류탈락
+    private static final String DEFAULT_STATUS = "0"; // 지원중
 
     private final ApplicationsRepository applicationsRepository;
     private final ResumeRepository resumeRepository;

@@ -112,15 +112,34 @@ function HomePage() {
     fetchJobs(0, appliedSearchTerm, appliedFilters);
   }, []); // Initial fetch on component mount
 
-  const handleSearchAndFilter = (term, filters) => {
-    const queryParams = new URLSearchParams();
-    if (term) queryParams.append("searchTerm", term);
-    for (const filterType in filters) {
-      if (filters[filterType] && filters[filterType].length > 0) {
-        queryParams.append(filterType, filters[filterType].join(","));
+  const handleSearchAndFilter = (term, filters, responseData) => {
+    // 필터/검색 결과 데이터가 있으면 현재 페이지에서 업데이트
+    if (responseData) {
+      const newJobs = responseData._embedded
+        ? responseData._embedded.jobDtoList
+        : responseData.content || [];
+
+      setAppliedSearchTerm(term || "");
+      setAppliedFilters(filters || {});
+      setJobs(newJobs);
+      setPage(0);
+
+      const isLast = responseData.page
+        ? responseData.page.number >= responseData.page.totalPages - 1
+        : false;
+      setHasNextPage(!isLast);
+      setStatus("success");
+    } else {
+      // 데이터가 없으면 라우터로 이동 (기존 동작 유지)
+      const queryParams = new URLSearchParams();
+      if (term) queryParams.append("searchTerm", term);
+      for (const filterType in filters) {
+        if (filters[filterType] && filters[filterType].length > 0) {
+          queryParams.append(filterType, filters[filterType].join(","));
+        }
       }
+      router.push(`/postings?${queryParams.toString()}`);
     }
-    router.push(`/postings?${queryParams.toString()}`);
   };
 
   function fetchNextPage() {
@@ -191,23 +210,24 @@ function HomePage() {
                 key={job.id || `${job.companyName}-${job.title}`}
                 size={{ xs: 12, sm: 6, md: 4 }}
               >
-                <Link
-                  href={`/postings/${job.postingIdx}`}
-                  passHref
-                  style={{ textDecoration: "none" }}
+                <Card
+                  sx={{
+                    borderRadius: "16px",
+                    height: "100%",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+                    transition: "background-color 0.2s, box-shadow 0.2s",
+                    display: "flex",
+                    flexDirection: "column",
+                    "&:hover": {
+                      backgroundColor: theme.palette.action.hover,
+                      boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
+                    },
+                  }}
                 >
-                  <Card
-                    sx={{
-                      borderRadius: "16px",
-                      height: "100%",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                      cursor: "pointer",
-                      transition: "background-color 0.2s, box-shadow 0.2s", // 부드럽게
-                      "&:hover": {
-                        backgroundColor: theme.palette.action.hover, // 살짝 빛나는 느낌
-                        boxShadow: "0 6px 16px rgba(0,0,0,0.1)", // 약간 그림자 강조
-                      },
-                    }}
+                  <Link
+                    href={`/postings/${job.postingIdx}`}
+                    passHref
+                    style={{ textDecoration: "none", color: "inherit" }}
                   >
                     <Box
                       sx={{
@@ -218,6 +238,7 @@ function HomePage() {
                         backgroundSize: "cover",
                         backgroundPosition: "center",
                         backgroundColor: theme.palette.grey[200],
+                        cursor: "pointer",
                       }}
                     />
                     <Box
@@ -227,6 +248,7 @@ function HomePage() {
                         flexDirection: "column",
                         justifyContent: "space-between",
                         height: "calc(100% - 180px)",
+                        cursor: "pointer",
                       }}
                     >
                       <Typography color="text.secondary" noWrap>
@@ -245,8 +267,27 @@ function HomePage() {
                       >
                         {job.title}
                       </Typography>
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                        {job.employmentType && (
+                          <Chip label={job.employmentType} />
+                        )}
+                        {job.location && <Chip label={job.location} />}
+                        {job.experience_level && (
+                          <Chip label={job.experience_level} />
+                        )}
+                        {job.companyType && <Chip label={job.companyType} />}
+                        {job.jobType && <Chip label={job.jobType} />}
+                        {job.startDate && job.endDate && (
+                          <Chip
+                            icon={<FontAwesomeIcon icon={faCalendar} />}
+                            label={`${job.startDate} ~ ${job.endDate}`}
+                          />
+                        )}
+                      </Box>
                       <CardActions sx={{ mt: 2, justifyContent: "flex-end" }}>
-                        <Bookmark jobId={job.postingIdx} />
+                        <Box onClick={(e) => e.stopPropagation()}>
+                          <Bookmark jobId={job.postingIdx} />
+                        </Box>
                         <Button
                           variant="outlined"
                           onClick={(e) => {
@@ -294,16 +335,12 @@ function HomePage() {
         />
       )}
 
-      {/* ResumeApplyDialog is not defined, so I'm commenting it out.
-          You should import and define it.
-
       <ResumeApplyDialog
         open={Boolean(applyDialogJob)}
         job={applyDialogJob}
         onClose={handleApplyDialogClose}
         onSuccess={handleApplySuccess}
       />
-      */}
 
       <Snackbar
         open={snackbar.open}

@@ -96,18 +96,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         log.info("[Filter] JwtAuthenticationFilter is running for URI: {}", request.getRequestURI());
         String jwt = resolveToken(request); // 요청에서 토큰 추출
 
-        // 토큰이 유효한 경우
-        if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
-            log.info("[Filter] Valid JWT token found. Setting authentication in context.");
-            Authentication authentication = jwtTokenProvider.getAuthentication(jwt); // 인증 정보 조회
+        if (StringUtils.hasText(jwt)) {
+            // 토큰이 유효한 경우
+            if (jwtTokenProvider.validateToken(jwt)) {
+                log.info("[Filter] Valid JWT token found. Setting authentication in context.");
+                Authentication authentication = jwtTokenProvider.getAuthentication(jwt); // 인증 정보 조회
 
-            // ★ [디버깅용] 토큰 클레임 정보 로그 출력
-            log.info("[Filter] Authenticated user: Principal: {}, Authorities: {}", authentication.getPrincipal(),
-                    authentication.getAuthorities());
+                // ★ [디버깅용] 토큰 클레임 정보 로그 출력
+                log.info("[Filter] Authenticated user: Principal: {}, Authorities: {}", authentication.getPrincipal(),
+                        authentication.getAuthorities());
 
-            SecurityContextHolder.getContext().setAuthentication(authentication); // SecurityContext에 인증 정보 저장
+                SecurityContextHolder.getContext().setAuthentication(authentication); // SecurityContext에 인증 정보 저장
+            } else {
+                log.warn("[Filter] JWT token is invalid or expired. Token: {}",
+                        jwt.substring(0, Math.min(20, jwt.length())) + "...");
+            }
         } else {
-            log.info("[Filter] No valid JWT token found.");
+            log.info("[Filter] No JWT token found in request.");
         }
 
         filterChain.doFilter(request, response); // 다음 필터로 전달
@@ -118,6 +123,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         // 1. Authorization 헤더에서 토큰 추출 시도
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
+            log.debug("[Filter] Token found in Authorization header.");
             return bearerToken.substring(BEARER_PREFIX.length());
         }
 
@@ -126,9 +132,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (cookies != null) {
             for (jakarta.servlet.http.Cookie cookie : cookies) {
                 if ("accessToken".equals(cookie.getName())) {
+                    log.debug("[Filter] Token found in cookie: accessToken");
                     return cookie.getValue();
                 }
             }
+            log.debug("[Filter] Cookies present but no accessToken found. Cookie names: {}",
+                    java.util.Arrays.stream(cookies).map(jakarta.servlet.http.Cookie::getName)
+                            .collect(java.util.stream.Collectors.joining(", ")));
+        } else {
+            log.debug("[Filter] No cookies in request.");
         }
         return null;
     }

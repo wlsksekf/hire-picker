@@ -14,6 +14,8 @@ import com.hirepicker.repository.CompanyUserRepository;
 import com.hirepicker.repository.JobPostingRepository;
 import com.hirepicker.service.CompanyService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +67,12 @@ public class CompanyController {
      *         404 Not Found (회사 정보 없음)
      */
     @Operation(summary = "내 회사 정보 조회", description = "로그인한 기업회원의 회사 정보를 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "기업회원만 접근 가능"),
+        @ApiResponse(responseCode = "404", description = "회사 정보 없음")
+    })
     @GetMapping("/my")
     public ResponseEntity<?> getMyCompanyInfo(@AuthenticationPrincipal CustomUserDetails userDetails) {
         // ===== STEP 1: 인증 확인 =====
@@ -125,6 +133,12 @@ public class CompanyController {
      *         404 Not Found (회사 정보 없음)
      */
     @Operation(summary = "내 회사 정보 업데이트", description = "로그인한 기업회원의 회사 정보를 수정합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "업데이트 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "기업회원만 접근 가능"),
+        @ApiResponse(responseCode = "404", description = "회사 정보 없음")
+    })
     @PutMapping("/my")
     public ResponseEntity<?> updateMyCompanyInfo(
             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -183,6 +197,12 @@ public class CompanyController {
      *         404 Not Found (회사 정보 없음)
      */
     @Operation(summary = "내 회사의 채용공고 목록 조회", description = "로그인한 기업회원의 회사가 올린 모든 채용공고를 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "기업회원만 접근 가능"),
+        @ApiResponse(responseCode = "404", description = "회사 정보 없음")
+    })
     @GetMapping("/my/job-postings")
     public ResponseEntity<?> getMyJobPostings(@AuthenticationPrincipal CustomUserDetails userDetails) {
         // ===== STEP 1: 인증 확인 =====
@@ -249,6 +269,12 @@ public class CompanyController {
      * @return 200 OK + 채용공고 상세 정보
      */
     @Operation(summary = "내 회사의 채용공고 상세 조회", description = "특정 채용공고의 상세 정보를 조회합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "기업회원만 접근 가능 또는 다른 회사의 공고"),
+        @ApiResponse(responseCode = "404", description = "채용공고 없음")
+    })
     @GetMapping("/my/job-postings/{postingIdx}")
     public ResponseEntity<?> getJobPostingDetail(
             @AuthenticationPrincipal CustomUserDetails userDetails,
@@ -313,6 +339,12 @@ public class CompanyController {
      * @return 200 OK + 수정된 채용공고 정보
      */
     @Operation(summary = "내 회사의 채용공고 수정", description = "채용공고 정보를 수정합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "수정 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "기업회원만 접근 가능 또는 다른 회사의 공고"),
+        @ApiResponse(responseCode = "404", description = "채용공고 없음")
+    })
     @PutMapping("/my/job-postings/{postingIdx}")
     @Transactional
     public ResponseEntity<?> updateJobPosting(
@@ -421,6 +453,12 @@ public class CompanyController {
      * @return 201 Created + 생성된 채용공고 정보
      */
     @Operation(summary = "내 회사의 채용공고 등록", description = "새로운 채용공고를 등록합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "등록 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 필요"),
+        @ApiResponse(responseCode = "403", description = "기업회원만 접근 가능"),
+        @ApiResponse(responseCode = "404", description = "회사 정보 없음")
+    })
     @PostMapping("/my/job-postings")
     @Transactional
     public ResponseEntity<?> createJobPosting(
