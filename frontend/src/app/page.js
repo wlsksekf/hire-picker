@@ -21,6 +21,7 @@ import ChatRoom from "@/components/ChatRoom";
 import SearchFilterBar from "@/components/SearchFilterBar";
 import Bookmark from "@/components/BookMark";
 import JobDetailModal from "@/components/JobDetailModal";
+import AdPostingSection from "@/components/AdPostingSection"; // 광고 공고 섹션
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import useAuthStore from "@/store/authStore";
@@ -145,7 +146,7 @@ function HomePage() {
   function fetchNextPage() {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchJobs(nextPage, appliedSearchTerm, appliedFilters, true);
+    fetchJobs(nextPage, appliedSearchTerm, appliedFilters, false);
   }
 
   const handleApplyDialogClose = () => {
@@ -197,6 +198,12 @@ function HomePage() {
         </Typography>
         <SearchFilterBar onSearchAndFilter={handleSearchAndFilter} />
       </Box>
+
+      {/* 광고 공고 섹션 */}
+      <AdPostingSection 
+        onChatClick={setSelectedPost}
+        onApplyClick={setApplyDialogJob}
+      />
 
       <Box sx={{ pb: 8 }}>
         <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
