@@ -471,7 +471,7 @@ class W {
         const sumRadius = radius + otherRadius;
         if (dist < sumRadius) {
           const overlap = sumRadius - dist;
-          j.copy(_) 
+          j.copy(_)
             .normalize()
             .multiplyScalar(0.5 * overlap);
           H.copy(j).multiplyScalar(Math.max(B.length(), 1));
@@ -607,8 +607,9 @@ class Z extends d {
         function setColors(e) {
           t = e;
           i = [];
-          i.push(new l(col));
-        });
+          e.forEach(col => {
+            i.push(new l(col));
+          });
         }
         setColors(e);
         return {

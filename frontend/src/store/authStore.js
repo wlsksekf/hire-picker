@@ -9,11 +9,12 @@ const useAuthStore = create((set, get) => ({
   logoutTimer: null, // 로그아웃 타이머 ID
 
   // 로그아웃 타이머 시작
+  // Access Token 만료(30분)보다 약간 길게 설정하여 토큰 갱신 가능
   startLogoutTimer: () => {
     get().clearLogoutTimer(); // 기존 타이머 제거
     const timer = setTimeout(() => {
       get().logout(true); // 타이머 만료 시 로그아웃 (자동 로그아웃임을 명시)
-    }, 1800 * 1000); // 30분
+    }, 2100 * 1000); // 35분 (30분 Access Token + 5분 여유)
     set({ logoutTimer: timer });
   },
 
@@ -100,9 +101,9 @@ const useAuthStore = create((set, get) => ({
   },
 
   // 앱 초기 로드 시, 보호된 API 호출을 통해 로그인 상태 확인
+  // 토큰 갱신은 axios 인터셉터에서 자동으로 처리되므로 여기서는 단순 조회만 수행
   initializeAuth: () => {
     console.log("AuthStore: initializeAuth called. Current state:", get());
-    // HttpOnly 쿠키는 document.cookie로 확인 불가하므로 로그 제거
     set({ isLoading: true });
 
     return api
@@ -113,7 +114,6 @@ const useAuthStore = create((set, get) => ({
       })
       .then((response) => {
         console.log("AuthStore: /api/users/me 응답 상태:", response.status);
-        console.log("AuthStore: /api/users/me 응답 데이터:", response.data);
 
         if (response.status === 200) {
           console.log("AuthStore: initializeAuth success", response.data);
@@ -124,71 +124,9 @@ const useAuthStore = create((set, get) => ({
           set({ isAuthenticated: true, user: userData, isLoading: false });
           get().startLogoutTimer();
           return response.data;
-        } else if (response.status === 401) {
-          // 401 에러인 경우 리프레시 토큰으로 갱신 시도
-          console.log("AuthStore: 401 received, attempting token refresh");
-          return api.post('/api/auth/refresh', {}, {
-            validateStatus: function (status) {
-              return status < 500; // 리프레시 요청도 500 미만은 정상으로 간주
-            }
-          })
-            .then((refreshResponse) => {
-              console.log("AuthStore: Refresh response status:", refreshResponse.status);
-              if (refreshResponse.status === 200 || refreshResponse.status === 204) {
-                console.log("AuthStore: Token refresh successful, retrying /api/users/me");
-                // 리프레시 성공 후 다시 사용자 정보 조회 (약간의 지연을 두어 쿠키가 설정되도록 함)
-                return new Promise((resolve) => {
-                  setTimeout(() => {
-                    resolve(api.get("/api/users/me", {
-                      validateStatus: function (status) {
-                        return status < 500;
-                      }
-                    }));
-                  }, 100); // 100ms 지연
-                });
-              } else {
-                // 401은 로그인하지 않은 상태 (정상)이므로 에러로 throw하지 않음
-                if (refreshResponse.status === 401) {
-                  return Promise.reject({ response: { status: 401 }, isNormal: true });
-                }
-                throw new Error(`Token refresh failed with status: ${refreshResponse.status}`);
-              }
-            })
-            .then((retryResponse) => {
-              if (retryResponse.status === 200) {
-                const userData = {
-                  ...retryResponse.data,
-                  userType: retryResponse.data?.userType || retryResponse.data?.user_type,
-                };
-                console.log("AuthStore: Retry /api/users/me success", userData);
-                set({ isAuthenticated: true, user: userData, isLoading: false });
-                get().startLogoutTimer();
-                return retryResponse.data;
-              } else {
-                console.log("AuthStore: Retry /api/users/me failed with status:", retryResponse.status);
-                set({ isAuthenticated: false, user: null, isLoading: false });
-                get().clearLogoutTimer();
-                return null;
-              }
-            })
-            .catch((refreshError) => {
-              // 리프레시 토큰이 없으면 로그인하지 않은 상태 (정상)
-              // 401 에러는 정상적인 상황이므로 에러 로그를 출력하지 않음
-              const isNormal401 = refreshError.isNormal || (refreshError.response?.status === 401);
-              if (!isNormal401) {
-                console.error("AuthStore: Token refresh failed during initializeAuth", refreshError);
-              }
-              // 리프레시 실패 시 로그아웃 상태로 설정
-              set({ isAuthenticated: false, user: null, isLoading: false });
-              get().clearLogoutTimer();
-              return null;
-            });
         } else {
-          console.log(
-            "AuthStore: User not authenticated (status: " +
-              response.status +
-              ")."
-          );
+          // 401 등 인증 실패 시 로그아웃 상태로 설정
+          console.log("AuthStore: User not authenticated (status: " + response.status + ")");
           set({ isAuthenticated: false, user: null, isLoading: false });
           get().clearLogoutTimer();
           return null;
@@ -196,15 +134,9 @@ const useAuthStore = create((set, get) => ({
       })
       .catch((error) => {
         // 네트워크 에러나 기타 에러의 경우
-        console.error(
-          "AuthStore: initializeAuth failed with an error",
-          error
-        );
-        // 401 에러는 위에서 처리되므로 여기서는 다른 에러만 처리
-        if (error.response?.status !== 401) {
-          set({ isAuthenticated: false, user: null, isLoading: false });
-          get().clearLogoutTimer();
-        }
+        console.error("AuthStore: initializeAuth failed with an error", error);
+        set({ isAuthenticated: false, user: null, isLoading: false });
+        get().clearLogoutTimer();
         return null;
       });
   },

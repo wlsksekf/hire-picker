@@ -1,5 +1,6 @@
 package com.hirepicker.service;
 
+import java.time.LocalDate; // LocalDate 임포트 추가
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import com.hirepicker.dto.SearchFilterDTO;
 import com.hirepicker.entity.Company;
 import com.hirepicker.entity.EmpEvent;
 import com.hirepicker.entity.JobPosting;
+import com.hirepicker.entity.JobPostingStatus;
 import com.hirepicker.repository.CompanyRepository;
 import com.hirepicker.repository.EmpEventRepository;
 import com.hirepicker.repository.JobPostingRepository;
@@ -44,9 +46,22 @@ public class EmploymentDataImpl implements EmploymentData {
 
     // 채용 공고 목록 조회
     @Override
-    public Page<JobDto> getJobs(Pageable pageable) {
+    public Page<JobDto> getJobs(Pageable pageable, String search) { // search 파라미터 추가
 
-        Page<JobPosting> jobPostings = jobPostingRepository.findAll(pageable);
+        Specification<JobPosting> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (search != null && !search.trim().isEmpty()) {
+                String lowerCaseSearch = search.trim().toLowerCase();
+                Predicate titlePredicate = cb.like(cb.lower(root.get("title")), "%" + lowerCaseSearch + "%");
+                Predicate companyNamePredicate = cb.like(cb.lower(root.join("company").get("companyName")),
+                        "%" + lowerCaseSearch + "%");
+                predicates.add(cb.or(titlePredicate, companyNamePredicate));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<JobPosting> jobPostings = jobPostingRepository.findAll(spec, pageable);
 
         List<JobDto> jobDtos = new ArrayList<>();
         for (JobPosting job : jobPostings.getContent()) {
@@ -71,6 +86,9 @@ public class EmploymentDataImpl implements EmploymentData {
                     .salaryInfo(job.getSalaryInfo())
                     .internal(internal) // 내부 지원 가능 여부
                     .applyUrl(applyUrl) // 외부 지원 링크
+                    .status(job.getStatus() != null ? job.getStatus().toString() : JobPostingStatus.OPEN.toString()) // status 필드 추가, null일 경우 OPEN으로 설정
+                    .startDate(job.getStartDate() != null ? job.getStartDate().toString() : null) // startDate 추가
+                    .endDate(job.getEndDate() != null ? job.getEndDate().toString() : null) // endDate 추가
                     .build();
 
             jobDtos.add(jobDto);
@@ -82,8 +100,20 @@ public class EmploymentDataImpl implements EmploymentData {
 
     // 채용 행사 목록 조회
     @Override
-    public Page<EventDto> getEvents(Pageable pageable) {
-        Page<EmpEvent> empEvents = empEventRepository.findAll(pageable);
+    public Page<EventDto> getEvents(Pageable pageable, String search) { // search 파라미터 추가
+        Specification<EmpEvent> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (search != null && !search.trim().isEmpty()) {
+                String lowerCaseSearch = search.trim().toLowerCase();
+                Predicate eventNamePredicate = cb.like(cb.lower(root.get("eventName")), "%" + lowerCaseSearch + "%");
+                Predicate eventCodePredicate = cb.like(cb.lower(root.get("eventCode")), "%" + lowerCaseSearch + "%");
+                predicates.add(cb.or(eventNamePredicate, eventCodePredicate));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Page<EmpEvent> empEvents = empEventRepository.findAll(spec, pageable);
 
         List<EventDto> eventDtos = new ArrayList<>();
         for (EmpEvent event : empEvents.getContent()) {
@@ -100,7 +130,8 @@ public class EmploymentDataImpl implements EmploymentData {
                 event.getEventCode(),
                 event.getEventName(),
                 event.getEventDuration(),
-                event.getArea());
+                event.getArea(),
+                event.getEventStatus()); // eventStatus 필드 추가
     }
 
     // 기업 목록 조회
@@ -154,9 +185,10 @@ public class EmploymentDataImpl implements EmploymentData {
                 company.getWelfareBenefits()); // welfare_benefits
     }
 
-    public Page<JobDto> jobFilter(SearchFilterDTO dto, Pageable pageable) {
+    public Page<JobDto> jobFilter(SearchFilterDTO dto, Pageable pageable, String dateStatus) {
         Specification<JobPosting> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            LocalDate currentDate = LocalDate.now();
 
             Map<String, List<String>> filters = dto.getFilters() == null
                     ? java.util.Collections.emptyMap()
@@ -250,6 +282,21 @@ public class EmploymentDataImpl implements EmploymentData {
                 }
             }
 
+            // 📅 날짜 상태 필터링 (dateStatus)
+            if (dateStatus != null && !dateStatus.isEmpty()) {
+                if ("available".equalsIgnoreCase(dateStatus)) {
+                    // 가능 공고: end_date가 null이거나 현재 날짜보다 크거나 같은 경우
+                    predicates.add(cb.or(
+                            cb.isNull(root.get("endDate")),
+                            cb.greaterThanOrEqualTo(root.get("endDate"), currentDate)));
+                } else if ("past".equalsIgnoreCase(dateStatus)) {
+                    // 지난 공고: end_date가 현재 날짜보다 작은 경우 (null은 제외)
+                    predicates.add(cb.and(
+                            cb.isNotNull(root.get("endDate")),
+                            cb.lessThan(root.get("endDate"), currentDate)));
+                }
+            }
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
@@ -282,6 +329,7 @@ public class EmploymentDataImpl implements EmploymentData {
                     .salaryInfo(job.getSalaryInfo())
                     .internal(internal) // 내부 지원 가능 여부
                     .applyUrl(applyUrl) // 외부 지원 링크
+                    .status(job.getStatus() != null ? job.getStatus().toString() : JobPostingStatus.OPEN.toString()) // status 필드 추가, null일 경우 OPEN으로 설정
                     .build());
         }
 
@@ -396,6 +444,7 @@ public class EmploymentDataImpl implements EmploymentData {
                 .required_qualifications(jobPosting.getRequiredQualifications())
                 .preferred_qualifications(jobPosting.getPreferredQualifications())
                 .salaryInfo(jobPosting.getSalaryInfo())
+                .status(jobPosting.getStatus() != null ? jobPosting.getStatus().toString() : JobPostingStatus.OPEN.toString()) // status 필드 추가, null일 경우 OPEN으로 설정
                 .build();
     }
 
@@ -431,6 +480,7 @@ public class EmploymentDataImpl implements EmploymentData {
                 .required_qualifications(jobPosting.getRequiredQualifications())
                 .preferred_qualifications(jobPosting.getPreferredQualifications())
                 .salaryInfo(jobPosting.getSalaryInfo())
+                .status(jobPosting.getStatus() != null ? jobPosting.getStatus().toString() : JobPostingStatus.OPEN.toString()) // status 필드 추가, null일 경우 OPEN으로 설정
                 .build();
     }
 

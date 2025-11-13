@@ -50,7 +50,9 @@ export default function LikedPostingsPage() {
   const handleRemove = useCallback(async (postingIdx) => {
     try {
       await api.delete(`/api/personal/posting-bookmarks/${postingIdx}`);
-      setBookmarks((prev) => prev.filter((item) => item.postingIdx !== postingIdx));
+      setBookmarks((prev) =>
+        prev.filter((item) => item.postingIdx !== postingIdx)
+      );
     } catch (err) {
       console.error("Failed to remove bookmarked posting:", err);
       setError("즐겨찾기 해제에 실패했습니다.");
@@ -60,7 +62,7 @@ export default function LikedPostingsPage() {
   // 상세 페이지 이동 (추후 실제 경로에 맞게 조정 필요)
   const handleNavigateDetail = useCallback(
     (postingIdx) => {
-      router.push(`/jobs/${postingIdx}`);
+      router.push(`/postings/${postingIdx}`);
     },
     [router]
   );
@@ -79,7 +81,9 @@ export default function LikedPostingsPage() {
     return (
       <Container sx={{ py: 8, textAlign: "center" }}>
         <CircularProgress />
-        <Typography sx={{ mt: 2 }}>즐겨찾기한 채용공고를 불러오는 중입니다.</Typography>
+        <Typography sx={{ mt: 2 }}>
+          즐겨찾기한 채용공고를 불러오는 중입니다.
+        </Typography>
       </Container>
     );
   }
@@ -94,7 +98,13 @@ export default function LikedPostingsPage() {
 
   return (
     <Container maxWidth={false} sx={{ pt: 4, pb: 3 }}>
-      <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>
+      <Typography
+        variant="h4"
+        component="h1"
+        fontWeight="bold"
+        gutterBottom
+        sx={{ mb: 2 }}
+      >
         즐겨찾기한 채용공고
       </Typography>
       {bookmarks.length === 0 ? (
@@ -113,7 +123,12 @@ export default function LikedPostingsPage() {
               }}
             >
               <CardContent sx={{ flexGrow: 1 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ mb: 1 }}
+                >
                   <Typography variant="h6" component="h2" fontWeight="bold">
                     {bookmark.title || "제목 없음"}
                   </Typography>
@@ -125,7 +140,11 @@ export default function LikedPostingsPage() {
                     />
                   )}
                 </Stack>
-                <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 1 }}>
+                <Typography
+                  variant="subtitle1"
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                >
                   {bookmark.companyName || "회사 정보 없음"}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
@@ -141,11 +160,20 @@ export default function LikedPostingsPage() {
                   등록일: {formatDate(bookmark.regDate)}
                 </Typography>
               </CardContent>
-              <CardActions sx={{ justifyContent: "space-between", px: 2, pb: 2 }}>
-                <Button variant="outlined" onClick={() => handleNavigateDetail(bookmark.postingIdx)}>
+              <CardActions
+                sx={{ justifyContent: "space-between", px: 2, pb: 2 }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={() => handleNavigateDetail(bookmark.postingIdx)}
+                >
                   상세보기
                 </Button>
-                <Button variant="contained" color="error" onClick={() => handleRemove(bookmark.postingIdx)}>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={() => handleRemove(bookmark.postingIdx)}
+                >
                   즐겨찾기 해제
                 </Button>
               </CardActions>
@@ -156,4 +184,3 @@ export default function LikedPostingsPage() {
     </Container>
   );
 }
-

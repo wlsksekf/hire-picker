@@ -23,7 +23,7 @@ import JobDetailModal from "@/components/JobDetailModal";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation"; // Import useSearchParams and useRouter
 
-const PAGE_SIZE = 18;
+const PAGE_SIZE = 9;
 
 function PostingsPage() {
   const theme = useTheme();
@@ -188,7 +188,7 @@ function PostingsPage() {
                   >
                     <Box
                       sx={{
-                        height: "180px", // 이미지 높이를 고정
+                        height: "160px", // 이미지 높이를 고정
                         backgroundImage: job.imgUrl
                           ? `url(/${job.imgUrl})`
                           : "none",
@@ -212,9 +212,26 @@ function PostingsPage() {
                     }}
                   >
                     <Link href={`/postings/${job.postingIdx}`} passHref>
-                      <Typography color="text.secondary" noWrap>
-                        {job.companyName}
-                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <Typography color="text.secondary" noWrap>
+                          {job.companyName}
+                        </Typography>
+                        {job.status && (
+                          <Chip
+                            label={job.status === "OPEN" ? "지원가능" : "마감"}
+                            size="small"
+                            sx={{
+                              ml: 1,
+                              fontWeight: 600,
+                              bgcolor:
+                                job.status === "OPEN"
+                                  ? theme.palette.success.light
+                                  : theme.palette.error.light,
+                              color: theme.palette.common.white,
+                            }}
+                          />
+                        )}
+                      </Box>
                     </Link>
 
                     <Typography
@@ -231,64 +248,62 @@ function PostingsPage() {
                     >
                       {job.title}
                     </Typography>
-
-                    {/* Chip 리스트 */}
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: 1,
-                        mb: 2,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {" "}
-                      {/* Chip 리스트도 줄어들지 않도록 */}
-                      {job.employmentType && (
-                        <Chip label={job.employmentType} />
-                      )}
-                      {job.location && <Chip label={job.location} />}
-                      {job.experience_level && (
-                        <Chip label={job.experience_level} />
-                      )}
-                      {job.companyType && <Chip label={job.companyType} />}
-                      {job.jobType && <Chip label={job.jobType} />}
-                      {job.startDate && job.endDate && (
-                        <Chip
-                          icon={<FontAwesomeIcon icon={faCalendar} />}
-                          label={`${job.startDate} ~ ${job.endDate}`}
-                        />
-                      )}
-                    </Box>
-
                     {/* 카드 하단 버튼들 */}
                     <CardActions
                       sx={{
                         mt: "auto",
+                        pt: 2,
                         justifyContent: "flex-end",
+                        px: 0,
                         flexShrink: 0,
                       }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                     >
-                      {" "}
-                      {/* mt: "auto"로 하단에 붙이고, 줄어들지 않도록 */}
                       <Box onClick={(e) => e.stopPropagation()}>
                         <Bookmark jobId={job.postingIdx} />
                       </Box>
                       <Button
                         variant="outlined"
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           setSelectedPost(job);
                         }}
+                        sx={{ pointerEvents: "auto", ml: 1 }}
                       >
                         실시간 채팅
                       </Button>
                       <Button
                         variant="contained"
-                        href={job.homepageUrl}
-                        target="_blank"
-                        disabled={!job.homepageUrl}
-                        onClick={(e) => e.stopPropagation()}
+                        color="primary"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          // 내부 지원 가능한 공고만 다이얼로그 열기
+                          if (job.internal) {
+                            // 내부 지원 로직 (다이얼로그 등)
+                            alert("내부 지원 기능은 메인 페이지에서 이용 가능합니다.");
+                          } else if (job.applyUrl) {
+                            // 외부 공고는 지원 링크로 이동
+                            const url = job.applyUrl.startsWith("http")
+                              ? job.applyUrl
+                              : `http://${job.applyUrl}`;
+                            window.open(url, "_blank", "noopener,noreferrer");
+                          } else {
+                            alert("지원 링크가 제공되지 않았습니다.");
+                          }
+                        }}
+                        disabled={!job.internal && !job.applyUrl}
+                        sx={{
+                          pointerEvents: "auto",
+                          ml: 1,
+                          "&:hover": {
+                            backgroundColor: "primary.dark",
+                          },
+                        }}
                       >
                         지원하기
                       </Button>

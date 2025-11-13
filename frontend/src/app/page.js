@@ -21,12 +21,13 @@ import ChatRoom from "@/components/ChatRoom";
 import SearchFilterBar from "@/components/SearchFilterBar";
 import Bookmark from "@/components/BookMark";
 import JobDetailModal from "@/components/JobDetailModal";
+import AdPostingSection from "@/components/AdPostingSection"; // 광고 공고 섹션
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import useAuthStore from "@/store/authStore";
 import ResumeApplyDialog from "@/components/ResumeApplyDialog";
 
-const PAGE_SIZE = 18;
+const PAGE_SIZE = 9;
 
 function HomePage() {
   const theme = useTheme();
@@ -118,12 +119,12 @@ function HomePage() {
       const newJobs = responseData._embedded
         ? responseData._embedded.jobDtoList
         : responseData.content || [];
-      
+
       setAppliedSearchTerm(term || "");
       setAppliedFilters(filters || {});
       setJobs(newJobs);
       setPage(0);
-      
+
       const isLast = responseData.page
         ? responseData.page.number >= responseData.page.totalPages - 1
         : false;
@@ -145,7 +146,7 @@ function HomePage() {
   function fetchNextPage() {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchJobs(nextPage, appliedSearchTerm, appliedFilters, true);
+    fetchJobs(nextPage, appliedSearchTerm, appliedFilters, false);
   }
 
   const handleApplyDialogClose = () => {
@@ -198,6 +199,12 @@ function HomePage() {
         <SearchFilterBar onSearchAndFilter={handleSearchAndFilter} />
       </Box>
 
+      {/* 광고 공고 섹션 */}
+      <AdPostingSection
+        onChatClick={setSelectedPost}
+        onApplyClick={setApplyDialogJob}
+      />
+
       <Box sx={{ pb: 8 }}>
         <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
           전체 채용공고
@@ -224,6 +231,7 @@ function HomePage() {
                     },
                   }}
                 >
+                  {/* 이미지 부분 */}
                   <Link
                     href={`/postings/${job.postingIdx}`}
                     passHref
@@ -239,21 +247,53 @@ function HomePage() {
                         backgroundPosition: "center",
                         backgroundColor: theme.palette.grey[200],
                         cursor: "pointer",
+                        flexShrink: 0,
                       }}
                     />
-                    <Box
-                      sx={{
-                        p: 3,
+                  </Link>
+
+                  {/* 카드 본문 부분 (내용 + 버튼) */}
+                  <Box
+                    sx={{
+                      p: 3,
+                      display: "flex",
+                      flexDirection: "column",
+                      flexGrow: 1,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {/* 내용 영역 */}
+                    <Link
+                      href={`/postings/${job.postingIdx}`}
+                      passHref
+                      style={{
+                        textDecoration: "none",
+                        color: "inherit",
+                        flexGrow: 1,
                         display: "flex",
                         flexDirection: "column",
-                        justifyContent: "space-between",
-                        height: "calc(100% - 180px)",
-                        cursor: "pointer",
                       }}
                     >
-                      <Typography color="text.secondary" noWrap>
-                        {job.companyName}
-                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <Typography color="text.secondary" noWrap>
+                          {job.companyName}
+                        </Typography>
+                        {job.status && (
+                          <Chip
+                            label={job.status === "OPEN" ? "지원가능" : "마감"}
+                            size="small"
+                            sx={{
+                              ml: 1,
+                              fontWeight: 600,
+                              bgcolor:
+                                job.status === "OPEN"
+                                  ? theme.palette.success.light
+                                  : theme.palette.error.light,
+                              color: theme.palette.common.white,
+                            }}
+                          />
+                        )}
+                      </Box>
                       <Typography
                         variant="h5"
                         fontWeight="bold"
@@ -263,11 +303,20 @@ function HomePage() {
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: "vertical",
                           overflow: "hidden",
+                          flexShrink: 0,
                         }}
                       >
                         {job.title}
                       </Typography>
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 1,
+                          mb: 2,
+                          flexShrink: 0,
+                        }}
+                      >
                         {job.employmentType && (
                           <Chip label={job.employmentType} />
                         )}
@@ -284,68 +333,64 @@ function HomePage() {
                           />
                         )}
                       </Box>
-                    </Box>
-                  </Link>
-                  <CardActions 
-                    sx={{ 
-                      mt: 2, 
-                      justifyContent: "flex-end", 
-                      px: 3, 
-                      pb: 2,
-                      position: 'relative',
-                      zIndex: 10
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                  >
-                    <Box onClick={(e) => e.stopPropagation()}>
-                      <Bookmark jobId={job.postingIdx} />
-                    </Box>
-                    <Button
-                      variant="outlined"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setSelectedPost(job);
-                      }}
-                      sx={{ pointerEvents: 'auto' }}
-                    >
-                      실시간 채팅
-                    </Button>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // 내부 지원 가능한 공고(c_user가 있는 경우)만 다이얼로그 열기
-                        if (job.internal) {
-                          setApplyDialogJob(job);
-                        } else if (job.applyUrl) {
-                          // 외부 공고는 지원 링크로 이동
-                          const url = job.applyUrl.startsWith('http') 
-                            ? job.applyUrl 
-                            : `http://${job.applyUrl}`;
-                          window.open(url, '_blank', 'noopener,noreferrer');
-                        } else {
-                          alert('지원 링크가 제공되지 않았습니다.');
-                        }
-                      }}
-                      disabled={!job.internal && !job.applyUrl}
-                      sx={{ 
-                        pointerEvents: 'auto',
-                        position: 'relative',
-                        zIndex: 11,
-                        '&:hover': {
-                          backgroundColor: 'primary.dark',
-                        }
-                      }}
-                    >
-                      지원하기
-                    </Button>
-                  </CardActions>
+                      <CardActions
+                        sx={{
+                          mt: 2,
+                          justifyContent: "flex-end",
+                          px: 0,
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                      >
+                        <Box onClick={(e) => e.stopPropagation()}>
+                          <Bookmark jobId={job.postingIdx} />
+                        </Box>
+                        <Button
+                          variant="outlined"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedPost(job);
+                          }}
+                          sx={{ pointerEvents: "auto", ml: 1 }}
+                        >
+                          실시간 채팅
+                        </Button>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // 내부 지원 가능한 공고(c_user가 있는 경우)만 다이얼로그 열기
+                            if (job.internal) {
+                              setApplyDialogJob(job);
+                            } else if (job.applyUrl) {
+                              // 외부 공고는 지원 링크로 이동
+                              const url = job.applyUrl.startsWith("http")
+                                ? job.applyUrl
+                                : `http://${job.applyUrl}`;
+                              window.open(url, "_blank", "noopener,noreferrer");
+                            } else {
+                              alert("지원 링크가 제공되지 않았습니다.");
+                            }
+                          }}
+                          disabled={!job.internal && !job.applyUrl}
+                          sx={{
+                            pointerEvents: "auto",
+                            ml: 1,
+                            "&:hover": {
+                              backgroundColor: "primary.dark",
+                            },
+                          }}
+                        >
+                          지원하기
+                        </Button>
+                      </CardActions>
+                    </Link>
+                  </Box>
                 </Card>
               </Grid>
             );

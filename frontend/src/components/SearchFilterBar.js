@@ -11,6 +11,8 @@ import {
   Checkbox,
   Divider,
   IconButton,
+  RadioGroup, // RadioGroup 임포트 추가
+  Radio, // Radio 임포트 추가
 } from "@mui/material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRedo, faClose } from "@fortawesome/free-solid-svg-icons";
@@ -47,6 +49,7 @@ const EXPERIENCE_LEVELS = ["학력무관", "고졸", "초대졸", "대졸", "석
 const COMPANY_TYPES = ["대기업", "중견기업", "중소기업", "공기업", "기타"];
 const SOURCE_TYPES = ["내부 지원 가능 공고", "외부 공고"];
 const OVERSEAS_TYPES = ["국내 공고", "해외 공고"];
+const DATE_STATUS_OPTIONS = ["전체", "가능 공고", "지난 공고"]; // 새로운 날짜 상태 필터 옵션
 
 /**
  * ==============================
@@ -70,9 +73,10 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
     source: [],
     overseas: [],
   });
+  const [dateStatus, setDateStatus] = useState("전체"); // 새로운 날짜 상태 필터
   const [anchorEl, setAnchorEl] = useState(null); // Popover 기준 엘리먼트
   const [currentFilterType, setCurrentFilterType] = useState(null); // 현재 팝업 필터 카테고리
-  const PAGE_SIZE = 18;
+  const PAGE_SIZE = 9;
   /** ==============================
    * 필터 옵션 반환
    * ============================== */
@@ -92,9 +96,18 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
         return SOURCE_TYPES;
       case "overseas":
         return OVERSEAS_TYPES;
+      case "dateStatus": // 새로운 날짜 상태 필터 옵션
+        return DATE_STATUS_OPTIONS;
       default:
         return [];
     }
+  }
+
+  /** ==============================
+   * 날짜 상태 필터 변경 함수 (단일 선택)
+   * ============================== */
+  function handleDateStatusChange(value) {
+    setDateStatus(value);
   }
 
   /** ==============================
@@ -122,15 +135,23 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
    * - 성공 시 onSearchAndFilter 콜백에 결과 전달
    */
   function handleSearch() {
+    const filtersToSend = { ...filters };
+    if (dateStatus !== "전체") {
+      filtersToSend.dateStatus = [
+        dateStatus === "가능 공고" ? "available" : "past",
+      ];
+    }
+
     axios
       .post(`/api/search?page=0&size=${PAGE_SIZE}`, {
         searchTerm: searchTerm,
-        filters: filters,
+        filters: filtersToSend,
       })
       .then(function (response) {
         console.log("✅ /api/search 응답:", response.data);
         console.dir(response.data, { depth: null });
-        onSearchAndFilter(searchTerm, filters, response.data);
+        onSearchAndFilter(searchTerm, filtersToSend, response.data);
+        handleClosePopover(); // 검색 성공 시 팝업 닫기
       })
       .catch(function (error) {
         console.error("검색 중 오류 발생:", error);
@@ -146,13 +167,21 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
    * - '/api/filter'로 보내도록 예시 (서버 구조에 따라 '/api/search' 하나로 통합 가능)
    */
   function handleApplyFilters() {
+    const filtersToSend = { ...filters };
+    if (dateStatus !== "전체") {
+      filtersToSend.dateStatus = [
+        dateStatus === "가능 공고" ? "available" : "past",
+      ];
+    }
+
     axios
       .post(`/api/search?page=0&size=${PAGE_SIZE}`, {
         searchTerm: searchTerm,
-        filters: filters,
+        filters: filtersToSend,
       })
       .then(function (response) {
-        onSearchAndFilter(searchTerm, filters, response.data);
+        onSearchAndFilter(searchTerm, filtersToSend, response.data);
+        handleClosePopover(); // 필터 적용 성공 시 팝업 닫기
       })
       .catch(function (error) {
         console.error("필터 적용 중 오류:", error);
@@ -168,7 +197,7 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
    * - 초기 상태 POST 요청
    */
   function handleResetAll() {
-    const empty = {
+    const emptyFilters = {
       jobType: [],
       location: [],
       employmentType: [],
@@ -178,15 +207,20 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
       overseas: [],
     };
     setSearchTerm("");
-    setFilters(empty);
+    setFilters(emptyFilters);
+    setDateStatus("전체"); // dateStatus 초기화
+
+    const filtersToSend = { ...emptyFilters };
+    // "전체" 상태는 백엔드로 보내지 않으므로, dateStatus 필터는 추가하지 않음
 
     axios
       .post("/api/search", {
         searchTerm: "",
-        filters: empty,
+        filters: filtersToSend,
       })
       .then(function (response) {
-        onSearchAndFilter("", empty, response.data);
+        onSearchAndFilter("", filtersToSend, response.data);
+        handleClosePopover(); // 초기화 성공 시 팝업 닫기
       })
       .catch(function (error) {
         console.error("초기화 중 오류:", error);
@@ -223,7 +257,7 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
    * 선택 개수 반환
    * ============================== */
   function getFilterCount(type) {
-    return filters[type].length;
+    return filters[type]?.length || 0; // filters[type]이 없으면 0을 반환
   }
 
   /** ==============================
@@ -249,12 +283,17 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
         <TextField
           fullWidth
           variant="outlined"
-          placeholder="기업, 공고, 콘텐츠 검색"
+          placeholder="기업명 검색"
           value={searchTerm}
           onChange={handleInputChange} // 입력 이벤트
           onKeyPress={handleKeyPress} // 엔터 이벤트
           InputProps={{
-            sx: { borderRadius: "50px", p: "8px 16px", fontSize: "1.1rem", height: "40px" },
+            sx: {
+              borderRadius: "50px",
+              p: "8px 16px",
+              fontSize: "1.1rem",
+              height: "40px",
+            },
             endAdornment: (
               <IconButton onClick={handleSearch}>
                 {" "}
@@ -299,20 +338,32 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
           ["companyType", "기업 종류"],
           ["source", "내부 지원 가능 공고"],
           ["overseas", "국가"],
+          ["dateStatus", "공고 날짜"],
         ].map(function (item) {
           const key = item[0];
           const label = item[1];
+          const isDateStatus = key === "dateStatus";
+          const isDateStatusActive = isDateStatus && dateStatus !== "전체";
+
           return (
             <Button
               key={key}
-              variant={getFilterCount(key) > 0 ? "contained" : "outlined"}
+              variant={
+                isDateStatusActive || getFilterCount(key) > 0
+                  ? "contained"
+                  : "outlined"
+              }
               onClick={function (e) {
                 handleOpenPopover(e, key);
               }}
               sx={{ borderRadius: "8px" }}
             >
               {label}{" "}
-              {getFilterCount(key) > 0 ? "(" + getFilterCount(key) + ")" : ""}
+              {isDateStatusActive
+                ? "(" + dateStatus + ")"
+                : getFilterCount(key) > 0
+                ? "(" + getFilterCount(key) + ")"
+                : ""}
             </Button>
           );
         })}
@@ -363,6 +414,8 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
             {currentFilterType === "companyType" && "기업 종류"}
             {currentFilterType === "source" && "내부 지원 가능 공고"}
             {currentFilterType === "overseas" && "국가"}
+            {currentFilterType === "dateStatus" && "공고 상태"}{" "}
+            {/* 새로운 필터 카테고리 */}
           </Typography>
           <IconButton onClick={handleClosePopover} size="small">
             <FontAwesomeIcon icon={faClose} />
@@ -370,33 +423,56 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
         </Box>
 
         {/* 체크박스 목록 */}
-        <FormGroup
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 0.5,
-          }}
-        >
-          {currentFilterType &&
-            getFilterOptions(currentFilterType).map(function (option) {
+        {currentFilterType !== "dateStatus" && ( // dateStatus가 아닐 때만 체크박스 목록 표시
+          <FormGroup
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 0.5,
+            }}
+          >
+            {currentFilterType &&
+              getFilterOptions(currentFilterType).map(function (option) {
+                return (
+                  <FormControlLabel
+                    key={option}
+                    control={
+                      <Checkbox
+                        checked={filters[currentFilterType].includes(option)}
+                        onChange={function () {
+                          handleFilterChange(currentFilterType, option);
+                        }}
+                        size="small"
+                      />
+                    }
+                    label={option}
+                    sx={{ m: 0 }}
+                  />
+                );
+              })}
+          </FormGroup>
+        )}
+
+        {currentFilterType === "dateStatus" && ( // dateStatus일 때 라디오 버튼 목록 표시
+          <RadioGroup
+            value={dateStatus}
+            onChange={function (e) {
+              handleDateStatusChange(e.target.value);
+            }}
+            sx={{ display: "flex", flexDirection: "row", gap: 2 }}
+          >
+            {DATE_STATUS_OPTIONS.map(function (option) {
               return (
                 <FormControlLabel
                   key={option}
-                  control={
-                    <Checkbox
-                      checked={filters[currentFilterType].includes(option)}
-                      onChange={function () {
-                        handleFilterChange(currentFilterType, option);
-                      }}
-                      size="small"
-                    />
-                  }
+                  value={option}
+                  control={<Radio size="small" />}
                   label={option}
-                  sx={{ m: 0 }}
                 />
               );
             })}
-        </FormGroup>
+          </RadioGroup>
+        )}
 
         <Divider sx={{ my: 2 }} />
 
@@ -404,7 +480,11 @@ export default function SearchFilterBar({ onSearchAndFilter }) {
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
           <Button
             onClick={function () {
-              handleResetFilters(currentFilterType);
+              if (currentFilterType === "dateStatus") {
+                setDateStatus("전체"); // dateStatus 초기화
+              } else {
+                handleResetFilters(currentFilterType);
+              }
             }}
           >
             초기화

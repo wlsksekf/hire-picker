@@ -1,9 +1,9 @@
 package com.hirepicker.repository;
 
 import com.hirepicker.entity.CompanyUser;
-import org.springframework.data.jpa.repository.JpaRepository;
-
+import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CompanyUserRepository extends JpaRepository<CompanyUser, Long> {
     Optional<CompanyUser> findByLoginId(String loginId);
@@ -16,4 +16,6 @@ public interface CompanyUserRepository extends JpaRepository<CompanyUser, Long> 
 
     // 로그인 아이디 존재 여부 확인 메서드
     boolean existsByLoginId(String loginId);
+
+    List<CompanyUser> findByIsApproved(String isApproved); // 승인 상태별 목록 조회
 }

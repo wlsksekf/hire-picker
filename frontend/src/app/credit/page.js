@@ -3,7 +3,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
-import { getCreditProducts, getMarketplaceResumes, purchaseResume } from "@/api";
+import { getCreditProducts, getMarketplaceResumes, purchaseResume, api } from "@/api";
 import CreditProductCard from "@/components/CreditProductCard";
 import ClawToggle from "@/components/ClawToggle";
 import ClawButton from "@/components/ClawButton";
@@ -307,6 +307,11 @@ const CreditPage = () => {
   const user = useAuthStore((state) => state.user);
   const userTypeRaw = user?.userType || user?.user_type || "";
   const isPersonal = typeof userTypeRaw === "string" && userTypeRaw.toUpperCase() === "PERSONAL";
+  const isCompany = typeof userTypeRaw === "string" && userTypeRaw.toUpperCase() === "COMPANY";
+  
+  // 회사회원용 광고 공고 상태
+  const [myJobPostings, setMyJobPostings] = useState([]);
+  const [adLoading, setAdLoading] = useState(false);
 
   useEffect(() => {
     getCreditProducts()
@@ -337,9 +342,27 @@ const CreditPage = () => {
       .finally(() => setMarketLoading(false));
   };
 
+  const loadMyJobPostings = () => {
+    if (!isCompany) {
+      setMyJobPostings([]);
+      return;
+    }
+    setAdLoading(true);
+    api.get("/api/companies/my/job-postings")
+      .then((res) => {
+        setMyJobPostings(res.data || []);
+      })
+      .catch((err) => {
+        console.error("채용공고 목록을 불러오는 중 오류", err);
+        setFeedback({ type: "error", message: "채용공고 목록을 불러오지 못했습니다." });
+      })
+      .finally(() => setAdLoading(false));
+  };
+
   useEffect(() => {
     loadMarketplace();
-  }, [isPersonal]);
+    loadMyJobPostings();
+  }, [isPersonal, isCompany]);
 
   useEffect(() => {
     if (!feedback) return;
@@ -355,9 +378,19 @@ const CreditPage = () => {
       });
       return;
     }
+    if (key === "ad" && !isCompany) {
+      setFeedback({
+        type: "error",
+        message: "광고 공고 등록 기능은 회사 회원 전용입니다.",
+      });
+      return;
+    }
     setActiveTab(key);
     if (key === "market" && marketResumes.length === 0 && !marketLoading) {
       loadMarketplace();
+    }
+    if (key === "ad" && myJobPostings.length === 0 && !adLoading) {
+      loadMyJobPostings();
     }
   };
 
@@ -399,6 +432,58 @@ const CreditPage = () => {
         error?.response?.data?.message ||
         error?.message ||
         "이력서 구매 중 오류가 발생했습니다.";
+      setFeedback({ type: "error", message });
+    } finally {
+      setPurchaseLoadingId(null);
+    }
+  };
+
+  const handleRegisterAd = async (posting) => {
+    if (!isCompany) {
+      setFeedback({
+        type: "error",
+        message: "광고 공고 등록은 회사 회원만 가능합니다.",
+      });
+      return;
+    }
+    
+    if (balance < 10000) {
+      setFeedback({
+        type: "error",
+        message: "크레딧이 부족합니다. 최소 10,000 크레딧이 필요합니다.",
+      });
+      return;
+    }
+
+    if (!window.confirm(`"${posting.title}" 공고를 광고로 등록하시겠습니까?\n10,000 크레딧이 차감됩니다.`)) {
+      return;
+    }
+
+    try {
+      setPurchaseLoadingId(posting.postingIdx);
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 7); // 기본 7일간 광고
+
+      await api.post("/api/ad-postings", {
+        postingIdx: posting.postingIdx,
+        startDate: startDate.toISOString().slice(0, 19),
+        endDate: endDate.toISOString().slice(0, 19),
+      });
+
+      setBalance(balance - 10000);
+      setFeedback({ 
+        type: "success", 
+        message: "광고가 성공적으로 등록되었습니다! 메인 페이지에서 확인하세요." 
+      });
+      
+      // 목록 새로고침
+      loadMyJobPostings();
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "광고 등록 중 오류가 발생했습니다.";
       setFeedback({ type: "error", message });
     } finally {
       setPurchaseLoadingId(null);
@@ -457,6 +542,11 @@ const CreditPage = () => {
               이력서 거래
             </TabButton>
           )}
+          {isCompany && (
+            <TabButton $active={activeTab === "ad"} onClick={() => handleTabChange("ad")}>
+              광고 공고 등록
+            </TabButton>
+          )}
         </TabBar>
 
         {feedback && (
@@ -492,7 +582,7 @@ const CreditPage = () => {
               </ButtonRow>
             </ControlSection>
           </>
-        ) : (
+        ) : activeTab === "market" ? (
           <MarketplaceSection>
             {marketLoading ? (
               <LoadingPlaceholder>
@@ -542,6 +632,57 @@ const CreditPage = () => {
                     </MarketCard>
                   );
                 })}
+              </ResumeMarketGrid>
+            )}
+          </MarketplaceSection>
+        ) : (
+          <MarketplaceSection>
+            {adLoading ? (
+              <LoadingPlaceholder>
+                <CircularProgress size={28} />
+                <span>채용공고 목록을 불러오는 중입니다…</span>
+              </LoadingPlaceholder>
+            ) : myJobPostings.length === 0 ? (
+              <EmptyMarket>
+                <h3>등록된 채용공고가 없습니다.</h3>
+                <p>먼저 채용공고를 등록한 후 광고로 프로모션할 수 있습니다.</p>
+              </EmptyMarket>
+            ) : (
+              <ResumeMarketGrid>
+                {myJobPostings.map((posting) => (
+                  <MarketCard key={posting.postingIdx}>
+                    <MarketHeader>
+                      <CardTitle>{posting.title}</CardTitle>
+                      <OwnerLine>{posting.companyName}</OwnerLine>
+                      <StatusBadge>📍 {posting.location || "위치 미정"}</StatusBadge>
+                    </MarketHeader>
+                    <SummaryText>
+                      {posting.description 
+                        ? posting.description.substring(0, 100) + (posting.description.length > 100 ? "..." : "")
+                        : "공고 설명이 없습니다."}
+                    </SummaryText>
+                    <MarketMeta>
+                      마감일: {posting.deadline ? new Date(posting.deadline).toLocaleDateString() : "미정"}
+                    </MarketMeta>
+                    <CardFooter>
+                      <PriceInfo>
+                        <PriceLabel>광고 등록 비용</PriceLabel>
+                        <PriceTag>10,000 C</PriceTag>
+                      </PriceInfo>
+                      <PurchaseButton
+                        type="button"
+                        onClick={() => handleRegisterAd(posting)}
+                        disabled={purchaseLoadingId === posting.postingIdx || balance < 10000}
+                      >
+                        {purchaseLoadingId === posting.postingIdx
+                          ? "처리 중…"
+                          : balance < 10000
+                          ? "크레딧 부족"
+                          : "광고 등록"}
+                      </PurchaseButton>
+                    </CardFooter>
+                  </MarketCard>
+                ))}
               </ResumeMarketGrid>
             )}
           </MarketplaceSection>
