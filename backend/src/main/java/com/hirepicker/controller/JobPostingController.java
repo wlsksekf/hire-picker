@@ -93,8 +93,6 @@ public class JobPostingController {
         }
     }
 
-<<<<<<< HEAD
-=======
     @Operation(summary = "채용 공고 삭제 (관리자용)", description = "posting_idx를 이용하여 채용 공고를 삭제합니다. 관리자만 접근 가능합니다.")
     @DeleteMapping("/{postingIdx}")
     @Transactional
@@ -146,5 +144,4 @@ public class JobPostingController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(Map.of("message", "해당 posting_idx의 채용 공고를 찾을 수 없습니다.")));
     }
->>>>>>> dev
 }
