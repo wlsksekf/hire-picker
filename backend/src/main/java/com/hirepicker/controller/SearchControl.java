@@ -61,15 +61,15 @@ public class SearchControl {
         List<String> companyTypes = filters.get("companyType");
         List<String> sources = filters.get("source");
 
-        System.out.println("===== 🔍 검색 요청 도착 =====");
-        System.out.println("검색어: " + keyword);
-        System.out.println("지역: " + locations);
-        System.out.println("직종: " + jobTypes);
-        System.out.println("고용형태: " + employmentTypes);
-        System.out.println("학력: " + experienceLevels);
-        System.out.println("기업형태: " + companyTypes);
-        System.out.println("공고 출처: " + sources);
-        System.out.println("============================");
+        // System.out.println("===== 🔍 검색 요청 도착 =====");
+        // System.out.println("검색어: " + keyword);
+        // System.out.println("지역: " + locations);
+        // System.out.println("직종: " + jobTypes);
+        // System.out.println("고용형태: " + employmentTypes);
+        // System.out.println("학력: " + experienceLevels);
+        // System.out.println("기업형태: " + companyTypes);
+        // System.out.println("공고 출처: " + sources);
+        // System.out.println("============================");
 
         return employmentDataImpl.jobFilter(dto, pageable);
     }
@@ -82,7 +82,7 @@ public class SearchControl {
     public Map<String, Object> check(
             @Parameter(description = "채용공고 ID (jobId)", required = true) @RequestBody Map<String, Object> body) {
 
-        System.out.println("-----------------------------------" + body);
+        // System.out.println("-----------------------------------" + body);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Map<String, Object> m = new HashMap<>();
 
@@ -90,7 +90,7 @@ public class SearchControl {
         if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
             m.put("LoggedIn", false);
             m.put("Bookmarked", false); // 북마크 여부 기본값 (예: 로그인 안 되어 있으면 false)
-            System.out.println("❌ 로그인 안 된 상태");
+            // System.out.println("❌ 로그인 안 된 상태");
             return m;
         }
 

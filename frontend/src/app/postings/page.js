@@ -206,71 +206,71 @@ function PostingsPage() {
                       p: 3,
                       display: "flex",
                       flexDirection: "column",
-                      justifyContent: "space-between",
-                      flexGrow: 1, // 남은 공간을 채우도록 설정
-                      overflow: "hidden", // 콘텐츠가 넘칠 경우 숨김
+                      flexGrow: 1,
+                      overflow: "hidden",
                     }}
                   >
-                    <Link href={`/postings/${job.postingIdx}`} passHref>
-                      <Typography color="text.secondary" noWrap>
+                    {/* 내용 영역 */}
+                    <Link 
+                      href={`/postings/${job.postingIdx}`} 
+                      passHref
+                      style={{ textDecoration: "none", color: "inherit", flexGrow: 1, display: "flex", flexDirection: "column" }}
+                    >
+                      <Typography color="text.secondary" noWrap sx={{ mb: 1 }}>
                         {job.companyName}
                       </Typography>
+                      <Typography
+                        variant="h5"
+                        fontWeight="bold"
+                        sx={{
+                          mb: 2,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {job.title}
+                      </Typography>
+                      {/* Chip 리스트 */}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 1,
+                          mb: 2,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {job.employmentType && (
+                          <Chip label={job.employmentType} />
+                        )}
+                        {job.location && <Chip label={job.location} />}
+                        {job.experience_level && (
+                          <Chip label={job.experience_level} />
+                        )}
+                        {job.companyType && <Chip label={job.companyType} />}
+                        {job.jobType && <Chip label={job.jobType} />}
+                        {job.startDate && job.endDate && (
+                          <Chip
+                            icon={<FontAwesomeIcon icon={faCalendar} />}
+                            label={`${job.startDate} ~ ${job.endDate}`}
+                          />
+                        )}
+                      </Box>
                     </Link>
 
-                    <Typography
-                      variant="h5"
-                      fontWeight="bold"
-                      sx={{
-                        mb: 2,
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                        flexShrink: 0, // 타이틀이 줄어들지 않도록
-                      }}
-                    >
-                      {job.title}
-                    </Typography>
-
-                    {/* Chip 리스트 */}
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: 1,
-                        mb: 2,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {" "}
-                      {/* Chip 리스트도 줄어들지 않도록 */}
-                      {job.employmentType && (
-                        <Chip label={job.employmentType} />
-                      )}
-                      {job.location && <Chip label={job.location} />}
-                      {job.experience_level && (
-                        <Chip label={job.experience_level} />
-                      )}
-                      {job.companyType && <Chip label={job.companyType} />}
-                      {job.jobType && <Chip label={job.jobType} />}
-                      {job.startDate && job.endDate && (
-                        <Chip
-                          icon={<FontAwesomeIcon icon={faCalendar} />}
-                          label={`${job.startDate} ~ ${job.endDate}`}
-                        />
-                      )}
-                    </Box>
-
-                    {/* 카드 하단 버튼들 */}
+                    {/* 카드 하단 버튼들 - 하단 정렬 */}
                     <CardActions
                       sx={{
                         mt: "auto",
+                        pt: 2,
                         justifyContent: "flex-end",
+                        px: 0,
                         flexShrink: 0,
                       }}
                     >
-                      {" "}
-                      {/* mt: "auto"로 하단에 붙이고, 줄어들지 않도록 */}
                       <Box onClick={(e) => e.stopPropagation()}>
                         <Bookmark jobId={job.postingIdx} />
                       </Box>
@@ -280,6 +280,7 @@ function PostingsPage() {
                           e.stopPropagation();
                           setSelectedPost(job);
                         }}
+                        sx={{ ml: 1 }}
                       >
                         실시간 채팅
                       </Button>
@@ -289,6 +290,7 @@ function PostingsPage() {
                         target="_blank"
                         disabled={!job.homepageUrl}
                         onClick={(e) => e.stopPropagation()}
+                        sx={{ ml: 1 }}
                       >
                         지원하기
                       </Button>
