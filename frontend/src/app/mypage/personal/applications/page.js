@@ -1,51 +1,104 @@
 'use client';
 
-import React from 'react';
-import { Box, Typography, Paper, Chip } from '@mui/material';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Box, Typography, Paper, Chip, CircularProgress, Alert } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
+import { api } from '@/api';
 
-// DataGrid 컬럼 정의
-const columns = [
-  { field: 'company', headerName: '회사명', width: 150 },
-  { field: 'posting', headerName: '채용공고', width: 300 },
-  { field: 'applyDate', headerName: '지원일', width: 150 },
-  {
-    field: 'status',
-    headerName: '상태',
-    width: 150,
-    renderCell: function(params) {
-        let color = 'default';
-        if (params.value === '서류 통과') color = 'success';
-        if (params.value === '불합격') color = 'error';
-        return <Chip label={params.value} color={color} size="small" />;
-    }
-  },
-];
+// 지원 상태 → 표시용 텍스트/색상 매핑
+const STATUS_LABEL_MAP = {
+  APPLIED: '지원 완료',
+  PASSED: '서류 통과',
+  INTERVIEW: '면접 진행',
+  REJECTED: '불합격',
+};
 
-// DataGrid 행 데이터 (예시)
-const rows = [
-  { id: 1, company: '(주)카카오', posting: 'AI 추천 서비스 백엔드 개발자', applyDate: '2024-10-20', status: '서류 통과' },
-  { id: 2, company: '네이버웹툰', posting: '시니어 프론트엔드 개발자', applyDate: '2024-10-18', status: '지원 완료' },
-  { id: 3, company: '(주)우아한형제들', posting: '배민선물하기 서버 개발자', applyDate: '2024-10-15', status: '불합격' },
-  { id: 4, company: '토스뱅크', posting: '서버 개발자 (신입)', applyDate: '2024-10-12', status: '지원 완료' },
-];
+const STATUS_COLOR_MAP = {
+  APPLIED: 'default',
+  PASSED: 'success',
+  INTERVIEW: 'info',
+  REJECTED: 'error',
+};
 
 // 개인 마이페이지 - 지원 현황 컴포넌트
 function ApplicationStatus() {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await api.get('/api/personal/applications');
+        const data = response.data || [];
+        const mappedRows = data.map((item) => ({
+          id: `${item.resumeIdx}-${item.postingIdx}`,
+          company: item.companyName || '회사 정보 없음',
+          posting: item.postingTitle || '공고 정보 없음',
+          applyDate: item.appliedAt
+            ? new Date(item.appliedAt).toLocaleDateString()
+            : '지원일 정보 없음',
+          status: item.status || 'APPLIED',
+        }));
+        setRows(mappedRows);
+      } catch (err) {
+        console.error('Failed to load applications:', err);
+        setError('지원 현황 정보를 불러오지 못했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchApplications();
+  }, []);
+
+  const columns = useMemo(() => [
+    { field: 'company', headerName: '회사명', flex: 1, minWidth: 160 },
+    { field: 'posting', headerName: '채용공고', flex: 2, minWidth: 240 },
+    { field: 'applyDate', headerName: '지원일', width: 140 },
+    {
+      field: 'status',
+      headerName: '상태',
+      width: 150,
+      renderCell: (params) => {
+        const rawStatus = params.value || 'APPLIED';
+        const label = STATUS_LABEL_MAP[rawStatus] || rawStatus;
+        const color = STATUS_COLOR_MAP[rawStatus] || 'default';
+        return <Chip label={label} color={color} size="small" />;
+      },
+    },
+  ], []);
+
   return (
     <Paper sx={{ p: 3 }}>
-        <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
-            지원 현황
-        </Typography>
-      <Box sx={{ height: 400, width: '100%', mt: 3 }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          pageSize={5}
-          rowsPerPageOptions={[5]}
-          disableSelectionOnClick
-        />
-      </Box>
+      <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
+        지원 현황
+      </Typography>
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
+          <CircularProgress />
+        </Box>
+      ) : error ? (
+        <Alert severity="error" sx={{ mt: 3 }}>
+          {error}
+        </Alert>
+      ) : (
+        <Box sx={{ height: 400, width: '100%', mt: 3 }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            pageSizeOptions={[5, 10]}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 5 } },
+            }}
+            disableRowSelectionOnClick
+            disableColumnMenu
+          />
+        </Box>
+      )}
     </Paper>
   );
 }
