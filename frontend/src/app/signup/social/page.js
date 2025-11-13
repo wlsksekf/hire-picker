@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TextField, Button, Container, Typography, Box, Alert, CircularProgress, MenuItem } from '@mui/material';
-import { Autocomplete } from '@react-google-maps/api';
 import { api } from '@/api';
 import useAuthStore from '@/store/authStore';
 import { StyledFormWrapper } from '@/components/StyledForm';
@@ -28,8 +27,6 @@ export default function SocialSignupPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const autocompleteRef = useRef(null);
-
     // 페이지 접근 시 인증 상태 확인
     useEffect(() => {
         if (!isAuthenticated || !user) {
@@ -46,23 +43,6 @@ export default function SocialSignupPage() {
         } else {
             setFormData(prevData => ({ ...prevData, [name]: value }));
         }
-    };
-
-    const handleAutocompleteLoad = (autocomplete) => {
-        autocompleteRef.current = autocomplete;
-    };
-
-    const handlePlaceChanged = () => {
-        if (autocompleteRef.current) {
-            const place = autocompleteRef.current.getPlace();
-            if (place && place.formatted_address) {
-                setFormData(prevData => ({ ...prevData, address: place.formatted_address }));
-            }
-        }
-    };
-
-    const handleAddressChange = (e) => {
-        setFormData(prevData => ({ ...prevData, address: e.target.value }));
     };
 
     const handleSubmit = (e) => {
@@ -107,24 +87,6 @@ export default function SocialSignupPage() {
             </Box>
         );
     }
-
-    const renderAddressInput = () => {
-        // AppProviders의 LoadScript로 이미 로드되므로 바로 사용 가능
-        return (
-            <Autocomplete
-                onLoad={handleAutocompleteLoad}
-                onPlaceChanged={handlePlaceChanged}
-            >
-                <TextField
-                    id="address"
-                    name="address"
-                    fullWidth
-                    value={formData.address}
-                    onChange={handleAddressChange}
-                />
-            </Autocomplete>
-        );
-    };
 
     return (
         <StyledFormWrapper>
@@ -192,7 +154,14 @@ export default function SocialSignupPage() {
 
                     <div className="input-group">
                         <label htmlFor="address">주소</label>
-                        {renderAddressInput()}
+                        <TextField
+                            id="address"
+                            name="address"
+                            fullWidth
+                            value={formData.address}
+                            onChange={handleChange}
+                            placeholder="주소를 입력하세요"
+                        />
                     </div>
 
                     <button type="submit" className="sign" disabled={loading}>
