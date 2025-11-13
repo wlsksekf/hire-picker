@@ -1,6 +1,7 @@
 package com.hirepicker.service;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -345,6 +346,7 @@ public class AuthService {
                 .email(request.getEmail())
                 .phoneNumber(request.getPhone_number())
                 .company(company)
+                .regDate(LocalDate.now()) // 가입 당일을 등록일로 저장
                 .build();
 
         CompanyUser savedUser = companyUserRepository.save(newUser);
@@ -410,6 +412,7 @@ public class AuthService {
                 .company(company)
                 .verificationFile(fileUrl) // S3 URL 저장
                 .isApproved(ApprovalStatus.PENDING) // 승인 대기 상태
+                .regDate(LocalDate.now()) // 가입 당일을 등록일로 저장
                 .build();
 
         CompanyUser savedUser = companyUserRepository.save(newUser);
