@@ -31,7 +31,7 @@ import InquiryManagementTab from './components/InquiryManagementTab';
 const NAV_TABS = [
   { label: '결제 통계', icon: <PaymentsRoundedIcon /> },
   { label: '커뮤니티', icon: <Diversity3RoundedIcon /> },
-  { label: '기업 승인', icon: <DomainVerificationRoundedIcon /> },
+  { label: '기업회원 승인', icon: <DomainVerificationRoundedIcon /> },
   { label: '공고 관리', icon: <AssignmentTurnedInIcon /> },
   { label: '1:1 문의', icon: <ForumRoundedIcon /> },
 ];

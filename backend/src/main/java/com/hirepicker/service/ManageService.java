@@ -132,7 +132,7 @@ public class ManageService {
 
     @Transactional(readOnly = true)
     public List<PendingCompanyApprovalDto> getPendingCompanyApprovals() {
-        // 승인 대기 중인 기업회원만 모아 관리자에게 전달
+        // 승인 대기(PENDING) 상태인 기업회원만 조회하여 관리자에게 내려준다
         return companyUserRepository.findByIsApproved(ApprovalStatus.PENDING)
                 .stream()
                 .map(user -> {
@@ -156,7 +156,7 @@ public class ManageService {
     public void approveCompanyUser(Long companyUserId) {
         CompanyUser companyUser = companyUserRepository.findById(companyUserId)
                 .orElseThrow(() -> new IllegalArgumentException("승인 대상 기업회원이 존재하지 않습니다."));
-
+        // 관리자 승인 시 상태를 APPROVED로 바꾸고 마지막 수정일을 오늘 날짜로 기록
         companyUser.setIsApproved(ApprovalStatus.APPROVED); // 승인 상태 갱신
         companyUser.setModDate(LocalDate.now()); // 승인일 갱신
         companyUserRepository.save(companyUser); // 변경사항 저장

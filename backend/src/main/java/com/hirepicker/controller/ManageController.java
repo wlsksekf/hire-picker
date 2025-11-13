@@ -53,7 +53,7 @@ public class ManageController {
     })
     @PostMapping("/company-users/{companyUserId}/approve")
     public ResponseEntity<Void> approveCompanyUser(@PathVariable("companyUserId") Long companyUserId) {
-        mService.approveCompanyUser(companyUserId);
+        mService.approveCompanyUser(companyUserId); // PENDING → APPROVED 상태 전환 처리
         return ResponseEntity.ok().build();
     }
 

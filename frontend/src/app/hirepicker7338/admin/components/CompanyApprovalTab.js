@@ -22,13 +22,13 @@ import { api } from '../../../../api';
 import { MINT_PRIMARY_DARK } from '../adminTheme';
 
 export default function CompanyApprovalTab() {
-  const [approvals, setApprovals] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedApproval, setSelectedApproval] = useState(null);
-  const [isApproving, setIsApproving] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [approvals, setApprovals] = useState([]); // 승인 대기 기업 목록
+  const [loading, setLoading] = useState(true); // 목록 로딩 상태
+  const [error, setError] = useState(null); // API 에러 메시지
+  const [isDialogOpen, setIsDialogOpen] = useState(false); // 검토 모달 표시 여부
+  const [selectedApproval, setSelectedApproval] = useState(null); // 현재 검토 중인 기업 데이터
+  const [isApproving, setIsApproving] = useState(false); // 승인 API 호출 중 여부
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' }); // 사용자 안내 스낵바
 
   useEffect(() => {
     // 승인 대기 기업 목록을 백엔드에서 불러온다
@@ -47,7 +47,7 @@ export default function CompanyApprovalTab() {
   }, []);
 
   const handleOpenDialog = (item) => {
-    setSelectedApproval(item); // 선택된 승인 요청을 상태로 저장
+    setSelectedApproval(item); // 선택된 승인 요청 데이터 보관
     setIsDialogOpen(true);
   };
 
@@ -67,8 +67,8 @@ export default function CompanyApprovalTab() {
 
     setIsApproving(true);
     try {
-      await api.post(`/api/manage/company-users/${selectedApproval.companyUserId}/approve`);
-      // 승인된 카드 제거
+      await api.post(`/api/manage/company-users/${selectedApproval.companyUserId}/approve`); // 승인 API 호출
+      // 승인 완료된 카드는 목록에서 제거
       setApprovals((prev) => prev.filter((item) => item.companyUserId !== selectedApproval.companyUserId));
 
       setSnackbar({
@@ -122,7 +122,7 @@ export default function CompanyApprovalTab() {
         ) : approvals.length === 0 ? (
           <Paper variant="outlined" sx={{ borderRadius: 3, p: 4, textAlign: 'center', borderColor: 'rgba(17,24,39,0.08)' }}>
             <Typography variant="subtitle1" fontWeight={600} color="#1f2937" mb={1}>
-              승인 대기 중인 기업이 없습니다.
+              승인 대기 중인 기업 회원이 없습니다.
             </Typography>
             <Typography variant="body2" color="#6b7280">
               새로운 가입 신청이 접수되면 이곳에서 바로 확인할 수 있어요.

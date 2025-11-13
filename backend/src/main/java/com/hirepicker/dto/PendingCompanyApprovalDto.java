@@ -16,7 +16,7 @@ public class PendingCompanyApprovalDto {
     private final String contactName;
     private final String contactEmail;
     private final String contactPhone;
-    private final String verificationFileUrl;
+    private final String verificationFileUrl; // 회사 인증 서류(S3 URL)
     private final LocalDate submittedDate;
     private final String approvalStatus;
 }
