@@ -49,6 +49,11 @@ public class AdPostingService {
         JobPosting jobPosting = jobPostingRepository.findById(postingIdx)
                 .orElseThrow(() -> new IllegalArgumentException("채용공고를 찾을 수 없습니다."));
 
+        // 외부 공고(c_user_idx가 null)는 광고로 등록할 수 없음
+        if (jobPosting.getCUserIdx() == null) {
+            throw new IllegalArgumentException("외부 공고는 광고로 등록할 수 없습니다. 직접 등록한 공고만 가능합니다.");
+        }
+
         if (!jobPosting.getCUserIdx().equals(companyUser.getId())) {
             throw new IllegalArgumentException("본인의 채용공고만 광고로 등록할 수 있습니다.");
         }

@@ -7,6 +7,7 @@ import {
   Paper,
   useTheme,
   Stack,
+  Divider,
 } from "@mui/material";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -29,10 +30,10 @@ const benefitIcons = {
   "경조사 지원": faGift,
   "주택자금 지원": faHome,
   "차량유지비 지원": faCar,
-  "건강검진": faHeartbeat,
+  건강검진: faHeartbeat,
   "교육/훈련 지원": faGraduationCap,
   "도서구입비 지원": faBook,
-  "카페테리아": faMugHot,
+  카페테리아: faMugHot,
   // Add more mappings as needed
 };
 
@@ -60,6 +61,7 @@ const WelfareBenefits = ({ welfare }) => {
       <Typography variant="h6" fontWeight={600} gutterBottom>
         복리후생
       </Typography>
+      <Divider sx={{ my: 2 }} />
       <Box sx={{ mt: 2 }}>
         <Stack spacing={1.5}>
           {benefits.map((benefit, index) => (
