@@ -114,11 +114,10 @@ export default function PostDetailPage() {
       reportReason === '기타' ? `기타 - ${etcInput}` : reportReason;
     try {
       await axios.post('/api/report', {
-        reporterIdx: currentUserIdx,
         targetIdx: post.postIdx,
         reason: reasonToSend,
         reportDate: new Date().toISOString()
-      });
+      }, {withCredentials:true});
       setReportStatus('신고가 접수되었습니다.');
       setTimeout(() => setReportOpen(false), 1000);
     } catch (e) {

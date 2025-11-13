@@ -141,6 +141,7 @@ public class SecurityConfig {
                         "/api/v1/ai-chat",
                         "/api/v1/ai-search",
                         "/api/search", "/api/calendar/**",
+                        "/api/report",
                         "/api/company-alarms/**")
                 .permitAll()
 
