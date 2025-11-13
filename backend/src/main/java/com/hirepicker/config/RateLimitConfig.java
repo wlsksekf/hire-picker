@@ -46,17 +46,18 @@ public class RateLimitConfig {
 
     /**
      * 요청 허용 여부 확인
+     *
      * @param key 식별자 (IP 주소 등)
      * @return true: 허용, false: 제한
      */
     public boolean tryConsume(String key) {
         Bucket bucket = resolveBucket(key);
         boolean allowed = bucket.tryConsume(1);
-        
+
         if (!allowed) {
             log.warn("[RateLimit] 요청 제한 초과: key={}", key);
         }
-        
+
         return allowed;
     }
 
@@ -69,4 +70,3 @@ public class RateLimitConfig {
         log.info("[RateLimit] Reset for key: {}", key);
     }
 }
-

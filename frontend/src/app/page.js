@@ -259,7 +259,13 @@ function HomePage() {
                     <Link
                       href={`/postings/${job.postingIdx}`}
                       passHref
-                      style={{ textDecoration: "none", color: "inherit", flexGrow: 1, display: "flex", flexDirection: "column" }}
+                      style={{
+                        textDecoration: "none",
+                        color: "inherit",
+                        flexGrow: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
                     >
                       <Box sx={{ display: "flex", alignItems: "center" }}>
                         <Typography color="text.secondary" noWrap>
@@ -295,7 +301,15 @@ function HomePage() {
                       >
                         {job.title}
                       </Typography>
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2, flexShrink: 0 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 1,
+                          mb: 2,
+                          flexShrink: 0,
+                        }}
+                      >
                         {job.employmentType && (
                           <Chip label={job.employmentType} />
                         )}
@@ -335,8 +349,8 @@ function HomePage() {
                           지원하기
                         </Button>
                       </CardActions>
-                    </Box>
-                  </Link>
+                    </Link>
+                  </Box>
                 </Card>
               </Grid>
             );

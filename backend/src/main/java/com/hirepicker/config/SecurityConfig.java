@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -113,8 +114,6 @@ public class SecurityConfig {
                                 "/api/inquiry/submit",
                                 "/api/inquiries",
                                 "/inquiries/{inquiryIdx}/answer",
-                                "/api/bookmark/check",
-
                                 "/api/bookmark/check",
                                 "/api/manage/**")
                         .permitAll()

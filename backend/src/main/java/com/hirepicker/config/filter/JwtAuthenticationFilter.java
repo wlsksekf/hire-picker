@@ -1,13 +1,9 @@
 package com.hirepicker.config.filter;
 
-import com.hirepicker.config.jwt.JwtTokenProvider;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,13 +16,11 @@ import com.hirepicker.config.jwt.JwtTokenProvider;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * JWT 인증 필터
@@ -148,8 +142,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
-        log.info("[Filter] JwtAuthenticationFilter is running for URI: {}", request.getRequestURI());
-        String jwt = resolveToken(request); // 요청에서 토큰 추출
+
+        String jwt = resolveTokenFromCookie(request);
 
         if (StringUtils.hasText(jwt)) {
             // 토큰 유효성 검증
