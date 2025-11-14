@@ -28,6 +28,8 @@ import CompanyApprovalTab from "./components/CompanyApprovalTab";
 import JobManagementTab from "./components/JobManagementTab"; // 직접 임포트
 import EventManagementTab from "./components/EventManagementTab"; // 직접 임포트
 import InquiryManagementTab from "./components/InquiryManagementTab";
+import ApiSyncTab from "./components/ApiSyncTab"; // API 동기화 탭 임포트
+import ApiIcon from "@mui/icons-material/Api";
 
 const NAV_TABS = [
   { label: "결제 통계", icon: <PaymentsRoundedIcon /> },
@@ -36,6 +38,7 @@ const NAV_TABS = [
   { label: "공고 관리", icon: <AssignmentTurnedInIcon /> },
   { label: "채용 행사 관리", icon: <AssignmentTurnedInIcon /> },
   { label: "1:1 문의", icon: <ForumRoundedIcon /> },
+  { label: "API", icon: <ApiIcon /> },
 ];
 
 // ... (나머지 상수들은 변경 없음)
@@ -125,6 +128,8 @@ const AdminDashboardPage = () => {
         return <EventManagementTab />; // 채용 행사 관리 탭
       case 5:
         return <InquiryManagementTab />;
+      case 6:
+        return <ApiSyncTab />; // API 동기화 탭
       default:
         return <PaymentsOverviewTab />; // 기본 탭 설정
     }
@@ -168,7 +173,7 @@ const AdminDashboardPage = () => {
             HirePicker Admin
           </Typography>
           <Typography variant="body2" color={MINT_PRIMARY_DARK}>
-            좌측 탭에서 결제·커뮤니티·기업 승인·공고·문의 기능을 전환하세요.
+            좌측 탭에서 결제·커뮤니티·기업 승인·공고·문의·API 기능을 전환하세요.
           </Typography>
         </Stack>
         {renderActiveTabContent()}
