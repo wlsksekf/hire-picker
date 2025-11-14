@@ -114,7 +114,7 @@ export default function PostDetailPage() {
       reportReason === '기타' ? `기타 - ${etcInput}` : reportReason;
     try {
       await axios.post('/api/report', {
-        targetIdx: post.postIdx,
+        targetIdx: post.postIdx-1,
         reason: reasonToSend,
         reportDate: new Date().toISOString()
       }, {withCredentials:true});
