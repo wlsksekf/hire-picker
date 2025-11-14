@@ -4,7 +4,7 @@ import { Box, Button, Modal, Paper, Stack, TextField, Typography } from "@mui/ma
 import { useEffect, useRef, useState } from "react";
 // [1. Import] stompjs 라이브러리
 import { Client } from '@stomp/stompjs';
-import axios from "axios";
+import { api } from "@/api"; // API 인스턴스 사용
 
 // 모달 스타일 (동일)
 const style = {
@@ -38,9 +38,25 @@ function ChatRoom({ post, onClose }) {
   useEffect(function() {
     if (!post.id) return;
 
+    // WebSocket URL을 환경에 따라 동적으로 생성
+    const getWebSocketUrl = () => {
+      if (typeof window === 'undefined') return 'ws://localhost:8080/ws';
+      
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      
+      // 로컬 개발 환경 (localhost:3000)
+      if (host.includes('localhost') || host.includes('127.0.0.1')) {
+        return 'ws://localhost:8080/ws';
+      }
+      
+      // 배포 환경 - 현재 호스트의 /ws 엔드포인트 사용 (nginx가 프록시)
+      return `${protocol}//${host}/ws`;
+    };
+
     // --- STOMP 클라이언트 설정 ---
     const stompClient = new Client({
-      brokerURL: "ws://localhost:8080/ws", // WebSocketConfig의 엔드포인트
+      brokerURL: getWebSocketUrl(), // 환경에 따라 동적으로 설정
 
       // [4. 연결 성공 시 실행될 *이름있는* 함수]
       onConnect: handleStompConnect, // 연결이 성공한다면 handleStompconnect 실행
@@ -77,8 +93,8 @@ function ChatRoom({ post, onClose }) {
       });
     }
 
-      // --- [1. 수정] axios.get()으로 과거 기록 불러오기 ---
-    axios.get(`http://localhost:8080/chat/history/${post.id}`)
+      // --- [1. 수정] api 인스턴스로 과거 기록 불러오기 ---
+    api.get(`/api/chat/history/${post.id}`)
       .then(function(response) {
         // axios는 response.data에 JSON 데이터가 바로 들어있습니다.
 
