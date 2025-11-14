@@ -41,11 +41,8 @@ export default function ManagePostings() {
     {
       field: 'applicantCount',
       headerName: '지원자 수',
-      type: 'number',
       width: 100,
-      valueFormatter: (params) => {
-        return params?.value !== undefined && params?.value !== null ? params.value : 0;
-      }
+      // type: 'number' 제거하고 단순하게 표시
     },
     {
       field: 'startDateFormatted',
@@ -93,9 +90,11 @@ export default function ManagePostings() {
     api.get('/api/companies/my/job-postings')
       .then(response => {
         console.log('[ManagePostings] 채용공고 로드 성공. 공고 수:', response.data.length);
+        console.log('[ManagePostings] 응답 데이터 샘플:', response.data[0]); // 디버깅용
 
         // DTO 배열을 DataGrid 형식으로 변환
         const formattedRows = response.data.map(posting => {
+          console.log('[ManagePostings] posting.applicantCount:', posting.applicantCount, 'postingIdx:', posting.postingIdx); // 디버깅용
           // 상태 자동 판단 (endDate 기준)
           let statusValue = posting.status || 'OPEN';
           if (!posting.status && posting.endDate) {
@@ -127,7 +126,8 @@ export default function ManagePostings() {
             id: posting.postingIdx, // DataGrid는 id 필드 필수
             title: posting.title || '(제목 없음)',
             status: statusValue,
-            applicantCount: posting.applicantCount || 0,
+            // 백엔드에서 문자열로 내려올 수 있으니 숫자로 변환
+            applicantCount: Number(posting.applicantCount ?? 0),
             startDate: posting.startDate, // 원본 날짜 (수정 페이지에서 사용)
             endDate: posting.endDate,     // 원본 날짜 (수정 페이지에서 사용)
             startDateFormatted: startDateFormatted, // 화면에 표시할 포맷된 날짜
@@ -137,11 +137,13 @@ export default function ManagePostings() {
 
         console.log('[ManagePostings] 변환 완료. 첫 번째 row:', {
           title: formattedRows[0]?.title,
+          applicantCount: formattedRows[0]?.applicantCount, // 디버깅용 추가
           startDate: formattedRows[0]?.startDate,
           endDate: formattedRows[0]?.endDate,
           startDateFormatted: formattedRows[0]?.startDateFormatted,
           endDateFormatted: formattedRows[0]?.endDateFormatted,
         });
+        console.log('[ManagePostings] formattedRows 전체:', formattedRows); // 디버깅용
 
         setRows(formattedRows);
         setLoading(false);
