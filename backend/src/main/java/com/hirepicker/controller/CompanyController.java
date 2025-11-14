@@ -12,6 +12,7 @@ import com.hirepicker.entity.JobPostingStatus;
 import com.hirepicker.entity.UserType;
 import com.hirepicker.repository.CompanyUserRepository;
 import com.hirepicker.repository.JobPostingRepository;
+import com.hirepicker.repository.ApplicationsRepository;
 import com.hirepicker.service.CompanyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.transaction.Transactional;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 회사 정보 관련 API 컨트롤러
@@ -49,6 +51,7 @@ public class CompanyController {
     private final CompanyService companyService;
     private final CompanyUserRepository companyUserRepository;
     private final JobPostingRepository jobPostingRepository;
+    private final ApplicationsRepository applicationsRepository;
 
     /**
      * 내 회사 정보 조회
@@ -241,9 +244,27 @@ public class CompanyController {
             // ===== STEP 4: 채용공고 목록 조회 (최신순) =====
             var jobPostings = jobPostingRepository.findByCompany_CompanyIdxOrderByRegDateDesc(companyIdx);
 
-            // Entity → DTO 변환
+            // ===== STEP 5: 공고별 지원자 수 집계 =====
+            var postingIdxList = jobPostings.stream()
+                    .map(JobPosting::getPostingIdx)
+                    .toList();
+
+            var applicantCountMap = postingIdxList.isEmpty()
+                    ? Map.<Long, Long>of()
+                    : applicationsRepository.countByPostingIdxIn(postingIdxList).stream()
+                            .collect(Collectors.toMap(
+                                    ApplicationsRepository.PostingApplicationCountProjection::getPostingIdx,
+                                    ApplicationsRepository.PostingApplicationCountProjection::getApplyCount));
+
+            // Entity → DTO 변환 후 지원자 수 주입
             var jobPostingDtos = jobPostings.stream()
-                    .map(JobPostingDto::fromEntity)
+                    .map(jobPosting -> {
+                        var dto = JobPostingDto.fromEntity(jobPosting);
+                        long applyCount = applicantCountMap.getOrDefault(jobPosting.getPostingIdx(), 0L);
+                        dto.setApplicantCount((int) applyCount); // 실제 지원자 수로 갱신
+                        log.info("[API] postingIdx={}, applicantCount={}", jobPosting.getPostingIdx(), applyCount); // 공고별 지원자 수 확인 로그
+                        return dto;
+                    })
                     .toList();
 
             log.info("[API] 채용공고 목록 조회 성공. 공고 수: {}", jobPostingDtos.size());
