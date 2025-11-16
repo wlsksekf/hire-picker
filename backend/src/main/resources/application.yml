@@ -114,8 +114,10 @@ sendgrid:
 springdoc:
   api-docs:
     path: /api-docs
+    enabled: true # 모든 프로필에서 API 문서 활성화
   swagger-ui:
     path: /swagger-ui.html
+    enabled: true # 모든 프로필에서 Swagger UI 활성화
     display-request-duration: true
   paths-to-match:
     - /api/**
